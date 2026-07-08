@@ -76,7 +76,7 @@ export default function AuthScreen() {
     setError(null)
     setLoading(true)
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://your-project.vercel.app/auth',
+      redirectTo: 'https://pingget.vercel.app/auth',
     })
     setLoading(false)
     if (error) { setError(error.message); return }
