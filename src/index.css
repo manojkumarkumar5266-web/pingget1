@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Olive green palette overrides — ensures colors apply even when Tailwind config cache is stale */
+:root {
+  --color-primary-50:  #f4f7ee;
+  --color-primary-100: #e5ecda;
+  --color-primary-200: #cddab8;
+  --color-primary-300: #afc28e;
+  --color-primary-400: #8fa964;
+  --color-primary-500: #6e8c45;
+  --color-primary-600: #556d34;
+  --color-primary-700: #42562a;
+  --color-primary-800: #374524;
+  --color-primary-900: #2f3b1f;
+}
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  .dark body {
+    @apply bg-gray-950 text-gray-100;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn text-white shadow-sm;
+    background-color: #556d34;
+  }
+  .btn-primary:hover {
+    background-color: #42562a;
+  }
+  .btn-secondary {
+    @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700;
+  }
+  .btn-accent {
+    @apply btn text-white shadow-sm;
+    background-color: #b88a2e;
+  }
+  .btn-accent:hover {
+    background-color: #9e6e24;
+  }
+  .btn-ghost {
+    @apply btn text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800;
+  }
+  .btn-danger {
+    @apply btn bg-error-500 text-white hover:bg-error-600;
+  }
+  .input {
+    @apply w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100;
+  }
+  .input:focus {
+    border-color: #6e8c45;
+    box-shadow: 0 0 0 3px rgba(110, 140, 69, 0.15);
+    outline: none;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+  .card {
+    @apply rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+}
+
+/* Force olive green on Tailwind primary-* utilities that may be cached as blue */
+.bg-primary-50  { background-color: #f4f7ee !important; }
+.bg-primary-100 { background-color: #e5ecda !important; }
+.bg-primary-500 { background-color: #6e8c45 !important; }
+.bg-primary-600 { background-color: #556d34 !important; }
+.bg-primary-700 { background-color: #42562a !important; }
+.bg-primary-800 { background-color: #374524 !important; }
+.text-primary-100 { color: #e5ecda !important; }
+.text-primary-300 { color: #afc28e !important; }
+.text-primary-400 { color: #8fa964 !important; }
+.text-primary-500 { color: #6e8c45 !important; }
+.text-primary-600 { color: #556d34 !important; }
+.text-primary-700 { color: #42562a !important; }
+.text-primary-900 { color: #2f3b1f !important; }
+.border-primary-500 { border-color: #6e8c45 !important; }
+.border-primary-600 { border-color: #556d34 !important; }
+.ring-primary-500\/20 { --tw-ring-color: rgba(110, 140, 69, 0.2) !important; }
+.shadow-primary-600\/20 { --tw-shadow-color: rgba(85, 109, 52, 0.2) !important; }
+.shadow-primary-600\/40 { --tw-shadow-color: rgba(85, 109, 52, 0.4) !important; }
+.from-primary-50  { --tw-gradient-from: #f4f7ee !important; }
+.from-primary-600 { --tw-gradient-from: #556d34 !important; }
+.to-primary-800   { --tw-gradient-to:   #374524 !important; }
+.to-primary-700   { --tw-gradient-to:   #42562a !important; }
+.bg-primary-50\/30 { background-color: rgba(244, 247, 238, 0.3) !important; }
+.bg-primary-900\/30 { background-color: rgba(47, 59, 31, 0.3) !important; }
+.bg-primary-900\/40 { background-color: rgba(47, 59, 31, 0.4) !important; }
+.text-primary-300 { color: #afc28e !important; }
+.dark .dark\:bg-primary-900\/30 { background-color: rgba(47, 59, 31, 0.3) !important; }
+.dark .dark\:bg-primary-900\/40 { background-color: rgba(47, 59, 31, 0.4) !important; }
+.dark .dark\:text-primary-300 { color: #afc28e !important; }
+.dark .dark\:text-primary-400 { color: #8fa964 !important; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 9999px; }
+.dark ::-webkit-scrollbar-thumb { background: #374151; }
