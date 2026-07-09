@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import {
   ArrowLeft, ArrowRight, Camera, Upload, Mail, MapPin,
-  User, Phone, Lock, Truck, FileText, Shield, CheckCircle, XCircle, Home,
+  User, Phone, Truck, FileText, Shield, CheckCircle, XCircle, Home, Bike,
 } from 'lucide-react'
 
 type Step = 1 | 2 | 3 | 4
@@ -28,7 +28,6 @@ export default function DpSignup() {
   const [pincodeStatus, setPincodeStatus] = useState<PincodeStatus>(null)
   const [pincodeChecking, setPincodeChecking] = useState(false)
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const pinDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Step 2
@@ -48,6 +47,30 @@ export default function DpSignup() {
   const licenseInputRef = useRef<HTMLInputElement>(null)
 
   const needsLicense = LICENSE_REQUIRED.includes(vehicleType)
+
+  // Load saved state from sessionStorage
+  useEffect(() => {
+    const saved = sessionStorage.getItem('dp-signup-state')
+    if (saved) {
+      try {
+        const data = JSON.parse(saved)
+        setFullName(data.fullName || '')
+        setAddress(data.address || '')
+        setPhone(data.phone || '')
+        setPincode(data.pincode || '')
+        setEmail(data.email || '')
+        setVehicleType(data.vehicleType || '')
+        setAadhaarNumber(data.aadhaarNumber || '')
+        setEmergencyContact(data.emergencyContact || '')
+      } catch {}
+    }
+  }, [])
+
+  // Save state to sessionStorage whenever it changes
+  useEffect(() => {
+    const state = { fullName, address, phone, pincode, email, vehicleType, aadhaarNumber, emergencyContact }
+    sessionStorage.setItem('dp-signup-state', JSON.stringify(state))
+  }, [fullName, address, phone, pincode, email, vehicleType, aadhaarNumber, emergencyContact])
 
   useEffect(() => {
     if (pincode.length !== 6) { setPincodeStatus(null); return }
@@ -90,7 +113,7 @@ export default function DpSignup() {
     if (!phone.trim() || !/^\+?[\d\s\-]{10,}$/.test(phone)) { setError('Please enter a valid phone number'); return }
     if (pincode.length !== 6) { setError('Please enter a 6-digit pincode'); return }
     if (!pincodeStatus?.served) { setError('Sorry, we do not operate in this area yet.'); return }
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return }
+    if (!email.trim() || !email.includes('@')) { setError('Please enter a valid email'); return }
     setError(null)
     setStep(2)
   }
@@ -104,55 +127,174 @@ export default function DpSignup() {
     setStep(3)
   }
 
-  const handleStep3 = async (e: React.FormEvent) => {
+  const handleStep3 = async () => {
+    setError(null)
+    setLoading(true)
+
+    try {
+      // Initiate Google OAuth - store signup data in sessionStorage for callback processing
+      const signupData = {
+        role: 'dp',
+        full_name: fullName,
+        phone,
+        address,
+        pincode,
+        vehicle_type: vehicleType,
+        aadhaar_number: aadhaarNumber,
+        emergency_contact: emergencyContact,
+        is_new_signup: true,
+        timestamp: Date.now(),
+      }
+      sessionStorage.setItem('dp-oauth-signup', JSON.stringify(signupData))
+
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/dp-signup',
+          queryParams: { prompt: 'select_account' },
+        },
+      })
+
+      if (oauthError) {
+        setError(oauthError.message)
+        setLoading(false)
+      }
+      // If successful, user will be redirected to Google, then back here
+      // The callback processing happens in the useEffect above
+    } catch (err: any) {
+      setError(err.message || 'Failed to start Google sign in')
+      setLoading(false)
+    }
+  }
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) return
+
+      const signupDataStr = sessionStorage.getItem('dp-oauth-signup')
+      if (!signupDataStr) return
+
+      const signupData = JSON.parse(signupDataStr)
+
+      // Check if this is a fresh signup (timestamp within last 60 seconds)
+      if (!signupData.is_new_signup || Date.now() - signupData.timestamp > 60000) return
+
+      // Clear the signup marker
+      sessionStorage.removeItem('dp-oauth-signup')
+
+      setLoading(true)
+
+      try {
+        const userId = session.user.id
+        const userEmail = session.user.email
+
+        // Check if profile already exists
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .maybeSingle()
+
+        if (existingProfile) {
+          // Profile exists, check if they have a DP record
+          const { data: existingDp } = await supabase
+            .from('delivery_partners')
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle()
+
+          if (existingDp) {
+            setError('This Google account is already registered as a delivery partner.')
+            setLoading(false)
+            return
+          }
+        }
+
+        // Create profile if it doesn't exist
+        if (!existingProfile) {
+          const { error: profileError } = await supabase.from('profiles').insert({
+            id: userId,
+            role: 'dp',
+            full_name: signupData.full_name,
+            phone: signupData.phone,
+            address: signupData.address,
+            pincode: signupData.pincode,
+            status: 'active',
+          })
+
+          if (profileError) throw profileError
+        }
+
+        // Create delivery_partner record
+        const { error: dpError } = await supabase.from('delivery_partners').insert({
+          user_id: userId,
+          vehicle_type: signupData.vehicle_type,
+          aadhaar_number: signupData.aadhaar_number,
+          emergency_contact: signupData.emergency_contact,
+          status: 'pending',
+        })
+
+        if (dpError) throw dpError
+
+        // Upload documents if they exist in session
+        const docsStr = sessionStorage.getItem('dp-upload-docs')
+        if (docsStr) {
+          try {
+            const docs = JSON.parse(docsStr)
+            if (docs.photo) {
+              const photoBlob = await fetch(docs.photo).then(r => r.blob())
+              const photoUrl = await uploadFile(photoBlob as File, `${userId}/photo`, 'avatars')
+              if (photoUrl) await supabase.from('profiles').update({ photo_url: photoUrl }).eq('id', userId)
+            }
+            if (docs.aadhaar) {
+              const aadhaarBlob = await fetch(docs.aadhaar).then(r => r.blob())
+              const aadhaarUrl = await uploadFile(aadhaarBlob as File, `${userId}/aadhaar`, 'media')
+              if (aadhaarUrl) await supabase.from('delivery_partners').update({ aadhaar_url: aadhaarUrl }).eq('user_id', userId)
+            }
+            if (docs.license) {
+              const licenseBlob = await fetch(docs.license).then(r => r.blob())
+              const licenseUrl = await uploadFile(licenseBlob as File, `${userId}/license`, 'media')
+              if (licenseUrl) await supabase.from('delivery_partners').update({ driving_license_url: licenseUrl }).eq('user_id', userId)
+            }
+          } catch {}
+          sessionStorage.removeItem('dp-upload-docs')
+        }
+
+        // Sign out and show success
+        await supabase.auth.signOut()
+        sessionStorage.removeItem('dp-signup-state')
+        setStep(4)
+      } catch (err: any) {
+        setError(err.message || 'Failed to complete signup')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    handleOAuthCallback()
+  }, [])
+
+  const handleUploadDocuments = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!photoFile) { setError('Profile photo is required'); return }
     if (!aadhaarFile) { setError('Aadhaar document is required'); return }
     if (needsLicense && !licenseFile) { setError('Driving licence is required for your vehicle type'); return }
 
+    // Store image previews in session for later upload after OAuth
+    const docs: Record<string, string> = {}
+    if (photoPreview) docs.photo = photoPreview
+    if (aadhaarPreview) docs.aadhaar = aadhaarPreview
+    if (licensePreview) docs.license = licensePreview
+    sessionStorage.setItem('dp-upload-docs', JSON.stringify(docs))
+
     setError(null)
-    setLoading(true)
-    try {
-      // Create confirmed user + profile + dp record via edge function
-      const { data: signupData, error: fnError } = await supabase.functions.invoke('signup-user', {
-        body: {
-          email, password, role: 'dp', full_name: fullName, phone, address,
-          pincode: pincode || undefined,
-          vehicle_type: vehicleType,
-          aadhaar_number: aadhaarNumber,
-          emergency_contact: emergencyContact,
-        },
-      })
-      if (fnError || signupData?.error) { setError(signupData?.error || fnError?.message || 'Sign up failed'); return }
-      const uid: string = signupData.user_id
-
-      // Sign in to get an authenticated session for file uploads
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-      if (signInError) { setError(signInError.message); return }
-
-      const [photoUrl, aadhaarUrl, licenseUrl] = await Promise.all([
-        uploadFile(photoFile, `${uid}/photo`, 'avatars'),
-        uploadFile(aadhaarFile, `${uid}/aadhaar`, 'media'),
-        licenseFile ? uploadFile(licenseFile, `${uid}/license`, 'media') : Promise.resolve(null),
-      ])
-
-      const dpUpdates: Record<string, string | null> = {}
-      if (aadhaarUrl) dpUpdates.aadhaar_url = aadhaarUrl
-      if (licenseUrl) dpUpdates.driving_license_url = licenseUrl
-      if (Object.keys(dpUpdates).length > 0) {
-        await supabase.from('delivery_partners').update(dpUpdates).eq('user_id', uid)
-      }
-      if (photoUrl) await supabase.from('profiles').update({ photo_url: photoUrl }).eq('id', uid)
-
-      await supabase.auth.signOut()
-      setStep(4)
-    } finally {
-      setLoading(false)
-    }
+    await handleStep3()
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #1c2a14 0%, #2a3d1c 40%, #374524 100%)' }}>
       <div className="mx-auto max-w-md px-4 py-6">
         {/* Header */}
         <div className="mb-6 flex items-center gap-3">
@@ -162,16 +304,24 @@ export default function DpSignup() {
               else if (step === 3) { setStep(2); setError(null) }
               else navigate('/auth')
             }}
-            className="btn-ghost p-2"
+            className="btn-ghost p-2 text-white"
           >
             <ArrowLeft size={20} />
           </button>
-          <div className="flex items-center gap-2">
-            <div>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">Delivery Partner</p>
-              <p className="text-xs text-gray-500">Registration</p>
+          <div className="flex-1 flex justify-center">
+            <div className="flex flex-col items-center">
+              <span className="text-lg font-black tracking-tight text-white" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                <span>pin</span>
+                <span style={{ color: '#808000' }}>G</span>
+                <span className="text-white">G</span>
+                <span>et</span>
+              </span>
+              <span className="text-[8px] font-semibold tracking-wider" style={{ color: '#808000' }}>
+                CHAT . ORDER . GET IT
+              </span>
             </div>
           </div>
+          <div className="flex-1"></div>
         </div>
 
         {/* Progress — 4 visible steps */}
@@ -179,11 +329,11 @@ export default function DpSignup() {
           {[1, 2, 3, 4].map(s => (
             <div key={s} className="flex flex-1 items-center gap-2">
               <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                s <= step ? 'text-white' : 'bg-gray-200 text-gray-400 dark:bg-gray-700'
-              }`} style={s <= step ? { backgroundColor: '#556d34' } : {}}>
+                s <= step ? 'text-white' : 'bg-white/20 text-white/60'
+              }`} style={s <= step ? { backgroundColor: '#808000' } : {}}>
                 {s < step ? <CheckCircle size={14} /> : s}
               </div>
-              {s < 4 && <div className="flex-1 h-0.5 rounded-full" style={{ background: s < step ? '#6e8c45' : '#e5e7eb' }} />}
+              {s < 4 && <div className="flex-1 h-0.5 rounded-full" style={{ background: s < step ? '#808000' : 'rgba(255,255,255,0.2)' }} />}
             </div>
           ))}
         </div>
@@ -231,11 +381,8 @@ export default function DpSignup() {
               </div>
               <div>
                 <label className="label flex items-center gap-1.5"><Mail size={14} /> Email *</label>
-                <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
-              </div>
-              <div>
-                <label className="label flex items-center gap-1.5"><Lock size={14} /> Password *</label>
-                <input type="password" className="input" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 6 characters" required minLength={6} />
+                <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@gmail.com (Google account)" required />
+                <p className="mt-1 text-xs text-gray-400">Use your Google account email for sign in</p>
               </div>
               {error && <ErrorBanner message={error} />}
               <button type="submit" className="btn-primary w-full">
@@ -295,14 +442,14 @@ export default function DpSignup() {
           </div>
         )}
 
-        {/* STEP 3: Documents */}
+        {/* STEP 3: Documents + Google Sign In */}
         {step === 3 && (
           <div className="card p-6">
             <h2 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Documents & Photo</h2>
             <p className="mb-5 text-sm text-gray-500">
               Upload your profile photo, Aadhaar{needsLicense ? ', and driving licence' : ''}. All required.
             </p>
-            <form onSubmit={handleStep3} className="space-y-5">
+            <form onSubmit={handleUploadDocuments} className="space-y-5">
               {/* Profile photo */}
               <div>
                 <label className="label flex items-center gap-1.5"><Camera size={14} /> Profile Photo *</label>
@@ -312,14 +459,14 @@ export default function DpSignup() {
                   <div className="relative">
                     <img src={photoPreview} alt="Profile" className="h-28 w-28 rounded-2xl object-cover" />
                     <button type="button" onClick={() => photoInputRef.current?.click()}
-                      className="absolute bottom-1 right-1 rounded-full p-1.5 text-white shadow" style={{ backgroundColor: '#556d34' }}>
+                      className="absolute bottom-1 right-1 rounded-full p-1.5 text-white shadow" style={{ backgroundColor: '#808000' }}>
                       <Camera size={14} />
                     </button>
                   </div>
                 ) : (
                   <button type="button" onClick={() => photoInputRef.current?.click()}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-200 py-8 text-sm font-medium text-gray-500 hover:border-primary-400 dark:border-gray-700">
-                    <Camera size={20} style={{ color: '#6e8c45' }} /> Take Photo or Upload *
+                    <Camera size={20} style={{ color: '#808000' }} /> Take Photo or Upload *
                   </button>
                 )}
               </div>
@@ -347,7 +494,7 @@ export default function DpSignup() {
                 ) : (
                   <button type="button" onClick={() => aadhaarInputRef.current?.click()}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-200 py-8 text-sm font-medium text-gray-500 hover:border-primary-400 dark:border-gray-700">
-                    <Upload size={20} style={{ color: '#6e8c45' }} /> Upload Aadhaar *
+                    <Upload size={20} style={{ color: '#808000' }} /> Upload Aadhaar *
                   </button>
                 )}
               </div>
@@ -388,9 +535,16 @@ export default function DpSignup() {
               </div>
 
               {error && <ErrorBanner message={error} />}
-              <button type="submit" disabled={loading} className="btn-primary w-full">
-                {loading ? 'Submitting application…' : 'Submit Application'}
+              <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                {loading ? 'Signing in with Google...' : 'Complete with Google Sign In'}
               </button>
+              <p className="text-xs text-gray-400 text-center">You&apos;ll sign in with your Google account ({email}) to complete registration</p>
             </form>
           </div>
         )}
@@ -400,7 +554,7 @@ export default function DpSignup() {
           <div className="card p-6 text-center">
             <div className="mb-4 flex justify-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: '#e5ecda' }}>
-                <CheckCircle size={32} style={{ color: '#556d34' }} />
+                <CheckCircle size={32} style={{ color: '#808000' }} />
               </div>
             </div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Application Submitted!</h2>
@@ -409,7 +563,7 @@ export default function DpSignup() {
             </p>
             <div className="mt-4 rounded-xl border border-primary-100 bg-primary-50 p-4 dark:border-primary-900/40 dark:bg-primary-900/20">
               <p className="text-sm font-medium text-primary-800 dark:text-primary-300">
-                Once an admin approves your application, sign in with your email and password to start accepting requests.
+                Once an admin approves your application, sign in with your Google account to start accepting requests.
               </p>
             </div>
             <button onClick={() => navigate('/auth')} className="btn-primary mt-5 w-full">Go to Sign In</button>

@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase, Profile } from '../lib/supabase'
+import { Browser } from '@capacitor/browser'
+
 
 type AuthContextType = {
   session: Session | null
@@ -8,8 +10,7 @@ type AuthContextType = {
   profile: Profile | null
   loading: boolean
   passwordRecovery: boolean
-  signUp: (email: string, password: string, role: 'user' | 'dp', fullName: string, phone: string, pincode?: string) => Promise<{ error: string | null }>
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>
+  signInWithGoogle: () => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>
@@ -57,6 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+       console.log('Auth Event:', event);
+  console.log('Session:', session);
       if (event === 'INITIAL_SESSION') return
 
       if (event === 'PASSWORD_RECOVERY') {
@@ -87,50 +90,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [loadProfile])
 
-  // Uses signup-user edge function which calls admin.createUser with email_confirm: true
-  // This bypasses Supabase email verification entirely — users can sign in immediately
-  const signUp = async (
-    email: string, password: string,
-    role: 'user' | 'dp', fullName: string, phone: string, pincode?: string
-  ): Promise<{ error: string | null }> => {
-    const { data, error } = await supabase.functions.invoke('signup-user', {
-      body: { email, password, role, full_name: fullName, phone, pincode },
-    })
-    if (error) return { error: error.message }
-    if (data?.error) return { error: data.error }
-    return { error: null }
-  }
+  const signInWithGoogle = async (): Promise<{ error: string | null }> => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'com.pingget.app://login-callback',
+        skipBrowserRedirect: true,
+      },
+    });
 
-  const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) {
-        const msg = error.message
-        if (!msg || msg === '{}' || msg === '[object Object]') {
-          return { error: 'Incorrect email or password. Please try again.' }
-        }
-        return { error: msg }
-      }
+    if (error) return { error: error.message };
 
-      // Check profile status — block suspended/banned accounts immediately
-      const { data: { session: s } } = await supabase.auth.getSession()
-      if (s?.user) {
-        const { data: p } = await supabase.from('profiles').select('status').eq('id', s.user.id).maybeSingle()
-        if (p?.status === 'suspended') {
-          await supabase.auth.signOut()
-          return { error: 'Your account has been suspended. Please contact support.' }
-        }
-        if (p?.status === 'banned') {
-          await supabase.auth.signOut()
-          return { error: 'Your account has been banned. Please contact support.' }
-        }
-      }
-
-      return { error: null }
-    } catch (e: any) {
-      return { error: e?.message || 'Sign in failed. Check your connection and try again.' }
+    if (data?.url) {
+      console.log("Opening:", data.url);
+      await Browser.open({ url: data.url });
     }
+
+    return { error: null };
+  } catch (e) {
+    console.log("Catch:", e);
+    return { error: String(e) };
   }
+};
 
   const signOut = async () => {
     await supabase.auth.signOut()
@@ -156,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user: session?.user ?? null, profile, loading, passwordRecovery,
-      signUp, signIn, signOut, refreshProfile, updatePassword, clearPasswordRecovery,
+      signInWithGoogle, signOut, refreshProfile, updatePassword, clearPasswordRecovery,
     }}>
       {children}
     </AuthContext.Provider>
