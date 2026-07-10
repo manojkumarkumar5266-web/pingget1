@@ -4,6 +4,8 @@ import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import { MapPin } from 'lucide-react'
+import { Geolocation } from '@capacitor/geolocation'
+
 
 export default function CompleteProfile() {
   const { profile, refreshProfile } = useAuth()
@@ -17,26 +19,32 @@ export default function CompleteProfile() {
 
   const [gpsLoading, setGpsLoading] = useState(false)
 
-  const getLocation = () => {
-    if (!navigator.geolocation) {
-      setError('Geolocation not supported by your browser')
-      return
-    }
+  const getLocation = async () => {
+  try {
     setGpsLoading(true)
     setError(null)
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        setGpsLat(pos.coords.latitude)
-        setGpsLng(pos.coords.longitude)
-        setGpsLoading(false)
-      },
-      () => {
-        setError('Location access denied. Please allow location permission in browser settings.')
-        setGpsLoading(false)
-      },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-    )
+
+    const permission = await Geolocation.requestPermissions()
+
+    if (permission.location !== 'granted') {
+      setError('Location permission denied')
+      setGpsLoading(false)
+      return
+    }
+
+    const position = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 15000,
+    })
+
+    setGpsLat(position.coords.latitude)
+    setGpsLng(position.coords.longitude)
+  } catch (err) {
+    setError('Unable to get your location.')
+  } finally {
+    setGpsLoading(false)
   }
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

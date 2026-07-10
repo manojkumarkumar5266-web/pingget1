@@ -35,13 +35,13 @@ export default function App() {
   if (loading) return <FullScreenLoader />
 
   if (!session || passwordRecovery) {
-    return (
-      <Routes>
-        <Route path="/auth" element={<AuthScreen />} />
-        <Route path="*" element={<Navigate to="/auth" replace />} />
-      </Routes>
-    )
-  }
+  return (
+    <Routes>
+      <Route path="/auth" element={<AuthScreen />} />
+      <Route path="*" element={<Navigate to="/auth" replace />} />
+    </Routes>
+  )
+}
 
   if (!profile) {
     return (

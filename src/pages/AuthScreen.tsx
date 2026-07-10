@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Capacitor } from '@capacitor/core'
 import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 import { User, Phone, Chrome as Home, MapPin, Mail, Lock, Eye, EyeOff, Bike, CircleCheck as CheckCircle, Circle as XCircle, ArrowRight, KeyRound, ShieldAlert } from 'lucide-react'
 
-type Mode = 'main' | 'signup' | 'signup_success' | 'forgot'
+type Mode =
+  | 'main'
+  | 'signup'
+  | 'signup_success'
+  | 'forgot'
 type SignInRole = 'user' | 'dp'
-
 type PincodeStatus = { served: boolean; area?: string; city?: string } | null
 
 export default function AuthScreen() {
-  const { signInWithEmail, signUpWithEmail, passwordRecovery, clearPasswordRecovery } = useAuth()
+  const {
+  signInWithEmail,
+  signUpWithEmail,
+} = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<Mode>('main')
@@ -40,11 +47,7 @@ export default function AuthScreen() {
   const [resetEmail, setResetEmail] = useState('')
   const [resetSent, setResetSent] = useState(false)
 
-  useEffect(() => {
-    if (passwordRecovery) {
-      clearPasswordRecovery()
-    }
-  }, [passwordRecovery, clearPasswordRecovery])
+  
 
   // Pincode validation
   useEffect(() => {
@@ -221,9 +224,15 @@ if (!session?.user) {
     setError(null)
     if (!resetEmail.trim()) { setError('Please enter your email address'); return }
     setLoading(true)
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-      redirectTo: window.location.origin + '/auth',
-    })
+    const redirectTo = 'https://pingget1-d6cr.vercel.app/reset-password'
+
+const { error: resetError } =
+  await supabase.auth.resetPasswordForEmail(
+    resetEmail.trim(),
+    {
+      redirectTo,
+    }
+  )
     setLoading(false)
     if (resetError) { setError(resetError.message); return }
     setResetSent(true)
@@ -289,6 +298,7 @@ if (!session?.user) {
       </AuthLayout>
     )
   }
+         
 
   // ---- SIGN UP ----
   if (mode === 'signup') {
