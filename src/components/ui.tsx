@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react'
-import { Loader2, AlertTriangle, CheckCircle, PauseCircle } from 'lucide-react'
+import { Loader as Loader2, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, CirclePause as PauseCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export function Spinner({ size = 24 }: { size?: number }) {

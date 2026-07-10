@@ -1,10 +1,11 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth, useTheme } from '../../context'
-import { Home, ClipboardList, Wallet, User, Moon, Sun, LogOut, AlertTriangle } from 'lucide-react'
+import { Chrome as Home, ClipboardList, Wallet, User, Moon, Sun, LogOut, TriangleAlert as AlertTriangle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { FullScreenLoader } from '../../components/ui'
 import { formatCurrency } from '../../lib/utils'
+import Brand from '../../components/Brand'
 
 export default function DpLayout() {
   const { profile, signOut } = useAuth()
@@ -77,6 +78,9 @@ export default function DpLayout() {
     <div className="flex h-screen flex-col bg-gray-50 dark:bg-gray-950">
       <header className="border-b border-gray-100 px-4 py-3 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Brand size="sm" variant="dark" showTagline={false} />
+          </div>
           <div className="flex items-center gap-1">
             <button
               onClick={handleToggleOnline}

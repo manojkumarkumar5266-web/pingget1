@@ -3,29 +3,27 @@ import { useAuth } from './context'
 import { FullScreenLoader } from './components/ui'
 import AuthScreen from './pages/AuthScreen'
 import DpSignup from './pages/DpSignup'
+import AdminLogin from './pages/AdminLogin'
 import UserApp from './pages/user/UserApp'
 import DpApp from './pages/dp/DpApp'
 import AdminApp from './pages/admin/AdminApp'
 import CompleteProfile from './pages/CompleteProfile'
 
-// Lazy-loaded only in dev — tree-shaken out of production bundles
-const DevAdminSetup = import.meta.env.DEV
-  ? (await import('./pages/DevAdminSetup')).default
-  : null
 
 export default function App() {
   const { session, profile, loading, passwordRecovery } = useAuth()
   const location = useLocation()
 
-  // Dev-only admin setup page — accessible regardless of auth state
-  if (import.meta.env.DEV && location.pathname === '/admin-setup') {
+  // Admin login route — accessible regardless of auth state, not linked from user screens
+  if (location.pathname === '/admin/login') {
     return (
       <Routes>
-        <Route path="/admin-setup" element={DevAdminSetup ? <DevAdminSetup /> : null} />
+        <Route path="/admin/login" element={<AdminLogin />} />
       </Routes>
     )
   }
 
+  // DP signup route — accessible regardless of auth state
   if (location.pathname === '/dp-signup') {
     return (
       <Routes>
@@ -36,7 +34,6 @@ export default function App() {
 
   if (loading) return <FullScreenLoader />
 
-  // Show auth screen for password reset flow even if session exists
   if (!session || passwordRecovery) {
     return (
       <Routes>

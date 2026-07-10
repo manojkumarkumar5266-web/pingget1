@@ -1,8 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase, Profile } from '../lib/supabase'
-import { Browser } from '@capacitor/browser'
-
 
 type AuthContextType = {
   session: Session | null
@@ -10,7 +8,8 @@ type AuthContextType = {
   profile: Profile | null
   loading: boolean
   passwordRecovery: boolean
-  signInWithGoogle: () => Promise<{ error: string | null }>
+  signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
+  signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>
@@ -58,8 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-       console.log('Auth Event:', event);
-  console.log('Session:', session);
       if (event === 'INITIAL_SESSION') return
 
       if (event === 'PASSWORD_RECOVERY') {
@@ -90,29 +87,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [loadProfile])
 
-  const signInWithGoogle = async (): Promise<{ error: string | null }> => {
-  try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: 'com.pingget.app://login-callback',
-        skipBrowserRedirect: true,
-      },
-    });
-
-    if (error) return { error: error.message };
-
-    if (data?.url) {
-      console.log("Opening:", data.url);
-      await Browser.open({ url: data.url });
-    }
-
-    return { error: null };
-  } catch (e) {
-    console.log("Catch:", e);
-    return { error: String(e) };
+  const signInWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { error: error.message }
+    return { error: null }
   }
-};
+
+  const signUpWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
+    const { error } = await supabase.auth.signUp({ email, password })
+    if (error) return { error: error.message }
+    return { error: null }
+  }
 
   const signOut = async () => {
     await supabase.auth.signOut()
@@ -138,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user: session?.user ?? null, profile, loading, passwordRecovery,
-      signInWithGoogle, signOut, refreshProfile, updatePassword, clearPasswordRecovery,
+      signInWithEmail, signUpWithEmail, signOut, refreshProfile, updatePassword, clearPasswordRecovery,
     }}>
       {children}
     </AuthContext.Provider>

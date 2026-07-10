@@ -3,126 +3,48 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
-import { Bike, Package, ArrowRight, CheckCircle, XCircle, MapPin, MessageCircle, User, Phone, Home } from 'lucide-react'
+import AuthLayout from '../components/AuthLayout'
+import { User, Phone, Chrome as Home, MapPin, Mail, Lock, Eye, EyeOff, Bike, CircleCheck as CheckCircle, Circle as XCircle, ArrowRight, KeyRound, ShieldAlert } from 'lucide-react'
 
-type Mode = 'main' | 'signup' | 'signup_success'
-type Role = 'user' | 'dp'
+type Mode = 'main' | 'signup' | 'signup_success' | 'forgot'
+type SignInRole = 'user' | 'dp'
 
 type PincodeStatus = { served: boolean; area?: string; city?: string } | null
 
 export default function AuthScreen() {
-  const { signInWithGoogle, passwordRecovery, clearPasswordRecovery } = useAuth()
+  const { signInWithEmail, signUpWithEmail, passwordRecovery, clearPasswordRecovery } = useAuth()
   const navigate = useNavigate()
-  const [mode, setMode] = useState<'main' | 'signup' | 'signup_success'>('main')
-  const [role, setRole] = useState<Role>('user')
+
+  const [mode, setMode] = useState<Mode>('main')
+  const [signInRole, setSignInRole] = useState<SignInRole>('user')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
-  // Signup form fields
+  // Sign-in fields
+  const [signInEmail, setSignInEmail] = useState('')
+  const [signInPassword, setSignInPassword] = useState('')
+
+  // Sign-up fields
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
   const [pincode, setPincode] = useState('')
   const [pincodeStatus, setPincodeStatus] = useState<PincodeStatus>(null)
   const [pincodeChecking, setPincodeChecking] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
+  // Forgot password
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetSent, setResetSent] = useState(false)
 
   useEffect(() => {
     if (passwordRecovery) {
       clearPasswordRecovery()
     }
   }, [passwordRecovery, clearPasswordRecovery])
-
-  // Handle OAuth callback - check if user's email exists in database
-  useEffect(() => {
-    const handleOAuthCallback = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) return
-
-      const pendingSignup = sessionStorage.getItem('pending-signup')
-      if (pendingSignup) {
-        const signupData = JSON.parse(pendingSignup)
-
-        // Check if signup is recent (within last 5 minutes)
-        if (Date.now() - signupData.timestamp > 300000) {
-          sessionStorage.removeItem('pending-signup')
-          return
-        }
-
-        setLoading(true)
-
-        try {
-          // Create profile in database
-          const profileData: Record<string, any> = {
-            id: session.user.id,
-            role: signupData.role,
-            full_name: signupData.fullName,
-            phone: signupData.phone,
-            address: signupData.address,
-            pincode: signupData.pincode,
-            status: 'active',
-          }
-
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert(profileData)
-
-          if (profileError) {
-            // If profile already exists, that's fine - just continue
-            if (!profileError.message.includes('duplicate')) {
-              throw profileError
-            }
-          }
-
-          // For DP, create delivery_partner record
-          if (signupData.role === 'dp') {
-            const { error: dpError } = await supabase
-              .from('delivery_partners')
-              .insert({
-                user_id: session.user.id,
-                status: 'pending',
-                vehicle_type: signupData.vehicleType || 'Bicycle',
-              })
-
-            if (dpError && !dpError.message.includes('duplicate')) {
-              throw dpError
-            }
-          }
-
-          sessionStorage.removeItem('pending-signup')
-          setMode('signup_success')
-        } catch (err: any) {
-          setError(err.message || 'Failed to complete signup')
-        } finally {
-          setLoading(false)
-        }
-        return
-      }
-
-      // Check if user's email exists in profiles
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, role, full_name')
-        .eq('id', session.user.id)
-        .maybeSingle()
-
-      if (profile) {
-        // User exists, redirect based on role
-        if (profile.role === 'admin') {
-          navigate('/admin')
-        } else if (profile.role === 'dp') {
-          navigate('/dp')
-        } else {
-          navigate('/app')
-        }
-      } else {
-        // New user without profile - sign them out and show error
-        await supabase.auth.signOut()
-        setError('Account not found. Please sign up first.')
-      }
-    }
-
-    handleOAuthCallback()
-  }, [navigate])
 
   // Pincode validation
   useEffect(() => {
@@ -132,29 +54,23 @@ export default function AuthScreen() {
     }
     const timer = setTimeout(async () => {
       setPincodeChecking(true)
-      const { data: pins, error } = await supabase
-  .from('pincodes')
-  .select('*')
-  .eq('pincode', pincode);
-
-console.log("Pins:", pins);
-console.log("Error:", error);
-console.log("Supabase URL:", import.meta.env.VITE_SUPABASE_URL);
-console.log("Checking pincode:", pincode);
+      const { data: pins } = await supabase
+        .from('pincodes')
+        .select('area_name, city_id')
+        .eq('pincode', pincode)
+        .eq('is_active', true)
+        .limit(1)
       const pin = pins?.[0]
       if (!pin) {
         setPincodeChecking(false)
         setPincodeStatus({ served: false })
         return
       }
-      const { data: city, error: cityError } = await supabase
-  .from('cities')
-  .select('*')
-  .eq('id', pin.city_id)
-  .maybeSingle();
-
-console.log("CITY:", city);
-console.log("CITY ERROR:", cityError);
+      const { data: city } = await supabase
+        .from('cities')
+        .select('name, is_active')
+        .eq('id', pin.city_id)
+        .maybeSingle()
       setPincodeChecking(false)
       if (city?.is_active) {
         setPincodeStatus({ served: true, area: pin.area_name || '', city: city.name })
@@ -165,280 +81,362 @@ console.log("CITY ERROR:", cityError);
     return () => clearTimeout(timer)
   }, [pincode])
 
-  const handleGoogleSignIn = async () => {
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
     setError(null)
+    if (!signInEmail.trim() || !signInPassword) {
+      setError('Please enter your email and password')
+      return
+    }
     setLoading(true)
-    const { error } = await signInWithGoogle()
-    setLoading(false)
-    if (error) setError(error)
+    const { error: signInError } = await signInWithEmail(signInEmail.trim(), signInPassword)
+    if (signInError) {
+      setError(signInError)
+      setLoading(false)
+      return
+    }
+
+    // After sign-in, check the profile role matches the selected toggle
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      setError('Authentication failed. Please try again.')
+      setLoading(false)
+      return
+    }
+
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .maybeSingle()
+
+    if (!userProfile) {
+      setError('Account not found. Please sign up first.')
+      await supabase.auth.signOut()
+      setLoading(false)
+      return
+    }
+
+    // Role mismatch check — single user can have both user and DP creds
+    if (signInRole === 'dp' && userProfile.role !== 'dp') {
+      await supabase.auth.signOut()
+      setError('You don\'t have a Delivery Partner account. Please select "User" to sign in, or sign up as a Delivery Partner.')
+      setLoading(false)
+      return
+    }
+    if (signInRole === 'user' && userProfile.role === 'dp') {
+      await supabase.auth.signOut()
+      setError('This account is a Delivery Partner. Please select "DP" to sign in to your DP dashboard.')
+      setLoading(false)
+      return
+    }
+
+    // Role matches — redirect happens via onAuthStateChange → App.tsx
   }
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const checkPhoneUnique = async (phoneValue: string): Promise<boolean> => {
+    const { count } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('phone', phoneValue)
+    return (count ?? 0) === 0
+  }
+
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    if (!fullName.trim()) {
-      setError('Full name is required')
-      return
-    }
-    if (!phone.trim() || !/^\+?[\d\s\-]{10,}$/.test(phone)) {
-      setError('Please enter a valid phone number')
-      return
-    }
-    if (!address.trim()) {
-      setError('Address is required')
-      return
-    }
-    if (pincode.length !== 6) {
-      setError('Please enter a 6-digit pincode')
-      return
-    }
-    if (!pincodeStatus?.served) {
-      setError('Sorry, we do not operate in this area yet.')
-      return
-    }
+    if (!fullName.trim()) { setError('Full name is required'); return }
+    const phoneDigits = phone.replace(/\D/g, '')
+    if (phoneDigits.length < 10) { setError('Please enter a valid 10-digit mobile number'); return }
+    if (!address.trim()) { setError('Address is required'); return }
+    if (pincode.length !== 6) { setError('Please enter a 6-digit pincode'); return }
+    if (!pincodeStatus?.served) { setError('Sorry, we do not operate in this area yet.'); return }
+    if (!email.trim() || !email.includes('@')) { setError('Please enter a valid email address'); return }
+    if (password.length < 8) { setError('Password must be at least 8 characters'); return }
+    if (password !== confirmPassword) { setError('Passwords do not match'); return }
 
-    // Store signup data in sessionStorage
-    const signupData = {
-      role,
-      fullName,
-      phone,
-      address,
-      pincode,
-      timestamp: Date.now(),
-    }
-    sessionStorage.setItem('pending-signup', JSON.stringify(signupData))
-
-    // Initiate Google OAuth
     setLoading(true)
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin + '/auth',
-      },
+
+    const isPhoneUnique = await checkPhoneUnique(phoneDigits)
+    if (!isPhoneUnique) {
+      setError('This mobile number is already registered. Please use a different number.')
+      setLoading(false)
+      return
+    }
+
+    const { error: signUpError } = await signUpWithEmail(email.trim(), password)
+    if (signUpError) {
+      setError(signUpError)
+      setLoading(false)
+      return
+    }
+
+    const {
+  data: { session },
+  error: sessionError,
+} = await supabase.auth.getSession()
+
+console.log("SESSION:", session)
+console.log("SESSION ERROR:", sessionError)
+
+if (!session?.user) {
+  setError(
+    sessionError?.message ||
+      "No session created. Check your email confirmation settings."
+  )
+  setLoading(false)
+  return
+}
+
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: session.user.id,
+      role: 'user',
+      full_name: fullName.trim(),
+      phone: phoneDigits,
+      address: address.trim(),
+      pincode: pincode,
+      status: 'active',
     })
 
-    if (oauthError) {
-      setError(oauthError.message)
+    if (profileError) {
+      if (profileError.message.includes('profiles_phone_unique')) {
+        setError('This mobile number is already registered. Please use a different number.')
+      } else if (profileError.message.includes('duplicate')) {
+        setError('An account with this email already exists. Please sign in instead.')
+      } else {
+        setError(profileError.message)
+      }
+      await supabase.auth.signOut()
       setLoading(false)
+      return
     }
+
+    setLoading(false)
+    setMode('signup_success')
   }
 
-  const oliveGreen = '#808000'
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    if (!resetEmail.trim()) { setError('Please enter your email address'); return }
+    setLoading(true)
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+      redirectTo: window.location.origin + '/auth',
+    })
+    setLoading(false)
+    if (resetError) { setError(resetError.message); return }
+    setResetSent(true)
+  }
 
+  // ---- SIGNUP SUCCESS ----
   if (mode === 'signup_success') {
     return (
-      <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #1c2a14 0%, #2a3d1c 40%, #374524 100%)' }}>
-        <div className="flex min-h-screen flex-col justify-center px-6 py-8">
-          <div className="card p-6 text-center max-w-md mx-auto">
-            <div className="mb-4 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-100 dark:bg-success-900/40">
-                <CheckCircle size={32} className="text-success-600 dark:text-success-400" />
-              </div>
+      <AuthLayout showBrand={false}>
+        <div className="card p-6 text-center">
+          <div className="mb-4 flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-100 dark:bg-success-900/40">
+              <CheckCircle size={32} className="text-success-600 dark:text-success-400" />
             </div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Account Created!</h2>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              Your account has been created successfully. You can now sign in anytime.
-            </p>
-            <button
-              onClick={() => { sessionStorage.removeItem('pending-signup'); window.location.reload(); }}
-              className="btn-primary mt-5 w-full"
-            >
-              Continue
-            </button>
           </div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Account Created!</h2>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Your account has been created successfully. You can now sign in.
+          </p>
+          <button
+            onClick={() => {
+              setMode('main')
+              setFullName(''); setPhone(''); setAddress(''); setPincode('')
+              setEmail(''); setPassword(''); setConfirmPassword('')
+              setSignInEmail(email)
+            }}
+            className="btn-primary mt-5 w-full"
+          >
+            Continue to Sign In
+          </button>
         </div>
-      </div>
+      </AuthLayout>
     )
   }
 
-  return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(160deg, #1c2a14 0%, #2a3d1c 40%, #374524 100%)' }}>
-      <div className="flex min-h-screen flex-col justify-between px-6 py-8">
-        {/* Logo with tagline */}
-        <div className="text-center">
-          <span className="text-2xl font-black tracking-tight text-white" style={{ fontFamily: 'system-ui, sans-serif' }}>
-            <span className="text-white">pin</span>
-            <span style={{ color: oliveGreen }}>G</span>
-            <span className="text-white">G</span>
-            <span className="text-white">et</span>
-          </span>
-          <p className="text-[9px] font-semibold tracking-wider mt-0.5" style={{ color: oliveGreen }}>
-            CHAT . ORDER . GET IT
-          </p>
-        </div>
-
-        {mode === 'main' && (
-          <div className="flex-1 flex flex-col justify-center">
-            <div className="card p-6 max-w-md w-full mx-auto">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1 text-center">Welcome to pin<span style={{ color: '#808000' }}>G</span>Get</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center">Sign in with your Google account</p>
-
+  // ---- FORGOT PASSWORD ----
+  if (mode === 'forgot') {
+    return (
+      <AuthLayout showBrand={false}>
+        <div className="card p-6">
+          <button onClick={() => { setMode('main'); setError(null); setResetSent(false) }} className="text-sm text-primary-600 dark:text-primary-400 mb-4">
+            ← Back to Sign In
+          </button>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Forgot Password</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Enter your email and we&apos;ll send you a reset link.</p>
+          {resetSent ? (
+            <div className="rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-800 dark:bg-success-900/30 dark:text-success-300">
+              <div className="flex items-center gap-2"><CheckCircle size={16} className="shrink-0" /> Reset link sent! Check your email inbox.</div>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div>
+                <label className="label flex items-center gap-1.5"><Mail size={14} /> Email Address</label>
+                <input type="email" className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="you@example.com" required />
+              </div>
               {error && <ErrorBanner message={error} />}
-
-              <button
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="btn-primary w-full flex items-center justify-center gap-3"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                {loading ? 'Signing in...' : 'Sign In with Google'}
+              <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
+                <KeyRound size={16} /> {loading ? 'Sending...' : 'Send Reset Link'}
               </button>
+            </form>
+          )}
+        </div>
+      </AuthLayout>
+    )
+  }
 
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">or</span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => { setRole('user'); setMode('signup'); }}
-                className="btn-secondary w-full mb-3"
-              >
-                <User size={18} /> Sign Up as User
-              </button>
-
-              <button
-                onClick={() => { setRole('dp'); setMode('signup'); }}
-                className="btn-secondary w-full"
-              >
-                <Bike size={18} /> Sign Up as Delivery Partner
-              </button>
+  // ---- SIGN UP ----
+  if (mode === 'signup') {
+    return (
+      <AuthLayout showBrand={false}>
+        <div className="card p-6">
+          <button onClick={() => { setMode('main'); setError(null) }} className="text-sm text-primary-600 dark:text-primary-400 mb-4">
+            ← Back
+          </button>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Sign Up as User</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Fill in your details to get started</p>
+          <form onSubmit={handleSignUp} className="space-y-4">
+            <div>
+              <label className="label flex items-center gap-1.5"><User size={14} /> Full Name *</label>
+              <input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required />
             </div>
-          </div>
-        )}
-
-        {mode === 'signup' && (
-          <div className="flex-1 flex flex-col justify-center">
-            <div className="card p-6 max-w-md w-full mx-auto">
-              <button
-                onClick={() => setMode('main')}
-                className="text-sm text-primary-600 dark:text-primary-400 mb-4"
-              >
-                ← Back
-              </button>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-                Sign Up as {role === 'dp' ? 'Delivery Partner' : 'User'}
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Fill in your details to get started</p>
-
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div>
-                  <label className="label flex items-center gap-1.5">
-                    <User size={14} /> Full Name *
-                  </label>
-                  <input
-                    className="input"
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    placeholder="Your full name"
-                    required
-                  />
+            <div>
+              <label className="label flex items-center gap-1.5"><Phone size={14} /> Mobile Number *</label>
+              <input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required />
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><Home size={14} /> Address *</label>
+              <input className="input" value={address} onChange={e => setAddress(e.target.value)} placeholder="Your full address" required />
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><MapPin size={14} /> Area Pincode *</label>
+              <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} required />
+              {pincodeChecking && <p className="mt-1.5 text-xs text-gray-400">Checking service area...</p>}
+              {!pincodeChecking && pincodeStatus && (
+                <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${pincodeStatus.served ? 'bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300' : 'bg-error-50 text-error-700 dark:bg-error-900/30 dark:text-error-300'}`}>
+                  {pincodeStatus.served ? <><CheckCircle size={13} /> We serve {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!</> : <><XCircle size={13} /> Sorry, we don&apos;t serve this area yet.</>}
                 </div>
-                <div>
-                  <label className="label flex items-center gap-1.5">
-                    <Phone size={14} /> Phone Number *
-                  </label>
-                  <input
-                    className="input"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="label flex items-center gap-1.5">
-                    <Home size={14} /> Address *
-                  </label>
-                  <input
-                    className="input"
-                    value={address}
-                    onChange={e => setAddress(e.target.value)}
-                    placeholder="Your full address"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="label flex items-center gap-1.5">
-                    <MapPin size={14} /> Area Pincode *
-                  </label>
-                  <input
-                    className="input"
-                    value={pincode}
-                    onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="6-digit pincode"
-                    maxLength={6}
-                    required
-                  />
-                  {pincodeChecking && <p className="mt-1.5 text-xs text-gray-400">Checking service area...</p>}
-                  {!pincodeChecking && pincodeStatus && (
-                    <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${
-                      pincodeStatus.served
-                        ? 'bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300'
-                        : 'bg-error-50 text-error-700 dark:bg-error-900/30 dark:text-error-300'
-                    }`}>
-                      {pincodeStatus.served
-                        ? <><CheckCircle size={13} /> We serve {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!</>
-                        : <><XCircle size={13} /> Sorry, we don&apos;t serve this area yet.</>}
-                    </div>
-                  )}
-                </div>
-
-                {error && <ErrorBanner message={error} />}
-
-                <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                  {loading ? 'Signing up...' : 'Complete Sign Up with Google'}
+              )}
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><Mail size={14} /> Email *</label>
+              <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><Lock size={14} /> Password *</label>
+              <div className="relative">
+                <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
+              </div>
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><Lock size={14} /> Confirm Password *</label>
+              <input type={showPassword ? 'text' : 'password'} className="input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" required />
+              {confirmPassword && password !== confirmPassword && <p className="mt-1 text-xs text-error-600">Passwords do not match</p>}
+            </div>
+            {error && <ErrorBanner message={error} />}
+            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
+              {loading ? 'Creating account...' : 'Create Account'} <ArrowRight size={16} />
+            </button>
+          </form>
+        </div>
+      </AuthLayout>
+    )
+  }
 
-                <p className="text-xs text-gray-400 text-center">
-                  You&apos;ll sign in with your Google account to complete registration
-                </p>
-              </form>
+  // ---- MAIN: Sign In with User/DP toggle ----
+  return (
+    <AuthLayout>
+      <div className="card p-6">
+        <h2 className="text-center text-xl font-bold text-gray-900 dark:text-white mb-1">Sign In</h2>
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-5">Select your role and enter your credentials</p>
+
+        {/* User / DP Toggle */}
+        <div className="mb-5 flex rounded-xl border border-gray-200 p-1 dark:border-gray-700">
+          <button
+            type="button"
+            onClick={() => { setSignInRole('user'); setError(null) }}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${
+              signInRole === 'user'
+                ? 'text-white'
+                : 'text-gray-500 dark:text-gray-400'
+            }`}
+            style={signInRole === 'user' ? { backgroundColor: '#808000' } : {}}
+          >
+            <User size={16} /> User
+          </button>
+          <button
+            type="button"
+            onClick={() => { setSignInRole('dp'); setError(null) }}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${
+              signInRole === 'dp'
+                ? 'text-white'
+                : 'text-gray-500 dark:text-gray-400'
+            }`}
+            style={signInRole === 'dp' ? { backgroundColor: '#808000' } : {}}
+          >
+            <Bike size={16} /> Delivery Partner
+          </button>
+        </div>
+
+        {error && <ErrorBanner message={error} />}
+
+        <form onSubmit={handleSignIn} className="space-y-4">
+          <div>
+            <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
+            <input type="email" className="input" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" required />
+          </div>
+          <div>
+            <label className="label flex items-center gap-1.5"><Lock size={14} /> Password</label>
+            <div className="relative">
+              <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={signInPassword} onChange={e => setSignInPassword(e.target.value)} placeholder="Your password" required />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
-        )}
 
-        {/* Bottom features */}
-        <div className="mt-6 text-center text-xs text-white/40">
-          By continuing you agree to our Terms &amp; Privacy Policy
-        </div>
+          <div className="text-right">
+            <button type="button" onClick={() => { setMode('forgot'); setError(null); setResetSent(false) }} className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
+              Forgot password?
+            </button>
+          </div>
 
-        <div
-          className="overflow-hidden rounded-2xl border border-white/10"
-          style={{ background: 'linear-gradient(135deg, #3a5228 0%, #4a6830 100%)' }}
-        >
-          <div className="grid grid-cols-4">
-            {[
-              { icon: <MessageCircle size={22} />, title: 'CHAT', sub: 'Easy Conversation' },
-              { icon: <MapPin size={22} />, title: 'LOCATION', sub: 'Live Tracking' },
-              { icon: <Bike size={22} />, title: 'DELIVERY', sub: 'Fast & Reliable' },
-              { icon: <Package size={22} />, title: 'GET IT', sub: 'At Your Doorstep' },
-            ].map((f, i) => (
-              <div key={i} className="flex flex-col items-center gap-1 px-1 py-4 text-center"
-                style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
-                <span className="text-white">{f.icon}</span>
-                <p className="mt-0.5 text-[10px] font-black tracking-wide text-white">{f.title}</p>
-                <p className="text-[8px] font-semibold leading-tight text-white/80">{f.sub}</p>
-              </div>
-            ))}
+          <button type="submit" disabled={loading} className="btn-primary w-full">
+            {loading ? 'Signing in...' : `Sign In as ${signInRole === 'dp' ? 'Delivery Partner' : 'User'}`}
+          </button>
+        </form>
+
+        <div className="relative my-5">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">or</span>
           </div>
         </div>
+
+        <button onClick={() => { setMode('signup'); setError(null) }} className="btn-secondary w-full mb-3">
+          <User size={18} /> Sign Up as User
+        </button>
+        <button onClick={() => navigate('/dp-signup')} className="btn-secondary w-full">
+          <Bike size={18} /> Sign Up as Delivery Partner
+        </button>
+
+        {signInRole === 'dp' && (
+          <div className="mt-4 flex items-start gap-2 rounded-xl bg-accent-50 p-3 text-xs text-accent-700 dark:bg-accent-950/40 dark:text-accent-300">
+            <ShieldAlert size={14} className="mt-0.5 shrink-0" />
+            <span>Delivery Partner accounts need admin approval before they can sign in. If you don&apos;t have a DP account yet, tap &quot;Sign Up as Delivery Partner&quot;.</span>
+          </div>
+        )}
       </div>
-    </div>
+    </AuthLayout>
   )
 }

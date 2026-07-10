@@ -1,8 +1,9 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth, useTheme } from '../../context'
-import { Home, Plus, ClipboardList, Bell, User, Moon, Sun, LogOut, X, MessageCircle } from 'lucide-react'
+import { Chrome as Home, Plus, ClipboardList, Bell, User, Moon, Sun, LogOut, X, MessageCircle } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+import Brand from '../../components/Brand'
 
 type AcceptedToast = { requestId: string; body: string }
 
@@ -78,6 +79,7 @@ export default function UserLayout() {
       {/* Header */}
       <header className="flex items-center justify-between border-b border-gray-100 px-4 py-3 bg-white dark:border-gray-800 dark:bg-gray-900">
         <div className="flex items-center gap-2">
+          <Brand size="sm" variant="dark" showTagline={false} />
         </div>
         <div className="flex items-center gap-1">
           <button onClick={toggle} className="p-2 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
