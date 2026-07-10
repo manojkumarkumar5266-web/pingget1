@@ -79,7 +79,7 @@ export default function DpLayout() {
       <header className="border-b border-gray-100 px-4 py-3 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Brand size="sm" variant="dark" showTagline={false} />
+            <Brand size="sm" showTagline={false} />
           </div>
           <div className="flex items-center gap-1">
             <button

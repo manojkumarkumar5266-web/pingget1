@@ -79,7 +79,7 @@ export default function UserLayout() {
       {/* Header */}
       <header className="flex items-center justify-between border-b border-gray-100 px-4 py-3 bg-white dark:border-gray-800 dark:bg-gray-900">
         <div className="flex items-center gap-2">
-          <Brand size="sm" variant="dark" showTagline={false} />
+          <Brand size="sm" showTagline={false} />
         </div>
         <div className="flex items-center gap-1">
           <button onClick={toggle} className="p-2 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
