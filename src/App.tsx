@@ -36,14 +36,14 @@ export default function App() {
   if (loading) return <FullScreenLoader />
 
   // Password recovery — show reset form regardless of profile state
-  if (passwordRecovery || location.pathname === "/reset-password") {
-  return (
-    <Routes>
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="*" element={<Navigate to="/reset-password" replace />} />
-    </Routes>
-  )
-}
+  if (passwordRecovery) {
+    return (
+      <Routes>
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="*" element={<Navigate to="/reset-password" replace />} />
+      </Routes>
+    )
+  }
 
   if (!session) {
     return (

@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, Message, ChatRoom, Order, Profile, DeliveryPartner } from '../../lib/supabase'
 import { Avatar, StatusBadge, ErrorBanner, StarRating } from '../../components/ui'
 import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
-import { ArrowLeft, Send, MapPin, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, Clock, CheckCircle, ShoppingBag, Store, Wallet, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Send, MapPin, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, Clock, CircleCheck as CheckCircle, ShoppingBag, Store, Wallet, CircleAlert as AlertCircle } from 'lucide-react'
 
 const ORDER_FLOW = ['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'completed']
 
@@ -149,7 +149,7 @@ export default function ChatScreen() {
     const channel = supabase
       .channel(`chat-${roomId}`)
       .on('postgres_changes', {
-        event: '*',
+        event: 'INSERT',
         schema: 'public',
         table: 'messages',
         filter: `chat_room_id=eq.${roomId}`,
@@ -163,9 +163,7 @@ export default function ChatScreen() {
       }, (payload) => {
         setOrder(payload.new as Order)
       })
-      .subscribe((status) => {
-  console.log("Realtime Status:", status)
-})
+      .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [roomId])
@@ -187,6 +185,7 @@ export default function ChatScreen() {
       })
       .select()
       .single()
+    if (!error && data) setMessages(prev => [...prev, data as Message])
     setInput('')
   }
 
@@ -202,6 +201,7 @@ export default function ChatScreen() {
       })
       .select()
       .single()
+    if (!error && data) setMessages(prev => [...prev, data as Message])
     setShowQuotation(false)
   }
 

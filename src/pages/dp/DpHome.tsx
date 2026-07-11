@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, DeliveryPartner } from '../../lib/supabase'
 import { EmptyState, ServiceStatusBanner } from '../../components/ui'
 import { formatTime, formatCurrency, formatDistance, haversineDistance } from '../../lib/utils'
-import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell } from 'lucide-react'
+import { Package, Clock, MapPin, Check, X, WifiOff, FileSliders as Sliders, Bell } from 'lucide-react'
 
 type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
 
@@ -133,27 +133,23 @@ export default function DpHome() {
 
     // User's order summary — shown as sent by the user so it appears on the left
     await supabase.from('messages').insert({
-      chat_room_id: roomId,
-      sender_id: req.user_id,
-      message_type: 'order_summary',
-      quotation_data: {
-  title: req.title,
-  description: req.description,
-  preferred_shop: req.preferred_shop,
-  max_budget: req.max_budget,
-  special_instructions: req.special_instructions,
-
-  photo_url: req.photo_url,
-  voice_note_url: req.voice_note_url,
-
-  pickup_address: req.pickup_address,
-  delivery_address: req.delivery_address,
-
-  delivery_lat: req.delivery_lat,
-  delivery_lng: req.delivery_lng,
-
-  expected_time: req.expected_time,
-  radius_meters: req.radius_meters,
+  chat_room_id: roomId,
+  sender_id: req.user_id,
+  message_type: 'order_summary',
+  quotation_data: {
+    title: req.title,
+    description: req.description,
+    preferred_shop: req.preferred_shop,
+    pickup_address: req.pickup_address,
+    delivery_address: req.delivery_address,
+    expected_time: req.expected_time,
+    max_budget: req.max_budget,
+    radius_meters: req.radius_meters,
+    special_instructions: req.special_instructions,
+    photo_url: req.photo_url,
+    voice_note_url: req.voice_note_url,
+    delivery_lat: req.delivery_lat,
+    delivery_lng: req.delivery_lng
       },
     })
 
@@ -298,48 +294,6 @@ export default function DpHome() {
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                   <span className="font-medium">Deliver to:</span> {req.delivery_address}
                 </p>
-                {req.pickup_address && (
-  <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-    <MapPin size={12} />
-    <span>
-      <span className="font-medium">Pickup:</span> {req.pickup_address}
-    </span>
-  </div>
-)}
-{req.pickup_address && (
-  <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-    <MapPin size={12} />
-    <span>
-      <span className="font-medium">Pickup:</span> {req.pickup_address}
-    </span>
-  </div>
-)}
-                {/* Request Photo */}
-{req.photo_url && (
-  <div className="mt-3">
-    <p className="mb-1 text-xs font-medium text-gray-500">
-      Attached Photo
-    </p>
-    <img
-      src={req.photo_url}
-      alt="Request"
-      className="w-full rounded-xl border object-cover max-h-64"
-    />
-  </div>
-)}
-
-{/* Voice Recording */}
-{req.voice_note_url && (
-  <div className="mt-3">
-    <p className="mb-1 text-xs font-medium text-gray-500">
-      Voice Note
-    </p>
-    <audio controls className="w-full">
-      <source src={req.voice_note_url} />
-      Your browser does not support audio.
-    </audio>
-  </div>
-)}
 
                 <div className="mt-3 flex gap-2">
                   <button onClick={() => acceptRequest(req)} className="btn-primary flex-1">
