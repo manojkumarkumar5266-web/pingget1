@@ -5,10 +5,11 @@ import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import { MapPin } from 'lucide-react'
 import { Geolocation } from '@capacitor/geolocation'
+import { useEffect } from 'react'
 
 
 export default function CompleteProfile() {
-  const { profile, refreshProfile } = useAuth()
+  const { profile, user, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
@@ -47,36 +48,62 @@ export default function CompleteProfile() {
 }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ address, city, gps_lat: gpsLat, gps_lng: gpsLng })
-        .eq('id', profile!.id)
-      if (error) throw error
+  e.preventDefault()
 
-      if (profile!.role === 'dp') {
-        const { error: dpError } = await supabase
-          .from('delivery_partners')
-          .insert({ user_id: profile!.id, vehicle_type: 'Bike' })
-        if (dpError && !dpError.message.includes('duplicate')) throw dpError
-
-        const { error: walletError } = await supabase
-          .from('wallets')
-          .insert({ dp_user_id: profile!.id })
-        if (walletError && !walletError.message.includes('duplicate')) throw walletError
-      }
-
-      await refreshProfile()
-      navigate(profile!.role === 'dp' ? '/dp' : '/app')
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
+  if (!user) {
+    setError("User session not found. Please sign in again.")
+    return
   }
+
+  setError(null)
+  setLoading(true)
+
+  try {
+    const userId = profile?.id || user.id
+    const role = profile?.role || "user"
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        address,
+        city,
+        gps_lat: gpsLat,
+        gps_lng: gpsLng,
+      })
+      .eq("id", userId)
+
+    if (error) throw error
+
+    if (role === "dp") {
+      const { error: dpError } = await supabase
+        .from("delivery_partners")
+        .insert({
+          user_id: userId,
+          vehicle_type: "Bike",
+        })
+
+      if (dpError && !dpError.message.includes("duplicate"))
+        throw dpError
+
+      const { error: walletError } = await supabase
+        .from("wallets")
+        .insert({
+          dp_user_id: userId,
+        })
+
+      if (walletError && !walletError.message.includes("duplicate"))
+        throw walletError
+    }
+
+    await refreshProfile()
+
+    navigate(role === "dp" ? "/dp" : "/app")
+  } catch (err: any) {
+    setError(err.message)
+  } finally {
+    setLoading(false)
+  }
+}
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
