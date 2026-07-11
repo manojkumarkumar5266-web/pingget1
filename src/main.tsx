@@ -37,7 +37,26 @@ CapacitorApp.addListener("appUrlOpen", async ({ url }) => {
     }
   }
 })
+const hash = window.location.hash
 
+if (hash.includes("access_token")) {
+  const params = new URLSearchParams(hash.substring(1))
+
+  const access_token = params.get("access_token")
+  const refresh_token = params.get("refresh_token")
+  const type = params.get("type")
+
+  if (access_token && refresh_token) {
+    supabase.auth.setSession({
+      access_token,
+      refresh_token,
+    }).then(({ error }) => {
+      if (!error && type === "recovery") {
+        window.location.replace("/reset-password")
+      }
+    })
+  }
+}
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
