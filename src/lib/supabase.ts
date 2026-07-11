@@ -60,6 +60,7 @@ export type DeliveryRequest = {
   title: string
   description: string | null
   photo_url: string | null
+  voice_note_url: string | null
   preferred_shop: string | null
   pickup_address: string | null
   pickup_lat: number | null

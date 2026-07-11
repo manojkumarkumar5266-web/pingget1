@@ -149,7 +149,7 @@ export default function ChatScreen() {
     const channel = supabase
       .channel(`chat-${roomId}`)
       .on('postgres_changes', {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
         table: 'messages',
         filter: `chat_room_id=eq.${roomId}`,
@@ -163,7 +163,9 @@ export default function ChatScreen() {
       }, (payload) => {
         setOrder(payload.new as Order)
       })
-      .subscribe()
+      .subscribe((status) => {
+  console.log("Realtime Status:", status)
+})
 
     return () => { supabase.removeChannel(channel) }
   }, [roomId])
@@ -185,7 +187,6 @@ export default function ChatScreen() {
       })
       .select()
       .single()
-    if (!error && data) setMessages(prev => [...prev, data as Message])
     setInput('')
   }
 
@@ -201,7 +202,6 @@ export default function ChatScreen() {
       })
       .select()
       .single()
-    if (!error && data) setMessages(prev => [...prev, data as Message])
     setShowQuotation(false)
   }
 
