@@ -4,6 +4,7 @@ import { FullScreenLoader } from './components/ui'
 import AuthScreen from './pages/AuthScreen'
 import DpSignup from './pages/DpSignup'
 import AdminLogin from './pages/AdminLogin'
+import ResetPassword from './pages/ResetPassword'
 import UserApp from './pages/user/UserApp'
 import DpApp from './pages/dp/DpApp'
 import AdminApp from './pages/admin/AdminApp'
@@ -14,7 +15,7 @@ export default function App() {
   const { session, profile, loading, passwordRecovery } = useAuth()
   const location = useLocation()
 
-  // Admin login route — accessible regardless of auth state, not linked from user screens
+  // Admin login route — accessible regardless of auth state
   if (location.pathname === '/admin/login') {
     return (
       <Routes>
@@ -34,14 +35,24 @@ export default function App() {
 
   if (loading) return <FullScreenLoader />
 
-  if (!session || passwordRecovery) {
-  return (
-    <Routes>
-      <Route path="/auth" element={<AuthScreen />} />
-      <Route path="*" element={<Navigate to="/auth" replace />} />
-    </Routes>
-  )
-}
+  // Password recovery — show reset form regardless of profile state
+  if (passwordRecovery) {
+    return (
+      <Routes>
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="*" element={<Navigate to="/reset-password" replace />} />
+      </Routes>
+    )
+  }
+
+  if (!session) {
+    return (
+      <Routes>
+        <Route path="/auth" element={<AuthScreen />} />
+        <Route path="*" element={<Navigate to="/auth" replace />} />
+      </Routes>
+    )
+  }
 
   if (!profile) {
     return (

@@ -62,7 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'PASSWORD_RECOVERY') {
         setSession(session)
         setPasswordRecovery(true)
-        setLoading(false)
+        if (session?.user) {
+          loadProfile(session.user.id).finally(() => setLoading(false))
+        } else {
+          setLoading(false)
+        }
         return
       }
 

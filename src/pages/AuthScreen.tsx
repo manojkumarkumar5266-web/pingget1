@@ -220,23 +220,37 @@ if (!session?.user) {
   }
 
   const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    if (!resetEmail.trim()) { setError('Please enter your email address'); return }
-    setLoading(true)
-    const redirectTo = 'https://pingget1-d6cr.vercel.app/reset-password'
+  e.preventDefault()
 
-const { error: resetError } =
-  await supabase.auth.resetPasswordForEmail(
-    resetEmail.trim(),
-    {
-      redirectTo,
-    }
-  )
-    setLoading(false)
-    if (resetError) { setError(resetError.message); return }
-    setResetSent(true)
+  setError(null)
+
+  if (!resetEmail.trim()) {
+    setError('Please enter your email address')
+    return
   }
+
+  setLoading(true)
+
+  const redirectTo =
+    'https://pingget1-d6cr.vercel.app/reset-password'
+
+  const { error: resetError } =
+    await supabase.auth.resetPasswordForEmail(
+      resetEmail.trim(),
+      {
+        redirectTo,
+      }
+    )
+
+  setLoading(false)
+
+  if (resetError) {
+    setError(resetError.message)
+    return
+  }
+
+  setResetSent(true)
+}
 
   // ---- SIGNUP SUCCESS ----
   if (mode === 'signup_success') {

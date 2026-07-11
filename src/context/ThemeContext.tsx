@@ -1,22 +1,12 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, ReactNode } from 'react'
 
-type Theme = 'light' | 'dark'
+type Theme = 'dark'
 
 const ThemeContext = createContext<{ theme: Theme; toggle: () => void } | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'light'
-    return (localStorage.getItem('theme') as Theme) || 'light'
-  })
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark')
-    localStorage.setItem('theme', theme)
-  }, [theme])
-
   return (
-    <ThemeContext.Provider value={{ theme, toggle: () => setTheme(t => t === 'light' ? 'dark' : 'light') }}>
+    <ThemeContext.Provider value={{ theme: 'dark', toggle: () => {} }}>
       {children}
     </ThemeContext.Provider>
   )

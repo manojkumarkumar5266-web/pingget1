@@ -1,11 +1,10 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth, useTheme } from '../../context'
-import { LayoutDashboard, Users, MapPin, ClipboardList, Moon, Sun, LogOut, CreditCard, UserCheck } from 'lucide-react'
+import { useAuth } from '../../context'
+import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck } from 'lucide-react'
 import Brand from '../../components/Brand'
 
 export default function AdminLayout() {
   const { profile, signOut } = useAuth()
-  const { theme, toggle } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -42,9 +41,6 @@ export default function AdminLayout() {
           })}
         </nav>
         <div className="absolute bottom-0 left-0 right-0 space-y-1 border-t border-gray-100 p-3 dark:border-gray-800">
-          <button onClick={toggle} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800">
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />} {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-          </button>
           <button onClick={() => signOut()} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-error-600 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-950/40">
             <LogOut size={18} /> Sign Out
           </button>
@@ -57,7 +53,6 @@ export default function AdminLayout() {
           <Brand size="sm" showTagline={false} />
         </div>
         <div className="flex gap-1">
-          <button onClick={toggle} className="btn-ghost p-2">{theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}</button>
           <button onClick={() => signOut()} className="btn-ghost p-2"><LogOut size={18} /></button>
         </div>
       </header>

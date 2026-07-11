@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth, useTheme } from '../../context'
-import { Chrome as Home, ClipboardList, Wallet, User, Moon, Sun, LogOut, TriangleAlert as AlertTriangle } from 'lucide-react'
+import { useAuth } from '../../context'
+import { Chrome as Home, ClipboardList, Wallet, User, LogOut, TriangleAlert as AlertTriangle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { FullScreenLoader } from '../../components/ui'
@@ -9,7 +9,6 @@ import Brand from '../../components/Brand'
 
 export default function DpLayout() {
   const { profile, signOut } = useAuth()
-  const { theme, toggle } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const [dp, setDp] = useState<DeliveryPartner | null>(null)
@@ -97,9 +96,6 @@ export default function DpLayout() {
                 dp.is_online ? 'bg-success-500 animate-pulse-soft' : commissionOwed > 0 ? 'bg-warning-500' : 'bg-gray-400'
               }`} />
               {dp.is_online ? 'Online' : commissionOwed > 0 ? 'Pay Due' : 'Offline'}
-            </button>
-            <button onClick={toggle} className="p-2 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
-              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
             <button onClick={() => signOut()} className="p-2 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
               <LogOut size={18} />

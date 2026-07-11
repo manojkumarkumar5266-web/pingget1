@@ -220,9 +220,21 @@ export default function DpSignup() {
     setError(null)
     if (!resetEmail.trim()) { setError('Please enter your email address'); return }
     setLoading(true)
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-      redirectTo: window.location.origin + '/dp-signup',
+
+    // Validate email exists in the database before sending reset link
+    const { data: checkData, error: checkError } = await supabase.functions.invoke('check-email', {
+      body: { email: resetEmail.trim() },
     })
+    if (checkError || !checkData?.exists) {
+      setError('No account found with this email address.')
+      setLoading(false)
+      return
+    }
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      resetEmail.trim(),
+      { redirectTo: window.location.origin + '/reset-password' }
+    )
     setLoading(false)
     if (resetError) { setError(resetError.message); return }
     setResetSent(true)
