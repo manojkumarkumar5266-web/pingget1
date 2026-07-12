@@ -9,11 +9,21 @@ import UserApp from './pages/user/UserApp'
 import DpApp from './pages/dp/DpApp'
 import AdminApp from './pages/admin/AdminApp'
 import CompleteProfile from './pages/CompleteProfile'
+import SetupAdmin from './pages/SetupAdmin'
 
 
 export default function App() {
   const { session, profile, loading, passwordRecovery } = useAuth()
   const location = useLocation()
+
+  // Admin setup route — accessible regardless of auth state
+  if (location.pathname === '/setup-admin') {
+    return (
+      <Routes>
+        <Route path="/setup-admin" element={<SetupAdmin />} />
+      </Routes>
+    )
+  }
 
   // Admin login route — accessible regardless of auth state
   if (location.pathname === '/admin/login') {

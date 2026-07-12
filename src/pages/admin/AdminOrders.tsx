@@ -1,22 +1,23 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { EmptyState, StatusBadge } from '../../components/ui'
-import { formatTime, formatCurrency } from '../../lib/utils'
-import { ClipboardList, Search, Download } from 'lucide-react'
+import { formatCurrency, formatTime } from '../../lib/utils'
+import { StatusBadge, EmptyState } from '../../components/ui'
+import { ClipboardList, Search, Download, X, User, Bike, MapPin, Package, IndianRupee } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<any | null>(null)
 
   useEffect(() => {
     const fetchOrders = async () => {
       const { data } = await supabase
         .from('orders')
-        .select('*')
+        .select('*, _request:requests(title, description, delivery_address, pickup_address, preferred_shop, user_id, accepted_dp_id)')
         .order('created_at', { ascending: false })
-        .limit(100)
+        .limit(200)
       setOrders(data || [])
       setLoading(false)
     }
@@ -25,6 +26,7 @@ export default function AdminOrders() {
 
   const filtered = orders.filter(o =>
     !search ||
+    o._request?.title?.toLowerCase().includes(search.toLowerCase()) ||
     o.items_summary?.toLowerCase().includes(search.toLowerCase()) ||
     o.id.toLowerCase().includes(search.toLowerCase())
   )
@@ -32,8 +34,10 @@ export default function AdminOrders() {
   const exportOrders = () => {
     const rows = filtered.map(o => ({
       'Order ID': o.id,
-      Summary: o.items_summary || 'Delivery',
+      Title: o._request?.title || 'Delivery',
+      Summary: o.items_summary || '',
       Status: o.status,
+      'Delivery Address': o._request?.delivery_address || '',
       'Item Cost': o.item_cost || '',
       'Delivery Charge': o.delivery_charge,
       'Commission %': o.commission_pct,
@@ -56,14 +60,12 @@ export default function AdminOrders() {
       <div className="mb-4 flex items-center gap-3">
         <div className="relative flex-1">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search by item or order ID..."
-            className="input pl-10"
-          />
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by title or order ID..." className="input pl-10" />
         </div>
-        <button onClick={exportOrders} className="btn-secondary shrink-0 text-sm"><Download size={16} /> Export</button>
+        <button onClick={exportOrders} className="btn-secondary shrink-0 text-sm flex items-center gap-1.5">
+          <Download size={16} /> Export
+        </button>
       </div>
 
       {filtered.length === 0 ? (
@@ -71,11 +73,14 @@ export default function AdminOrders() {
       ) : (
         <div className="space-y-3">
           {filtered.map(o => (
-            <div key={o.id} className="card p-4 animate-slide-up">
+            <div key={o.id} className="card p-4 animate-slide-up cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setSelected(o)}>
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900 dark:text-white">{o.items_summary || 'Delivery'}</p>
-                  <p className="mt-0.5 text-xs text-gray-400">ID: {o.id.slice(0, 8)}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 dark:text-white truncate">
+                    {o._request?.title || o.items_summary || 'Delivery'}
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-400">ID: {o.id.slice(0, 12)}...</p>
                 </div>
                 <StatusBadge status={o.status} />
               </div>
@@ -98,6 +103,151 @@ export default function AdminOrders() {
           ))}
         </div>
       )}
+
+      {selected && <OrderDetailDrawer order={selected} onClose={() => setSelected(null)} />}
+    </div>
+  )
+}
+
+function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void }) {
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [dpProfile, setDpProfile] = useState<any>(null)
+  const [messages, setMessages] = useState<any[]>([])
+
+  useEffect(() => {
+    const uid = order._request?.user_id
+    const dpId = order._request?.accepted_dp_id || order.dp_id
+    if (uid) supabase.from('profiles').select('full_name, phone').eq('id', uid).maybeSingle()
+      .then(({ data }) => setUserProfile(data))
+    if (dpId) supabase.from('profiles').select('full_name, phone').eq('id', dpId).maybeSingle()
+      .then(({ data }) => setDpProfile(data))
+    supabase.from('chat_rooms').select('id').eq('request_id', order.request_id).maybeSingle()
+      .then(({ data: room }) => {
+        if (room?.id) {
+          supabase.from('messages').select('content, sender_id, message_type, created_at')
+            .eq('chat_room_id', room.id).order('created_at', { ascending: false }).limit(20)
+            .then(({ data }) => setMessages(data || []))
+        }
+      })
+  }, [order])
+
+  const req = order._request || {}
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
+      <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-gray-900"
+        onClick={e => e.stopPropagation()}>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-4 dark:border-gray-800 dark:bg-gray-900">
+          <p className="font-bold text-gray-900 dark:text-white">Order Details</p>
+          <button onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="px-5 pb-10 pt-4 space-y-5">
+          {/* Status + ID */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400">Order ID</p>
+              <p className="font-mono text-sm text-gray-700 dark:text-gray-300">{order.id}</p>
+            </div>
+            <StatusBadge status={order.status} />
+          </div>
+
+          {/* Title */}
+          <div>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">{req.title || order.items_summary || 'Delivery'}</p>
+            {req.description && (
+              <ul className="mt-1.5 space-y-0.5">
+                {req.description.split('\n').map((line: string, i: number) => line.trim() && (
+                  <li key={i} className="flex items-start gap-1.5 text-sm text-gray-600 dark:text-gray-300">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary-500" />
+                    {line.trim()}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Addresses */}
+          <div className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4 space-y-2">
+            {req.preferred_shop && (
+              <div className="flex items-start gap-2 text-sm">
+                <Package size={14} className="mt-0.5 shrink-0 text-accent-500" />
+                <span className="text-gray-600 dark:text-gray-400">Shop: <span className="font-medium text-gray-900 dark:text-white">{req.preferred_shop}</span></span>
+              </div>
+            )}
+            {req.pickup_address && (
+              <div className="flex items-start gap-2 text-sm">
+                <MapPin size={14} className="mt-0.5 shrink-0 text-warning-500" />
+                <span className="text-gray-600 dark:text-gray-400">Pickup: <span className="font-medium text-gray-900 dark:text-white">{req.pickup_address}</span></span>
+              </div>
+            )}
+            <div className="flex items-start gap-2 text-sm">
+              <MapPin size={14} className="mt-0.5 shrink-0 text-error-500" />
+              <span className="text-gray-600 dark:text-gray-400">Deliver to: <span className="font-medium text-gray-900 dark:text-white">{req.delivery_address}</span></span>
+            </div>
+          </div>
+
+          {/* Financials */}
+          <div className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Financials</p>
+            <div className="space-y-2 text-sm">
+              {order.item_cost > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Item Cost</span>
+                  <span className="font-semibold">{formatCurrency(order.item_cost)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-gray-500">Delivery Charge</span>
+                <span className="font-semibold">{formatCurrency(order.delivery_charge)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Commission ({order.commission_pct}%)</span>
+                <span className="font-semibold text-success-600">{formatCurrency(order.commission_amount)}</span>
+              </div>
+              <div className="flex justify-between border-t border-gray-100 pt-2 dark:border-gray-800">
+                <span className="text-gray-500">DP Earnings</span>
+                <span className="font-bold text-primary-600">{formatCurrency(order.dp_earnings)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* People */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
+              <div className="flex items-center gap-1.5 mb-1 text-xs text-gray-400"><User size={12} /> Customer</div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{userProfile?.full_name || '...'}</p>
+              <p className="text-xs text-gray-500">{userProfile?.phone || ''}</p>
+            </div>
+            <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
+              <div className="flex items-center gap-1.5 mb-1 text-xs text-gray-400"><Bike size={12} /> Delivery Partner</div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">{dpProfile?.full_name || '...'}</p>
+              <p className="text-xs text-gray-500">{dpProfile?.phone || ''}</p>
+            </div>
+          </div>
+
+          {/* Chat messages */}
+          {messages.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Chat (last 20 messages)</p>
+              <div className="space-y-1.5 max-h-64 overflow-y-auto rounded-2xl border border-gray-100 p-3 dark:border-gray-800">
+                {[...messages].reverse().map((m, i) => (
+                  <div key={i} className="text-xs">
+                    <span className="font-semibold text-gray-500">{m.sender_id === req.user_id ? 'User' : 'DP'}: </span>
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {m.message_type === 'text' ? m.content : `[${m.message_type}]`}
+                    </span>
+                    <span className="ml-1 text-gray-400">{formatTime(m.created_at)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p className="text-center text-xs text-gray-400">Created {formatTime(order.created_at)}</p>
+        </div>
+      </div>
     </div>
   )
 }

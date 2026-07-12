@@ -25,7 +25,7 @@ export default function AdminUsers() {
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
-    let query = supabase.from('profiles').select('*').in('role', ['user', 'dp'])
+    let query = supabase.from('profiles').select('*').eq('role', 'user')
     if (filter !== 'all') query = query.eq('status', filter)
     const { data } = await query.order('created_at', { ascending: false })
     setUsers((data as Profile[]) || [])
@@ -174,17 +174,30 @@ function UserActionDrawer({
   onUpdateStatus: (status: 'active' | 'suspended' | 'banned') => void
 }) {
   const cfg = STATUS_CONFIG[user.status] || STATUS_CONFIG.active
+  const [orders, setOrders] = useState<Array<{ id: string; status: string; created_at: string }>>([])
+  const [ordersLoading, setOrdersLoading] = useState(true)
+
+  useEffect(() => {
+    supabase
+      .from('requests')
+      .select('id, title, status, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+      .then(({ data }) => { setOrders(data || []); setOrdersLoading(false) })
+  }, [user.id])
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
       <div
-        className="absolute bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-gray-900"
+        className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-gray-900"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1">
           <div className="h-1 w-10 rounded-full bg-gray-200 dark:bg-gray-700" />
         </div>
-        <div className="px-5 pb-8 pt-2">
+        <div className="px-5 pb-10 pt-2">
+          {/* Header */}
           <div className="mb-5 flex items-center gap-4">
             <Avatar url={user.photo_url} name={user.full_name || 'User'} size={56} />
             <div>
@@ -197,38 +210,60 @@ function UserActionDrawer({
             </div>
           </div>
 
-          <div className="mb-5 rounded-2xl border border-gray-100 p-4 dark:border-gray-800 space-y-2">
+          {/* Profile details */}
+          <div className="mb-4 rounded-2xl border border-gray-100 p-4 dark:border-gray-800 space-y-2">
             <InfoRow label="City" value={user.city || 'Not set'} />
             <InfoRow label="Address" value={user.address || 'Not set'} />
+            <InfoRow label="Preferred Language" value={(user as any).preferred_language || 'en'} />
             <InfoRow label="Joined" value={formatTime(user.created_at)} />
           </div>
 
+          {/* Recent orders */}
+          <div className="mb-5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Recent Requests ({orders.length})</p>
+            {ordersLoading ? (
+              <div className="space-y-2">
+                {[1,2].map(i => <div key={i} className="h-10 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />)}
+              </div>
+            ) : orders.length === 0 ? (
+              <p className="text-sm text-gray-400 italic">No requests yet.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {orders.map(o => (
+                  <div key={o.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 dark:bg-gray-800">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate max-w-[60%]">{(o as any).title || 'Request'}</p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        o.status === 'completed' ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' :
+                        o.status === 'cancelled' ? 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300' :
+                        'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300'
+                      }`}>{o.status}</span>
+                      <span className="text-[10px] text-gray-400">{formatTime(o.created_at)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Account actions */}
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Account Actions</p>
           <div className="space-y-2">
             {user.status !== 'active' && (
-              <button
-                onClick={() => onUpdateStatus('active')}
-                disabled={updating}
-                className="flex w-full items-center gap-3 rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm font-semibold text-success-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-success-800 dark:bg-success-900/20 dark:text-success-300"
-              >
+              <button onClick={() => onUpdateStatus('active')} disabled={updating}
+                className="flex w-full items-center gap-3 rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm font-semibold text-success-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-success-800 dark:bg-success-900/20 dark:text-success-300">
                 <CheckCircle size={18} /> Reinstate Account
               </button>
             )}
             {user.status !== 'suspended' && (
-              <button
-                onClick={() => onUpdateStatus('suspended')}
-                disabled={updating}
-                className="flex w-full items-center gap-3 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm font-semibold text-warning-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-warning-800 dark:bg-warning-900/20 dark:text-warning-300"
-              >
+              <button onClick={() => onUpdateStatus('suspended')} disabled={updating}
+                className="flex w-full items-center gap-3 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm font-semibold text-warning-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-warning-800 dark:bg-warning-900/20 dark:text-warning-300">
                 <ShieldOff size={18} /> Suspend Account
               </button>
             )}
             {user.status !== 'banned' && (
-              <button
-                onClick={() => onUpdateStatus('banned')}
-                disabled={updating}
-                className="flex w-full items-center gap-3 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm font-semibold text-error-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-error-800 dark:bg-error-900/20 dark:text-error-300"
-              >
+              <button onClick={() => onUpdateStatus('banned')} disabled={updating}
+                className="flex w-full items-center gap-3 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm font-semibold text-error-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-error-800 dark:bg-error-900/20 dark:text-error-300">
                 <Ban size={18} /> Ban Account
               </button>
             )}
@@ -238,7 +273,7 @@ function UserActionDrawer({
             <div className="mt-4 flex items-start gap-2 rounded-xl bg-warning-50 px-3 py-2.5 dark:bg-warning-950/30">
               <AlertTriangle size={14} className="mt-0.5 shrink-0 text-warning-600 dark:text-warning-400" />
               <p className="text-xs text-warning-700 dark:text-warning-300">
-                This user is blocked from signing in. They will see an error message if they attempt to log in.
+                This user is blocked from signing in.
               </p>
             </div>
           )}

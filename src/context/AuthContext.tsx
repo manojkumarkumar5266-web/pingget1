@@ -58,6 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'INITIAL_SESSION') return
+      // Don't re-fetch profile on token refresh — just update session silently
+      if (event === 'TOKEN_REFRESHED') { setSession(session); return }
 
       if (event === 'PASSWORD_RECOVERY') {
         setSession(session)

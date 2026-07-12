@@ -57,25 +57,37 @@ export default function DpOrders() {
     return () => { supabase.removeChannel(channel) }
   }, [profile, fetchOrders])
 
+  const cancelOrder = async (req: DeliveryRequest, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm('Cancel this order? This cannot be undone.')) return
+    setUpdating(req.id)
+    await supabase.from('requests').update({ status: 'cancelled' }).eq('id', req.id)
+    await supabase.from('orders').update({ status: 'cancelled' }).eq('request_id', req.id)
+    await supabase.from('notifications').insert({
+      user_id: req.user_id,
+      title: 'Order Cancelled',
+      body: 'Your delivery partner had to cancel this order.',
+      type: 'order_status',
+      related_id: req.id,
+    })
+    setUpdating(null)
+    fetchOrders()
+  }
+
   const advanceStatus = async (req: DeliveryRequest, e: React.MouseEvent) => {
     e.stopPropagation()
     if (!DP_ACTION_STATUSES.includes(req.status)) return
     const currentIdx = ORDER_FLOW.indexOf(req.status)
     const nextStatus = ORDER_FLOW[currentIdx + 1]
     if (!nextStatus) return
-
     setUpdating(req.id)
     await supabase.from('requests').update({ status: nextStatus }).eq('id', req.id)
     await supabase.from('orders').update({ status: nextStatus }).eq('request_id', req.id)
-
     if (STEP_NOTIFICATIONS[nextStatus]) {
       const n = STEP_NOTIFICATIONS[nextStatus]
       await supabase.from('notifications').insert({
-        user_id: req.user_id,
-        title: n.title,
-        body: n.body,
-        type: 'order_status',
-        related_id: req.id,
+        user_id: req.user_id, title: n.title, body: n.body,
+        type: 'order_status', related_id: req.id,
       })
     }
     setUpdating(null)
@@ -128,6 +140,7 @@ export default function DpOrders() {
             const nextStatus = isActionable ? ORDER_FLOW[ORDER_FLOW.indexOf(req.status) + 1] : null
             const isUpdating = updating === req.id
             const awaitingUser = req.status === 'delivered' || req.status === 'cash_received'
+            const chatClosed = req.status === 'delivered' || req.status === 'cash_received'
 
             return (
               <div key={req.id} className="card p-4 animate-slide-up">
@@ -145,7 +158,6 @@ export default function DpOrders() {
                   <span className="flex items-center gap-1"><MapPin size={12} /> {req.radius_meters}m</span>
                 </div>
 
-                {/* Guide for accepted-but-not-yet-confirmed orders */}
                 {req.status === 'accepted' && (
                   <div className="mt-3 rounded-xl border border-primary-200 bg-primary-50 px-3 py-2.5 dark:border-primary-900/40 dark:bg-primary-950/30">
                     <p className="text-xs font-semibold text-primary-700 dark:text-primary-300">Next step</p>
@@ -155,7 +167,6 @@ export default function DpOrders() {
                   </div>
                 )}
 
-                {/* Confirmed: customer accepted quotation — DP should start shopping */}
                 {req.status === 'confirmed' && (
                   <div className="mt-3 rounded-xl border border-accent-200 bg-accent-50 px-3 py-2.5 dark:border-accent-900/40 dark:bg-accent-950/30">
                     <p className="text-xs font-semibold text-accent-700 dark:text-accent-300">Customer confirmed — start shopping!</p>
@@ -165,7 +176,6 @@ export default function DpOrders() {
                   </div>
                 )}
 
-                {/* Progress tracker for post-quotation statuses */}
                 {statusIdx !== -1 && (
                   <div className="mt-3 rounded-xl bg-gray-50 px-3 py-2 dark:bg-gray-800/50">
                     <div className="flex items-center">
@@ -197,7 +207,18 @@ export default function DpOrders() {
                 )}
 
                 <div className="mt-3 space-y-2">
-                  {/* Primary action: advance order status */}
+                  {/* Cancel before confirming */}
+                  {req.status === 'accepted' && (
+                    <button
+                      onClick={(e) => cancelOrder(req, e)}
+                      disabled={isUpdating}
+                      className="w-full rounded-xl border border-error-200 bg-error-50 py-2.5 text-sm font-semibold text-error-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-error-900/40 dark:bg-error-950/30 dark:text-error-300"
+                    >
+                      {isUpdating ? 'Cancelling...' : 'Cancel Order'}
+                    </button>
+                  )}
+
+                  {/* Advance status button */}
                   {isActionable && nextStatus && (
                     <button
                       onClick={(e) => advanceStatus(req, e)}
@@ -215,21 +236,15 @@ export default function DpOrders() {
                   )}
 
                   {req.status !== 'completed' && req.status !== 'cancelled' && (
-                    (() => {
-                      const chatClosed = req.status === 'delivered' || req.status === 'cash_received'
-                      return chatClosed ? (
-                        <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm font-medium text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600">
-                          <Lock size={14} /> Chat Closed
-                        </div>
-                      ) : (
-                        <button
-                          onClick={(e) => goToChat(req, e)}
-                          className="btn-secondary w-full gap-1.5 text-sm"
-                        >
-                          <MessageCircle size={15} /> Open Chat
-                        </button>
-                      )
-                    })()
+                    chatClosed ? (
+                      <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm font-medium text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600">
+                        <Lock size={14} /> Chat Closed
+                      </div>
+                    ) : (
+                      <button onClick={(e) => goToChat(req, e)} className="btn-secondary w-full gap-1.5 text-sm">
+                        <MessageCircle size={15} /> Open Chat
+                      </button>
+                    )
                   )}
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import { EmptyState } from '../../components/ui'
 import { formatTime, formatCurrency } from '../../lib/utils'
@@ -49,8 +49,7 @@ export default function AdminPayments() {
   const [rejectId, setRejectId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
 
-  useEffect(() => {
-    const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
       const [completedOrdersRes, receiptsRes, settingsRes] = await Promise.all([
         supabase
           .from('orders')
@@ -118,9 +117,9 @@ export default function AdminPayments() {
       setDpPending(Object.values(pendingMap).filter(d => d.outstanding > 0).sort((a, b) => b.outstanding - a.outstanding))
 
       setLoading(false)
-    }
-    fetchAll()
   }, [])
+
+  useEffect(() => { fetchAll() }, [fetchAll])
 
   const saveAdminUpi = async () => {
     setSavingUpi(true)
@@ -129,22 +128,24 @@ export default function AdminPayments() {
   }
 
   const confirmReceipt = async (id: string) => {
-    const { data: user } = await supabase.auth.getUser()
+    const { data: userData } = await supabase.auth.getUser()
+    const receipt = receipts.find(r => r.id === id)
     await supabase.from('dp_commission_receipts').update({
       status: 'confirmed',
       confirmed_at: new Date().toISOString(),
-      confirmed_by: user.user?.id,
+      confirmed_by: userData.user?.id,
     }).eq('id', id)
-    setReceipts(prev => prev.map(r => r.id === id ? { ...r, status: 'confirmed' as const } : r))
-    // Recalculate pending
-    setDpPending(prev => {
-      const receipt = receipts.find(r => r.id === id)
-      if (!receipt) return prev
-      return prev.map(d => d.dp_id === receipt.dp_user_id
-        ? { ...d, confirmed_paid: d.confirmed_paid + Number(receipt.amount || 0), outstanding: Math.max(0, d.outstanding - Number(receipt.amount || 0)) }
-        : d
-      ).filter(d => d.outstanding > 0)
-    })
+    // Set DP back online after payment confirmed
+    if (receipt?.dp_user_id) {
+      await supabase.from('delivery_partners').update({ is_online: true }).eq('user_id', receipt.dp_user_id)
+      await supabase.from('notifications').insert({
+        user_id: receipt.dp_user_id,
+        title: 'Payment Confirmed!',
+        body: 'Your commission payment has been verified. Your account is now active and online.',
+        type: 'payment_confirmed',
+      })
+    }
+    fetchAll()
   }
 
   const rejectReceipt = async (id: string) => {
@@ -153,13 +154,19 @@ export default function AdminPayments() {
       status: 'rejected',
       reject_reason: rejectReason || 'Rejected by admin',
     }).eq('id', id)
-    // Force DP offline so they cannot receive new requests until commission is paid
+    // Force DP offline until commission is paid
     if (receipt?.dp_user_id) {
       await supabase.from('delivery_partners').update({ is_online: false }).eq('user_id', receipt.dp_user_id)
+      await supabase.from('notifications').insert({
+        user_id: receipt.dp_user_id,
+        title: 'Payment Rejected',
+        body: (rejectReason || 'Payment could not be verified') + '. Please pay outstanding commission to come back online.',
+        type: 'payment_rejected',
+      })
     }
-    setReceipts(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected' as const, reject_reason: rejectReason } : r))
     setRejectId(null)
     setRejectReason('')
+    fetchAll()
   }
 
   // Admin commission = only confirmed receipts total
@@ -443,9 +450,18 @@ export default function AdminPayments() {
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       {r.screenshot_url && (
-                        <a href={r.screenshot_url} target="_blank" rel="noreferrer" className="btn-ghost p-2 text-gray-400" title="View screenshot">
-                          <ExternalLink size={16} />
-                        </a>
+                        <div className="flex flex-col items-end gap-1.5">
+                          <a href={r.screenshot_url} target="_blank" rel="noreferrer">
+                            <img
+                              src={r.screenshot_url}
+                              alt="Payment screenshot"
+                              className="w-24 h-24 rounded-xl object-cover border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity"
+                            />
+                          </a>
+                          <a href={r.screenshot_url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 underline">
+                            View full
+                          </a>
+                        </div>
                       )}
                       {r.status === 'submitted' && (
                         <div className="flex gap-2">

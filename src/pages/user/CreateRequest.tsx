@@ -34,11 +34,12 @@ export default function CreateRequest() {
   const audioChunksRef = useRef<Blob[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const voiceUrlRef = useRef<string | null>(null)
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   const getLocation = () => {
-    if (!navigator.geolocation) { setError('Geolocation is not supported'); return }
+    if (!navigator.geolocation) { setError('Geolocation not supported'); return }
     setGpsLoading(true); setError(null)
     navigator.geolocation.getCurrentPosition(
       pos => { setGpsLat(pos.coords.latitude); setGpsLng(pos.coords.longitude); setGpsLoading(false) },
@@ -53,30 +54,62 @@ export default function CreateRequest() {
   }
 
   const startRecording = async () => {
+    setError(null)
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('Microphone not supported on this device or browser.')
+      return
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg'
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/ogg') ? 'audio/ogg' : 'audio/mp4'
       const mr = new MediaRecorder(stream, { mimeType })
-      mediaRecorderRef.current = mr; audioChunksRef.current = []
+      mediaRecorderRef.current = mr
+      audioChunksRef.current = []
       mr.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
-      mr.onstop = () => { setVoiceBlob(new Blob(audioChunksRef.current, { type: mimeType })); stream.getTracks().forEach(t => t.stop()) }
-      mr.start(); setRecording(true); setVoiceDuration(0)
+      mr.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: mimeType })
+        if (voiceUrlRef.current) URL.revokeObjectURL(voiceUrlRef.current)
+        voiceUrlRef.current = URL.createObjectURL(blob)
+        setVoiceBlob(blob)
+        stream.getTracks().forEach(t => t.stop())
+      }
+      mr.start()
+      setRecording(true)
+      setVoiceDuration(0)
       durationTimerRef.current = setInterval(() => setVoiceDuration(d => d + 1), 1000)
-    } catch { setError('Microphone access denied. Please allow microphone permission.') }
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError') {
+        setError('Microphone permission denied. Please allow microphone access and try again.')
+      } else {
+        setError('Could not start recording: ' + (err.message || err))
+      }
+    }
   }
 
   const stopRecording = () => {
-    mediaRecorderRef.current?.stop(); setRecording(false)
-    if (durationTimerRef.current) clearInterval(durationTimerRef.current)
+    mediaRecorderRef.current?.stop()
+    setRecording(false)
+    if (durationTimerRef.current) { clearInterval(durationTimerRef.current); durationTimerRef.current = null }
   }
 
   const playVoice = () => {
-    if (!voiceBlob) return
+    if (!voiceUrlRef.current) return
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; setPlayingVoice(false); return }
-    const audio = new Audio(URL.createObjectURL(voiceBlob))
-    audioRef.current = audio; setPlayingVoice(true)
+    const audio = new Audio(voiceUrlRef.current)
+    audioRef.current = audio
+    setPlayingVoice(true)
     audio.onended = () => { setPlayingVoice(false); audioRef.current = null }
-    audio.play()
+    audio.onerror = () => { setPlayingVoice(false); audioRef.current = null }
+    audio.play().catch(() => { setPlayingVoice(false); audioRef.current = null })
+  }
+
+  const clearVoice = () => {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    setPlayingVoice(false)
+    setVoiceBlob(null)
+    setVoiceDuration(0)
+    if (voiceUrlRef.current) { URL.revokeObjectURL(voiceUrlRef.current); voiceUrlRef.current = null }
   }
 
   const uploadToStorage = async (file: File | Blob, path: string): Promise<string | null> => {
@@ -88,6 +121,7 @@ export default function CreateRequest() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null); setLoading(true)
     try {
+      if (recording) stopRecording()
       const ts = Date.now()
       const photoUrl = photoFile ? await uploadToStorage(photoFile, `requests/${profile!.id}/${ts}-photo`) : null
       const voiceUrl = voiceBlob ? await uploadToStorage(voiceBlob, `requests/${profile!.id}/${ts}-voice.webm`) : null
@@ -115,7 +149,7 @@ export default function CreateRequest() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-100 bg-white/80 px-4 py-3 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
-        <button onClick={() => navigate('/app')} className="btn-ghost p-2"><ArrowLeft size={20} /></button>
+        <button type="button" onClick={() => navigate('/app')} className="btn-ghost p-2"><ArrowLeft size={20} /></button>
         <h1 className="text-lg font-bold text-gray-900 dark:text-white">New Delivery Request</h1>
       </div>
 
@@ -126,8 +160,8 @@ export default function CreateRequest() {
             <input className="input" value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Get groceries from local store" required />
           </div>
           <div>
-            <label className="label">Description</label>
-            <textarea className="input min-h-24 resize-none" value={form.description} onChange={e => set('description', e.target.value)} placeholder="Describe what you need in detail..." />
+            <label className="label">Description (one item per line)</label>
+            <textarea className="input min-h-24 resize-none" value={form.description} onChange={e => set('description', e.target.value)} placeholder={"e.g.\nDolo 650\nPain killer\nAll items"} />
           </div>
 
           <input ref={photoInputRef} type="file" className="hidden" accept="image/*" capture="environment" onChange={handlePhotoSelect} />
@@ -146,17 +180,17 @@ export default function CreateRequest() {
                 {playingVoice ? <Pause size={14} /> : <Play size={14} />}
               </button>
               <div className="flex-1">
-                <p className="text-sm font-medium" style={{ color: '#556d34' }}>Voice Note</p>
-                <p className="text-xs text-gray-500">{fmtDur(voiceDuration)}</p>
+                <p className="text-sm font-medium" style={{ color: '#556d34' }}>Voice Note ({fmtDur(voiceDuration)})</p>
+                <p className="text-xs text-gray-500">Tap to play</p>
               </div>
-              <button type="button" onClick={() => { setVoiceBlob(null); setVoiceDuration(0) }} className="text-gray-400"><X size={16} /></button>
+              <button type="button" onClick={clearVoice} className="text-gray-400"><X size={16} /></button>
             </div>
           ) : recording ? (
             <button type="button" onClick={stopRecording} className="flex w-full items-center justify-center gap-2 rounded-xl bg-error-500 py-3 text-sm font-semibold text-white">
               <MicOff size={18} /> Stop Recording ({fmtDur(voiceDuration)})
             </button>
           ) : (
-            <button type="button" onClick={startRecording} className="btn-secondary w-full"><Mic size={18} /> Voice Note</button>
+            <button type="button" onClick={startRecording} className="btn-secondary w-full"><Mic size={18} /> Add Voice Note</button>
           )}
         </div>
 

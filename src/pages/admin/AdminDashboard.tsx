@@ -26,7 +26,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [users, dps, dpsPending, dpsApproved, dpsOnline, reqs, orders, payments, wallets] = await Promise.all([
+      const [users, dps, dpsPending, dpsApproved, dpsOnline, reqs, orders, payments] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'user'),
         supabase.from('delivery_partners').select('id', { count: 'exact', head: true }),
         supabase.from('delivery_partners').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
@@ -35,7 +35,6 @@ export default function AdminDashboard() {
         supabase.from('requests').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 86400000).toISOString()),
         supabase.from('orders').select('*'),
         supabase.from('commission_payments').select('amount'),
-        supabase.from('wallets').select('commission_due, outstanding_balance'),
       ])
 
       const allOrders = orders.data || []
@@ -44,8 +43,12 @@ export default function AdminDashboard() {
       const liveOrders = allOrders.filter((o: any) => !['completed', 'cancelled'].includes(o.status)).length
       const completedOrders = allOrders.filter((o: any) => o.status === 'completed').length
       const cancelledOrders = allOrders.filter((o: any) => o.status === 'cancelled').length
-      const commissionCollected = (payments.data || []).reduce((sum: number, p: any) => sum + p.amount, 0)
-      const pendingCommission = (wallets.data || []).reduce((sum: number, w: any) => sum + (w.outstanding_balance || 0), 0)
+      const commissionCollected = (payments.data || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
+      // Pending = total commission earned from completed orders minus what's already been confirmed/paid
+      const totalCommissionEarned = allOrders
+        .filter((o: any) => o.status === 'completed')
+        .reduce((sum: number, o: any) => sum + (o.commission_amount || 0), 0)
+      const pendingCommission = Math.max(0, totalCommissionEarned - commissionCollected)
 
       setStats({
         totalUsers: users.count || 0,
@@ -71,7 +74,7 @@ export default function AdminDashboard() {
       const dpIds = [...new Set(allOrders.map((o: any) => o.dp_id))]
       const dpStats = dpIds.map((id: string) => {
         const dpOrders = allOrders.filter((o: any) => o.dp_id === id && o.status === 'completed')
-        return { dp_id: id, deliveries: dpOrders.length, earnings: dpOrders.reduce((s: number, o: any) => s + o.dp_earnings, 0) }
+        return { dp_id: id, deliveries: dpOrders.length, earnings: dpOrders.reduce((s: number, o: any) => s + (o.dp_earnings || 0), 0) }
       }).sort((a, b) => b.deliveries - a.deliveries).slice(0, 5)
 
       if (dpStats.length > 0) {
@@ -90,8 +93,6 @@ export default function AdminDashboard() {
 
   const exportReport = () => {
     const wb = XLSX.utils.book_new()
-
-    // Sheet 1: Summary
     const summaryRows = [
       { Metric: 'Total Users', Value: stats.totalUsers },
       { Metric: 'Total Partners', Value: stats.totalDps },
@@ -107,25 +108,18 @@ export default function AdminDashboard() {
       { Metric: 'Pending Commission', Value: stats.pendingCommission },
     ]
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Summary')
-
-    // Sheet 2: Top DPs
     if (topDps.length > 0) {
-      const dpRows = topDps.map(d => ({ Name: d.name, Deliveries: d.deliveries, 'Total Earnings': d.earnings }))
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dpRows), 'Top Partners')
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(topDps.map(d => ({ Name: d.name, Deliveries: d.deliveries, 'Total Earnings': d.earnings }))), 'Top Partners')
     }
-
-    // Sheet 3: Recent completed orders
     if (recentOrders.length > 0) {
-      const orderRows = recentOrders.map(o => ({
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recentOrders.map(o => ({
         Summary: o.items_summary || 'Delivery',
         'Delivery Charge': o.delivery_charge,
         'Commission Amount': o.commission_amount,
         'DP Earnings': o.dp_earnings,
         Date: formatTime(o.created_at),
-      }))
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(orderRows), 'Recent Orders')
+      }))), 'Recent Orders')
     }
-
     XLSX.writeFile(wb, `pingget-dashboard-${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
@@ -149,7 +143,6 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      {/* Stat cards */}
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         {statCards.map((s, i) => {
           const Icon = s.icon
@@ -165,7 +158,6 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* Commission summary */}
       <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="card p-5">
           <div className="flex items-center gap-2 text-success-600 dark:text-success-400">
@@ -180,11 +172,13 @@ export default function AdminDashboard() {
             <span className="text-sm font-medium">Pending Commission</span>
           </div>
           <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.pendingCommission)}</p>
+          {stats.pendingCommission === 0 && stats.completedOrders > 0 && (
+            <p className="mt-1 text-xs text-success-600">All collected!</p>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* Top DPs */}
         <div className="card p-5">
           <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-white">Top Delivery Partners</h3>
           {topDps.length === 0 ? (
@@ -204,14 +198,13 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* Recent completed orders */}
         <div className="card p-5">
           <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-white">Recent Completed Orders</h3>
           {recentOrders.length === 0 ? (
             <p className="text-sm text-gray-400">No completed orders yet.</p>
           ) : (
             <div className="space-y-2">
-              {recentOrders.map((o, i) => (
+              {recentOrders.map((o) => (
                 <div key={o.id} className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{o.items_summary || 'Delivery'}</p>

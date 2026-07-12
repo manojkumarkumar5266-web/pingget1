@@ -105,8 +105,8 @@ export default function AdminDps() {
           {dps.map(dp => (
             <div
               key={dp.id}
-              onClick={() => filter === 'pending' ? setSelected(dp) : undefined}
-              className={`card p-4 ${filter === 'pending' ? 'cursor-pointer active:bg-gray-50 dark:active:bg-gray-800' : ''}`}
+              onClick={() => setSelected(dp)}
+              className='card p-4 cursor-pointer active:bg-gray-50 dark:active:bg-gray-800'
             >
               <div className="flex items-center gap-3">
                 <Avatar url={dp.profile?.photo_url} name={dp.profile?.full_name || 'DP'} size={48} />
@@ -114,6 +114,11 @@ export default function AdminDps() {
                   <p className="font-semibold text-gray-900 dark:text-white truncate">{dp.profile?.full_name}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{dp.profile?.phone}</p>
                   <p className="text-xs text-gray-400">{dp.vehicle_type || 'Vehicle not set'} • {formatTime(dp.created_at)}</p>
+                  {dp.status === 'approved' && (
+                    <p className="text-xs text-gray-400">
+                      Rating: {dp.rating_count > 0 ? `${dp.rating_avg} ★ (${dp.rating_count} reviews)` : 'No ratings yet'}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`badge ${
@@ -121,7 +126,7 @@ export default function AdminDps() {
                     dp.status === 'pending' ? 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300' :
                     'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300'
                   }`}>{dp.status}</span>
-                  {filter === 'pending' && <ChevronRight size={16} className="text-gray-400" />}
+                  <ChevronRight size={16} className='text-gray-400' />
                 </div>
               </div>
             </div>
@@ -163,7 +168,7 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
             <Avatar url={dp.profile?.photo_url} name={dp.profile?.full_name || 'DP'} size={72} />
             <div>
               <p className="text-xl font-bold text-gray-900 dark:text-white">{dp.profile?.full_name}</p>
-              <span className="badge bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300 mt-1">Pending Approval</span>
+              <span className={`badge mt-1 ${dp.status==='approved' ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' : dp.status==='rejected' ? 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300' : 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300'}`}>{dp.status === 'approved' ? 'Approved' : dp.status === 'rejected' ? 'Rejected' : 'Pending Approval'}</span>
             </div>
           </div>
 
@@ -219,21 +224,23 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
             </Section>
           </div>
 
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={onReject}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-error-300 bg-error-50 py-3 text-sm font-semibold text-error-700 transition-all active:scale-95 dark:border-error-700 dark:bg-error-900/30 dark:text-error-300"
-            >
-              <X size={18} /> Reject
-            </button>
-            <button
-              onClick={onApprove}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-all active:scale-95"
-              style={{ backgroundColor: '#22c55e' }}
-            >
-              <Check size={18} /> Approve
-            </button>
-          </div>
+          {dp.status === 'pending' && (
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={onReject}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-error-300 bg-error-50 py-3 text-sm font-semibold text-error-700 transition-all active:scale-95 dark:border-error-700 dark:bg-error-900/30 dark:text-error-300"
+              >
+                <X size={18} /> Reject
+              </button>
+              <button
+                onClick={onApprove}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-all active:scale-95"
+                style={{ backgroundColor: '#22c55e' }}
+              >
+                <Check size={18} /> Approve
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
