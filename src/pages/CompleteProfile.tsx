@@ -1,12 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import { MapPin } from 'lucide-react'
-import { Geolocation } from '@capacitor/geolocation'
-import { useEffect } from 'react'
-
 
 export default function CompleteProfile() {
   const { profile, user, refreshProfile } = useAuth()
@@ -22,27 +19,29 @@ export default function CompleteProfile() {
     if (profile?.city) setCity(profile.city)
   }, [profile])
 
-  const getLocation = async () => {
-    try {
-      setGpsLoading(true)
-      setError(null)
-      const permission = await Geolocation.requestPermissions()
-      if (permission.location !== 'granted') {
-        setError('Location permission denied')
-        setGpsLoading(false)
-        return
-      }
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 15000,
-      })
-      setGpsLat(position.coords.latitude)
-      setGpsLng(position.coords.longitude)
-    } catch (err) {
-      setError('Unable to get your location.')
-    } finally {
-      setGpsLoading(false)
+  const getLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser.')
+      return
     }
+    setGpsLoading(true)
+    setError(null)
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setGpsLat(pos.coords.latitude)
+        setGpsLng(pos.coords.longitude)
+        setGpsLoading(false)
+      },
+      err => {
+        let msg = 'Unable to get your location.'
+        if (err.code === 1) msg = 'Location permission denied. Please allow location access in your browser settings.'
+        else if (err.code === 2) msg = 'Location unavailable. Check your GPS or network connection.'
+        else if (err.code === 3) msg = 'Location request timed out. Please try again.'
+        setError(msg)
+        setGpsLoading(false)
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+    )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

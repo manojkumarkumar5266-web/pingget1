@@ -1,25 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Capacitor } from '@capacitor/core'
 import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 import { User, Phone, Chrome as Home, MapPin, Mail, Lock, Eye, EyeOff, Bike, CircleCheck as CheckCircle, Circle as XCircle, ArrowRight, KeyRound, ShieldAlert } from 'lucide-react'
 
-type Mode =
-  | 'main'
-  | 'signup'
-  | 'signup_success'
-  | 'forgot'
+type Mode = 'main' | 'signup' | 'signup_success' | 'forgot'
 type SignInRole = 'user' | 'dp'
 type PincodeStatus = { served: boolean; area?: string; city?: string } | null
 
 export default function AuthScreen() {
-  const {
-  signInWithEmail,
-  signUpWithEmail,
-} = useAuth()
+  const { signInWithEmail, signUpWithEmail } = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<Mode>('main')
@@ -28,11 +20,9 @@ export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
-  // Sign-in fields
   const [signInEmail, setSignInEmail] = useState('')
   const [signInPassword, setSignInPassword] = useState('')
 
-  // Sign-up fields
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
@@ -43,112 +33,58 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  // Forgot password
   const [resetEmail, setResetEmail] = useState('')
   const [resetSent, setResetSent] = useState(false)
 
-  
-
-  // Pincode validation
   useEffect(() => {
-    if (pincode.length !== 6) {
-      setPincodeStatus(null)
-      return
-    }
+    if (pincode.length !== 6) { setPincodeStatus(null); return }
     const timer = setTimeout(async () => {
       setPincodeChecking(true)
-      const { data: pins } = await supabase
-        .from('pincodes')
-        .select('area_name, city_id')
-        .eq('pincode', pincode)
-        .eq('is_active', true)
-        .limit(1)
+      const { data: pins } = await supabase.from('pincodes').select('area_name, city_id').eq('pincode', pincode).eq('is_active', true).limit(1)
       const pin = pins?.[0]
-      if (!pin) {
-        setPincodeChecking(false)
-        setPincodeStatus({ served: false })
-        return
-      }
-      const { data: city } = await supabase
-        .from('cities')
-        .select('name, is_active')
-        .eq('id', pin.city_id)
-        .maybeSingle()
+      if (!pin) { setPincodeChecking(false); setPincodeStatus({ served: false }); return }
+      const { data: city } = await supabase.from('cities').select('name, is_active').eq('id', pin.city_id).maybeSingle()
       setPincodeChecking(false)
-      if (city?.is_active) {
-        setPincodeStatus({ served: true, area: pin.area_name || '', city: city.name })
-      } else {
-        setPincodeStatus({ served: false })
-      }
+      if (city?.is_active) setPincodeStatus({ served: true, area: pin.area_name || '', city: city.name })
+      else setPincodeStatus({ served: false })
     }, 500)
     return () => clearTimeout(timer)
   }, [pincode])
 
   const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    if (!signInEmail.trim() || !signInPassword) {
-      setError('Please enter your email and password')
-      return
-    }
+    e.preventDefault(); setError(null)
+    if (!signInEmail.trim() || !signInPassword) { setError('Please enter your email and password'); return }
     setLoading(true)
     const { error: signInError } = await signInWithEmail(signInEmail.trim(), signInPassword)
-    if (signInError) {
-      setError(signInError)
-      setLoading(false)
-      return
-    }
-
-    // After sign-in, check the profile role matches the selected toggle
+    if (signInError) { setError(signInError); setLoading(false); return }
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) {
-      setError('Authentication failed. Please try again.')
-      setLoading(false)
-      return
-    }
-
-    const { data: userProfile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .maybeSingle()
-
-    if (!userProfile) {
-      setError('Account not found. Please sign up first.')
+    if (!session?.user) { setError('Authentication failed. Please try again.'); setLoading(false); return }
+    const { data: userProfile } = await supabase.from('profiles').select('role, status').eq('id', session.user.id).maybeSingle()
+    if (!userProfile) { setError('Account not found. Please sign up first.'); await supabase.auth.signOut(); setLoading(false); return }
+    if (userProfile.status === 'banned' || userProfile.status === 'suspended') {
       await supabase.auth.signOut()
-      setLoading(false)
-      return
+      setError(`Your account is ${userProfile.status}. Please contact support.`)
+      setLoading(false); return
     }
-
-    // Role mismatch check — single user can have both user and DP creds
     if (signInRole === 'dp' && userProfile.role !== 'dp') {
       await supabase.auth.signOut()
-      setError('You don\'t have a Delivery Partner account. Please select "User" to sign in, or sign up as a Delivery Partner.')
-      setLoading(false)
-      return
+      setError("You don't have a Delivery Partner account. Please select \"User\" to sign in, or sign up as a Delivery Partner.")
+      setLoading(false); return
     }
     if (signInRole === 'user' && userProfile.role === 'dp') {
       await supabase.auth.signOut()
       setError('This account is a Delivery Partner. Please select "DP" to sign in to your DP dashboard.')
-      setLoading(false)
-      return
+      setLoading(false); return
     }
-
-    // Role matches — redirect happens via onAuthStateChange → App.tsx
   }
 
   const checkPhoneUnique = async (phoneValue: string): Promise<boolean> => {
-    const { count } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('phone', phoneValue)
+    const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('phone', phoneValue)
     return (count ?? 0) === 0
   }
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-
+    e.preventDefault(); setError(null)
     if (!fullName.trim()) { setError('Full name is required'); return }
     const phoneDigits = phone.replace(/\D/g, '')
     if (phoneDigits.length < 10) { setError('Please enter a valid 10-digit mobile number'); return }
@@ -160,99 +96,81 @@ export default function AuthScreen() {
     if (password !== confirmPassword) { setError('Passwords do not match'); return }
 
     setLoading(true)
-
     const isPhoneUnique = await checkPhoneUnique(phoneDigits)
-    if (!isPhoneUnique) {
-      setError('This mobile number is already registered. Please use a different number.')
-      setLoading(false)
-      return
-    }
+    if (!isPhoneUnique) { setError('This mobile number is already registered.'); setLoading(false); return }
 
     const { error: signUpError } = await signUpWithEmail(email.trim(), password)
-    if (signUpError) {
-      setError(signUpError)
-      setLoading(false)
-      return
+    if (signUpError) { setError(signUpError); setLoading(false); return }
+
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    if (!session?.user) { setError(sessionError?.message || 'Failed to create account.'); setLoading(false); return }
+
+    // Get city from pincode
+    const { data: pinData } = await supabase.from('pincodes').select('city_id').eq('pincode', pincode).limit(1).maybeSingle()
+    let cityName: string | null = null
+    if (pinData?.city_id) {
+      const { data: cityData } = await supabase.from('cities').select('name').eq('id', pinData.city_id).maybeSingle()
+      cityName = cityData?.name || null
     }
 
-    const {
-  data: { session },
-  error: sessionError,
-} = await supabase.auth.getSession()
-
-console.log("SESSION:", session)
-console.log("SESSION ERROR:", sessionError)
-
-if (!session?.user) {
-  setError(
-    sessionError?.message ||
-      "No session created. Check your email confirmation settings."
-  )
-  setLoading(false)
-  return
-}
-
     const { error: profileError } = await supabase.from('profiles').insert({
-      id: session.user.id,
-      role: 'user',
-      full_name: fullName.trim(),
-      phone: phoneDigits,
-      address: address.trim(),
-      pincode: pincode,
-      status: 'active',
+      id: session.user.id, role: 'user', full_name: fullName.trim(),
+      phone: phoneDigits, address: address.trim(), pincode, city: cityName, status: 'active',
     })
 
     if (profileError) {
-      if (profileError.message.includes('profiles_phone_unique')) {
-        setError('This mobile number is already registered. Please use a different number.')
-      } else if (profileError.message.includes('duplicate')) {
-        setError('An account with this email already exists. Please sign in instead.')
-      } else {
-        setError(profileError.message)
-      }
+      if (profileError.message.includes('profiles_phone_unique')) setError('This mobile number is already registered.')
+      else if (profileError.message.includes('duplicate')) setError('An account with this email already exists.')
+      else setError(profileError.message)
       await supabase.auth.signOut()
-      setLoading(false)
-      return
+      setLoading(false); return
     }
+
+    // Send welcome email via Resend
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: { to: email.trim(), type: 'welcome', data: { name: fullName.trim(), role: 'user' } },
+      })
+    } catch { /* best effort */ }
 
     setLoading(false)
     setMode('signup_success')
   }
 
   const handleForgotPassword = async (e: React.FormEvent) => {
-  e.preventDefault()
+    e.preventDefault(); setError(null)
+    if (!resetEmail.trim()) { setError('Please enter your email address'); return }
+    setLoading(true)
 
-  setError(null)
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        resetEmail.trim(),
+        { redirectTo: `${window.location.origin}/reset-password` }
+      )
 
-  if (!resetEmail.trim()) {
-    setError('Please enter your email address')
-    return
-  }
-
-  setLoading(true)
-
-  const redirectTo =
-    'https://pingget1-d6cr.vercel.app/reset-password'
-
-  const { error: resetError } =
-    await supabase.auth.resetPasswordForEmail(
-      resetEmail.trim(),
-      {
-        redirectTo,
+      if (resetError) {
+        // If Supabase email fails, try sending via Resend edge function
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              to: resetEmail.trim(),
+              type: 'password_reset',
+              data: {
+                name: '',
+                reset_url: `${window.location.origin}/reset-password`,
+              },
+            },
+          })
+        } catch { /* fallback also failed */ }
       }
-    )
 
-  setLoading(false)
-
-  if (resetError) {
-    setError(resetError.message)
-    return
+      setResetSent(true)
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset link')
+    }
+    setLoading(false)
   }
 
-  setResetSent(true)
-}
-
-  // ---- SIGNUP SUCCESS ----
   if (mode === 'signup_success') {
     return (
       <AuthLayout showBrand={false}>
@@ -267,12 +185,7 @@ if (!session?.user) {
             Your account has been created successfully. You can now sign in.
           </p>
           <button
-            onClick={() => {
-              setMode('main')
-              setFullName(''); setPhone(''); setAddress(''); setPincode('')
-              setEmail(''); setPassword(''); setConfirmPassword('')
-              setSignInEmail(email)
-            }}
+            onClick={() => { setMode('main'); setFullName(''); setPhone(''); setAddress(''); setPincode(''); setEmail(''); setPassword(''); setConfirmPassword(''); setSignInEmail(email) }}
             className="btn-primary mt-5 w-full"
           >
             Continue to Sign In
@@ -282,14 +195,11 @@ if (!session?.user) {
     )
   }
 
-  // ---- FORGOT PASSWORD ----
   if (mode === 'forgot') {
     return (
       <AuthLayout showBrand={false}>
         <div className="card p-6">
-          <button onClick={() => { setMode('main'); setError(null); setResetSent(false) }} className="text-sm text-primary-600 dark:text-primary-400 mb-4">
-            ← Back to Sign In
-          </button>
+          <button onClick={() => { setMode('main'); setError(null); setResetSent(false) }} className="text-sm text-primary-600 dark:text-primary-400 mb-4">← Back to Sign In</button>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Forgot Password</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Enter your email and we&apos;ll send you a reset link.</p>
           {resetSent ? (
@@ -312,19 +222,15 @@ if (!session?.user) {
       </AuthLayout>
     )
   }
-         
 
-  // ---- SIGN UP ----
   if (mode === 'signup') {
     return (
       <AuthLayout showBrand={false}>
         <div className="card p-6">
-          <button onClick={() => { setMode('main'); setError(null) }} className="text-sm text-primary-600 dark:text-primary-400 mb-4">
-            ← Back
-          </button>
+          <button onClick={() => { setMode('main'); setError(null) }} className="text-sm text-primary-600 dark:text-primary-400 mb-4">← Back</button>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Sign Up as User</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Fill in your details to get started</p>
-          <form onSubmit={handleSignUp} className="space-y-4">
+          <form onSubmit={handleSignUp} className="space-y-3">
             <div>
               <label className="label flex items-center gap-1.5"><User size={14} /> Full Name *</label>
               <input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required />
@@ -375,44 +281,28 @@ if (!session?.user) {
     )
   }
 
-  // ---- MAIN: Sign In with User/DP toggle ----
   return (
     <AuthLayout>
       <div className="card p-6">
         <h2 className="text-center text-xl font-bold text-gray-900 dark:text-white mb-1">Sign In</h2>
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-5">Select your role and enter your credentials</p>
 
-        {/* User / DP Toggle */}
         <div className="mb-5 flex rounded-xl border border-gray-200 p-1 dark:border-gray-700">
-          <button
-            type="button"
-            onClick={() => { setSignInRole('user'); setError(null) }}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${
-              signInRole === 'user'
-                ? 'text-white'
-                : 'text-gray-500 dark:text-gray-400'
-            }`}
-            style={signInRole === 'user' ? { backgroundColor: '#808000' } : {}}
-          >
+          <button type="button" onClick={() => { setSignInRole('user'); setError(null) }}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${signInRole === 'user' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
+            style={signInRole === 'user' ? { backgroundColor: '#808000' } : {}}>
             <User size={16} /> User
           </button>
-          <button
-            type="button"
-            onClick={() => { setSignInRole('dp'); setError(null) }}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${
-              signInRole === 'dp'
-                ? 'text-white'
-                : 'text-gray-500 dark:text-gray-400'
-            }`}
-            style={signInRole === 'dp' ? { backgroundColor: '#808000' } : {}}
-          >
+          <button type="button" onClick={() => { setSignInRole('dp'); setError(null) }}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${signInRole === 'dp' ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
+            style={signInRole === 'dp' ? { backgroundColor: '#808000' } : {}}>
             <Bike size={16} /> Delivery Partner
           </button>
         </div>
 
         {error && <ErrorBanner message={error} />}
 
-        <form onSubmit={handleSignIn} className="space-y-4">
+        <form onSubmit={handleSignIn} className="space-y-3">
           <div>
             <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
             <input type="email" className="input" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" required />
@@ -426,33 +316,21 @@ if (!session?.user) {
               </button>
             </div>
           </div>
-
           <div className="text-right">
-            <button type="button" onClick={() => { setMode('forgot'); setError(null); setResetSent(false) }} className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
-              Forgot password?
-            </button>
+            <button type="button" onClick={() => { setMode('forgot'); setError(null); setResetSent(false) }} className="text-xs text-primary-600 dark:text-primary-400 hover:underline">Forgot password?</button>
           </div>
-
           <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? 'Signing in...' : `Sign In as ${signInRole === 'dp' ? 'Delivery Partner' : 'User'}`}
           </button>
         </form>
 
-        <div className="relative my-5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-white dark:bg-gray-900 px-2 text-gray-500">or</span>
-          </div>
+        <div className="relative my-3">
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200 dark:border-gray-700"></div></div>
+          <div className="relative flex justify-center text-xs"><span className="bg-white dark:bg-gray-900 px-2 text-gray-500">or</span></div>
         </div>
 
-        <button onClick={() => { setMode('signup'); setError(null) }} className="btn-secondary w-full mb-3">
-          <User size={18} /> Sign Up as User
-        </button>
-        <button onClick={() => navigate('/dp-signup')} className="btn-secondary w-full">
-          <Bike size={18} /> Sign Up as Delivery Partner
-        </button>
+        <button onClick={() => { setMode('signup'); setError(null) }} className="btn-secondary w-full mb-3"><User size={18} /> Sign Up as User</button>
+        <button onClick={() => navigate('/dp-signup')} className="btn-secondary w-full"><Bike size={18} /> Sign Up as Delivery Partner</button>
 
         {signInRole === 'dp' && (
           <div className="mt-4 flex items-start gap-2 rounded-xl bg-accent-50 p-3 text-xs text-accent-700 dark:bg-accent-950/40 dark:text-accent-300">

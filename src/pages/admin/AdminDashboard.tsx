@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatCurrency, formatTime } from '../../lib/utils'
-import { Users, Bike, Package, IndianRupee, TrendingUp, Clock, CheckCircle, XCircle, Activity, Download } from 'lucide-react'
+import { Users, Bike, Package, IndianRupee, TrendingUp, Clock, CheckCircle, XCircle, Activity, Download, Bell, UserPlus, Bike as BikeIcon, CreditCard, X } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 type Stats = {
@@ -19,14 +19,33 @@ type Stats = {
   pendingCommission: number
 }
 
+type AdminNotification = {
+  id: string
+  type: string
+  title: string
+  body: string | null
+  related_id: string | null
+  is_read: boolean
+  created_at: string
+}
+
+const NOTIF_ICONS: Record<string, any> = {
+  new_user: UserPlus,
+  new_dp: BikeIcon,
+  payment: CreditCard,
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [topDps, setTopDps] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<AdminNotification[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [showNotifPanel, setShowNotifPanel] = useState(false)
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [users, dps, dpsPending, dpsApproved, dpsOnline, reqs, orders, payments] = await Promise.all([
+      const [users, dps, dpsPending, dpsApproved, dpsOnline, reqs, orders, payments, notifs] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'user'),
         supabase.from('delivery_partners').select('id', { count: 'exact', head: true }),
         supabase.from('delivery_partners').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
@@ -35,6 +54,7 @@ export default function AdminDashboard() {
         supabase.from('requests').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 86400000).toISOString()),
         supabase.from('orders').select('*'),
         supabase.from('commission_payments').select('amount'),
+        supabase.from('admin_notifications').select('*').order('created_at', { ascending: false }).limit(50),
       ])
 
       const allOrders = orders.data || []
@@ -44,25 +64,17 @@ export default function AdminDashboard() {
       const completedOrders = allOrders.filter((o: any) => o.status === 'completed').length
       const cancelledOrders = allOrders.filter((o: any) => o.status === 'cancelled').length
       const commissionCollected = (payments.data || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
-      // Pending = total commission earned from completed orders minus what's already been confirmed/paid
       const totalCommissionEarned = allOrders
         .filter((o: any) => o.status === 'completed')
         .reduce((sum: number, o: any) => sum + (o.commission_amount || 0), 0)
       const pendingCommission = Math.max(0, totalCommissionEarned - commissionCollected)
 
       setStats({
-        totalUsers: users.count || 0,
-        totalDps: dps.count || 0,
-        pendingDps: dpsPending.count || 0,
-        approvedDps: dpsApproved.count || 0,
-        onlineDps: dpsOnline.count || 0,
-        todayRequests: reqs.count || 0,
-        todayDeliveries,
-        liveOrders,
-        completedOrders,
-        cancelledOrders,
-        commissionCollected,
-        pendingCommission,
+        totalUsers: users.count || 0, totalDps: dps.count || 0,
+        pendingDps: dpsPending.count || 0, approvedDps: dpsApproved.count || 0,
+        onlineDps: dpsOnline.count || 0, todayRequests: reqs.count || 0,
+        todayDeliveries, liveOrders, completedOrders, cancelledOrders,
+        commissionCollected, pendingCommission,
       })
 
       const recent = allOrders
@@ -79,15 +91,38 @@ export default function AdminDashboard() {
 
       if (dpStats.length > 0) {
         const { data: dpProfiles } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', dpStats.map(d => d.dp_id))
+          .from('profiles').select('id, full_name').in('id', dpStats.map(d => d.dp_id))
         const profileMap = new Map((dpProfiles || []).map((p: any) => [p.id, p.full_name]))
         setTopDps(dpStats.map(d => ({ ...d, name: profileMap.get(d.dp_id) || 'Unknown' })))
       }
+
+      const notifData = (notifs.data || []) as AdminNotification[]
+      setNotifications(notifData)
+      setUnreadCount(notifData.filter(n => !n.is_read).length)
     }
     fetchAll()
+
+    const channel = supabase.channel('admin-notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' },
+        (payload: any) => {
+          setNotifications(prev => [payload.new as AdminNotification, ...prev])
+          setUnreadCount(c => c + 1)
+        })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [])
+
+  const markAllRead = async () => {
+    await supabase.from('admin_notifications').update({ is_read: true }).eq('is_read', false)
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+    setUnreadCount(0)
+  }
+
+  const markRead = async (id: string) => {
+    await supabase.from('admin_notifications').update({ is_read: true }).eq('id', id)
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
+    setUnreadCount(c => Math.max(0, c - 1))
+  }
 
   if (!stats) return <div className="p-8 text-center text-sm text-gray-400">Loading dashboard...</div>
 
@@ -138,9 +173,19 @@ export default function AdminDashboard() {
     <div className="p-4 md:p-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-        <button onClick={exportReport} className="btn-secondary flex items-center gap-1.5 text-sm">
-          <Download size={16} /> Export Report
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowNotifPanel(true)} className="relative btn-secondary flex items-center gap-1.5 text-sm">
+            <Bell size={16} /> Notifications
+            {unreadCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-error-500 px-1 text-[10px] font-bold text-white animate-pulse">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </button>
+          <button onClick={exportReport} className="btn-secondary flex items-center gap-1.5 text-sm">
+            <Download size={16} /> Export
+          </button>
+        </div>
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -217,6 +262,55 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {showNotifPanel && (
+        <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowNotifPanel(false)}>
+          <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white dark:bg-gray-900 shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-4 dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex items-center gap-2">
+                <Bell size={20} className="text-primary-600" />
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Notifications</h2>
+                {unreadCount > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-error-500 px-1.5 text-[10px] font-bold text-white">{unreadCount}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button onClick={markAllRead} className="text-xs font-semibold text-primary-600 hover:text-primary-700">Mark all read</button>
+                )}
+                <button onClick={() => setShowNotifPanel(false)} className="btn-ghost p-1.5"><X size={18} /></button>
+              </div>
+            </div>
+            <div className="px-5 py-3">
+              {notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                  <Bell size={40} className="text-gray-300" />
+                  <p className="text-sm text-gray-400">No notifications yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {notifications.map(n => {
+                    const Icon = NOTIF_ICONS[n.type] || Bell
+                    return (
+                      <div key={n.id} onClick={() => markRead(n.id)} className={`flex gap-3 rounded-xl border p-3 cursor-pointer transition-all ${n.is_read ? 'border-gray-100 dark:border-gray-800' : 'border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-900/20'}`}>
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${n.is_read ? 'bg-gray-100 dark:bg-gray-800' : 'bg-primary-100 dark:bg-primary-900/40'}`}>
+                          <Icon size={16} className={n.is_read ? 'text-gray-400' : 'text-primary-600'} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-semibold ${n.is_read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>{n.title}</p>
+                          {n.body && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{n.body}</p>}
+                          <p className="text-[10px] text-gray-400 mt-1">{formatTime(n.created_at)}</p>
+                        </div>
+                        {!n.is_read && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-error-500" />}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

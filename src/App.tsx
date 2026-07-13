@@ -16,7 +16,6 @@ export default function App() {
   const { session, profile, loading, passwordRecovery } = useAuth()
   const location = useLocation()
 
-  // Admin setup route — accessible regardless of auth state
   if (location.pathname === '/setup-admin') {
     return (
       <Routes>
@@ -25,7 +24,6 @@ export default function App() {
     )
   }
 
-  // Admin login route — accessible regardless of auth state
   if (location.pathname === '/admin/login') {
     return (
       <Routes>
@@ -34,7 +32,6 @@ export default function App() {
     )
   }
 
-  // DP signup route — accessible regardless of auth state
   if (location.pathname === '/dp-signup') {
     return (
       <Routes>
@@ -45,7 +42,6 @@ export default function App() {
 
   if (loading) return <FullScreenLoader />
 
-  // Password recovery — show reset form regardless of profile state
   if (passwordRecovery || location.pathname === "/reset-password") {
   return (
     <Routes>
@@ -53,7 +49,7 @@ export default function App() {
       <Route path="*" element={<Navigate to="/reset-password" replace />} />
     </Routes>
   )
-}
+  }
 
   if (!session) {
     return (
@@ -95,7 +91,6 @@ export default function App() {
   return (
     <Routes>
       <Route path="/app/*" element={<UserApp />} />
-      <Route path="/complete-profile" element={<CompleteProfile />} />
       <Route path="*" element={<Navigate to="/app" replace />} />
     </Routes>
   )

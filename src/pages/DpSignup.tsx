@@ -221,7 +221,6 @@ export default function DpSignup() {
     if (!resetEmail.trim()) { setError('Please enter your email address'); return }
     setLoading(true)
 
-    // Validate email exists in the database before sending reset link
     const { data: checkData, error: checkError } = await supabase.functions.invoke('check-email', {
       body: { email: resetEmail.trim() },
     })
@@ -235,8 +234,19 @@ export default function DpSignup() {
       resetEmail.trim(),
       { redirectTo: window.location.origin + '/reset-password' }
     )
+    if (resetError) {
+      // Fallback: try via Resend edge function
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            to: resetEmail.trim(),
+            type: 'password_reset',
+            data: { name: '', reset_url: `${window.location.origin}/reset-password` },
+          },
+        })
+      } catch { /* fallback also failed */ }
+    }
     setLoading(false)
-    if (resetError) { setError(resetError.message); return }
     setResetSent(true)
   }
 
@@ -276,7 +286,7 @@ export default function DpSignup() {
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Delivery Partner Sign In</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Sign in with your email and password</p>
           {error && <ErrorBanner message={error} />}
-          <form onSubmit={handleDpSignIn} className="space-y-4">
+          <form onSubmit={handleDpSignIn} className="space-y-3">
             <div>
               <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
               <input type="email" className="input" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" required />
@@ -360,7 +370,7 @@ export default function DpSignup() {
           <>
             <h2 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Basic Information</h2>
             <p className="mb-5 text-sm text-gray-500">All fields are required</p>
-            <form onSubmit={handleStep1} className="space-y-4">
+            <form onSubmit={handleStep1} className="space-y-3">
               <div><label className="label flex items-center gap-1.5"><User size={14} /> Full Name *</label><input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required /></div>
               <div><label className="label flex items-center gap-1.5"><Home size={14} /> Address *</label><input className="input" value={address} onChange={e => setAddress(e.target.value)} placeholder="Your full address" required /></div>
               <div><label className="label flex items-center gap-1.5"><Phone size={14} /> Phone Number *</label><input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required /></div>
@@ -397,7 +407,7 @@ export default function DpSignup() {
           <>
             <h2 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Vehicle & Identity</h2>
             <p className="mb-5 text-sm text-gray-500">All fields are required</p>
-            <form onSubmit={handleStep2} className="space-y-4">
+            <form onSubmit={handleStep2} className="space-y-3">
               <div>
                 <label className="label flex items-center gap-1.5"><Truck size={14} /> Vehicle Type *</label>
                 <div className="grid grid-cols-3 gap-2">

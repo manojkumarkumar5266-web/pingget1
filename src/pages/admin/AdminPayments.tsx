@@ -135,6 +135,7 @@ export default function AdminPayments() {
       confirmed_at: new Date().toISOString(),
       confirmed_by: userData.user?.id,
     }).eq('id', id)
+    // The trigger on dp_commission_receipts will insert into commission_payments
     // Set DP back online after payment confirmed
     if (receipt?.dp_user_id) {
       await supabase.from('delivery_partners').update({ is_online: true }).eq('user_id', receipt.dp_user_id)

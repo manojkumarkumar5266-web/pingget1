@@ -35,6 +35,7 @@ export default function ChatScreen() {
   const [hasRated, setHasRated] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
+  const [showPickupPhoto, setShowPickupPhoto] = useState(false)
   const [recording, setRecording] = useState(false)
   const [voiceDuration, setVoiceDuration] = useState(0)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -209,11 +210,12 @@ export default function ChatScreen() {
     setInput('')
   }
 
-  const sendQuotation = async (itemCost: number, deliveryCharge: number, itemsSummary: string) => {
-    const quotation = { item_cost: itemCost, delivery_charge: deliveryCharge, items_summary: itemsSummary }
+  const sendQuotation = async (itemCost: number, deliveryCharge: number, itemsSummary: string, photoUrl?: string | null) => {
+    const quotation = { item_cost: itemCost, delivery_charge: deliveryCharge, items_summary: itemsSummary, photo_url: photoUrl || null }
     const { data, error } = await supabase.from('messages').insert({
       chat_room_id: roomId, sender_id: profile!.id,
       message_type: 'quotation', quotation_data: quotation,
+      ...(photoUrl ? { attachment_url: photoUrl } : {}),
     }).select().single()
     if (!error && data) setMessages(prev => [...prev, data as Message])
     setShowQuotation(false)
@@ -380,6 +382,11 @@ export default function ChatScreen() {
                   {msg.message_type === 'quotation' && msg.quotation_data && (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wide opacity-70">Quotation</p>
+                      {msg.quotation_data.photo_url && (
+                        <a href={msg.quotation_data.photo_url} target="_blank" rel="noopener noreferrer" className="block">
+                          <img src={msg.quotation_data.photo_url} alt="Proof" className="h-32 w-full rounded-lg object-cover" />
+                        </a>
+                      )}
                       <ul className="space-y-0.5">
                         {String(msg.quotation_data.items_summary || '').split('\n').map((line: string, i: number) =>
                           line.trim() ? (
@@ -496,6 +503,11 @@ export default function ChatScreen() {
                   <Mic size={14} /> Voice Note
                 </button>
               )}
+              {order && DP_ACTION_STATUSES.includes(order.status) && (
+                <button onClick={() => { setShowPickupPhoto(true); setShowAttachMenu(false) }} className="flex items-center gap-1.5 rounded-xl border border-accent-200 bg-accent-50 px-3 py-2 text-xs font-medium text-accent-700 dark:border-accent-800 dark:bg-accent-900/30 dark:text-accent-300">
+                  <PackageCheck size={14} /> Pickup Proof
+                </button>
+              )}
               <button onClick={() => setShowAttachMenu(false)} className="ml-auto text-gray-400"><X size={16} /></button>
             </div>
           )}
@@ -529,7 +541,25 @@ export default function ChatScreen() {
         </div>
       )}
 
-      {showQuotation && <QuotationModal onClose={() => setShowQuotation(false)} onSend={sendQuotation} initialItems={requestDescription} />}
+      {showQuotation && room && <QuotationModal onClose={() => setShowQuotation(false)} onSend={sendQuotation} initialItems={requestDescription} roomId={room.id} senderId={profile!.id} />}
+
+      {showPickupPhoto && (
+        <PickupPhotoModal
+          onClose={() => setShowPickupPhoto(false)}
+          onSubmit={async (file: File) => {
+            const path = `chat/${profile!.id}/pickup-${Date.now()}`
+            const { error } = await supabase.storage.from('media').upload(path, file, { upsert: true })
+            if (error) { alert('Upload failed: ' + error.message); return }
+            const url = supabase.storage.from('media').getPublicUrl(path).data.publicUrl
+            await supabase.from('messages').insert({
+              chat_room_id: room!.id, sender_id: profile!.id,
+              message_type: 'image', attachment_url: url,
+              content: 'Pickup proof photo',
+            })
+            setShowPickupPhoto(false)
+          }}
+        />
+      )}
       {showRating && <RatingModal onClose={() => setShowRating(false)} onSubmit={submitRating} targetName={otherUser?.full_name || 'Delivery Partner'} />}
     </div>
   )
@@ -562,11 +592,8 @@ function OrderSummaryMessage({ data, isOwn }: { data: any; isOwn: boolean }) {
       {data.voice_note_url && <VoiceMessagePlayer url={data.voice_note_url} isOwn={isOwn} />}
       <div className={`space-y-1.5 border-t pt-2 ${borderColor}`}>
         {data.preferred_shop && <div className={`flex items-center gap-1.5 text-xs ${mutedColor}`}><Store size={12} className="shrink-0" /><span>Shop: <span className={`font-medium ${textColor}`}>{data.preferred_shop}</span></span></div>}
-        {data.max_budget && <div className={`flex items-center gap-1.5 text-xs ${mutedColor}`}><Wallet size={12} className="shrink-0" /><span>Budget: <span className={`font-medium ${textColor}`}>{formatCurrency(data.max_budget)}</span></span></div>}
         {data.delivery_address && <div className={`flex items-start gap-1.5 text-xs ${mutedColor}`}><MapPin size={12} className="mt-0.5 shrink-0" /><span className="line-clamp-2">{data.delivery_address}</span></div>}
-        {data.radius_meters && <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${tagBg} ${mutedColor}`}>{data.radius_meters < 1000 ? `${data.radius_meters}m` : `${data.radius_meters / 1000}km`} radius</div>}
       </div>
-      {data.special_instructions && <div className={`flex items-start gap-1.5 rounded-lg border px-2.5 py-2 text-xs ${borderColor} ${mutedColor}`}><AlertCircle size={12} className="mt-0.5 shrink-0" /><span className="italic">{data.special_instructions}</span></div>}
     </div>
   )
 }
@@ -598,13 +625,81 @@ function VoiceMessagePlayer({ url, isOwn }: { url: string; isOwn: boolean }) {
   )
 }
 
-function QuotationModal({ onClose, onSend, initialItems }: { onClose: () => void; onSend: (itemCost: number, deliveryCharge: number, itemsSummary: string) => void; initialItems?: string }) {
-  const [items, setItems] = useState(() => initialItems || '')
-  const [itemCost, setItemCost] = useState('')
-  const [deliveryCharge, setDeliveryCharge] = useState('')
+function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (file: File) => Promise<void> }) {
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return
+    setFile(f); setPreview(URL.createObjectURL(f))
+  }
+
+  const handleSubmit = async () => {
+    if (!file) return
+    setUploading(true)
+    await onSubmit(file)
+    setUploading(false)
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 animate-fade-in" onClick={onClose}>
       <div className="card w-full max-w-md p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
+        <h3 className="mb-1 text-lg font-bold text-gray-900 dark:text-white">Upload Pickup Proof</h3>
+        <p className="mb-4 text-xs text-gray-500">Take a photo or upload an image of the items as pickup proof.</p>
+        <input ref={fileRef} type="file" className="hidden" accept="image/*" onChange={handleSelect} />
+        {preview ? (
+          <div className="relative mb-4">
+            <img src={preview} alt="Pickup proof" className="h-40 w-full rounded-xl object-cover" />
+            <button type="button" onClick={() => { setFile(null); setPreview(null) }} className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white"><X size={14} /></button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => fileRef.current?.click()} className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 py-8 text-sm text-gray-500 dark:border-gray-700">
+            <Camera size={20} /> Take Photo or Upload Image
+          </button>
+        )}
+        <div className="flex gap-2">
+          <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+          <button onClick={handleSubmit} disabled={!file || uploading} className="btn-primary flex-1">
+            {uploading ? 'Uploading...' : 'Send Proof'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { onClose: () => void; onSend: (itemCost: number, deliveryCharge: number, itemsSummary: string, photoUrl?: string | null) => void; initialItems?: string; roomId: string; senderId: string }) {
+  const [items, setItems] = useState(() => initialItems || '')
+  const [itemCost, setItemCost] = useState('')
+  const [deliveryCharge, setDeliveryCharge] = useState('')
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return
+    setPhotoFile(file); setPhotoPreview(URL.createObjectURL(file))
+  }
+
+  const handleSend = async () => {
+    setUploading(true)
+    let photoUrl: string | null = null
+    if (photoFile) {
+      const ts = Date.now()
+      const path = `quotations/${senderId}/${ts}-quote`
+      const { error } = await supabase.storage.from('media').upload(path, photoFile, { upsert: true })
+      if (!error) photoUrl = supabase.storage.from('media').getPublicUrl(path).data.publicUrl
+    }
+    setUploading(false)
+    onSend(parseFloat(itemCost) || 0, parseFloat(deliveryCharge) || 0, items, photoUrl)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 animate-fade-in" onClick={onClose}>
+      <div className="card w-full max-w-md max-h-[90vh] overflow-y-auto p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
         <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">Send Quotation</h3>
         <div className="space-y-3">
           <div>
@@ -620,11 +715,27 @@ function QuotationModal({ onClose, onSend, initialItems }: { onClose: () => void
             <label className="label flex items-center gap-1"><IndianRupee size={14} /> Delivery Charge</label>
             <input type="number" className="input" value={deliveryCharge} onChange={e => setDeliveryCharge(e.target.value)} placeholder="0" />
           </div>
+          <div>
+            <label className="label">Proof Photo (optional)</label>
+            <p className="mb-1 text-xs text-gray-400">Take a photo or upload an image of the items as proof.</p>
+            <input ref={photoInputRef} type="file" className="hidden" accept="image/*" onChange={handlePhotoSelect} />
+            {photoPreview ? (
+              <div className="relative">
+                <img src={photoPreview} alt="Proof" className="h-32 w-full rounded-xl object-cover" />
+                <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null) }} className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white"><X size={14} /></button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button type="button" onClick={() => photoInputRef.current?.click()} className="btn-secondary flex-1"><Camera size={16} /> Upload Image</button>
+                <button type="button" onClick={() => { photoInputRef.current?.click() }} className="btn-secondary flex-1"><Camera size={16} /> Take Photo</button>
+              </div>
+            )}
+          </div>
         </div>
         <div className="mt-4 flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-          <button onClick={() => onSend(parseFloat(itemCost) || 0, parseFloat(deliveryCharge) || 0, items)} disabled={!items || !deliveryCharge} className="btn-primary flex-1">
-            Send Quotation
+          <button onClick={handleSend} disabled={!items || !deliveryCharge || uploading} className="btn-primary flex-1">
+            {uploading ? 'Uploading...' : 'Send Quotation'}
           </button>
         </div>
       </div>

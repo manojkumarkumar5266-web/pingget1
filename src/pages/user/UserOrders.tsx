@@ -167,8 +167,7 @@ export default function UserOrders() {
 
                   <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
                     <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(req.created_at)}</span>
-                    {req.max_budget && <span>{formatCurrency(req.max_budget)}</span>}
-                    <span className="flex items-center gap-1"><MapPin size={12} /> {req.radius_meters}m</span>
+                    <span className="flex items-center gap-1"><MapPin size={12} /> {req.delivery_address}</span>
                   </div>
 
                   {/* DP info card — shown once DP accepts */}

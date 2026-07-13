@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { ErrorBanner } from '../../components/ui'
-import { MapPin, Camera, Mic, MicOff, Clock, IndianRupee, FileText, Store, ArrowLeft, X, Play, Pause } from 'lucide-react'
-
-const RADII = [500, 1000, 2000, 5000]
+import { MapPin, Camera, Mic, MicOff, Clock, Store, ArrowLeft, X, Play, Pause } from 'lucide-react'
 
 export default function CreateRequest() {
   const { profile } = useAuth()
@@ -13,9 +11,8 @@ export default function CreateRequest() {
   const [form, setForm] = useState({
     title: '', description: '', preferred_shop: '',
     pickup_address: '', delivery_address: profile?.address || '',
-    expected_time: '', max_budget: '', special_instructions: '',
+    expected_time: '',
   })
-  const [radius, setRadius] = useState(500)
   const [gpsLat, setGpsLat] = useState<number | null>(profile?.gps_lat || null)
   const [gpsLng, setGpsLng] = useState<number | null>(profile?.gps_lng || null)
   const [gpsLoading, setGpsLoading] = useState(false)
@@ -135,9 +132,8 @@ export default function CreateRequest() {
         delivery_address: form.delivery_address,
         delivery_lat: gpsLat, delivery_lng: gpsLng,
         expected_time: form.expected_time || null,
-        max_budget: form.max_budget ? parseFloat(form.max_budget) : null,
-        special_instructions: form.special_instructions || null,
-        radius_meters: radius, status: 'pending',
+        max_budget: null, special_instructions: null,
+        radius_meters: 0, status: 'pending',
       })
       if (error) throw error
       navigate('/app/orders')
@@ -161,10 +157,10 @@ export default function CreateRequest() {
           </div>
           <div>
             <label className="label">Description (one item per line)</label>
-            <textarea className="input min-h-24 resize-none" value={form.description} onChange={e => set('description', e.target.value)} placeholder={"e.g.\nDolo 650\nPain killer\nAll items"} />
+            <textarea className="input min-h-24 resize-none" value={form.description} onChange={e => set('description', e.target.value)} placeholder={"e.g.\nGroceries\nMedicine\nParcel"} />
           </div>
 
-          <input ref={photoInputRef} type="file" className="hidden" accept="image/*" capture="environment" onChange={handlePhotoSelect} />
+          <input ref={photoInputRef} type="file" className="hidden" accept="image/*" onChange={handlePhotoSelect} />
           {photoPreview ? (
             <div className="relative">
               <img src={photoPreview} alt="Request" className="h-40 w-full rounded-xl object-cover" />
@@ -215,30 +211,8 @@ export default function CreateRequest() {
 
         <div className="card p-5 space-y-4">
           <div>
-            <label className="label">Search Radius for Delivery Partners</label>
-            <div className="grid grid-cols-4 gap-2">
-              {RADII.map(r => (
-                <button key={r} type="button" onClick={() => setRadius(r)}
-                  className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition-all ${radius === r ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-400'}`}
-                >
-                  {r < 1000 ? `${r}m` : `${r / 1000}km`}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label flex items-center gap-1.5"><Clock size={16} /> Expected Time</label>
-              <input className="input" value={form.expected_time} onChange={e => set('expected_time', e.target.value)} placeholder="e.g. 2 hours" />
-            </div>
-            <div>
-              <label className="label flex items-center gap-1.5"><IndianRupee size={16} /> Max Budget</label>
-              <input type="number" className="input" value={form.max_budget} onChange={e => set('max_budget', e.target.value)} placeholder="Optional" />
-            </div>
-          </div>
-          <div>
-            <label className="label flex items-center gap-1.5"><FileText size={16} /> Special Instructions</label>
-            <textarea className="input min-h-20 resize-none" value={form.special_instructions} onChange={e => set('special_instructions', e.target.value)} placeholder="Any special instructions for the delivery partner" />
+            <label className="label flex items-center gap-1.5"><Clock size={16} /> Expected Time</label>
+            <input className="input" value={form.expected_time} onChange={e => set('expected_time', e.target.value)} placeholder="e.g. 2 hours" />
           </div>
         </div>
 

@@ -3,7 +3,7 @@ import { useAuth } from '../../context'
 import { supabase, Profile } from '../../lib/supabase'
 import { Avatar, EmptyState } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
-import { Users, ShieldOff, Ban, CheckCircle, AlertTriangle, Download, Search } from 'lucide-react'
+import { Users, ShieldOff, Ban, CheckCircle, AlertTriangle, Download, Search, MapPin } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 type StatusFilter = 'all' | 'active' | 'suspended' | 'banned'
@@ -78,6 +78,7 @@ export default function AdminUsers() {
       Role: u.role,
       City: u.city || '',
       Status: u.status,
+      GPS: u.gps_lat && u.gps_lng ? `${u.gps_lat},${u.gps_lng}` : 'N/A',
       'Joined On': formatTime(u.created_at),
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -143,7 +144,14 @@ export default function AdminUsers() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 dark:text-white truncate">{u.full_name}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{u.phone || 'No phone'}</p>
-                    <p className="text-xs text-gray-400">{u.city || 'No city'} · {u.role.toUpperCase()} · {formatTime(u.created_at)}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-xs text-gray-400">{u.city || 'No city'} · {u.role.toUpperCase()} · {formatTime(u.created_at)}</p>
+                      {u.gps_lat && u.gps_lng && (
+                        <span className="flex items-center gap-0.5 text-xs text-primary-500">
+                          <MapPin size={10} /> GPS
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span className={`badge shrink-0 ${cfg.badge}`}>{cfg.label}</span>
                 </div>
@@ -187,6 +195,10 @@ function UserActionDrawer({
       .then(({ data }) => { setOrders(data || []); setOrdersLoading(false) })
   }, [user.id])
 
+  const mapUrl = user.gps_lat && user.gps_lng
+    ? `https://www.google.com/maps?q=${user.gps_lat},${user.gps_lng}&z=15`
+    : null
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
       <div
@@ -197,7 +209,6 @@ function UserActionDrawer({
           <div className="h-1 w-10 rounded-full bg-gray-200 dark:bg-gray-700" />
         </div>
         <div className="px-5 pb-10 pt-2">
-          {/* Header */}
           <div className="mb-5 flex items-center gap-4">
             <Avatar url={user.photo_url} name={user.full_name || 'User'} size={56} />
             <div>
@@ -210,15 +221,23 @@ function UserActionDrawer({
             </div>
           </div>
 
-          {/* Profile details */}
           <div className="mb-4 rounded-2xl border border-gray-100 p-4 dark:border-gray-800 space-y-2">
             <InfoRow label="City" value={user.city || 'Not set'} />
             <InfoRow label="Address" value={user.address || 'Not set'} />
             <InfoRow label="Preferred Language" value={(user as any).preferred_language || 'en'} />
             <InfoRow label="Joined" value={formatTime(user.created_at)} />
+            {user.gps_lat && user.gps_lng ? (
+              <div className="space-y-1">
+                <InfoRow label="GPS Location" value={`${user.gps_lat.toFixed(4)}, ${user.gps_lng!.toFixed(4)}`} />
+                <a href={mapUrl!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700 dark:border-primary-800 dark:bg-primary-900/30 dark:text-primary-300">
+                  <MapPin size={14} /> View on Google Maps
+                </a>
+              </div>
+            ) : (
+              <InfoRow label="GPS Location" value="Not set" />
+            )}
           </div>
 
-          {/* Recent orders */}
           <div className="mb-5">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Recent Requests ({orders.length})</p>
             {ordersLoading ? (
@@ -246,7 +265,6 @@ function UserActionDrawer({
             )}
           </div>
 
-          {/* Account actions */}
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Account Actions</p>
           <div className="space-y-2">
             {user.status !== 'active' && (

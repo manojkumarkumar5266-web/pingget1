@@ -11,24 +11,24 @@ type AuthLayoutProps = {
 export default function AuthLayout({ children, brandSize = 'lg', showBrand = true }: AuthLayoutProps) {
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen overflow-hidden"
       style={{ background: 'linear-gradient(160deg, #1c2a14 0%, #2a3d1c 40%, #374524 100%)' }}
     >
-      <div className="flex min-h-screen w-full flex-col justify-between px-4 py-4">
+      <div className="flex min-h-screen w-full flex-col justify-between px-4 py-3">
         {showBrand && (
-          <div className="text-center pt-8">
+          <div className="text-center pt-4">
             <Brand size={brandSize} />
           </div>
         )}
 
-        <div className="flex-1 flex flex-col justify-start pt-24 pb-6">{children}</div>
+        <div className="flex-1 flex flex-col justify-center pt-2 pb-2">{children}</div>
 
-        <div className="mt-4 text-center text-xs text-white/40">
+        <div className="mt-2 text-center text-xs text-white/40">
           By continuing you agree to our Terms &amp; Privacy Policy
         </div>
 
         <div
-            className="mt-4 w-full overflow-hidden rounded-2xl border border-white/10"
+            className="mt-2 w-full overflow-hidden rounded-2xl border border-white/10"
           style={{ background: 'linear-gradient(135deg, #3a5228 0%, #4a6830 100%)' }}
         >
           <div className="grid grid-cols-4">
@@ -40,7 +40,7 @@ export default function AuthLayout({ children, brandSize = 'lg', showBrand = tru
             ].map((f, i) => (
               <div
                 key={i}
-                className="flex flex-col items-center gap-1 px-1 py-4 text-center"
+                className="flex flex-col items-center gap-1 px-1 py-3 text-center"
                 style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}
               >
                 <span className="text-white">{f.icon}</span>

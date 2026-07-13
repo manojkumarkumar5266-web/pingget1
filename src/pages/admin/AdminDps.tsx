@@ -3,7 +3,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryPartner, Profile } from '../../lib/supabase'
 import { Avatar, EmptyState } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
-import { Check, X, Shield, ChevronRight, ArrowLeft, FileText, Phone, Truck, CreditCard, AlertCircle, Download } from 'lucide-react'
+import { Check, X, Shield, ChevronRight, ArrowLeft, FileText, Phone, Truck, CreditCard, AlertCircle, Download, MapPin } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 type DpWithProfile = DeliveryPartner & { profile: Profile; aadhaar_url?: string | null }
@@ -178,6 +178,16 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
               <Row label="City" value={dp.profile?.city || 'Not provided'} />
               <Row label="Address" value={dp.profile?.address || 'Not provided'} />
               <Row label="Emergency Contact" value={dp.emergency_contact || 'Not provided'} />
+              {dp.profile?.gps_lat && dp.profile?.gps_lng ? (
+                <div className="space-y-1">
+                  <Row label="GPS Location" value={`${dp.profile.gps_lat.toFixed(4)}, ${dp.profile.gps_lng.toFixed(4)}`} />
+                  <a href={`https://www.google.com/maps?q=${dp.profile.gps_lat},${dp.profile.gps_lng}&z=15`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-sm font-medium text-primary-700 dark:border-primary-800 dark:bg-primary-900/30 dark:text-primary-300">
+                    <MapPin size={14} /> View on Google Maps
+                  </a>
+                </div>
+              ) : (
+                <Row label="GPS Location" value="Not set" />
+              )}
             </Section>
             <Section title="Vehicle" icon={<Truck size={16} />}>
               <Row label="Vehicle Type" value={dp.vehicle_type || 'Not specified'} />
