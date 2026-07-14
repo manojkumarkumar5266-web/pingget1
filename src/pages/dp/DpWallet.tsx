@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context'
 import { supabase, Order, DpCommissionReceipt } from '../../lib/supabase'
-import { EmptyState } from '../../components/ui'
+import { EmptyState, SkeletonCard } from '../../components/ui'
 import { formatCurrency, formatTime } from '../../lib/utils'
 import {
   Wallet as WalletIcon, TrendingUp, AlertCircle, IndianRupee,
@@ -52,7 +52,7 @@ export default function DpWallet() {
     setShowPay(false)
   }
 
-  if (loading) return <div className="p-4 text-center text-sm text-gray-400">Loading wallet...</div>
+  if (loading) return <div className="mx-auto max-w-md px-4 py-4 space-y-3">{[1,2,3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
 
   return (
     <div className="mx-auto max-w-md px-4 py-4">

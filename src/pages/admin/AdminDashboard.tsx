@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatCurrency, formatTime } from '../../lib/utils'
-import { Users, Bike, Package, IndianRupee, TrendingUp, Clock, CheckCircle, XCircle, Activity, Download, Bell, UserPlus, Bike as BikeIcon, CreditCard, X } from 'lucide-react'
+import { Users, Bike, Package, IndianRupee, TrendingUp, Clock, CheckCircle, XCircle, Activity, Download, Bell, UserPlus, Bike as BikeIcon, CreditCard, X, Star, Zap } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { SkeletonCard, CountUp } from '../../components/ui'
 
 type Stats = {
   totalUsers: number
@@ -17,6 +18,8 @@ type Stats = {
   cancelledOrders: number
   commissionCollected: number
   pendingCommission: number
+  todayRevenue: number
+  monthRevenue: number
 }
 
 type AdminNotification = {
@@ -33,6 +36,8 @@ const NOTIF_ICONS: Record<string, any> = {
   new_user: UserPlus,
   new_dp: BikeIcon,
   payment: CreditCard,
+  payment_receipt: CreditCard,
+  receipt_confirmed: CheckCircle,
 }
 
 export default function AdminDashboard() {
@@ -42,6 +47,7 @@ export default function AdminDashboard() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifPanel, setShowNotifPanel] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -59,6 +65,7 @@ export default function AdminDashboard() {
 
       const allOrders = orders.data || []
       const today = new Date(Date.now() - 86400000).toISOString()
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
       const todayDeliveries = allOrders.filter((o: any) => o.status === 'completed' && o.completed_at && o.completed_at >= today).length
       const liveOrders = allOrders.filter((o: any) => !['completed', 'cancelled'].includes(o.status)).length
       const completedOrders = allOrders.filter((o: any) => o.status === 'completed').length
@@ -68,13 +75,19 @@ export default function AdminDashboard() {
         .filter((o: any) => o.status === 'completed')
         .reduce((sum: number, o: any) => sum + (o.commission_amount || 0), 0)
       const pendingCommission = Math.max(0, totalCommissionEarned - commissionCollected)
+      const todayRevenue = allOrders
+        .filter((o: any) => o.status === 'completed' && o.completed_at && o.completed_at >= today)
+        .reduce((s: number, o: any) => s + Number(o.delivery_charge || 0), 0)
+      const monthRevenue = allOrders
+        .filter((o: any) => o.status === 'completed' && o.completed_at && o.completed_at >= monthStart)
+        .reduce((s: number, o: any) => s + Number(o.delivery_charge || 0), 0)
 
       setStats({
         totalUsers: users.count || 0, totalDps: dps.count || 0,
         pendingDps: dpsPending.count || 0, approvedDps: dpsApproved.count || 0,
         onlineDps: dpsOnline.count || 0, todayRequests: reqs.count || 0,
         todayDeliveries, liveOrders, completedOrders, cancelledOrders,
-        commissionCollected, pendingCommission,
+        commissionCollected, pendingCommission, todayRevenue, monthRevenue,
       })
 
       const recent = allOrders
@@ -99,6 +112,7 @@ export default function AdminDashboard() {
       const notifData = (notifs.data || []) as AdminNotification[]
       setNotifications(notifData)
       setUnreadCount(notifData.filter(n => !n.is_read).length)
+      setLoading(false)
     }
     fetchAll()
 
@@ -124,9 +138,8 @@ export default function AdminDashboard() {
     setUnreadCount(c => Math.max(0, c - 1))
   }
 
-  if (!stats) return <div className="p-8 text-center text-sm text-gray-400">Loading dashboard...</div>
-
   const exportReport = () => {
+    if (!stats) return
     const wb = XLSX.utils.book_new()
     const summaryRows = [
       { Metric: 'Total Users', Value: stats.totalUsers },
@@ -136,6 +149,8 @@ export default function AdminDashboard() {
       { Metric: 'Online DPs', Value: stats.onlineDps },
       { Metric: "Today's Requests", Value: stats.todayRequests },
       { Metric: "Today's Deliveries", Value: stats.todayDeliveries },
+      { Metric: "Today's Revenue", Value: stats.todayRevenue },
+      { Metric: "Month Revenue", Value: stats.monthRevenue },
       { Metric: 'Live Orders', Value: stats.liveOrders },
       { Metric: 'Completed Orders', Value: stats.completedOrders },
       { Metric: 'Cancelled Orders', Value: stats.cancelledOrders },
@@ -158,21 +173,37 @@ export default function AdminDashboard() {
     XLSX.writeFile(wb, `pingget-dashboard-${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
-  const statCards = [
-    { label: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-primary-600 bg-primary-50 dark:bg-primary-900/30' },
-    { label: 'Total Partners', value: stats.totalDps, icon: Bike, color: 'text-accent-600 bg-accent-50 dark:bg-accent-900/30' },
-    { label: "Today's Requests", value: stats.todayRequests, icon: Package, color: 'text-warning-600 bg-warning-50 dark:bg-warning-900/30' },
-    { label: "Today's Deliveries", value: stats.todayDeliveries, icon: CheckCircle, color: 'text-success-600 bg-success-50 dark:bg-success-900/30' },
-    { label: 'Live Orders', value: stats.liveOrders, icon: Activity, color: 'text-primary-600 bg-primary-50 dark:bg-primary-900/30' },
-    { label: 'Completed', value: stats.completedOrders, icon: TrendingUp, color: 'text-success-600 bg-success-50 dark:bg-success-900/30' },
-    { label: 'Cancelled', value: stats.cancelledOrders, icon: XCircle, color: 'text-error-600 bg-error-50 dark:bg-error-900/30' },
-    { label: 'Online DPs', value: stats.onlineDps, icon: Bike, color: 'text-success-600 bg-success-50 dark:bg-success-900/30' },
+  if (loading || !stats) {
+    return (
+      <div className="p-4 md:p-8">
+        <div className="mb-6 h-8 w-48 skeleton rounded-xl" />
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {[1,2,3,4].map(i => <div key={i} className="card p-4"><div className="h-10 w-10 skeleton rounded-xl mb-2" /><div className="h-6 w-16 skeleton mb-1" /><div className="h-3 w-20 skeleton" /></div>)}
+        </div>
+        <div className="space-y-3"><SkeletonCard lines={3} /><SkeletonCard lines={3} /></div>
+      </div>
+    )
+  }
+
+  const kpiCards = [
+    { label: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-primary-600 bg-primary-50 dark:bg-primary-900/30', delay: 0 },
+    { label: 'Total Partners', value: stats.totalDps, icon: Bike, color: 'text-accent-600 bg-accent-50 dark:bg-accent-900/30', delay: 50 },
+    { label: "Today's Requests", value: stats.todayRequests, icon: Package, color: 'text-warning-600 bg-warning-50 dark:bg-warning-900/30', delay: 100 },
+    { label: "Today's Deliveries", value: stats.todayDeliveries, icon: CheckCircle, color: 'text-success-600 bg-success-50 dark:bg-success-900/30', delay: 150 },
+    { label: 'Live Orders', value: stats.liveOrders, icon: Activity, color: 'text-primary-600 bg-primary-50 dark:bg-primary-900/30', delay: 200 },
+    { label: 'Completed', value: stats.completedOrders, icon: TrendingUp, color: 'text-success-600 bg-success-50 dark:bg-success-900/30', delay: 250 },
+    { label: 'Cancelled', value: stats.cancelledOrders, icon: XCircle, color: 'text-error-600 bg-error-50 dark:bg-error-900/30', delay: 300 },
+    { label: 'Online DPs', value: stats.onlineDps, icon: Bike, color: 'text-success-600 bg-success-50 dark:bg-success-900/30', delay: 350 },
   ]
 
   return (
     <div className="p-4 md:p-8">
+      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Overview of PingGET operations</p>
+        </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowNotifPanel(true)} className="relative btn-secondary flex items-center gap-1.5 text-sm">
             <Bell size={16} /> Notifications
@@ -188,30 +219,56 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* KPI Cards */}
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {statCards.map((s, i) => {
+        {kpiCards.map((s, i) => {
           const Icon = s.icon
           return (
-            <div key={i} className="card p-4 animate-slide-up">
+            <div key={i} className="card card-hover p-4 animate-slide-up" style={{ animationDelay: `${s.delay}ms` }}>
               <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-xl ${s.color}`}>
                 <Icon size={20} />
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <CountUp value={s.value} />
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{s.label}</p>
             </div>
           )
         })}
       </div>
 
+      {/* Revenue Cards */}
       <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div className="card p-5">
+        <div className="card p-5 animate-slide-up" style={{ animationDelay: '400ms' }}>
           <div className="flex items-center gap-2 text-success-600 dark:text-success-400">
             <IndianRupee size={20} />
+            <span className="text-sm font-medium">Today&apos;s Revenue</span>
+          </div>
+          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+            <CountUp value={stats.todayRevenue} prefix="₹" />
+          </p>
+        </div>
+        <div className="card p-5 animate-slide-up" style={{ animationDelay: '450ms' }}>
+          <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400">
+            <TrendingUp size={20} />
+            <span className="text-sm font-medium">This Month&apos;s Revenue</span>
+          </div>
+          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+            <CountUp value={stats.monthRevenue} prefix="₹" />
+          </p>
+        </div>
+      </div>
+
+      {/* Commission Cards */}
+      <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="card p-5 animate-slide-up" style={{ animationDelay: '500ms' }}>
+          <div className="flex items-center gap-2 text-success-600 dark:text-success-400">
+            <CheckCircle size={20} />
             <span className="text-sm font-medium">Commission Collected</span>
           </div>
           <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.commissionCollected)}</p>
         </div>
-        <div className="card p-5">
+        <div className="card p-5 animate-slide-up" style={{ animationDelay: '550ms' }}>
           <div className="flex items-center gap-2 text-error-600 dark:text-error-400">
             <Clock size={20} />
             <span className="text-sm font-medium">Pending Commission</span>
@@ -223,34 +280,44 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Top Partners & Recent Orders */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="card p-5">
-          <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-white">Top Delivery Partners</h3>
+        <div className="card p-5 animate-slide-up" style={{ animationDelay: '600ms' }}>
+          <div className="mb-3 flex items-center gap-2">
+            <Star size={16} className="text-accent-400" />
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Top Delivery Partners</h3>
+          </div>
           {topDps.length === 0 ? (
             <p className="text-sm text-gray-400">No data yet.</p>
           ) : (
             <div className="space-y-2">
               {topDps.map((dp, i) => (
-                <div key={i} className="flex items-center justify-between">
+                <div key={i} className="flex items-center justify-between rounded-xl px-2 py-1.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">{i + 1}</span>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">{i + 1}</span>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">{dp.name}</span>
                   </div>
-                  <span className="text-sm text-gray-500">{dp.deliveries} deliveries</span>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">{dp.deliveries}</span>
+                    <span className="ml-1 text-xs text-gray-400">deliveries</span>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="card p-5">
-          <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-white">Recent Completed Orders</h3>
+        <div className="card p-5 animate-slide-up" style={{ animationDelay: '650ms' }}>
+          <div className="mb-3 flex items-center gap-2">
+            <Zap size={16} className="text-primary-500" />
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Recent Completed Orders</h3>
+          </div>
           {recentOrders.length === 0 ? (
             <p className="text-sm text-gray-400">No completed orders yet.</p>
           ) : (
             <div className="space-y-2">
               {recentOrders.map((o) => (
-                <div key={o.id} className="flex items-center justify-between">
+                <div key={o.id} className="flex items-center justify-between rounded-xl px-2 py-1.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{o.items_summary || 'Delivery'}</p>
                     <p className="text-xs text-gray-400">{formatTime(o.created_at)}</p>
@@ -263,10 +330,11 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Notification Panel */}
       {showNotifPanel && (
-        <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowNotifPanel(false)}>
-          <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white dark:bg-gray-900 shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-4 dark:border-gray-800 dark:bg-gray-900">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowNotifPanel(false)}>
+          <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl animate-slide-in-right" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white/95 px-5 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/95">
               <div className="flex items-center gap-2">
                 <Bell size={20} className="text-primary-600" />
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">Notifications</h2>

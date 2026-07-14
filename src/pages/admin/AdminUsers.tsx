@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../../context'
 import { supabase, Profile } from '../../lib/supabase'
-import { Avatar, EmptyState } from '../../components/ui'
+import { Avatar, EmptyState, SkeletonCard } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
 import { Users, ShieldOff, Ban, CheckCircle, AlertTriangle, Download, Search, MapPin } from 'lucide-react'
 import * as XLSX from 'xlsx'
@@ -125,7 +125,7 @@ export default function AdminUsers() {
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map(i => <div key={i} className="h-20 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />)}
+          {[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState icon={<Users size={48} />} title={`No ${filter} users`} />

@@ -2,9 +2,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
-import { EmptyState, StatusBadge } from '../../components/ui'
+import { EmptyState, StatusBadge, SkeletonCard, Tabs } from '../../components/ui'
 import { formatTime, formatCurrency, STATUS_LABELS } from '../../lib/utils'
-import { ClipboardList, Clock, MapPin, MessageCircle, Lock } from 'lucide-react'
+import { ClipboardList, Clock, MapPin, MessageCircle, Lock, Package } from 'lucide-react'
 
 type Tab = 'active' | 'completed' | 'cancelled'
 
@@ -113,27 +113,28 @@ export default function DpOrders() {
     <div className="mx-auto max-w-md px-4 py-4">
       <h1 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">My Deliveries</h1>
 
-      <div className="mb-4 flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
-        {(['active', 'completed', 'cancelled'] as Tab[]).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg py-2 text-sm font-semibold capitalize transition-all ${tab === t ? 'bg-white text-primary-600 shadow-sm dark:bg-gray-700 dark:text-primary-300' : 'text-gray-500'}`}
-          >
-            {t}
-          </button>
-        ))}
+      <div className="mb-4">
+        <Tabs
+          tabs={[
+            { key: 'active', label: 'Active' },
+            { key: 'completed', label: 'Completed' },
+            { key: 'cancelled', label: 'Cancelled' },
+          ]}
+          active={tab}
+          onChange={(k) => setTab(k as Tab)}
+        />
       </div>
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2].map(i => <div key={i} className="h-40 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />)}
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={4} />
         </div>
       ) : orders.length === 0 ? (
         <EmptyState icon={<ClipboardList size={48} />} title={`No ${tab} deliveries`} />
       ) : (
         <div className="space-y-3">
-          {orders.map(req => {
+          {orders.map((req, i) => {
             const displayStatus = req.status === 'cash_received' ? 'delivered' : req.status
             const statusIdx = ORDER_FLOW.indexOf(displayStatus)
             const isActionable = DP_ACTION_STATUSES.includes(req.status)
@@ -143,7 +144,7 @@ export default function DpOrders() {
             const chatClosed = req.status === 'delivered' || req.status === 'cash_received'
 
             return (
-              <div key={req.id} className="card p-4 animate-slide-up">
+              <div key={req.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 dark:text-white">{req.title}</p>
@@ -154,7 +155,7 @@ export default function DpOrders() {
 
                 <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
                   <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(req.created_at)}</span>
-                  {req.max_budget && <span>{formatCurrency(req.max_budget)}</span>}
+                  {req.max_budget && <span className="font-medium text-gray-600 dark:text-gray-300">{formatCurrency(req.max_budget)}</span>}
                   <span className="flex items-center gap-1"><MapPin size={12} /> {req.radius_meters}m</span>
                 </div>
 
@@ -170,9 +171,6 @@ export default function DpOrders() {
                 {req.status === 'confirmed' && (
                   <div className="mt-3 rounded-xl border border-accent-200 bg-accent-50 px-3 py-2.5 dark:border-accent-900/40 dark:bg-accent-950/30">
                     <p className="text-xs font-semibold text-accent-700 dark:text-accent-300">Customer confirmed — start shopping!</p>
-                    <p className="mt-0.5 text-xs text-accent-600 dark:text-accent-400">
-                      Tap the button below once you begin shopping for the items.
-                    </p>
                   </div>
                 )}
 
@@ -196,8 +194,7 @@ export default function DpOrders() {
                       {ORDER_FLOW.map((s, i) => (
                         <span key={s} className={`flex-1 text-center text-[9px] font-semibold ${
                           i === statusIdx ? 'text-primary-600 dark:text-primary-400' :
-                          i < statusIdx ? 'text-primary-500 dark:text-primary-500' :
-                          'text-gray-400'
+                          i < statusIdx ? 'text-primary-500' : 'text-gray-400'
                         }`}>
                           {STATUS_LABELS[s]?.split(' ')[0]}
                         </span>
@@ -207,7 +204,6 @@ export default function DpOrders() {
                 )}
 
                 <div className="mt-3 space-y-2">
-                  {/* Cancel before confirming */}
                   {req.status === 'accepted' && (
                     <button
                       onClick={(e) => cancelOrder(req, e)}
@@ -218,7 +214,6 @@ export default function DpOrders() {
                     </button>
                   )}
 
-                  {/* Advance status button */}
                   {isActionable && nextStatus && (
                     <button
                       onClick={(e) => advanceStatus(req, e)}
@@ -230,7 +225,7 @@ export default function DpOrders() {
                   )}
 
                   {awaitingUser && (
-                    <div className="flex items-center justify-center rounded-xl bg-warning-50 px-3 py-2.5 text-xs font-medium text-warning-700 dark:bg-warning-950/30 dark:text-warning-300">
+                    <div className="flex items-center justify-center rounded-xl bg-warning-50 px-3 py-2.5 text-xs font-medium text-warning-700 dark:bg-warning-950/30 dark:text-warning-300 animate-pulse-soft">
                       Waiting for customer to confirm delivery...
                     </div>
                   )}

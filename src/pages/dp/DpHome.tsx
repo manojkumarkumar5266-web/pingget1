@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
-import { supabase, DeliveryRequest, Profile, DeliveryPartner } from '../../lib/supabase'
-import { EmptyState, ServiceStatusBanner } from '../../components/ui'
-import { formatTime, formatDistance, haversineDistance } from '../../lib/utils'
-import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, Navigation } from 'lucide-react'
+import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
+import { EmptyState, ServiceStatusBanner, SkeletonCard, StatCard, CountUp } from '../../components/ui'
+import { formatTime, formatDistance, haversineDistance, formatCurrency } from '../../lib/utils'
+import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, Navigation, TrendingUp, Star, Zap, Bike, Activity } from 'lucide-react'
 
 type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
 
@@ -23,7 +23,7 @@ function VoicePlayer({ url }: { url: string }) {
   }
   return (
     <div className="mt-2 flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 dark:border-gray-700 dark:bg-gray-800">
-      <button type="button" onClick={toggle} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white">
+      <button type="button" onClick={toggle} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white active:scale-90 transition-transform">
         {playing ? <Pause size={14} /> : <Play size={14} />}
       </button>
       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{playing ? 'Playing...' : 'Voice Note'}</p>
@@ -44,6 +44,9 @@ export default function DpHome() {
   const rangeInitialised = useRef(false)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [gpsLoading, setGpsLoading] = useState(false)
+  const [todayOrders, setTodayOrders] = useState<Order[]>([])
+  const [weekOrders, setWeekOrders] = useState<Order[]>([])
+  const [totalOrders, setTotalOrders] = useState(0)
 
   const showToast = (msg: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current)
@@ -67,6 +70,22 @@ export default function DpHome() {
   }, [profile])
 
   useEffect(() => {
+    if (dpLoading || !profile) return
+    const fetchStats = async () => {
+      const { data: allOrders } = await supabase
+        .from('orders').select('*').eq('dp_id', profile!.id).eq('status', 'completed')
+      const orders = (allOrders as Order[]) || []
+      const now = new Date()
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+      const weekStart = new Date(now.getTime() - 7 * 86400000).toISOString()
+      setTodayOrders(orders.filter(o => o.completed_at && o.completed_at >= todayStart))
+      setWeekOrders(orders.filter(o => o.completed_at && o.completed_at >= weekStart))
+      setTotalOrders(orders.length)
+    }
+    fetchStats()
+  }, [dpLoading, profile])
+
+  useEffect(() => {
     if (dp && !rangeInitialised.current) {
       rangeInitialised.current = true
       const meters = dp.service_range_meters ?? 5000
@@ -87,7 +106,6 @@ export default function DpHome() {
         .not('declined_by', 'cs', `{${profile!.id}}`)
         .order('created_at', { ascending: false })
       if (!data) { setLoading(false); return }
-
       const userIds = [...new Set(data.map((r: any) => r.user_id))]
       let profileMap = new Map<string, Profile>()
       if (userIds.length > 0) {
@@ -216,21 +234,27 @@ export default function DpHome() {
     return dist <= rangeMeters
   })
 
+  const todayEarnings = todayOrders.reduce((s, o) => s + Number(o.dp_earnings || 0), 0)
+  const weekEarnings = weekOrders.reduce((s, o) => s + Number(o.dp_earnings || 0), 0)
+  const todayDeliveries = todayOrders.length
+  const rating = dp?.rating_avg || 0
+  const ratingCount = dp?.rating_count || 0
+
   if (dpLoading) {
-    return <div className="p-4 space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-32 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />)}</div>
+    return <div className="p-4 space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
   }
 
   if (!dp?.is_online) {
     return (
       <div className="mx-auto max-w-md px-4 py-4">
         <ServiceStatusBanner cityName={profile?.city} />
-        <div className="mt-16 flex flex-col items-center justify-center gap-4 text-center px-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-            <WifiOff size={36} className="text-gray-400" />
+        <div className="mt-16 flex flex-col items-center justify-center gap-4 text-center px-6 animate-fade-in-up">
+          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gray-100 dark:bg-gray-800 animate-bounce-in">
+            <WifiOff size={40} className="text-gray-400" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">You are Offline</h2>
           <p className="max-w-xs text-sm text-gray-500 dark:text-gray-400">
-            Tap the <span className="font-semibold text-gray-700 dark:text-gray-300">Offline</span> button at the top to go online and start receiving delivery requests.
+            Tap the <span className="font-semibold text-success-600">Go Online</span> button at the top to start receiving delivery requests.
           </p>
         </div>
       </div>
@@ -247,18 +271,55 @@ export default function DpHome() {
         </div>
       )}
 
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Nearby Requests</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Requests within your service range</p>
+      {/* Earnings Dashboard */}
+      <div className="mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 to-primary-800 p-5 text-white shadow-lg animate-slide-up" style={{ boxShadow: 'var(--shadow-lg)' }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-primary-100">Today&apos;s Earnings</p>
+            <p className="mt-1 text-3xl font-bold">
+              <CountUp value={todayEarnings} prefix="₹" />
+            </p>
+          </div>
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm">
+            <TrendingUp size={28} />
+          </div>
         </div>
-        {savingRange && <span className="text-xs text-gray-400 animate-pulse">Saving...</span>}
+        <div className="mt-4 flex gap-4">
+          <div className="flex-1 rounded-xl bg-white/10 px-3 py-2">
+            <p className="text-xs text-primary-100">This Week</p>
+            <p className="text-lg font-bold">{formatCurrency(weekEarnings)}</p>
+          </div>
+          <div className="flex-1 rounded-xl bg-white/10 px-3 py-2">
+            <p className="text-xs text-primary-100">Deliveries</p>
+            <p className="text-lg font-bold">{todayDeliveries} today</p>
+          </div>
+        </div>
       </div>
 
-      <div className="mb-4 card p-4">
+      {/* Performance Stats */}
+      <div className="mb-4 grid grid-cols-3 gap-2">
+        <div className="card p-3 text-center animate-slide-up">
+          <Star size={18} className="mx-auto mb-1 text-accent-400" />
+          <p className="text-lg font-bold text-gray-900 dark:text-white">{rating > 0 ? rating.toFixed(1) : '—'}</p>
+          <p className="text-[10px] text-gray-500">Rating{ratingCount > 0 ? ` (${ratingCount})` : ''}</p>
+        </div>
+        <div className="card p-3 text-center animate-slide-up" style={{ animationDelay: '50ms' }}>
+          <Package size={18} className="mx-auto mb-1 text-primary-500" />
+          <p className="text-lg font-bold text-gray-900 dark:text-white">{totalOrders}</p>
+          <p className="text-[10px] text-gray-500">Total Orders</p>
+        </div>
+        <div className="card p-3 text-center animate-slide-up" style={{ animationDelay: '100ms' }}>
+          <Activity size={18} className="mx-auto mb-1 text-success-500" />
+          <p className="text-lg font-bold text-gray-900 dark:text-white">{dp?.is_online ? 'Active' : '—'}</p>
+          <p className="text-[10px] text-gray-500">Status</p>
+        </div>
+      </div>
+
+      {/* Service Range */}
+      <div className="mb-4 card p-4 animate-slide-up">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">
-            <Sliders size={13} /> My service range
+            <Sliders size={13} /> Service range
           </div>
           <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{rangeKm} km</span>
         </div>
@@ -278,24 +339,41 @@ export default function DpHome() {
           </button>
         )}
         {profile?.gps_lat && (
-          <p className="mt-2 text-xs text-gray-400">
-            Your location: {profile.gps_lat.toFixed(4)}, {profile.gps_lng!.toFixed(4)}
-          </p>
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-400">
+            <MapPin size={12} className="text-success-500" />
+            <span>Location: {profile.gps_lat.toFixed(4)}, {profile.gps_lng!.toFixed(4)}</span>
+          </div>
         )}
       </div>
 
+      {/* Nearby Requests */}
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h3 className="text-base font-bold text-gray-900 dark:text-white">Nearby Requests</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{filtered.length} within {rangeKm} km</p>
+        </div>
+        {savingRange && <span className="text-xs text-gray-400 animate-pulse">Saving...</span>}
+      </div>
+
       {loading ? (
-        <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-32 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />)}</div>
+        <div className="space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
       ) : filtered.length === 0 ? (
         <EmptyState icon={<Package size={48} />} title="No requests in your range"
           description={`No pending requests within ${rangeKm} km. Increase your range to see more.`} />
       ) : (
         <div className="space-y-3">
-          {filtered.map(req => {
+          {filtered.map((req, i) => {
             const dist = getDistance(req)
             return (
-              <div key={req.id} className="card p-4 animate-slide-up">
-                <p className="font-semibold text-gray-900 dark:text-white">{req.title}</p>
+              <div key={req.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
+                <div className="flex items-start justify-between">
+                  <p className="font-semibold text-gray-900 dark:text-white">{req.title}</p>
+                  {dist > 0 && (
+                    <span className="badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                      {formatDistance(dist)}
+                    </span>
+                  )}
+                </div>
                 {req.description && (
                   <ul className="mt-1.5 space-y-0.5">
                     {req.description.split('\n').map((line, i) => line.trim() && (
@@ -312,12 +390,6 @@ export default function DpHome() {
                   </a>
                 )}
                 <div className="mt-3 space-y-1.5 text-xs">
-                  {dist > 0 && (
-                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                      <MapPin size={13} className="shrink-0 text-primary-500" />
-                      <span>{formatDistance(dist)} away</span>
-                    </div>
-                  )}
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                     <Clock size={13} className="shrink-0" /><span>{formatTime(req.created_at)}</span>
                   </div>
@@ -346,8 +418,12 @@ export default function DpHome() {
                 </div>
                 {req.voice_note_url && <VoicePlayer url={req.voice_note_url} />}
                 <div className="mt-3 flex gap-2">
-                  <button onClick={() => acceptRequest(req)} className="btn-primary flex-1"><Check size={18} /> Accept</button>
-                  <button onClick={() => declineRequest(req)} className="btn-secondary px-4"><X size={18} /></button>
+                  <button onClick={() => acceptRequest(req)} className="btn-primary flex-1 active:scale-95 transition-transform">
+                    <Check size={18} /> Accept
+                  </button>
+                  <button onClick={() => declineRequest(req)} className="btn-secondary px-4 active:scale-95 transition-transform">
+                    <X size={18} />
+                  </button>
                 </div>
               </div>
             )

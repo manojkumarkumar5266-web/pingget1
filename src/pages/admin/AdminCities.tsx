@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context'
 import { supabase, City, Pincode } from '../../lib/supabase'
-import { EmptyState, ErrorBanner } from '../../components/ui'
+import { EmptyState, ErrorBanner, SkeletonCard } from '../../components/ui'
 import { Plus, MapPin, Pause, Play, X, ChevronDown, ChevronRight, ToggleLeft, ToggleRight, Download } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
@@ -103,7 +103,12 @@ export default function AdminCities() {
     XLSX.writeFile(wb, 'pincodes.xlsx')
   }
 
-  if (loading) return <div className="p-8 text-center text-sm text-gray-400">Loading cities...</div>
+  if (loading) return (
+    <div className="p-4 md:p-8">
+      <div className="mb-6 h-8 w-64 skeleton rounded-xl" />
+      <div className="space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
+    </div>
+  )
 
   return (
     <div className="p-4 md:p-8">
@@ -119,8 +124,8 @@ export default function AdminCities() {
         <EmptyState icon={<MapPin size={48} />} title="No cities added" description="Add cities to control service availability." />
       ) : (
         <div className="space-y-3">
-          {cities.map(city => (
-            <div key={city.id} className="card overflow-hidden">
+          {cities.map((city, i) => (
+            <div key={city.id} className="card overflow-hidden animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
               <div className="flex items-start justify-between p-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -205,8 +210,8 @@ export default function AdminCities() {
       )}
 
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4" onClick={() => setShowAdd(false)}>
-          <div className="card w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setShowAdd(false)}>
+          <div className="card w-full max-w-md p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Add City</h3>
               <button onClick={() => setShowAdd(false)} className="btn-ghost p-1"><X size={20} /></button>

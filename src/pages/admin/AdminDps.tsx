@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context'
 import { supabase, DeliveryPartner, Profile } from '../../lib/supabase'
-import { Avatar, EmptyState } from '../../components/ui'
+import { Avatar, EmptyState, SkeletonCard } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
 import { Check, X, Shield, ChevronRight, ArrowLeft, FileText, Phone, Truck, CreditCard, AlertCircle, Download, MapPin } from 'lucide-react'
 import * as XLSX from 'xlsx'
@@ -96,17 +96,18 @@ export default function AdminDps() {
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map(i => <div key={i} className="h-20 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />)}
+          {[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}
         </div>
       ) : dps.length === 0 ? (
         <EmptyState icon={<Shield size={48} />} title={`No ${filter} delivery partners`} />
       ) : (
         <div className="space-y-3">
-          {dps.map(dp => (
+          {dps.map((dp, i) => (
             <div
               key={dp.id}
               onClick={() => setSelected(dp)}
-              className='card p-4 cursor-pointer active:bg-gray-50 dark:active:bg-gray-800'
+              className='card card-hover p-4 cursor-pointer animate-slide-up'
+              style={{ animationDelay: `${i * 50}ms` }}
             >
               <div className="flex items-center gap-3">
                 <Avatar url={dp.profile?.photo_url} name={dp.profile?.full_name || 'DP'} size={48} />
@@ -150,13 +151,13 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
   dp: DpWithProfile; onClose: () => void; onApprove: () => void; onReject: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div
-        className="absolute bottom-0 left-0 right-0 max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-gray-900"
+        className="absolute bottom-0 left-0 right-0 max-h-[92vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-gray-900 bottom-sheet"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-gray-200 dark:bg-gray-700" />
+          <div className="h-1.5 w-12 rounded-full bg-gray-200 dark:bg-gray-700" />
         </div>
         <div className="px-5 pb-8">
           <div className="mb-5 flex items-center gap-3">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatCurrency, formatTime } from '../../lib/utils'
-import { StatusBadge, EmptyState } from '../../components/ui'
+import { StatusBadge, EmptyState, SkeletonCard } from '../../components/ui'
 import { ClipboardList, Search, Download, X, User, Bike, MapPin, Package, IndianRupee } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
@@ -51,7 +51,12 @@ export default function AdminOrders() {
     XLSX.writeFile(wb, 'orders.xlsx')
   }
 
-  if (loading) return <div className="p-8 text-center text-sm text-gray-400">Loading orders...</div>
+  if (loading) return (
+    <div className="p-4 md:p-8">
+      <div className="mb-6 h-8 w-48 skeleton rounded-xl" />
+      <div className="space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
+    </div>
+  )
 
   return (
     <div className="p-4 md:p-8">
@@ -72,8 +77,9 @@ export default function AdminOrders() {
         <EmptyState icon={<ClipboardList size={48} />} title="No orders found" />
       ) : (
         <div className="space-y-3">
-          {filtered.map(o => (
-            <div key={o.id} className="card p-4 animate-slide-up cursor-pointer hover:shadow-md transition-shadow"
+          {filtered.map((o, i) => (
+            <div key={o.id} className="card card-hover p-4 animate-slide-up cursor-pointer"
+              style={{ animationDelay: `${i * 30}ms` }}
               onClick={() => setSelected(o)}>
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
@@ -134,14 +140,11 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
   const req = order._request || {}
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
-      <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-gray-900"
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-gray-900 bottom-sheet"
         onClick={e => e.stopPropagation()}>
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-4 dark:border-gray-800 dark:bg-gray-900">
-          <p className="font-bold text-gray-900 dark:text-white">Order Details</p>
-          <button onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800">
-            <X size={18} />
-          </button>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="h-1.5 w-12 rounded-full bg-gray-200 dark:bg-gray-700" />
         </div>
         <div className="px-5 pb-10 pt-4 space-y-5">
           {/* Status + ID */}

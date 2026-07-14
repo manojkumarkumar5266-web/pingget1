@@ -28,16 +28,16 @@ export default function AdminLogin() {
     setLoading(true)
 
     const { error: signInError } = await signInWithEmail(email.trim(), password)
-    if (signInError) { setError(signInError); setLoading(false); return }
+    if (signInError) { setError(signInError); setEmail(''); setPassword(''); setLoading(false); return }
 
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) { setError('Authentication failed. Please try again.'); setLoading(false); return }
+    if (!session?.user) { setError('Authentication failed. Please try again.'); setEmail(''); setPassword(''); setLoading(false); return }
 
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle()
     if (profile?.role !== 'admin') {
       await supabase.auth.signOut()
       setError('Access denied. This login is for administrators only.')
-      setLoading(false)
+      setEmail(''); setPassword(''); setLoading(false)
       return
     }
     // Admin confirmed — App.tsx redirects to /admin
@@ -63,8 +63,18 @@ export default function AdminLogin() {
       resetEmail.trim(),
       { redirectTo: window.location.origin + '/reset-password' }
     )
+    if (resetError) {
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            to: resetEmail.trim(),
+            type: 'password_reset',
+            data: { name: '', reset_url: `${window.location.origin}/reset-password` },
+          },
+        })
+      } catch { /* fallback also failed */ }
+    }
     setLoading(false)
-    if (resetError) { setError(resetError.message); return }
     setResetSent(true)
   }
 

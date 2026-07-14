@@ -211,7 +211,7 @@ export default function DpSignup() {
     if (!signInEmail.trim() || !signInPassword) { setError('Please enter your email and password'); return }
     setLoading(true)
     const { error: signInError } = await signInWithEmail(signInEmail.trim(), signInPassword)
-    if (signInError) { setError(signInError); setLoading(false); return }
+    if (signInError) { setError(signInError); setSignInEmail(''); setSignInPassword(''); setLoading(false); return }
     // App.tsx redirects based on profile role
   }
 

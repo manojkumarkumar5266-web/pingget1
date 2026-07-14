@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
-import { EmptyState } from '../../components/ui'
+import { EmptyState, SkeletonCard, Tabs } from '../../components/ui'
 import { formatTime, formatCurrency } from '../../lib/utils'
 import { CreditCard, Download, IndianRupee, CheckCircle, XCircle, Clock, Settings, ExternalLink, AlertTriangle } from 'lucide-react'
 import * as XLSX from 'xlsx'
@@ -205,7 +205,12 @@ export default function AdminPayments() {
     XLSX.writeFile(wb, 'pending-commission.xlsx')
   }
 
-  if (loading) return <div className="p-8 text-center text-sm text-gray-400">Loading payments…</div>
+  if (loading) return (
+    <div className="p-4 md:p-8">
+      <div className="mb-6 h-8 w-48 skeleton rounded-xl" />
+      <div className="space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
+    </div>
+  )
 
   return (
     <div className="p-4 md:p-8">
@@ -262,30 +267,17 @@ export default function AdminPayments() {
         )}
       </div>
 
-      {/* Tab switcher */}
-      <div className="mb-5 flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
-        {(['orders', 'dp', 'pending', 'receipts'] as const).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg py-2 text-xs font-semibold transition-all relative ${tab === t ? 'bg-white text-primary-600 shadow-sm dark:bg-gray-700 dark:text-primary-300' : 'text-gray-500'}`}
-          >
-            {t === 'orders' ? 'Order Commissions'
-              : t === 'dp' ? 'DP Earnings'
-              : t === 'pending' ? 'Pending Commission'
-              : 'Receipts'}
-            {t === 'receipts' && pendingReceiptsCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-warning-500 text-[10px] font-bold text-white">
-                {pendingReceiptsCount}
-              </span>
-            )}
-            {t === 'pending' && dpPending.length > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-error-500 text-[10px] font-bold text-white">
-                {dpPending.length}
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="mb-5">
+        <Tabs
+          tabs={[
+            { key: 'orders', label: 'Order Commissions' },
+            { key: 'dp', label: 'DP Earnings' },
+            { key: 'pending', label: 'Pending Commission', count: dpPending.length },
+            { key: 'receipts', label: 'Receipts', count: pendingReceiptsCount },
+          ]}
+          active={tab}
+          onChange={(k) => setTab(k as any)}
+        />
       </div>
 
       {/* Order Commissions */}
@@ -429,8 +421,8 @@ export default function AdminPayments() {
             <EmptyState icon={<CreditCard size={48} />} title="No receipts submitted yet" />
           ) : (
             <div className="space-y-3">
-              {receipts.map(r => (
-                <div key={r.id} className="card p-4">
+              {receipts.map((r, i) => (
+                <div key={r.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 30}ms` }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -491,8 +483,8 @@ export default function AdminPayments() {
 
       {/* Reject reason modal */}
       {rejectId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setRejectId(null)}>
-          <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setRejectId(null)}>
+          <div className="card w-full max-w-sm p-5 animate-scale-in" onClick={e => e.stopPropagation()}>
             <h3 className="mb-3 text-base font-bold text-gray-900 dark:text-white">Reject Receipt</h3>
             <label className="label">Reason (optional)</label>
             <input className="input" value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="e.g. Amount mismatch, wrong reference" />
