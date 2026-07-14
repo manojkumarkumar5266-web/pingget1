@@ -116,14 +116,29 @@ export default function AdminDashboard() {
     }
     fetchAll()
 
-    const channel = supabase.channel('admin-notifications')
+    const refreshTimer = setInterval(fetchAll, 30000)
+
+    const notifChannel = supabase.channel('admin-notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' },
         (payload: any) => {
           setNotifications(prev => [payload.new as AdminNotification, ...prev])
           setUnreadCount(c => c + 1)
         })
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+
+    const dataChannel = supabase.channel('admin-realtime-data')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_partners' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'commission_payments' }, () => fetchAll())
+      .subscribe()
+
+    return () => {
+      clearInterval(refreshTimer)
+      supabase.removeChannel(notifChannel)
+      supabase.removeChannel(dataChannel)
+    }
   }, [])
 
   const markAllRead = async () => {
@@ -202,7 +217,14 @@ export default function AdminDashboard() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Overview of PingGET operations</p>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+              Overview of PingGET operations
+            </span>
+            <span className="flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-[10px] font-bold text-success-600 dark:bg-success-900/30 dark:text-success-400">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success-500" /> LIVE
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShowNotifPanel(true)} className="relative btn-secondary flex items-center gap-1.5 text-sm">

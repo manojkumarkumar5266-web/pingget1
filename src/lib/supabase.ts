@@ -98,6 +98,7 @@ export type Message = {
   location_lng: number | null
   quotation_data: any
   is_read: boolean
+  read_at: string | null
   created_at: string
 }
 

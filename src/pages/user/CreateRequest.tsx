@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
@@ -18,6 +18,17 @@ export default function CreateRequest() {
   const [gpsLoading, setGpsLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (gpsLat) return
+    if (!navigator.geolocation) return
+    setGpsLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      pos => { setGpsLat(pos.coords.latitude); setGpsLng(pos.coords.longitude); setGpsLoading(false) },
+      () => { setGpsLoading(false) },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+    )
+  }, [])
 
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -203,10 +214,21 @@ export default function CreateRequest() {
             <label className="label">Delivery Address *</label>
             <textarea className="input min-h-20 resize-none" value={form.delivery_address} onChange={e => set('delivery_address', e.target.value)} placeholder="Your delivery address" required />
           </div>
-          <button type="button" onClick={getLocation} disabled={gpsLoading} className="btn-secondary w-full">
-            <MapPin size={18} />
-            {gpsLoading ? 'Getting location...' : gpsLat ? `GPS set: ${gpsLat.toFixed(4)}, ${gpsLng!.toFixed(4)}` : 'Set GPS Location'}
-          </button>
+          {gpsLoading ? (
+            <div className="flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700 dark:border-primary-800 dark:bg-primary-900/30 dark:text-primary-300">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-300 border-t-primary-600" />
+              <span>Auto-detecting your location...</span>
+            </div>
+          ) : gpsLat ? (
+            <div className="flex items-center gap-2 rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-800 dark:bg-success-900/30 dark:text-success-300">
+              <MapPin size={16} className="shrink-0" />
+              <span>Location detected: {gpsLat.toFixed(4)}, {gpsLng!.toFixed(4)}</span>
+            </div>
+          ) : (
+            <button type="button" onClick={getLocation} className="btn-secondary w-full">
+              <MapPin size={18} /> Allow Location Access
+            </button>
+          )}
         </div>
 
         <div className="card p-5 space-y-4">

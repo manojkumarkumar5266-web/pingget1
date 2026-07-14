@@ -149,23 +149,38 @@ export default function ChatScreen() {
   }, [roomId, isUser, profile])
 
   useEffect(() => {
+    if (!roomId) return
     const onFocus = () => {
       if (!roomId) return
       supabase.from('messages').select('*').eq('chat_room_id', roomId)
         .order('created_at', { ascending: true })
-        .then(({ data }) => { if (data) setMessages(data as Message[]) })
+        .then(({ data }) => {
+          if (data) {
+            setMessages(data as Message[])
+            const otherUserId = isUser ? room?.dp_id : room?.user_id
+            if (otherUserId) {
+              supabase.from('messages')
+                .update({ read_at: new Date().toISOString(), is_read: true })
+                .eq('chat_room_id', roomId).eq('sender_id', otherUserId).is('read_at', null)
+                .then(() => {})
+            }
+          }
+        })
     }
+    onFocus()
     window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', () => { if (!document.hidden) onFocus() })
+    const pollInterval = setInterval(onFocus, 5000)
     return () => {
       window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onFocus)
+      clearInterval(pollInterval)
     }
-  }, [roomId])
+  }, [roomId, isUser, room])
 
   useEffect(() => {
     if (!roomId) return
-    const channelName = `chat-${roomId}-${Date.now()}`
+    const channelName = `chat-room-${roomId}`
     const channel = supabase.channel(channelName)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_room_id=eq.${roomId}` },
         (payload) => {
@@ -310,10 +325,17 @@ export default function ChatScreen() {
         <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={40} />
         <div className="flex-1">
           <p className="font-semibold text-gray-900 dark:text-white">{otherUser?.full_name}</p>
-          {dpInfo && (
+          {dpInfo ? (
             <p className="text-xs text-gray-400">
               {dpInfo.vehicle_type} • {dpInfo.rating_avg > 0 ? `${dpInfo.rating_avg.toFixed(1)}★` : 'New'} • {dpInfo.is_online ? 'Online' : 'Offline'}
             </p>
+          ) : (
+            (() => {
+              const lastOwnMsg = [...messages].reverse().find(m => m.sender_id === profile?.id)
+              if (lastOwnMsg?.read_at) return <p className="text-xs text-success-500 flex items-center gap-0.5"><CheckCheck size={11} /> Seen</p>
+              if (lastOwnMsg) return <p className="text-xs text-gray-400 flex items-center gap-0.5"><Check size={11} /> Delivered</p>
+              return <p className="text-xs text-gray-400">Online</p>
+            })()
           )}
         </div>
         {order && <StatusBadge status={order.status} />}
@@ -419,7 +441,11 @@ export default function ChatScreen() {
                   )}
                   <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${isOwn ? 'text-primary-200' : 'text-gray-400'}`}>
                     {timeOfDay(msg.created_at)}
-                    {isOwn && (msg.is_read ? <CheckCheck size={12} /> : <Check size={12} />)}
+                    {isOwn && (
+                      <span className={msg.read_at ? 'text-success-400' : ''}>
+                        {msg.read_at ? <CheckCheck size={13} /> : <Check size={13} />}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

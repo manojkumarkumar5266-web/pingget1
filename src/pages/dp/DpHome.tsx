@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
 import { EmptyState, ServiceStatusBanner, SkeletonCard, StatCard, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency } from '../../lib/utils'
-import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, Navigation, TrendingUp, Star, Zap, Bike, Activity } from 'lucide-react'
+import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Zap, Bike, Activity, Navigation } from 'lucide-react'
 
 type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
 
@@ -43,7 +43,6 @@ export default function DpHome() {
   const [rangeKm, setRangeKm] = useState(5)
   const rangeInitialised = useRef(false)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [gpsLoading, setGpsLoading] = useState(false)
   const [todayOrders, setTodayOrders] = useState<Order[]>([])
   const [weekOrders, setWeekOrders] = useState<Order[]>([])
   const [totalOrders, setTotalOrders] = useState(0)
@@ -142,23 +141,6 @@ export default function DpHome() {
     setSavingRange(true)
     await supabase.from('delivery_partners').update({ service_range_meters: km * 1000 }).eq('user_id', profile!.id)
     setSavingRange(false)
-  }
-
-  const setMyLocation = () => {
-    if (!navigator.geolocation) { showToast('Geolocation not supported'); return }
-    setGpsLoading(true)
-    navigator.geolocation.getCurrentPosition(
-      async pos => {
-        const lat = pos.coords.latitude
-        const lng = pos.coords.longitude
-        await supabase.from('profiles').update({ gps_lat: lat, gps_lng: lng }).eq('id', profile!.id)
-        await refreshProfile()
-        setGpsLoading(false)
-        showToast('Location updated')
-      },
-      () => { showToast('Location denied. Please allow location in browser settings.'); setGpsLoading(false) },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-    )
   }
 
   const declineRequest = async (req: RequestWithUser) => {
@@ -333,15 +315,15 @@ export default function DpHome() {
         <div className="mt-1 flex justify-between text-[10px] text-gray-400">
           <span>1 km</span><span>25 km</span><span>50 km</span>
         </div>
-        {!profile?.gps_lat && (
-          <button onClick={setMyLocation} disabled={gpsLoading} className="btn-secondary mt-3 w-full text-sm">
-            <Navigation size={16} /> {gpsLoading ? 'Getting location...' : 'Set My GPS Location'}
-          </button>
-        )}
-        {profile?.gps_lat && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-400">
-            <MapPin size={12} className="text-success-500" />
-            <span>Location: {profile.gps_lat.toFixed(4)}, {profile.gps_lng!.toFixed(4)}</span>
+        {profile?.gps_lat ? (
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-success-600 dark:text-success-400">
+            <MapPin size={12} className="shrink-0" />
+            <span>Location auto-detected: {profile.gps_lat.toFixed(4)}, {profile.gps_lng!.toFixed(4)}</span>
+          </div>
+        ) : (
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-warning-600 dark:text-warning-400">
+            <Navigation size={12} className="shrink-0 animate-pulse" />
+            <span>Waiting for GPS location... Allow location access.</span>
           </div>
         )}
       </div>

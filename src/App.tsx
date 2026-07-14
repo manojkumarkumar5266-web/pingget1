@@ -24,7 +24,7 @@ export default function App() {
     )
   }
 
-  if (location.pathname === '/admin/login') {
+  if (location.pathname === '/admin/login' && !session) {
     return (
       <Routes>
         <Route path="/admin/login" element={<AdminLogin />} />
