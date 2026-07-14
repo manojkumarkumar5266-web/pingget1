@@ -221,9 +221,9 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
           <div className="mt-1 flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+            <span className="flex items-center gap-1.5 text-sm text-white/50">
               Overview of PingGET operations
             </span>
             <span className="flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-[10px] font-bold text-success-600 dark:bg-success-900/30 dark:text-success-400">
@@ -255,10 +255,10 @@ export default function AdminDashboard() {
               <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-xl ${s.color}`}>
                 <Icon size={20} />
               </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-2xl font-bold text-white">
                 <CountUp value={s.value} />
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{s.label}</p>
+              <p className="text-xs text-white/50">{s.label}</p>
             </div>
           )
         })}
@@ -271,7 +271,7 @@ export default function AdminDashboard() {
             <IndianRupee size={20} />
             <span className="text-sm font-medium">Today&apos;s Revenue</span>
           </div>
-          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+          <p className="mt-2 text-3xl font-bold text-white">
             <CountUp value={stats.todayRevenue} prefix="₹" />
           </p>
         </div>
@@ -280,7 +280,7 @@ export default function AdminDashboard() {
             <TrendingUp size={20} />
             <span className="text-sm font-medium">This Month&apos;s Revenue</span>
           </div>
-          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+          <p className="mt-2 text-3xl font-bold text-white">
             <CountUp value={stats.monthRevenue} prefix="₹" />
           </p>
         </div>
@@ -293,14 +293,14 @@ export default function AdminDashboard() {
             <CheckCircle size={20} />
             <span className="text-sm font-medium">Commission Collected</span>
           </div>
-          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.commissionCollected)}</p>
+          <p className="mt-2 text-3xl font-bold text-white">{formatCurrency(stats.commissionCollected)}</p>
         </div>
         <div className="card p-5 animate-slide-up" style={{ animationDelay: '550ms' }}>
           <div className="flex items-center gap-2 text-error-600 dark:text-error-400">
             <Clock size={20} />
             <span className="text-sm font-medium">Pending Commission</span>
           </div>
-          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.pendingCommission)}</p>
+          <p className="mt-2 text-3xl font-bold text-white">{formatCurrency(stats.pendingCommission)}</p>
           {stats.pendingCommission === 0 && stats.completedOrders > 0 && (
             <p className="mt-1 text-xs text-success-600">All collected!</p>
           )}
@@ -312,21 +312,21 @@ export default function AdminDashboard() {
         <div className="card p-5 animate-slide-up" style={{ animationDelay: '600ms' }}>
           <div className="mb-3 flex items-center gap-2">
             <Star size={16} className="text-accent-400" />
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Top Delivery Partners</h3>
+            <h3 className="text-sm font-bold text-white">Top Delivery Partners</h3>
           </div>
           {topDps.length === 0 ? (
-            <p className="text-sm text-gray-400">No data yet.</p>
+            <p className="text-sm text-white/40">No data yet.</p>
           ) : (
             <div className="space-y-2">
               {topDps.map((dp, i) => (
                 <div key={i} className="flex items-center justify-between rounded-xl px-2 py-1.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                   <div className="flex items-center gap-2">
                     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">{i + 1}</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{dp.name}</span>
+                    <span className="text-sm font-medium text-white">{dp.name}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm font-bold text-gray-900 dark:text-white">{dp.deliveries}</span>
-                    <span className="ml-1 text-xs text-gray-400">deliveries</span>
+                    <span className="text-sm font-bold text-white">{dp.deliveries}</span>
+                    <span className="ml-1 text-xs text-white/40">deliveries</span>
                   </div>
                 </div>
               ))}
@@ -337,17 +337,17 @@ export default function AdminDashboard() {
         <div className="card p-5 animate-slide-up" style={{ animationDelay: '650ms' }}>
           <div className="mb-3 flex items-center gap-2">
             <Zap size={16} className="text-primary-500" />
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Recent Completed Orders</h3>
+            <h3 className="text-sm font-bold text-white">Recent Completed Orders</h3>
           </div>
           {recentOrders.length === 0 ? (
-            <p className="text-sm text-gray-400">No completed orders yet.</p>
+            <p className="text-sm text-white/40">No completed orders yet.</p>
           ) : (
             <div className="space-y-2">
               {recentOrders.map((o) => (
                 <div key={o.id} className="flex items-center justify-between rounded-xl px-2 py-1.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{o.items_summary || 'Delivery'}</p>
-                    <p className="text-xs text-gray-400">{formatTime(o.created_at)}</p>
+                    <p className="text-sm font-medium text-white">{o.items_summary || 'Delivery'}</p>
+                    <p className="text-xs text-white/40">{formatTime(o.created_at)}</p>
                   </div>
                   <span className="text-sm font-bold text-success-600 dark:text-success-400">{formatCurrency(o.delivery_charge)}</span>
                 </div>
@@ -360,11 +360,11 @@ export default function AdminDashboard() {
       {/* Notification Panel */}
       {showNotifPanel && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowNotifPanel(false)}>
-          <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl animate-slide-in-right" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white/95 px-5 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/95">
+          <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto glass shadow-2xl animate-slide-in-right" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-white/95 px-5 py-4 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/95">
               <div className="flex items-center gap-2">
                 <Bell size={20} className="text-primary-600" />
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Notifications</h2>
+                <h2 className="text-lg font-bold text-white">Notifications</h2>
                 {unreadCount > 0 && (
                   <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-error-500 px-1.5 text-[10px] font-bold text-white">{unreadCount}</span>
                 )}
@@ -380,21 +380,21 @@ export default function AdminDashboard() {
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
                   <Bell size={40} className="text-gray-300" />
-                  <p className="text-sm text-gray-400">No notifications yet</p>
+                  <p className="text-sm text-white/40">No notifications yet</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {notifications.map(n => {
                     const Icon = NOTIF_ICONS[n.type] || Bell
                     return (
-                      <div key={n.id} onClick={() => markRead(n.id)} className={`flex gap-3 rounded-xl border p-3 cursor-pointer transition-all ${n.is_read ? 'border-gray-100 dark:border-gray-800' : 'border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-900/20'}`}>
-                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${n.is_read ? 'bg-gray-100 dark:bg-gray-800' : 'bg-primary-100 dark:bg-primary-900/40'}`}>
-                          <Icon size={16} className={n.is_read ? 'text-gray-400' : 'text-primary-600'} />
+                      <div key={n.id} onClick={() => markRead(n.id)} className={`flex gap-3 rounded-xl border p-3 cursor-pointer transition-all ${n.is_read ? 'border-white/10' : 'border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-900/20'}`}>
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${n.is_read ? 'glass' : 'bg-primary-100 dark:bg-primary-900/40'}`}>
+                          <Icon size={16} className={n.is_read ? 'text-white/40' : 'text-primary-600'} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-semibold ${n.is_read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>{n.title}</p>
-                          {n.body && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{n.body}</p>}
-                          <p className="text-[10px] text-gray-400 mt-1">{formatTime(n.created_at)}</p>
+                          <p className={`text-sm font-semibold ${n.is_read ? 'text-white/60' : 'text-white'}`}>{n.title}</p>
+                          {n.body && <p className="text-xs text-white/50 mt-0.5">{n.body}</p>}
+                          <p className="text-[10px] text-white/40 mt-1">{formatTime(n.created_at)}</p>
                         </div>
                         {!n.is_read && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-error-500" />}
                       </div>

@@ -11,10 +11,7 @@ type AuthLayoutProps = {
 
 export default function AuthLayout({ children, brandSize = 'lg', showBrand = true }: AuthLayoutProps) {
   return (
-    <div
-      className="relative min-h-screen overflow-hidden"
-      style={{ background: 'linear-gradient(160deg, #1c2a14 0%, #2a3d1c 40%, #374524 100%)' }}
-    >
+    <div className="relative min-h-screen overflow-hidden">
       <Watermark />
       <div className="flex min-h-screen w-full flex-col justify-between px-4 py-3">
         {showBrand && (
@@ -25,14 +22,11 @@ export default function AuthLayout({ children, brandSize = 'lg', showBrand = tru
 
         <div className="flex-1 flex flex-col justify-center pt-2 pb-2">{children}</div>
 
-        <div className="mt-2 text-center text-xs text-white/40">
+        <div className="mt-2 text-center text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
           By continuing you agree to our Terms &amp; Privacy Policy
         </div>
 
-        <div
-            className="mt-2 w-full overflow-hidden rounded-2xl border border-white/10"
-          style={{ background: 'linear-gradient(135deg, #3a5228 0%, #4a6830 100%)' }}
-        >
+        <div className="mt-2 w-full overflow-hidden rounded-2xl glass">
           <div className="grid grid-cols-4">
             {[
               { icon: <MessageCircle size={22} />, title: 'CHAT', sub: 'Easy Conversation' },
@@ -43,11 +37,11 @@ export default function AuthLayout({ children, brandSize = 'lg', showBrand = tru
               <div
                 key={i}
                 className="flex flex-col items-center gap-1 px-1 py-3 text-center"
-                style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}
+                style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}
               >
-                <span className="text-white">{f.icon}</span>
+                <span style={{ color: '#8fa964' }}>{f.icon}</span>
                 <p className="mt-0.5 text-[10px] font-black tracking-wide text-white">{f.title}</p>
-                <p className="text-[8px] font-semibold leading-tight text-white/80">{f.sub}</p>
+                <p className="text-[8px] font-semibold leading-tight" style={{ color: 'rgba(255,255,255,0.65)' }}>{f.sub}</p>
               </div>
             ))}
           </div>

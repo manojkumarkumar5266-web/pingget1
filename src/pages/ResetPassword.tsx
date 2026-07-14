@@ -41,8 +41,8 @@ export default function ResetPassword() {
               <CheckCircle size={32} className="text-success-600 dark:text-success-400" />
             </div>
           </div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Password Updated!</h2>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <h2 className="text-lg font-bold text-white">Password Updated!</h2>
+          <p className="mt-2 text-sm text-white/50">
             Your password has been changed successfully. Redirecting to sign in...
           </p>
         </div>
@@ -58,8 +58,8 @@ export default function ResetPassword() {
             <KeyRound size={20} className="text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Reset Password</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Enter your new password</p>
+            <h2 className="text-xl font-bold text-white">Reset Password</h2>
+            <p className="text-sm text-white/50">Enter your new password</p>
           </div>
         </div>
 
@@ -76,7 +76,7 @@ export default function ResetPassword() {
                 required
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-gray-600">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>

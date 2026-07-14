@@ -306,7 +306,7 @@ export default function ChatScreen() {
     if (!error) { setHasRated(true); setShowRating(false) }
   }
 
-  if (loading) return <div className="flex h-screen items-center justify-center text-sm text-gray-400">Loading chat...</div>
+  if (loading) return <div className="flex h-screen items-center justify-center text-sm text-white/40">Loading chat...</div>
   if (error) return <div className="p-4"><ErrorBanner message={error} /></div>
 
   const effectiveStatus = order?.status === 'cash_received' ? 'delivered' : order?.status
@@ -317,25 +317,25 @@ export default function ChatScreen() {
   const chatLocked = order?.status === 'completed' || order?.status === 'delivered' || order?.status === 'cash_received'
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50 dark:bg-gray-950">
-      <header className="flex items-center gap-3 border-b border-gray-100 bg-white/80 px-4 py-3 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
+    <div className="flex h-screen flex-col ">
+      <header className="flex items-center gap-3 border-b border-white/10 bg-white/80 px-4 py-3 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
         <button onClick={() => navigate(isUser ? '/app/orders' : '/dp/orders')} className="btn-ghost p-2">
           <ArrowLeft size={20} />
         </button>
         <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={40} />
         <div className="flex-1">
-          <p className="font-semibold text-gray-900 dark:text-white">{otherUser?.full_name}</p>
-          <p className="text-[10px] text-gray-400">Phone numbers are hidden — chat here to communicate</p>
+          <p className="font-semibold text-white">{otherUser?.full_name}</p>
+          <p className="text-[10px] text-white/40">Phone numbers are hidden — chat here to communicate</p>
           {dpInfo ? (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-white/40">
               {dpInfo.vehicle_type} • {dpInfo.rating_avg > 0 ? `${dpInfo.rating_avg.toFixed(1)}★` : 'New'} • {dpInfo.is_online ? 'Online' : 'Offline'}
             </p>
           ) : (
             (() => {
               const lastOwnMsg = [...messages].reverse().find(m => m.sender_id === profile?.id)
               if (lastOwnMsg?.read_at) return <p className="text-xs text-success-500 flex items-center gap-0.5"><CheckCheck size={11} /> Seen</p>
-              if (lastOwnMsg) return <p className="text-xs text-gray-400 flex items-center gap-0.5"><Check size={11} /> Delivered</p>
-              return <p className="text-xs text-gray-400">Online</p>
+              if (lastOwnMsg) return <p className="text-xs text-white/40 flex items-center gap-0.5"><Check size={11} /> Delivered</p>
+              return <p className="text-xs text-white/40">Online</p>
             })()
           )}
         </div>
@@ -343,12 +343,12 @@ export default function ChatScreen() {
       </header>
 
       {order && (
-        <div className="border-b border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-b border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
           <div className="flex items-center justify-between">
             {ORDER_FLOW.map((s, i) => (
               <div key={s} className="flex flex-1 flex-col items-center">
                 <div className={`h-2.5 w-2.5 rounded-full transition-all ${i <= currentStatusIdx ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-                <span className={`mt-1 text-[10px] font-medium ${i <= currentStatusIdx ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}>
+                <span className={`mt-1 text-[10px] font-medium ${i <= currentStatusIdx ? 'text-primary-600 dark:text-primary-400' : 'text-white/40'}`}>
                   {STATUS_LABELS[s]?.split(' ')[0]}
                 </span>
               </div>
@@ -357,7 +357,7 @@ export default function ChatScreen() {
           {order.delivery_charge > 0 && (
             <div className="mt-2 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
               <span className="text-xs text-gray-500">Delivery Charge</span>
-              <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(order.delivery_charge)}</span>
+              <span className="text-sm font-bold text-white">{formatCurrency(order.delivery_charge)}</span>
             </div>
           )}
         </div>
@@ -440,7 +440,7 @@ export default function ChatScreen() {
                   {msg.message_type === 'order_summary' && msg.quotation_data && (
                     <OrderSummaryMessage data={msg.quotation_data} isOwn={isOwn} />
                   )}
-                  <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${isOwn ? 'text-primary-200' : 'text-gray-400'}`}>
+                  <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${isOwn ? 'text-primary-200' : 'text-white/40'}`}>
                     {timeOfDay(msg.created_at)}
                     {isOwn && (
                       <span className={msg.read_at ? 'text-success-400' : ''}>
@@ -457,7 +457,7 @@ export default function ChatScreen() {
       </div>
 
       {isDpTurn && nextDpStatus && (
-        <div className="border-t border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-t border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
           <button onClick={() => updateOrderStatus(nextDpStatus)} className="btn-primary w-full">
             Mark as {STATUS_LABELS[nextDpStatus]}
           </button>
@@ -465,7 +465,7 @@ export default function ChatScreen() {
       )}
 
       {!isUser && (order?.status === 'delivered' || order?.status === 'cash_received') && (
-        <div className="border-t border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-t border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
           <div className="flex items-center justify-center gap-2 rounded-xl bg-warning-50 px-4 py-3 dark:bg-warning-950/30">
             <Clock size={16} className="shrink-0 text-warning-600 dark:text-warning-400" />
             <p className="text-sm font-medium text-warning-700 dark:text-warning-300">Waiting for customer to confirm delivery...</p>
@@ -474,13 +474,13 @@ export default function ChatScreen() {
       )}
 
       {isUser && order && DP_ACTION_STATUSES.includes(order.status) && (
-        <div className="border-t border-gray-100 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-center text-xs text-gray-400">Tracking your order in real-time...</p>
+        <div className="border-t border-white/10 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
+          <p className="text-center text-xs text-white/40">Tracking your order in real-time...</p>
         </div>
       )}
 
       {isUserDeliveryConfirm && (
-        <div className="border-t border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-t border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
           <div className="rounded-xl bg-success-50 p-4 dark:bg-success-950/30">
             <div className="mb-3 flex items-center justify-center gap-2">
               <PackageCheck size={20} className="text-success-600 dark:text-success-400" />
@@ -494,31 +494,31 @@ export default function ChatScreen() {
       )}
 
       {order?.status === 'completed' && isUser && !hasRated && (
-        <div className="border-t border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-t border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
           <button onClick={() => setShowRating(true)} className="btn-accent w-full"><Star size={18} /> Rate Delivery Partner</button>
         </div>
       )}
       {order?.status === 'completed' && hasRated && (
-        <div className="border-t border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-t border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
           <p className="text-center text-xs text-success-600 dark:text-success-400">Order completed and rated</p>
         </div>
       )}
 
       {chatLocked ? (
-        <div className="border-t border-gray-100 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-t border-white/10 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-900">
           <div className="flex items-center justify-center gap-2 rounded-xl bg-gray-50 px-4 py-3 dark:bg-gray-800">
-            <CheckCircle size={16} className="text-gray-400 shrink-0" />
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <CheckCircle size={16} className="text-white/40 shrink-0" />
+            <p className="text-sm font-medium text-white/50">
               {order?.status === 'completed' ? 'This conversation has ended.' : 'Waiting for delivery confirmation — chat is locked.'}
             </p>
           </div>
         </div>
       ) : (
-        <div className="border-t border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-t border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
           <input ref={imageInputRef} type="file" className="hidden" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) sendImage(f); e.target.value = '' }} />
           {showAttachMenu && (
             <div className="mb-2 flex gap-2">
-              <button onClick={() => { imageInputRef.current?.click(); setShowAttachMenu(false) }} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+              <button onClick={() => { imageInputRef.current?.click(); setShowAttachMenu(false) }} className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white px-3 py-2 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                 <Camera size={14} /> Image
               </button>
               {recording ? (
@@ -526,7 +526,7 @@ export default function ChatScreen() {
                   <MicOff size={14} /> Stop ({fmtDur(voiceDuration)})
                 </button>
               ) : (
-                <button onClick={startVoiceRecord} className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                <button onClick={startVoiceRecord} className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white px-3 py-2 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                   <Mic size={14} /> Voice Note
                 </button>
               )}
@@ -535,12 +535,12 @@ export default function ChatScreen() {
                   <PackageCheck size={14} /> Pickup Proof
                 </button>
               )}
-              <button onClick={() => setShowAttachMenu(false)} className="ml-auto text-gray-400"><X size={16} /></button>
+              <button onClick={() => setShowAttachMenu(false)} className="ml-auto text-white/40"><X size={16} /></button>
             </div>
           )}
           <div className="mx-auto flex max-w-md items-center gap-2">
             <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)}
-              className={`shrink-0 rounded-xl p-2.5 transition-colors ${showAttachMenu ? 'text-white' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}
+              className={`shrink-0 rounded-xl p-2.5 transition-colors ${showAttachMenu ? 'text-white' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-white/40'}`}
               style={showAttachMenu ? { backgroundColor: '#556d34' } : {}}>
               <Paperclip size={18} />
             </button>
@@ -594,8 +594,8 @@ export default function ChatScreen() {
 
 function OrderSummaryMessage({ data, isOwn }: { data: any; isOwn: boolean }) {
   const textColor = isOwn ? 'text-white' : 'text-gray-900 dark:text-gray-100'
-  const mutedColor = isOwn ? 'text-primary-100' : 'text-gray-500 dark:text-gray-400'
-  const borderColor = isOwn ? 'border-primary-400/40' : 'border-gray-200 dark:border-gray-700'
+  const mutedColor = isOwn ? 'text-primary-100' : 'text-white/50'
+  const borderColor = isOwn ? 'border-primary-400/40' : 'border-white/15'
   const tagBg = isOwn ? 'bg-primary-500/40' : 'bg-gray-100 dark:bg-gray-700'
   return (
     <div className="space-y-2.5 min-w-[200px]">
@@ -647,7 +647,7 @@ function VoiceMessagePlayer({ url, isOwn }: { url: string; isOwn: boolean }) {
       <div className={`h-1 flex-1 rounded-full ${isOwn ? 'bg-white/30' : 'bg-gray-200 dark:bg-gray-700'}`}>
         <div className={`h-full w-1/3 rounded-full ${isOwn ? 'bg-white/60' : 'bg-primary-400'} ${playing ? 'animate-pulse' : ''}`} />
       </div>
-      <span className={`text-[10px] ${isOwn ? 'text-primary-200' : 'text-gray-400'}`}>Voice</span>
+      <span className={`text-[10px] ${isOwn ? 'text-primary-200' : 'text-white/40'}`}>Voice</span>
     </div>
   )
 }
@@ -673,7 +673,7 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 animate-fade-in" onClick={onClose}>
       <div className="card w-full max-w-md p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
-        <h3 className="mb-1 text-lg font-bold text-gray-900 dark:text-white">Upload Pickup Proof</h3>
+        <h3 className="mb-1 text-lg font-bold text-white">Upload Pickup Proof</h3>
         <p className="mb-4 text-xs text-gray-500">Take a photo or upload an image of the items as pickup proof.</p>
         <input ref={fileRef} type="file" className="hidden" accept="image/*" onChange={handleSelect} />
         {preview ? (
@@ -682,7 +682,7 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
             <button type="button" onClick={() => { setFile(null); setPreview(null) }} className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white"><X size={14} /></button>
           </div>
         ) : (
-          <button type="button" onClick={() => fileRef.current?.click()} className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 py-8 text-sm text-gray-500 dark:border-gray-700">
+          <button type="button" onClick={() => fileRef.current?.click()} className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/15 py-8 text-sm text-gray-500 dark:border-gray-700">
             <Camera size={20} /> Take Photo or Upload Image
           </button>
         )}
@@ -727,11 +727,11 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 animate-fade-in" onClick={onClose}>
       <div className="card w-full max-w-md max-h-[90vh] overflow-y-auto p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
-        <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">Send Quotation</h3>
+        <h3 className="mb-4 text-lg font-bold text-white">Send Quotation</h3>
         <div className="space-y-3">
           <div>
             <label className="label">Items Summary</label>
-            <p className="mb-1 text-xs text-gray-400">Items from customer request — edit as needed.</p>
+            <p className="mb-1 text-xs text-white/40">Items from customer request — edit as needed.</p>
             <textarea className="input min-h-24 resize-none" value={items} onChange={e => setItems(e.target.value)} placeholder={"Each item on its own line\ne.g. 2kg Rice\n1L Milk"} />
           </div>
           <div>
@@ -744,7 +744,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
           </div>
           <div>
             <label className="label">Proof Photo (optional)</label>
-            <p className="mb-1 text-xs text-gray-400">Take a photo or upload an image of the items as proof.</p>
+            <p className="mb-1 text-xs text-white/40">Take a photo or upload an image of the items as proof.</p>
             <input ref={photoInputRef} type="file" className="hidden" accept="image/*" onChange={handlePhotoSelect} />
             {photoPreview ? (
               <div className="relative">
@@ -776,7 +776,7 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 animate-fade-in" onClick={onClose}>
       <div className="card w-full max-w-md p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
-        <h3 className="mb-1 text-lg font-bold text-gray-900 dark:text-white">Rate {targetName}</h3>
+        <h3 className="mb-1 text-lg font-bold text-white">Rate {targetName}</h3>
         <p className="mb-4 text-sm text-gray-500">How was your experience?</p>
         <div className="mb-4 flex justify-center gap-2">
           {[1, 2, 3, 4, 5].map(i => (

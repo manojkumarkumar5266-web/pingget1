@@ -56,7 +56,7 @@ export default function DpWallet() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-4">
-      <h1 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Wallet</h1>
+      <h1 className="mb-4 text-xl font-bold text-white">Wallet</h1>
 
       {outstanding > 0 ? (
         <div className="mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-warning-500 to-warning-600 p-5 text-white shadow-lg animate-slide-up">
@@ -100,30 +100,30 @@ export default function DpWallet() {
             <TrendingUp size={16} />
             <span className="text-xs font-medium">Total Earned</span>
           </div>
-          <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(totalEarnings)}</p>
-          <p className="text-xs text-gray-400">{orders.length} deliveries</p>
+          <p className="text-lg font-bold text-white">{formatCurrency(totalEarnings)}</p>
+          <p className="text-xs text-white/40">{orders.length} deliveries</p>
         </div>
         <div className="card p-4">
           <div className="flex items-center gap-2 text-error-600 dark:text-error-400 mb-1">
             <IndianRupee size={16} />
             <span className="text-xs font-medium">Commission</span>
           </div>
-          <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(totalCommission)}</p>
-          <p className="text-xs text-gray-400">{formatCurrency(totalConfirmed)} confirmed paid</p>
+          <p className="text-lg font-bold text-white">{formatCurrency(totalCommission)}</p>
+          <p className="text-xs text-white/40">{formatCurrency(totalConfirmed)} confirmed paid</p>
         </div>
       </div>
 
       <div className="mb-4 card p-3 flex items-center gap-3">
         <div className="flex-1">
           <p className="text-xs text-gray-500">Admin UPI (for commission payment)</p>
-          <p className="text-sm font-bold text-gray-900 dark:text-white">{adminUpi}</p>
+          <p className="text-sm font-bold text-white">{adminUpi}</p>
         </div>
-        <button onClick={() => navigator.clipboard.writeText(adminUpi)} className="btn-ghost p-2 text-gray-400" title="Copy UPI ID">
+        <button onClick={() => navigator.clipboard.writeText(adminUpi)} className="btn-ghost p-2 text-white/40" title="Copy UPI ID">
           <Copy size={16} />
         </button>
       </div>
 
-      <h3 className="mb-2 text-sm font-bold text-gray-900 dark:text-white">Commission Receipts</h3>
+      <h3 className="mb-2 text-sm font-bold text-white">Commission Receipts</h3>
       {receipts.length === 0 ? (
         <EmptyState icon={<Receipt size={36} />} title="No receipts yet" description="After paying admin via UPI, submit your receipt here for confirmation." />
       ) : (
@@ -132,14 +132,14 @@ export default function DpWallet() {
             <div key={r.id} className="card p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(r.amount)}</p>
-                  <p className="text-xs text-gray-400">UPI Ref: {r.upi_ref} · {formatTime(r.submitted_at)}</p>
+                  <p className="text-sm font-semibold text-white">{formatCurrency(r.amount)}</p>
+                  <p className="text-xs text-white/40">UPI Ref: {r.upi_ref} · {formatTime(r.submitted_at)}</p>
                   {r.reject_reason && <p className="text-xs text-error-600 dark:text-error-400 mt-0.5">Rejected: {r.reject_reason}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   {r.screenshot_url && (
                     <a href={r.screenshot_url} target="_blank" rel="noreferrer">
-                      <img src={r.screenshot_url} alt="Receipt" className="h-12 w-12 rounded-lg object-cover border border-gray-200 dark:border-gray-700" />
+                      <img src={r.screenshot_url} alt="Receipt" className="h-12 w-12 rounded-lg object-cover border border-white/15" />
                     </a>
                   )}
                   <span className={`badge flex items-center gap-1 ${
@@ -157,20 +157,20 @@ export default function DpWallet() {
         </div>
       )}
 
-      <h3 className="mb-2 mt-2 text-sm font-bold text-gray-900 dark:text-white">Recent Deliveries</h3>
+      <h3 className="mb-2 mt-2 text-sm font-bold text-white">Recent Deliveries</h3>
       {orders.length === 0 ? (
-        <p className="text-sm text-gray-400">No completed deliveries yet.</p>
+        <p className="text-sm text-white/40">No completed deliveries yet.</p>
       ) : (
         <div className="space-y-2">
           {orders.slice(0, 10).map(o => (
             <div key={o.id} className="card flex items-center justify-between p-3">
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">{o.items_summary || 'Delivery'}</p>
-                <p className="text-xs text-gray-400">{formatTime(o.created_at)}</p>
+                <p className="text-sm font-medium text-white">{o.items_summary || 'Delivery'}</p>
+                <p className="text-xs text-white/40">{formatTime(o.created_at)}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold text-success-600 dark:text-success-400">+{formatCurrency(o.dp_earnings)}</p>
-                <p className="text-xs text-gray-400">-{formatCurrency(o.commission_amount)} comm.</p>
+                <p className="text-xs text-white/40">-{formatCurrency(o.commission_amount)} comm.</p>
               </div>
             </div>
           ))}
@@ -222,15 +222,15 @@ function SubmitReceiptModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 animate-fade-in" onClick={onClose}>
       <div className="card w-full max-w-md max-h-[90vh] overflow-y-auto p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
-        <h3 className="mb-1 text-lg font-bold text-gray-900 dark:text-white">Submit Commission Payment</h3>
+        <h3 className="mb-1 text-lg font-bold text-white">Submit Commission Payment</h3>
         <p className="mb-4 text-xs text-gray-500">Pay admin via UPI first, then enter your transaction reference and upload screenshot</p>
 
         <div className="mb-4 rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
           <p className="text-xs text-gray-500 mb-0.5">Pay to Admin UPI</p>
           <div className="flex items-center gap-2">
-            <p className="flex-1 text-sm font-bold text-gray-900 dark:text-white">{adminUpi}</p>
+            <p className="flex-1 text-sm font-bold text-white">{adminUpi}</p>
             <button onClick={() => navigator.clipboard.writeText(adminUpi)} className="btn-ghost p-1">
-              <Copy size={14} className="text-gray-400" />
+              <Copy size={14} className="text-white/40" />
             </button>
           </div>
         </div>
@@ -254,7 +254,7 @@ function SubmitReceiptModal({
               </div>
             ) : (
               <button type="button" onClick={() => fileRef.current?.click()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 py-6 text-sm text-gray-500 dark:border-gray-700">
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/15 py-6 text-sm text-gray-500 dark:border-gray-700">
                 <Camera size={18} /> Upload Payment Screenshot (Required)
               </button>
             )}

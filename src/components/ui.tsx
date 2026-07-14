@@ -9,7 +9,7 @@ export function Spinner({ size = 24 }: { size?: number }) {
 
 export function FullScreenLoader() {
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-screen items-center justify-center">
       <div className="flex flex-col items-center gap-4 animate-fade-in">
         <div className="relative">
           <div className="h-12 w-12 rounded-full border-4 border-primary-100 dark:border-primary-900/40" />
@@ -26,12 +26,12 @@ export function EmptyState({ icon, title, description, action }: { icon?: ReactN
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in-up">
       {icon && (
-        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gray-50 dark:bg-gray-800/50">
-          <div className="text-gray-300 dark:text-gray-600">{icon}</div>
+        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl glass">
+          <div className="text-white/40">{icon}</div>
         </div>
       )}
-      <p className="text-base font-semibold text-gray-700 dark:text-gray-300">{title}</p>
-      {description && <p className="mt-1 max-w-xs text-sm text-gray-500 dark:text-gray-400">{description}</p>}
+      <p className="text-base font-semibold text-white">{title}</p>
+      {description && <p className="mt-1 max-w-xs text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   )
@@ -40,7 +40,7 @@ export function EmptyState({ icon, title, description, action }: { icon?: ReactN
 // ── Error Banner ──
 export function ErrorBanner({ message }: { message: string }) {
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-950/40 dark:text-error-300 animate-slide-up">
+    <div className="flex items-start gap-2 rounded-xl px-4 py-3 text-sm text-red-300 animate-slide-up" style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.25)" }}>
       <AlertTriangle size={16} className="mt-0.5 shrink-0" />
       <span>{message}</span>
     </div>
@@ -51,12 +51,11 @@ export function ErrorBanner({ message }: { message: string }) {
 export function Avatar({ url, name, size = 40 }: { url?: string | null; name: string; size?: number }) {
   const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
   if (url) {
-    return <img src={url} alt={name} style={{ width: size, height: size }} className="rounded-full object-cover ring-2 ring-white dark:ring-gray-800" />
+    return <img src={url} alt={name} style={{ width: size, height: size }} className="rounded-full object-cover ring-2 ring-white/20" />
   }
   return (
     <div
-      style={{ width: size, height: size, fontSize: size * 0.4 }}
-      className="flex items-center justify-center rounded-full bg-primary-100 font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300 ring-2 ring-white dark:ring-gray-800"
+      className="flex items-center justify-center rounded-full font-semibold ring-2 ring-white/20" style={{ width: size, height: size, fontSize: size * 0.4, background: "rgba(110,140,69,0.3)", color: "#afc28e" }}
     >
       {initials}
     </div>
@@ -111,7 +110,7 @@ export function ServiceStatusBanner({ cityName }: { cityName?: string | null }) 
 
   if (!status.active) {
     return (
-      <div className="mb-3 flex items-center gap-2 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-950/40 dark:text-error-300 animate-slide-up">
+      <div className="mb-3 flex items-center gap-2 rounded-xl px-4 py-3 text-sm text-red-300 animate-slide-up" style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.25)" }}>
         <AlertTriangle size={16} className="shrink-0" />
         <span><strong>{status.name}</strong> is currently not serviceable. We&apos;ll be available soon.</span>
       </div>
@@ -120,7 +119,7 @@ export function ServiceStatusBanner({ cityName }: { cityName?: string | null }) 
 
   if (status.paused) {
     return (
-      <div className="mb-3 flex items-center gap-2 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700 dark:border-warning-800 dark:bg-warning-950/40 dark:text-warning-300 animate-slide-up">
+      <div className="mb-3 flex items-center gap-2 rounded-xl px-4 py-3 text-sm text-yellow-300 animate-slide-up" style={{ background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.25)" }}>
         <PauseCircle size={16} className="shrink-0" />
         <span>Service in <strong>{status.name}</strong> is temporarily paused. We&apos;ll resume soon.</span>
       </div>

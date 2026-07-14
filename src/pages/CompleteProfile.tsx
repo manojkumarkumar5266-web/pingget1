@@ -75,10 +75,10 @@ export default function CompleteProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen ">
       <div className="mx-auto max-w-md px-6 py-8">
-        <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">Complete Your Profile</h1>
-        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">Select your city and share your location to get started.</p>
+        <h1 className="mb-2 text-2xl font-bold text-white">Complete Your Profile</h1>
+        <p className="mb-6 text-sm text-white/50">Select your city and share your location to get started.</p>
         <form onSubmit={handleSubmit} className="card space-y-4 p-6">
           <div>
             <label className="label">City</label>

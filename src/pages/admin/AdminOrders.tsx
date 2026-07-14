@@ -60,11 +60,11 @@ export default function AdminOrders() {
 
   return (
     <div className="p-4 md:p-8">
-      <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">All Orders</h1>
+      <h1 className="mb-4 text-2xl font-bold text-white">All Orders</h1>
 
       <div className="mb-4 flex items-center gap-3">
         <div className="relative flex-1">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by title or order ID..." className="input pl-10" />
         </div>
@@ -83,28 +83,28 @@ export default function AdminOrders() {
               onClick={() => setSelected(o)}>
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900 dark:text-white truncate">
+                  <p className="font-semibold text-white truncate">
                     {o._request?.title || o.items_summary || 'Delivery'}
                   </p>
-                  <p className="mt-0.5 text-xs text-gray-400">ID: {o.id.slice(0, 12)}...</p>
+                  <p className="mt-0.5 text-xs text-white/40">ID: {o.id.slice(0, 12)}...</p>
                 </div>
                 <StatusBadge status={o.status} />
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                 <div>
-                  <p className="text-gray-400">Delivery Charge</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(o.delivery_charge)}</p>
+                  <p className="text-white/40">Delivery Charge</p>
+                  <p className="font-semibold text-white">{formatCurrency(o.delivery_charge)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400">Commission</p>
+                  <p className="text-white/40">Commission</p>
                   <p className="font-semibold text-success-600 dark:text-success-400">{formatCurrency(o.commission_amount)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400">DP Earnings</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(o.dp_earnings)}</p>
+                  <p className="text-white/40">DP Earnings</p>
+                  <p className="font-semibold text-white">{formatCurrency(o.dp_earnings)}</p>
                 </div>
               </div>
-              <p className="mt-2 text-xs text-gray-400">{formatTime(o.created_at)}</p>
+              <p className="mt-2 text-xs text-white/40">{formatTime(o.created_at)}</p>
             </div>
           ))}
         </div>
@@ -141,7 +141,7 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-      <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-gray-900 bottom-sheet"
+      <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-3xl glass bottom-sheet"
         onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1">
           <div className="h-1.5 w-12 rounded-full bg-gray-200 dark:bg-gray-700" />
@@ -150,15 +150,15 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
           {/* Status + ID */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-400">Order ID</p>
-              <p className="font-mono text-sm text-gray-700 dark:text-gray-300">{order.id}</p>
+              <p className="text-xs text-white/40">Order ID</p>
+              <p className="font-mono text-sm text-white/80">{order.id}</p>
             </div>
             <StatusBadge status={order.status} />
           </div>
 
           {/* Title */}
           <div>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">{req.title || order.items_summary || 'Delivery'}</p>
+            <p className="text-sm font-bold text-white">{req.title || order.items_summary || 'Delivery'}</p>
             {req.description && (
               <ul className="mt-1.5 space-y-0.5">
                 {req.description.split('\n').map((line: string, i: number) => line.trim() && (
@@ -172,28 +172,28 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
           </div>
 
           {/* Addresses */}
-          <div className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4 space-y-2">
+          <div className="rounded-2xl border border-white/10 p-4 space-y-2">
             {req.preferred_shop && (
               <div className="flex items-start gap-2 text-sm">
                 <Package size={14} className="mt-0.5 shrink-0 text-accent-500" />
-                <span className="text-gray-600 dark:text-gray-400">Shop: <span className="font-medium text-gray-900 dark:text-white">{req.preferred_shop}</span></span>
+                <span className="text-white/60">Shop: <span className="font-medium text-white">{req.preferred_shop}</span></span>
               </div>
             )}
             {req.pickup_address && (
               <div className="flex items-start gap-2 text-sm">
                 <MapPin size={14} className="mt-0.5 shrink-0 text-warning-500" />
-                <span className="text-gray-600 dark:text-gray-400">Pickup: <span className="font-medium text-gray-900 dark:text-white">{req.pickup_address}</span></span>
+                <span className="text-white/60">Pickup: <span className="font-medium text-white">{req.pickup_address}</span></span>
               </div>
             )}
             <div className="flex items-start gap-2 text-sm">
               <MapPin size={14} className="mt-0.5 shrink-0 text-error-500" />
-              <span className="text-gray-600 dark:text-gray-400">Deliver to: <span className="font-medium text-gray-900 dark:text-white">{req.delivery_address}</span></span>
+              <span className="text-white/60">Deliver to: <span className="font-medium text-white">{req.delivery_address}</span></span>
             </div>
           </div>
 
           {/* Financials */}
-          <div className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Financials</p>
+          <div className="rounded-2xl border border-white/10 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-white/40">Financials</p>
             <div className="space-y-2 text-sm">
               {order.item_cost > 0 && (
                 <div className="flex justify-between">
@@ -209,7 +209,7 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
                 <span className="text-gray-500">Commission ({order.commission_pct}%)</span>
                 <span className="font-semibold text-success-600">{formatCurrency(order.commission_amount)}</span>
               </div>
-              <div className="flex justify-between border-t border-gray-100 pt-2 dark:border-gray-800">
+              <div className="flex justify-between border-t border-white/10 pt-2 dark:border-gray-800">
                 <span className="text-gray-500">DP Earnings</span>
                 <span className="font-bold text-primary-600">{formatCurrency(order.dp_earnings)}</span>
               </div>
@@ -219,13 +219,13 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
           {/* People */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
-              <div className="flex items-center gap-1.5 mb-1 text-xs text-gray-400"><User size={12} /> Customer</div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{userProfile?.full_name || '...'}</p>
+              <div className="flex items-center gap-1.5 mb-1 text-xs text-white/40"><User size={12} /> Customer</div>
+              <p className="text-sm font-semibold text-white">{userProfile?.full_name || '...'}</p>
               <p className="text-xs text-gray-500">{userProfile?.phone || ''}</p>
             </div>
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
-              <div className="flex items-center gap-1.5 mb-1 text-xs text-gray-400"><Bike size={12} /> Delivery Partner</div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{dpProfile?.full_name || '...'}</p>
+              <div className="flex items-center gap-1.5 mb-1 text-xs text-white/40"><Bike size={12} /> Delivery Partner</div>
+              <p className="text-sm font-semibold text-white">{dpProfile?.full_name || '...'}</p>
               <p className="text-xs text-gray-500">{dpProfile?.phone || ''}</p>
             </div>
           </div>
@@ -233,22 +233,22 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
           {/* Chat messages */}
           {messages.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Chat (last 20 messages)</p>
-              <div className="space-y-1.5 max-h-64 overflow-y-auto rounded-2xl border border-gray-100 p-3 dark:border-gray-800">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">Chat (last 20 messages)</p>
+              <div className="space-y-1.5 max-h-64 overflow-y-auto rounded-2xl border border-white/10 p-3 dark:border-gray-800">
                 {[...messages].reverse().map((m, i) => (
                   <div key={i} className="text-xs">
                     <span className="font-semibold text-gray-500">{m.sender_id === req.user_id ? 'User' : 'DP'}: </span>
-                    <span className="text-gray-700 dark:text-gray-300">
+                    <span className="text-white/80">
                       {m.message_type === 'text' ? m.content : `[${m.message_type}]`}
                     </span>
-                    <span className="ml-1 text-gray-400">{formatTime(m.created_at)}</span>
+                    <span className="ml-1 text-white/40">{formatTime(m.created_at)}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <p className="text-center text-xs text-gray-400">Created {formatTime(order.created_at)}</p>
+          <p className="text-center text-xs text-white/40">Created {formatTime(order.created_at)}</p>
         </div>
       </div>
     </div>

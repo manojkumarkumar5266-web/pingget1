@@ -48,11 +48,11 @@ export default function UserNotifications() {
   const isTappable = (n: Notification) =>
     !!n.related_id && ['request_accepted', 'order_confirmed', 'order_status', 'order_completed'].includes(n.type || '')
 
-  if (loading) return <div className="p-4 text-center text-sm text-gray-400">Loading...</div>
+  if (loading) return <div className="p-4 text-center text-sm text-white/40">Loading...</div>
 
   return (
     <div className="mx-auto max-w-md px-4 py-4">
-      <h1 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+      <h1 className="mb-4 text-xl font-bold text-white">Notifications</h1>
       {notifications.length === 0 ? (
         <EmptyState icon={<Bell size={48} />} title="No notifications yet" />
       ) : (
@@ -67,11 +67,11 @@ export default function UserNotifications() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-white">{n.title}</p>
-                    {n.body && <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{n.body}</p>}
-                    <p className="mt-1 text-xs text-gray-400">{formatTime(n.created_at)}</p>
+                    <p className="font-semibold text-white">{n.title}</p>
+                    {n.body && <p className="mt-0.5 text-sm text-white/50">{n.body}</p>}
+                    <p className="mt-1 text-xs text-white/40">{formatTime(n.created_at)}</p>
                   </div>
-                  {tappable && <ChevronRight size={18} className="shrink-0 mt-0.5 text-gray-400" />}
+                  {tappable && <ChevronRight size={18} className="shrink-0 mt-0.5 text-white/40" />}
                 </div>
                 {tappable && (
                   <p className="mt-1.5 text-xs font-medium text-primary-600 dark:text-primary-400">Tap to open chat</p>

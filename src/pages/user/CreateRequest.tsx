@@ -3,37 +3,26 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { ErrorBanner } from '../../components/ui'
-import { MapPin, Camera, Mic, MicOff, Clock, Store, ArrowLeft, X, Play, Pause } from 'lucide-react'
+import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Image as ImageIcon, Package } from 'lucide-react'
 
 export default function CreateRequest() {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({
-    title: '', description: '', preferred_shop: '',
-    pickup_address: '', delivery_address: profile?.address || '',
-    expected_time: '',
-  })
+
+  const [description, setDescription] = useState('')
+  const [preferredShop, setPreferredShop] = useState('')
+  const [pickupAddress, setPickupAddress] = useState('')
+
+  // Auto-detect GPS silently — not shown to user, but sent to DP
   const [gpsLat, setGpsLat] = useState<number | null>(profile?.gps_lat || null)
   const [gpsLng, setGpsLng] = useState<number | null>(profile?.gps_lng || null)
-  const [gpsLoading, setGpsLoading] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (gpsLat) return
-    if (!navigator.geolocation) return
-    setGpsLoading(true)
-    navigator.geolocation.getCurrentPosition(
-      pos => { setGpsLat(pos.coords.latitude); setGpsLng(pos.coords.longitude); setGpsLoading(false) },
-      () => { setGpsLoading(false) },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-    )
-  }, [])
-
-  const [photoFile, setPhotoFile] = useState<File | null>(null)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  // Multiple photos
+  const [photoFiles, setPhotoFiles] = useState<File[]>([])
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const photoInputRef = useRef<HTMLInputElement>(null)
 
+  // Voice note
   const [recording, setRecording] = useState(false)
   const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null)
   const [voiceDuration, setVoiceDuration] = useState(0)
@@ -44,27 +33,40 @@ export default function CreateRequest() {
   const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const voiceUrlRef = useRef<string | null>(null)
 
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const getLocation = () => {
-    if (!navigator.geolocation) { setError('Geolocation not supported'); return }
-    setGpsLoading(true); setError(null)
+  // Silent GPS detection
+  useEffect(() => {
+    if (gpsLat) return
+    if (!navigator.geolocation) return
     navigator.geolocation.getCurrentPosition(
-      pos => { setGpsLat(pos.coords.latitude); setGpsLng(pos.coords.longitude); setGpsLoading(false) },
-      () => { setError('Location denied. Please allow location in browser settings.'); setGpsLoading(false) },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+      pos => { setGpsLat(pos.coords.latitude); setGpsLng(pos.coords.longitude) },
+      () => {},
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
     )
+  }, [])
+
+  const handlePhotosSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+    const newPreviews = files.map(f => URL.createObjectURL(f))
+    setPhotoFiles(prev => [...prev, ...files])
+    setPhotoPreviews(prev => [...prev, ...newPreviews])
   }
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return
-    setPhotoFile(file); setPhotoPreview(URL.createObjectURL(file))
+  const removePhoto = (idx: number) => {
+    setPhotoPreviews(prev => {
+      URL.revokeObjectURL(prev[idx])
+      return prev.filter((_, i) => i !== idx)
+    })
+    setPhotoFiles(prev => prev.filter((_, i) => i !== idx))
   }
 
   const startRecording = async () => {
     setError(null)
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError('Microphone not supported on this device or browser.')
+      setError('Microphone not supported on this device.')
       return
     }
     try {
@@ -87,11 +89,7 @@ export default function CreateRequest() {
       setVoiceDuration(0)
       durationTimerRef.current = setInterval(() => setVoiceDuration(d => d + 1), 1000)
     } catch (err: any) {
-      if (err.name === 'NotAllowedError') {
-        setError('Microphone permission denied. Please allow microphone access and try again.')
-      } else {
-        setError('Could not start recording: ' + (err.message || err))
-      }
+      setError('Could not start recording: ' + (err.message || err))
     }
   }
 
@@ -108,7 +106,6 @@ export default function CreateRequest() {
     audioRef.current = audio
     setPlayingVoice(true)
     audio.onended = () => { setPlayingVoice(false); audioRef.current = null }
-    audio.onerror = () => { setPlayingVoice(false); audioRef.current = null }
     audio.play().catch(() => { setPlayingVoice(false); audioRef.current = null })
   }
 
@@ -127,23 +124,34 @@ export default function CreateRequest() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(null); setLoading(true)
+    e.preventDefault(); setError(null)
+    if (!description.trim()) { setError('Please describe what you need'); return }
+    setLoading(true)
     try {
       if (recording) stopRecording()
       const ts = Date.now()
-      const photoUrl = photoFile ? await uploadToStorage(photoFile, `requests/${profile!.id}/${ts}-photo`) : null
+
+      // Upload all photos
+      const photoUrls: string[] = []
+      for (let i = 0; i < photoFiles.length; i++) {
+        const url = await uploadToStorage(photoFiles[i], `requests/${profile!.id}/${ts}-photo-${i}`)
+        if (url) photoUrls.push(url)
+      }
+
       const voiceUrl = voiceBlob ? await uploadToStorage(voiceBlob, `requests/${profile!.id}/${ts}-voice.webm`) : null
 
       const { error } = await supabase.from('requests').insert({
-        user_id: profile!.id, title: form.title,
-        description: form.description || null,
-        photo_url: photoUrl, voice_note_url: voiceUrl,
-        preferred_shop: form.preferred_shop || null,
-        pickup_address: form.pickup_address || null,
-        delivery_address: form.delivery_address,
+        user_id: profile!.id,
+        title: null,
+        description: description.trim(),
+        photo_url: photoUrls.length > 0 ? photoUrls[0] : null,
+        photo_urls: photoUrls.length > 0 ? photoUrls : null,
+        voice_note_url: voiceUrl,
+        preferred_shop: preferredShop.trim() || null,
+        pickup_address: pickupAddress.trim() || null,
+        delivery_address: profile?.address || null,
         delivery_lat: gpsLat, delivery_lng: gpsLng,
-        expected_time: form.expected_time || null,
-        max_budget: null, special_instructions: null,
+        expected_time: null, max_budget: null, special_instructions: null,
         radius_meters: 0, status: 'pending',
       })
       if (error) throw error
@@ -154,87 +162,114 @@ export default function CreateRequest() {
   const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-100 bg-white/80 px-4 py-3 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
-        <button type="button" onClick={() => navigate('/app')} className="btn-ghost p-2"><ArrowLeft size={20} /></button>
-        <h1 className="text-lg font-bold text-gray-900 dark:text-white">New Delivery Request</h1>
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="sticky top-0 z-10 glass px-4 py-3 flex items-center gap-3">
+        <button type="button" onClick={() => navigate('/app')} className="btn-ghost p-2">
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-lg font-bold text-white">New Request</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-4 px-4 py-4">
-        <div className="card p-5 space-y-4">
-          <div>
-            <label className="label">Request Title *</label>
-            <input className="input" value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Get groceries from local store" required />
+        {/* What do you need? */}
+        <div className="card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(110,140,69,0.3), rgba(66,86,42,0.3))' }}>
+              <Package size={16} style={{ color: '#8fa964' }} />
+            </div>
+            <h2 className="text-sm font-bold text-white">What do you need?</h2>
           </div>
-          <div>
-            <label className="label">Description (one item per line)</label>
-            <textarea className="input min-h-24 resize-none" value={form.description} onChange={e => set('description', e.target.value)} placeholder={"e.g.\nGroceries\nMedicine\nParcel"} />
+          <textarea
+            className="input min-h-24 resize-none"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder={"Describe what you need delivered...\ne.g. 2kg rice, 1 litre milk, medicines from Apollo Pharmacy"}
+            autoFocus
+          />
+        </div>
+
+        {/* Photos */}
+        <div className="card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(110,140,69,0.3), rgba(66,86,42,0.3))' }}>
+              <Camera size={16} style={{ color: '#8fa964' }} />
+            </div>
+            <h2 className="text-sm font-bold text-white">Add Photos</h2>
+            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>for DP reference</span>
           </div>
 
-          <input ref={photoInputRef} type="file" className="hidden" accept="image/*" onChange={handlePhotoSelect} />
-          {photoPreview ? (
-            <div className="relative">
-              <img src={photoPreview} alt="Request" className="h-40 w-full rounded-xl object-cover" />
-              <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null) }} className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white"><X size={14} /></button>
+          <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
+
+          {photoPreviews.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {photoPreviews.map((preview, idx) => (
+                <div key={idx} className="relative">
+                  <img src={preview} alt={`Photo ${idx + 1}`} className="h-20 w-20 rounded-xl object-cover" />
+                  <button type="button" onClick={() => removePhoto(idx)}
+                    className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1 text-white shadow">
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
             </div>
-          ) : (
-            <button type="button" onClick={() => photoInputRef.current?.click()} className="btn-secondary w-full"><Camera size={18} /> Add Photo</button>
           )}
 
+          <button type="button" onClick={() => photoInputRef.current?.click()}
+            className="w-full rounded-xl border-2 border-dashed py-4 text-sm font-medium transition-all"
+            style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)' }}>
+            <Camera size={18} className="mx-auto mb-1" style={{ color: '#8fa964' }} />
+            {photoPreviews.length > 0 ? 'Add More Photos' : 'Add Photos'}
+          </button>
+        </div>
+
+        {/* Voice Note */}
+        <div className="card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(110,140,69,0.3), rgba(66,86,42,0.3))' }}>
+              <Mic size={16} style={{ color: '#8fa964' }} />
+            </div>
+            <h2 className="text-sm font-bold text-white">Voice Note</h2>
+          </div>
+
           {voiceBlob ? (
-            <div className="flex items-center gap-3 rounded-xl border px-4 py-3" style={{ borderColor: '#afc28e', backgroundColor: '#f4f7ee' }}>
-              <button type="button" onClick={playVoice} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white" style={{ backgroundColor: '#556d34' }}>
+            <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: 'rgba(110,140,69,0.15)', border: '1px solid rgba(110,140,69,0.25)' }}>
+              <button type="button" onClick={playVoice}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
+                style={{ background: 'linear-gradient(135deg, #6e8c45, #42562a)' }}>
                 {playingVoice ? <Pause size={14} /> : <Play size={14} />}
               </button>
               <div className="flex-1">
-                <p className="text-sm font-medium" style={{ color: '#556d34' }}>Voice Note ({fmtDur(voiceDuration)})</p>
-                <p className="text-xs text-gray-500">Tap to play</p>
+                <p className="text-sm font-medium text-white">Voice Note ({fmtDur(voiceDuration)})</p>
+                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Tap to play</p>
               </div>
-              <button type="button" onClick={clearVoice} className="text-gray-400"><X size={16} /></button>
+              <button type="button" onClick={clearVoice} style={{ color: 'rgba(255,255,255,0.4)' }}><X size={16} /></button>
             </div>
           ) : recording ? (
-            <button type="button" onClick={stopRecording} className="flex w-full items-center justify-center gap-2 rounded-xl bg-error-500 py-3 text-sm font-semibold text-white">
-              <MicOff size={18} /> Stop Recording ({fmtDur(voiceDuration)})
+            <button type="button" onClick={stopRecording}
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white"
+              style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)' }}>
+              <MicOff size={18} /> Stop ({fmtDur(voiceDuration)})
             </button>
           ) : (
-            <button type="button" onClick={startRecording} className="btn-secondary w-full"><Mic size={18} /> Add Voice Note</button>
-          )}
-        </div>
-
-        <div className="card p-5 space-y-4">
-          <div>
-            <label className="label flex items-center gap-1.5"><Store size={16} /> Preferred Shop</label>
-            <input className="input" value={form.preferred_shop} onChange={e => set('preferred_shop', e.target.value)} placeholder="e.g. Reliance Fresh, Main Road" />
-          </div>
-          <div>
-            <label className="label">Pickup Location (if different)</label>
-            <input className="input" value={form.pickup_address} onChange={e => set('pickup_address', e.target.value)} placeholder="Where the DP should pick up items" />
-          </div>
-          <div>
-            <label className="label">Delivery Address *</label>
-            <textarea className="input min-h-20 resize-none" value={form.delivery_address} onChange={e => set('delivery_address', e.target.value)} placeholder="Your delivery address" required />
-          </div>
-          {gpsLoading ? (
-            <div className="flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700 dark:border-primary-800 dark:bg-primary-900/30 dark:text-primary-300">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-300 border-t-primary-600" />
-              <span>Auto-detecting your location...</span>
-            </div>
-          ) : gpsLat ? (
-            <div className="flex items-center gap-2 rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-800 dark:bg-success-900/30 dark:text-success-300">
-              <MapPin size={16} className="shrink-0" />
-              <span>Location detected: {gpsLat.toFixed(4)}, {gpsLng!.toFixed(4)}</span>
-            </div>
-          ) : (
-            <button type="button" onClick={getLocation} className="btn-secondary w-full">
-              <MapPin size={18} /> Allow Location Access
+            <button type="button" onClick={startRecording}
+              className="w-full rounded-xl border-2 border-dashed py-4 text-sm font-medium transition-all"
+              style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)' }}>
+              <Mic size={18} className="mx-auto mb-1" style={{ color: '#8fa964' }} />
+              Add Voice Note
             </button>
           )}
         </div>
 
-        <div className="card p-5 space-y-4">
+        {/* Optional details */}
+        <div className="card p-5 space-y-3">
           <div>
-            <label className="label flex items-center gap-1.5"><Clock size={16} /> Expected Time</label>
-            <input className="input" value={form.expected_time} onChange={e => set('expected_time', e.target.value)} placeholder="e.g. 2 hours" />
+            <label className="label flex items-center gap-1.5"><Store size={13} /> Preferred Shop <span className="text-white/30">(optional)</span></label>
+            <input className="input" value={preferredShop} onChange={e => setPreferredShop(e.target.value)} placeholder="e.g. Reliance Fresh, Main Road" />
+          </div>
+          <div>
+            <label className="label">Pickup Location <span className="text-white/30">(optional)</span></label>
+            <input className="input" value={pickupAddress} onChange={e => setPickupAddress(e.target.value)} placeholder="Where the DP should pick up items" />
           </div>
         </div>
 

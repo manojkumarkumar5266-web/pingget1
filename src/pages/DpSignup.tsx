@@ -255,11 +255,11 @@ export default function DpSignup() {
     return (
       <AuthLayout showBrand={false}>
         <div className="card p-6">
-          <button onClick={() => { setView('signin'); setError(null); setResetSent(false) }} className="text-sm text-primary-600 dark:text-primary-400 mb-4">← Back to Sign In</button>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Forgot Password</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Enter your email and we&apos;ll send you a reset link.</p>
+          <button onClick={() => { setView('signin'); setError(null); setResetSent(false) }} className="text-sm text-primary-300 mb-4">← Back to Sign In</button>
+          <h2 className="text-xl font-bold text-white mb-1">Forgot Password</h2>
+          <p className="text-sm text-white/50 mb-6">Enter your email and we&apos;ll send you a reset link.</p>
           {resetSent ? (
-            <div className="rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-800 dark:bg-success-900/30 dark:text-success-300">
+            <div className="rounded-xl px-4 py-3 text-sm text-green-300 glass-dark">
               <div className="flex items-center gap-2"><CheckCircle size={16} className="shrink-0" /> Reset link sent! Check your email.</div>
             </div>
           ) : (
@@ -282,9 +282,9 @@ export default function DpSignup() {
     return (
       <AuthLayout showBrand={false}>
         <div className="card p-6">
-          <button onClick={() => { setView('signup'); setStep(1); setError(null) }} className="text-sm text-primary-600 dark:text-primary-400 mb-4">← Back</button>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Delivery Partner Sign In</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Sign in with your email and password</p>
+          <button onClick={() => { setView('signup'); setStep(1); setError(null) }} className="text-sm text-primary-300 mb-4">← Back</button>
+          <h2 className="text-xl font-bold text-white mb-1">Delivery Partner Sign In</h2>
+          <p className="text-sm text-white/50 mb-6">Sign in with your email and password</p>
           {error && <ErrorBanner message={error} />}
           <form onSubmit={handleDpSignIn} className="space-y-3">
             <div>
@@ -295,19 +295,19 @@ export default function DpSignup() {
               <label className="label flex items-center gap-1.5"><Lock size={14} /> Password</label>
               <div className="relative">
                 <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={signInPassword} onChange={e => setSignInPassword(e.target.value)} placeholder="Your password" required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
             <div className="text-right">
-              <button type="button" onClick={() => { setView('forgot'); setError(null); setResetSent(false) }} className="text-xs text-primary-600 dark:text-primary-400 hover:underline">Forgot password?</button>
+              <button type="button" onClick={() => { setView('forgot'); setError(null); setResetSent(false) }} className="text-xs text-primary-300 hover:underline">Forgot password?</button>
             </div>
             <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Signing in...' : 'Sign In'}</button>
           </form>
-          <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
+          <p className="mt-4 text-center text-xs text-white/50">
             Don&apos;t have an account?{' '}
-            <button onClick={() => { setView('signup'); setStep(1); setError(null) }} className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Sign up here</button>
+            <button onClick={() => { setView('signup'); setStep(1); setError(null) }} className="text-primary-300 font-semibold hover:underline">Sign up here</button>
           </p>
         </div>
       </AuthLayout>
@@ -320,14 +320,14 @@ export default function DpSignup() {
       <AuthLayout showBrand={false}>
         <div className="card p-6 text-center">
           <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-100 dark:bg-success-900/40">
-              <CheckCircle size={32} className="text-success-600 dark:text-success-400" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full ">
+              <CheckCircle size={32} className="text-green-400" />
             </div>
           </div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Application Submitted!</h2>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Your delivery partner application is under review. We&apos;ll notify you once approved.</p>
-          <div className="mt-4 rounded-xl border border-primary-100 bg-primary-50 p-4 dark:border-primary-900/40 dark:bg-primary-900/20">
-            <p className="text-sm font-medium text-primary-800 dark:text-primary-300">Once an admin approves your application, sign in with your email and password to start accepting requests.</p>
+          <h2 className="text-lg font-bold text-white">Application Submitted!</h2>
+          <p className="mt-2 text-sm text-white/50">Your delivery partner application is under review. We&apos;ll notify you once approved.</p>
+          <div className="mt-4 rounded-xl border p-4">
+            <p className="text-sm font-medium text-primary-300">Once an admin approves your application, sign in with your email and password to start accepting requests.</p>
           </div>
           <button onClick={() => navigate('/auth')} className="btn-primary mt-5 w-full">Go to Sign In</button>
         </div>
@@ -368,8 +368,8 @@ export default function DpSignup() {
       <div className="card p-6">
         {step === 1 && (
           <>
-            <h2 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Basic Information</h2>
-            <p className="mb-5 text-sm text-gray-500">All fields are required</p>
+            <h2 className="mb-1 text-xl font-bold text-white">Basic Information</h2>
+            <p className="mb-5 text-sm text-white/50">All fields are required</p>
             <form onSubmit={handleStep1} className="space-y-3">
               <div><label className="label flex items-center gap-1.5"><User size={14} /> Full Name *</label><input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required /></div>
               <div><label className="label flex items-center gap-1.5"><Home size={14} /> Address *</label><input className="input" value={address} onChange={e => setAddress(e.target.value)} placeholder="Your full address" required /></div>
@@ -377,9 +377,9 @@ export default function DpSignup() {
               <div>
                 <label className="label flex items-center gap-1.5"><MapPin size={14} /> Your Area Pincode *</label>
                 <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} required />
-                {pincodeChecking && <p className="mt-1.5 text-xs text-gray-400">Checking service area...</p>}
+                {pincodeChecking && <p className="mt-1.5 text-xs text-white/40">Checking service area...</p>}
                 {!pincodeChecking && pincodeStatus && (
-                  <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${pincodeStatus.served ? 'bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300' : 'bg-error-50 text-error-700 dark:bg-error-900/30 dark:text-error-300'}`}>
+                  <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${pincodeStatus.served ? 'text-green-300' : 'text-red-300'}`}>
                     {pincodeStatus.served ? <><CheckCircle size={13} /> We operate in {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!</> : <><XCircle size={13} /> We don&apos;t operate in this area yet.</>}
                   </div>
                 )}
@@ -389,13 +389,13 @@ export default function DpSignup() {
                 <label className="label flex items-center gap-1.5"><Lock size={14} /> Password *</label>
                 <div className="relative">
                   <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                 </div>
               </div>
               <div>
                 <label className="label flex items-center gap-1.5"><Lock size={14} /> Confirm Password *</label>
                 <input type={showPassword ? 'text' : 'password'} className="input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" required />
-                {confirmPassword && password !== confirmPassword && <p className="mt-1 text-xs text-error-600">Passwords do not match</p>}
+                {confirmPassword && password !== confirmPassword && <p className="mt-1 text-xs text-red-400">Passwords do not match</p>}
               </div>
               {error && <ErrorBanner message={error} />}
               <button type="submit" className="btn-primary w-full">Continue <ArrowRight size={16} /></button>
@@ -405,24 +405,24 @@ export default function DpSignup() {
 
         {step === 2 && (
           <>
-            <h2 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Vehicle & Identity</h2>
-            <p className="mb-5 text-sm text-gray-500">All fields are required</p>
+            <h2 className="mb-1 text-xl font-bold text-white">Vehicle & Identity</h2>
+            <p className="mb-5 text-sm text-white/50">All fields are required</p>
             <form onSubmit={handleStep2} className="space-y-3">
               <div>
                 <label className="label flex items-center gap-1.5"><Truck size={14} /> Vehicle Type *</label>
                 <div className="grid grid-cols-3 gap-2">
                   {VEHICLE_TYPES.map(v => (
                     <button key={v} type="button" onClick={() => setVehicleType(v)}
-                      className={`rounded-xl border-2 py-2.5 text-sm font-medium transition-all ${vehicleType === v ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-400'}`}
+                      className={`rounded-xl border-2 py-2.5 text-sm font-medium transition-all ${vehicleType === v ? 'text-white' : 'border-white/15 text-white/40'}`}
                     >{v}</button>
                   ))}
                 </div>
-                {vehicleType && <p className={`mt-2 text-xs font-medium ${needsLicense ? 'text-warning-600 dark:text-warning-400' : 'text-success-600 dark:text-success-400'}`}>{needsLicense ? 'Driving licence required for this vehicle type' : 'No driving licence required for bicycle'}</p>}
+                {vehicleType && <p className={`mt-2 text-xs font-medium ${needsLicense ? 'text-yellow-400' : 'text-green-400'}`}>{needsLicense ? 'Driving licence required for this vehicle type' : 'No driving licence required for bicycle'}</p>}
               </div>
               <div>
                 <label className="label flex items-center gap-1.5"><FileText size={14} /> Aadhaar Number *</label>
                 <input className="input" value={aadhaarNumber} onChange={e => setAadhaarNumber(e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="12-digit Aadhaar number" maxLength={12} required />
-                {aadhaarNumber.length > 0 && aadhaarNumber.length < 12 && <p className="mt-1 text-xs text-error-600">{12 - aadhaarNumber.length} more digits needed</p>}
+                {aadhaarNumber.length > 0 && aadhaarNumber.length < 12 && <p className="mt-1 text-xs text-red-400">{12 - aadhaarNumber.length} more digits needed</p>}
               </div>
               <div><label className="label flex items-center gap-1.5"><Phone size={14} /> Emergency Contact *</label><input className="input" value={emergencyContact} onChange={e => setEmergencyContact(e.target.value)} placeholder="+91 98765 43210" required /></div>
               {error && <ErrorBanner message={error} />}
@@ -433,8 +433,8 @@ export default function DpSignup() {
 
         {step === 3 && (
           <>
-            <h2 className="mb-1 text-xl font-bold text-gray-900 dark:text-white">Documents & Photo</h2>
-            <p className="mb-5 text-sm text-gray-500">Upload your profile photo, Aadhaar{needsLicense ? ', and driving licence' : ''}. All required.</p>
+            <h2 className="mb-1 text-xl font-bold text-white">Documents & Photo</h2>
+            <p className="mb-5 text-sm text-white/50">Upload your profile photo, Aadhaar{needsLicense ? ', and driving licence' : ''}. All required.</p>
             <form onSubmit={handleStep3} className="space-y-5">
               <div>
                 <label className="label flex items-center gap-1.5"><Camera size={14} /> Profile Photo *</label>
@@ -445,20 +445,20 @@ export default function DpSignup() {
                     <button type="button" onClick={() => photoInputRef.current?.click()} className="absolute bottom-1 right-1 rounded-full p-1.5 text-white shadow" style={{ backgroundColor: '#808000' }}><Camera size={14} /></button>
                   </div>
                 ) : (
-                  <button type="button" onClick={() => photoInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-200 py-8 text-sm font-medium text-gray-500 hover:border-primary-400 dark:border-gray-700"><Camera size={20} style={{ color: '#808000' }} /> Take Photo or Upload *</button>
+                  <button type="button" onClick={() => photoInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 text-white/50"><Camera size={20} style={{ color: '#808000' }} /> Take Photo or Upload *</button>
                 )}
               </div>
               <div>
                 <label className="label flex items-center gap-1.5"><Upload size={14} /> Aadhaar Proof *</label>
                 <input ref={aadhaarInputRef} type="file" className="hidden" accept="image/*,application/pdf" onChange={e => e.target.files?.[0] && pickFile(e.target.files[0], 'aadhaar')} />
                 {aadhaarPreview ? (
-                  <div className="flex items-center gap-3 rounded-xl border border-success-200 bg-success-50 p-3 dark:border-success-800 dark:bg-success-900/20">
-                    {aadhaarFile?.type.startsWith('image') ? <img src={aadhaarPreview} alt="Aadhaar" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-success-100 dark:bg-success-900/40"><FileText size={24} className="text-success-600" /></div>}
-                    <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-gray-900 dark:text-white">{aadhaarFile?.name}</p><p className="text-xs text-success-600">Aadhaar uploaded</p></div>
+                  <div className="flex items-center gap-3 rounded-xl border p-3">
+                    {aadhaarFile?.type.startsWith('image') ? <img src={aadhaarPreview} alt="Aadhaar" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg "><FileText size={24} className="text-green-400" /></div>}
+                    <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-white">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
                     <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                   </div>
                 ) : (
-                  <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-200 py-8 text-sm font-medium text-gray-500 hover:border-primary-400 dark:border-gray-700"><Upload size={20} style={{ color: '#808000' }} /> Upload Aadhaar *</button>
+                  <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 text-white/50"><Upload size={20} style={{ color: '#808000' }} /> Upload Aadhaar *</button>
                 )}
               </div>
               {needsLicense && (
@@ -466,17 +466,17 @@ export default function DpSignup() {
                   <label className="label flex items-center gap-1.5"><FileText size={14} /> Driving Licence *</label>
                   <input ref={licenseInputRef} type="file" className="hidden" accept="image/*,application/pdf" onChange={e => e.target.files?.[0] && pickFile(e.target.files[0], 'license')} />
                   {licensePreview ? (
-                    <div className="flex items-center gap-3 rounded-xl border border-success-200 bg-success-50 p-3 dark:border-success-800 dark:bg-success-900/20">
-                      {licenseFile?.type.startsWith('image') ? <img src={licensePreview} alt="Licence" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-success-100 dark:bg-success-900/40"><FileText size={24} className="text-success-600" /></div>}
-                      <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-gray-900 dark:text-white">{licenseFile?.name}</p><p className="text-xs text-success-600">Licence uploaded</p></div>
+                    <div className="flex items-center gap-3 rounded-xl border p-3">
+                      {licenseFile?.type.startsWith('image') ? <img src={licensePreview} alt="Licence" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg "><FileText size={24} className="text-green-400" /></div>}
+                      <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-white">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
                       <button type="button" onClick={() => licenseInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                     </div>
                   ) : (
-                    <button type="button" onClick={() => licenseInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-warning-200 py-8 text-sm font-medium text-gray-500 hover:border-warning-400 dark:border-warning-800"><Upload size={20} className="text-warning-500" /> Upload Driving Licence *</button>
+                    <button type="button" onClick={() => licenseInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 text-white/50"><Upload size={20} className="text-yellow-400" /> Upload Driving Licence *</button>
                   )}
                 </div>
               )}
-              <div className="flex items-start gap-2 rounded-xl bg-accent-50 p-3 text-xs text-accent-700 dark:bg-accent-950/40 dark:text-accent-300"><Shield size={14} className="mt-0.5 shrink-0" /> Your documents are securely stored and only visible to admin for verification.</div>
+              <div className="flex items-start gap-2 rounded-xl p-3 text-xs"><Shield size={14} className="mt-0.5 shrink-0" /> Your documents are securely stored and only visible to admin for verification.</div>
               {error && <ErrorBanner message={error} />}
               <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Submitting application...' : 'Submit Application'}</button>
             </form>
@@ -486,7 +486,7 @@ export default function DpSignup() {
 
       {step === 1 && (
         <p className="mt-4 text-center text-sm text-white/70">Already a delivery partner?{' '}
-          <button onClick={() => { setView('signin'); setError(null) }} className="font-semibold hover:underline" style={{ color: '#808000' }}>Sign in here</button>
+          <button onClick={() => navigate('/auth')} className="font-semibold hover:underline" style={{ color: '#8fa964' }}>Sign in here</button>
         </p>
       )}
     </AuthLayout>

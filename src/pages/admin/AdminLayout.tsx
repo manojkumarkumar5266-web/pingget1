@@ -70,10 +70,10 @@ export default function AdminLayout() {
   )
 
   return (
-    <div className="relative flex min-h-screen bg-gray-50/95 dark:bg-gray-950/95">
+    <div className="relative flex min-h-screen">
       <Watermark />
-      <aside className="fixed left-0 top-0 z-20 hidden h-screen w-64 border-r border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900 md:block">
-        <div className="flex items-center gap-2 border-b border-gray-100 px-6 py-4 dark:border-gray-800">
+      <aside className="fixed left-0 top-0 z-20 hidden h-screen w-64 glass md:block" style={{ borderRight: "1px solid rgba(255,255,255,0.1)" }}>
+        <div className="flex items-center gap-2 px-6 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
           <Brand size="lg" showTagline />
         </div>
         <nav className="mt-4 space-y-1 px-3">
@@ -83,7 +83,8 @@ export default function AdminLayout() {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${isActive(item.path) ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${isActive(item.path) ? 'text-white' : ''}`}
+                style={isActive(item.path) ? { background: 'linear-gradient(135deg, rgba(110,140,69,0.35), rgba(66,86,42,0.35))', border: '1px solid rgba(110,140,69,0.25)' } : { color: 'rgba(255,255,255,0.55)' }}
               >
                 <Icon size={18} /> {item.label}
                 {renderBadge(item.badge)}
@@ -91,14 +92,14 @@ export default function AdminLayout() {
             )
           })}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 space-y-1 border-t border-gray-100 p-3 dark:border-gray-800">
-          <button onClick={() => signOut()} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-error-600 hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-950/40">
+        <div className="absolute bottom-0 left-0 right-0 space-y-1 p-3" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+          <button onClick={() => signOut()} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-400 transition-colors hover:text-red-300">
             <LogOut size={18} /> Sign Out
           </button>
         </div>
       </aside>
 
-      <header className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between border-b border-gray-100 bg-white/80 px-4 py-3 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80 md:hidden">
+      <header className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between glass px-4 py-3 md:hidden">
         <Brand size="sm" showTagline={false} />
         <div className="flex items-center gap-1">
           <NotifBell size={20} />
@@ -106,7 +107,7 @@ export default function AdminLayout() {
         </div>
       </header>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-gray-100 bg-white/90 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/90 md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-20 glass md:hidden">
         <div className="flex items-center justify-around px-2 py-2">
           {navItems.map(item => {
             const Icon = item.icon
@@ -114,7 +115,7 @@ export default function AdminLayout() {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 ${isActive(item.path) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}
+                className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 ${isActive(item.path) ? 'text-primary-300' : ''}`}
               >
                 <Icon size={20} />
                 <span className="text-xs font-medium">{item.label}</span>

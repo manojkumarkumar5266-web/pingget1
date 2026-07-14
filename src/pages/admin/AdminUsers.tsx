@@ -91,7 +91,7 @@ export default function AdminUsers() {
 
   return (
     <div className="p-4 md:p-8">
-      <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">Users</h1>
+      <h1 className="mb-4 text-2xl font-bold text-white">Users</h1>
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2 overflow-x-auto">
@@ -100,7 +100,7 @@ export default function AdminUsers() {
               key={f}
               onClick={() => setFilter(f)}
               className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition-all ${
-                filter === f ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                filter === f ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-white/40'
               }`}
             >
               {f}
@@ -113,13 +113,13 @@ export default function AdminUsers() {
       </div>
 
       <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
         <input
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search by name, phone, or city..."
-          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-primary-600"
+          className="w-full rounded-xl border border-white/15 bg-white py-2.5 pl-9 pr-4 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-primary-600"
         />
       </div>
 
@@ -142,10 +142,10 @@ export default function AdminUsers() {
                 <div className="flex items-center gap-3">
                   <Avatar url={u.photo_url} name={u.full_name || 'User'} size={44} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-white truncate">{u.full_name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{u.phone || 'No phone'}</p>
+                    <p className="font-semibold text-white truncate">{u.full_name}</p>
+                    <p className="text-sm text-white/50">{u.phone || 'No phone'}</p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-xs text-gray-400">{u.city || 'No city'} · {u.role.toUpperCase()} · {formatTime(u.created_at)}</p>
+                      <p className="text-xs text-white/40">{u.city || 'No city'} · {u.role.toUpperCase()} · {formatTime(u.created_at)}</p>
                       {u.gps_lat && u.gps_lng && (
                         <span className="flex items-center gap-0.5 text-xs text-primary-500">
                           <MapPin size={10} /> GPS
@@ -202,7 +202,7 @@ function UserActionDrawer({
   return (
     <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
       <div
-        className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-3xl bg-white dark:bg-gray-900"
+        className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-3xl glass"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1">
@@ -212,16 +212,16 @@ function UserActionDrawer({
           <div className="mb-5 flex items-center gap-4">
             <Avatar url={user.photo_url} name={user.full_name || 'User'} size={56} />
             <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{user.full_name}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{user.phone}</p>
+              <p className="text-lg font-bold text-white">{user.full_name}</p>
+              <p className="text-sm text-white/50">{user.phone}</p>
               <div className="mt-1 flex items-center gap-2">
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold uppercase text-gray-500 dark:bg-gray-800 dark:text-gray-400">{user.role}</span>
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold uppercase text-gray-500 dark:bg-gray-800 dark:text-white/40">{user.role}</span>
                 <span className={`badge ${cfg.badge}`}>{cfg.label}</span>
               </div>
             </div>
           </div>
 
-          <div className="mb-4 rounded-2xl border border-gray-100 p-4 dark:border-gray-800 space-y-2">
+          <div className="mb-4 rounded-2xl border border-white/10 p-4 dark:border-gray-800 space-y-2">
             <InfoRow label="City" value={user.city || 'Not set'} />
             <InfoRow label="Address" value={user.address || 'Not set'} />
             <InfoRow label="Preferred Language" value={(user as any).preferred_language || 'en'} />
@@ -239,25 +239,25 @@ function UserActionDrawer({
           </div>
 
           <div className="mb-5">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Recent Requests ({orders.length})</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">Recent Requests ({orders.length})</p>
             {ordersLoading ? (
               <div className="space-y-2">
-                {[1,2].map(i => <div key={i} className="h-10 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />)}
+                {[1,2].map(i => <div key={i} className="h-10 animate-pulse rounded-xl glass" />)}
               </div>
             ) : orders.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">No requests yet.</p>
+              <p className="text-sm text-white/40 italic">No requests yet.</p>
             ) : (
               <div className="space-y-1.5">
                 {orders.map(o => (
                   <div key={o.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 dark:bg-gray-800">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate max-w-[60%]">{(o as any).title || 'Request'}</p>
+                    <p className="text-sm font-medium text-white truncate max-w-[60%]">{(o as any).title || 'Request'}</p>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                         o.status === 'completed' ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' :
                         o.status === 'cancelled' ? 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300' :
                         'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300'
                       }`}>{o.status}</span>
-                      <span className="text-[10px] text-gray-400">{formatTime(o.created_at)}</span>
+                      <span className="text-[10px] text-white/40">{formatTime(o.created_at)}</span>
                     </div>
                   </div>
                 ))}
@@ -265,7 +265,7 @@ function UserActionDrawer({
             )}
           </div>
 
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Account Actions</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-white/40">Account Actions</p>
           <div className="space-y-2">
             {user.status !== 'active' && (
               <button onClick={() => onUpdateStatus('active')} disabled={updating}
@@ -304,8 +304,8 @@ function UserActionDrawer({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">{label}</span>
-      <span className="text-sm font-medium text-gray-900 dark:text-white text-right">{value}</span>
+      <span className="text-sm text-white/50 shrink-0">{label}</span>
+      <span className="text-sm font-medium text-white text-right">{value}</span>
     </div>
   )
 }

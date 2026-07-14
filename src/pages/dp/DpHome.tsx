@@ -23,11 +23,11 @@ function VoicePlayer({ url }: { url: string }) {
     } catch { setPlaying(false); audioRef.current = null }
   }
   return (
-    <div className="mt-2 flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 dark:border-gray-700 dark:bg-gray-800">
+    <div className="mt-2 flex items-center gap-3 rounded-xl border border-white/15 bg-gray-50 px-4 py-2.5 dark:border-gray-700 dark:bg-gray-800">
       <button type="button" onClick={toggle} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white active:scale-90 transition-transform">
         {playing ? <Pause size={14} /> : <Play size={14} />}
       </button>
-      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{playing ? 'Playing...' : 'Voice Note'}</p>
+      <p className="text-sm font-medium text-white/80">{playing ? 'Playing...' : 'Voice Note'}</p>
     </div>
   )
 }
@@ -251,11 +251,11 @@ export default function DpHome() {
       <div className="mx-auto max-w-md px-4 py-4">
         <ServiceStatusBanner cityName={profile?.city} />
         <div className="mt-16 flex flex-col items-center justify-center gap-4 text-center px-6 animate-fade-in-up">
-          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gray-100 dark:bg-gray-800 animate-bounce-in">
-            <WifiOff size={40} className="text-gray-400" />
+          <div className="flex h-24 w-24 items-center justify-center rounded-3xl glass animate-bounce-in">
+            <WifiOff size={40} className="text-white/40" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">You are Offline</h2>
-          <p className="max-w-xs text-sm text-gray-500 dark:text-gray-400">
+          <h2 className="text-xl font-bold text-white">You are Offline</h2>
+          <p className="max-w-xs text-sm text-white/50">
             Tap the <span className="font-semibold text-success-600">Go Online</span> button at the top to start receiving delivery requests.
           </p>
         </div>
@@ -312,17 +312,17 @@ export default function DpHome() {
       <div className="mb-4 grid grid-cols-3 gap-2">
         <div className="card p-3 text-center animate-slide-up">
           <Star size={18} className="mx-auto mb-1 text-accent-400" />
-          <p className="text-lg font-bold text-gray-900 dark:text-white">{rating > 0 ? rating.toFixed(1) : '—'}</p>
+          <p className="text-lg font-bold text-white">{rating > 0 ? rating.toFixed(1) : '—'}</p>
           <p className="text-[10px] text-gray-500">Rating{ratingCount > 0 ? ` (${ratingCount})` : ''}</p>
         </div>
         <div className="card p-3 text-center animate-slide-up" style={{ animationDelay: '50ms' }}>
           <Package size={18} className="mx-auto mb-1 text-primary-500" />
-          <p className="text-lg font-bold text-gray-900 dark:text-white">{totalOrders}</p>
+          <p className="text-lg font-bold text-white">{totalOrders}</p>
           <p className="text-[10px] text-gray-500">Total Orders</p>
         </div>
         <div className="card p-3 text-center animate-slide-up" style={{ animationDelay: '100ms' }}>
           <Activity size={18} className="mx-auto mb-1 text-success-500" />
-          <p className="text-lg font-bold text-gray-900 dark:text-white">{dp?.is_online ? 'Active' : '—'}</p>
+          <p className="text-lg font-bold text-white">{dp?.is_online ? 'Active' : '—'}</p>
           <p className="text-[10px] text-gray-500">Status</p>
         </div>
       </div>
@@ -330,7 +330,7 @@ export default function DpHome() {
       {/* Service Range */}
       <div className="mb-4 card p-4 animate-slide-up">
         <div className="mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-white/50">
             <Sliders size={13} /> Service range
           </div>
           <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{rangeKm} km</span>
@@ -342,7 +342,7 @@ export default function DpHome() {
           onTouchEnd={(e: any) => changeRange(Number(e.target.value))}
           className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700 accent-primary-600"
         />
-        <div className="mt-1 flex justify-between text-[10px] text-gray-400">
+        <div className="mt-1 flex justify-between text-[10px] text-white/40">
           <span>1 km</span><span>25 km</span><span>50 km</span>
         </div>
         {profile?.gps_lat ? (
@@ -361,10 +361,10 @@ export default function DpHome() {
       {/* Nearby Requests */}
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="text-base font-bold text-gray-900 dark:text-white">Nearby Requests</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{filtered.length} within {rangeKm} km</p>
+          <h3 className="text-base font-bold text-white">Nearby Requests</h3>
+          <p className="text-xs text-white/50">{filtered.length} within {rangeKm} km</p>
         </div>
-        {savingRange && <span className="text-xs text-gray-400 animate-pulse">Saving...</span>}
+        {savingRange && <span className="text-xs text-white/40 animate-pulse">Saving...</span>}
       </div>
 
       {loading ? (
@@ -379,7 +379,7 @@ export default function DpHome() {
             return (
               <div key={req.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex items-start justify-between">
-                  <p className="font-semibold text-gray-900 dark:text-white">{req.title}</p>
+                  <p className="font-semibold text-white">{req.title}</p>
                   {dist !== null && (
                     <span className="badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                       {formatDistance(dist)}
@@ -389,7 +389,7 @@ export default function DpHome() {
                 {req.description && (
                   <ul className="mt-1.5 space-y-0.5">
                     {req.description.split('\n').map((line, i) => line.trim() && (
-                      <li key={i} className="flex items-start gap-1.5 text-sm text-gray-700 dark:text-gray-300">
+                      <li key={i} className="flex items-start gap-1.5 text-sm text-white/80">
                         <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary-500" />
                         <span>{line.trim()}</span>
                       </li>
@@ -402,29 +402,29 @@ export default function DpHome() {
                   </a>
                 )}
                 <div className="mt-3 space-y-1.5 text-xs">
-                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 text-white/50">
                     <Clock size={13} className="shrink-0" /><span>{formatTime(req.created_at)}</span>
                   </div>
                   {req.preferred_shop && (
-                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2 text-white/50">
                       <Package size={13} className="shrink-0" />
-                      <span>Shop: <span className="font-medium text-gray-700 dark:text-gray-300">{req.preferred_shop}</span></span>
+                      <span>Shop: <span className="font-medium text-white/80">{req.preferred_shop}</span></span>
                     </div>
                   )}
                   {req.pickup_address && (
-                    <div className="flex items-start gap-2 text-gray-500 dark:text-gray-400">
+                    <div className="flex items-start gap-2 text-white/50">
                       <MapPin size={13} className="shrink-0 mt-0.5 text-accent-500" />
-                      <span>Pickup: <span className="font-medium text-gray-700 dark:text-gray-300">{req.pickup_address}</span></span>
+                      <span>Pickup: <span className="font-medium text-white/80">{req.pickup_address}</span></span>
                     </div>
                   )}
-                  <div className="flex items-start gap-2 text-gray-500 dark:text-gray-400">
+                  <div className="flex items-start gap-2 text-white/50">
                     <MapPin size={13} className="shrink-0 mt-0.5 text-error-500" />
-                    <span>Deliver to: <span className="font-medium text-gray-700 dark:text-gray-300">{req.delivery_address}</span></span>
+                    <span>Deliver to: <span className="font-medium text-white/80">{req.delivery_address}</span></span>
                   </div>
                   {req.expected_time && (
-                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2 text-white/50">
                       <Clock size={13} className="shrink-0 text-warning-500" />
-                      <span>Expected: <span className="font-medium text-gray-700 dark:text-gray-300">{req.expected_time}</span></span>
+                      <span>Expected: <span className="font-medium text-white/80">{req.expected_time}</span></span>
                     </div>
                   )}
                 </div>

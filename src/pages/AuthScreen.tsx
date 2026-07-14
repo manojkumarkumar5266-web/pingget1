@@ -4,7 +4,11 @@ import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
-import { User, Phone, Chrome as Home, MapPin, Mail, Lock, Eye, EyeOff, Bike, CircleCheck as CheckCircle, Circle as XCircle, ArrowRight, KeyRound, ShieldAlert, ChevronRight, Sparkles } from 'lucide-react'
+import {
+  User, Phone, Chrome as Home, MapPin, Mail, Lock, Eye, EyeOff,
+  CircleCheck as CheckCircle, Circle as XCircle, ArrowRight, KeyRound,
+  ChevronRight, Sparkles, Bike,
+} from 'lucide-react'
 
 type Mode = 'main' | 'signup' | 'signup_success' | 'forgot'
 type SignInRole = 'user' | 'dp'
@@ -51,10 +55,7 @@ export default function AuthScreen() {
     return () => clearTimeout(timer)
   }, [pincode])
 
-  const clearSignInFields = () => {
-    setSignInEmail('')
-    setSignInPassword('')
-  }
+  const clearSignInFields = () => { setSignInEmail(''); setSignInPassword('') }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null)
@@ -73,12 +74,17 @@ export default function AuthScreen() {
     }
     if (signInRole === 'dp' && userProfile.role !== 'dp') {
       await supabase.auth.signOut()
-      setError("You don't have a Delivery Partner account. Please select \"User\" to sign in, or sign up as a Delivery Partner.")
+      setError("You don't have a Delivery Partner account. Please select \"User\" to sign in.")
       clearSignInFields(); setLoading(false); return
     }
     if (signInRole === 'user' && userProfile.role === 'dp') {
       await supabase.auth.signOut()
-      setError('This account is a Delivery Partner. Please select "DP" to sign in to your DP dashboard.')
+      setError('This account is a Delivery Partner. Please select "DP" to sign in.')
+      clearSignInFields(); setLoading(false); return
+    }
+    if (userProfile.role === 'admin') {
+      await supabase.auth.signOut()
+      setError('Admin accounts must use the Admin Login page.')
       clearSignInFields(); setLoading(false); return
     }
   }
@@ -137,7 +143,6 @@ export default function AuthScreen() {
     } catch { /* best effort */ }
 
     await refreshProfile()
-
     setLoading(false)
     setMode('signup_success')
   }
@@ -146,80 +151,54 @@ export default function AuthScreen() {
     e.preventDefault(); setError(null)
     if (!resetEmail.trim()) { setError('Please enter your email address'); return }
     setLoading(true)
-
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         resetEmail.trim(),
         { redirectTo: `${window.location.origin}/reset-password` }
       )
-
       if (resetError) {
         try {
           await supabase.functions.invoke('send-email', {
-            body: {
-              to: resetEmail.trim(),
-              type: 'password_reset',
-              data: {
-                name: '',
-                reset_url: `${window.location.origin}/reset-password`,
-              },
-            },
+            body: { to: resetEmail.trim(), type: 'password_reset', data: { name: '', reset_url: `${window.location.origin}/reset-password` } },
           })
         } catch { /* fallback also failed */ }
       }
-
-      setResetSent(true)
-    } catch (err: any) {
-      setError(err.message || 'Failed to send reset link')
-    }
+    } catch { /* best effort */ }
     setLoading(false)
+    setResetSent(true)
   }
 
-  if (mode === 'signup_success') {
-    return (
-      <AuthLayout showBrand={false}>
-        <div className="card p-6 text-center animate-bounce-in">
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-100 dark:bg-success-900/40">
-              <CheckCircle size={32} className="text-success-600 dark:text-success-400" />
-            </div>
-          </div>
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Account Created!</h2>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Your account has been created successfully. You can now sign in.
-          </p>
-          <button
-            onClick={() => { setMode('main'); setFullName(''); setPhone(''); setAddress(''); setPincode(''); setEmail(''); setPassword(''); setConfirmPassword(''); setSignInEmail(email) }}
-            className="btn-primary mt-5 w-full"
-          >
-            Continue to Sign In
-          </button>
-        </div>
-      </AuthLayout>
-    )
-  }
-
+  // ── Forgot Password ──────────────────────────────────────────────────────
   if (mode === 'forgot') {
     return (
       <AuthLayout showBrand={false}>
-        <div className="card p-6 animate-slide-up">
-          <button onClick={() => { setMode('main'); setError(null); setResetSent(false) }} className="text-sm text-primary-600 dark:text-primary-400 mb-4 flex items-center gap-1">
-            <ChevronRight size={14} className="rotate-180" /> Back to Sign In
+        <div className="card p-6 animate-fade-in">
+          <button
+            onClick={() => { setMode('main'); setError(null); setResetSent(false) }}
+            className="text-sm mb-4 flex items-center gap-1"
+            style={{ color: '#8fa964' }}
+          >
+            ← Back to Sign In
           </button>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Forgot Password</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Enter your email and we&apos;ll send you a reset link.</p>
+          <h2 className="text-xl font-bold text-white mb-1">Forgot Password</h2>
+          <p className="text-sm mb-5" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            Enter your email and we'll send a reset link.
+          </p>
           {resetSent ? (
-            <div className="rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-800 dark:bg-success-900/30 dark:text-success-300">
-              <div className="flex items-center gap-2"><CheckCircle size={16} className="shrink-0" /> Reset link sent! Check your email inbox.</div>
+            <div className="rounded-xl px-4 py-3 text-sm text-white glass-dark">
+              <div className="flex items-center gap-2">
+                <CheckCircle size={16} className="shrink-0 text-green-400" />
+                Reset link sent! Check your inbox.
+              </div>
             </div>
           ) : (
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div>
-                <label className="label flex items-center gap-1.5"><Mail size={14} /> Email Address</label>
+                <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
                 <input type="email" className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="you@example.com" required />
               </div>
               {error && <ErrorBanner message={error} />}
-              <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
+              <button type="submit" disabled={loading} className="btn-primary w-full">
                 <KeyRound size={16} /> {loading ? 'Sending...' : 'Send Reset Link'}
               </button>
             </form>
@@ -229,167 +208,192 @@ export default function AuthScreen() {
     )
   }
 
-  if (mode === 'signup') {
+  // ── Signup Success ───────────────────────────────────────────────────────
+  if (mode === 'signup_success') {
     return (
       <AuthLayout showBrand={false}>
-        <div className="card p-6 animate-slide-up">
-          <button onClick={() => { setMode('main'); setError(null) }} className="text-sm text-primary-600 dark:text-primary-400 mb-4 flex items-center gap-1">
-            <ChevronRight size={14} className="rotate-180" /> Back
+        <div className="card p-8 text-center animate-fade-in">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #6e8c45, #374524)' }}>
+            <CheckCircle size={32} className="text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Welcome aboard!</h2>
+          <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            Your account is ready. Sign in to start ordering.
+          </p>
+          <button
+            onClick={() => setMode('main')}
+            className="btn-primary w-full"
+          >
+            Sign In Now <ArrowRight size={16} />
           </button>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Sign Up as User</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Fill in your details to get started</p>
-          <form onSubmit={handleSignUp} className="space-y-3">
-            <div>
-              <label className="label flex items-center gap-1.5"><User size={14} /> Full Name *</label>
-              <input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required />
-            </div>
-            <div>
-              <label className="label flex items-center gap-1.5"><Phone size={14} /> Mobile Number *</label>
-              <input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required />
-            </div>
-            <div>
-              <label className="label flex items-center gap-1.5"><Home size={14} /> Address *</label>
-              <input className="input" value={address} onChange={e => setAddress(e.target.value)} placeholder="Your full address" required />
-            </div>
-            <div>
-              <label className="label flex items-center gap-1.5"><MapPin size={14} /> Area Pincode *</label>
-              <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} required />
-              {pincodeChecking && <p className="mt-1.5 text-xs text-gray-400">Checking service area...</p>}
-              {!pincodeChecking && pincodeStatus && (
-                <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${pincodeStatus.served ? 'bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300' : 'bg-error-50 text-error-700 dark:bg-error-900/30 dark:text-error-300'}`}>
-                  {pincodeStatus.served ? <><CheckCircle size={13} /> We serve {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!</> : <><XCircle size={13} /> Sorry, we don&apos;t serve this area yet.</>}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="label flex items-center gap-1.5"><Mail size={14} /> Email *</label>
-              <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
-            </div>
-            <div>
-              <label className="label flex items-center gap-1.5"><Lock size={14} /> Password *</label>
-              <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className="label flex items-center gap-1.5"><Lock size={14} /> Confirm Password *</label>
-              <input type={showPassword ? 'text' : 'password'} className="input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" required />
-              {confirmPassword && password !== confirmPassword && <p className="mt-1 text-xs text-error-600">Passwords do not match</p>}
-            </div>
-            {error && <ErrorBanner message={error} />}
-            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
-              {loading ? 'Creating account...' : 'Create Account'} <ArrowRight size={16} />
-            </button>
-          </form>
         </div>
       </AuthLayout>
     )
   }
 
-  // ---- MAIN SIGN IN ----
-  return (
-    <AuthLayout>
-      <div className="card p-6 animate-slide-up">
-        <button onClick={() => navigate('/landing')} className="text-sm text-white/60 mb-4 flex items-center gap-1 hover:text-white/80 transition-colors">
-          <ChevronRight size={14} className="rotate-180" /> Back to Home
-        </button>
-        {/* Role toggle */}
-        <div className="mb-5 flex rounded-2xl border border-gray-200 p-1 dark:border-gray-700">
-          <button type="button" onClick={() => { setSignInRole('user'); setError(null) }}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all duration-200 active:scale-95 ${signInRole === 'user' ? 'text-white shadow-md' : 'text-gray-500 dark:text-gray-400'}`}
-            style={signInRole === 'user' ? { backgroundColor: '#556d34' } : {}}>
-            <User size={16} /> User
-          </button>
-          <button type="button" onClick={() => { setSignInRole('dp'); setError(null) }}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all duration-200 active:scale-95 ${signInRole === 'dp' ? 'text-white shadow-md' : 'text-gray-500 dark:text-gray-400'}`}
-            style={signInRole === 'dp' ? { backgroundColor: '#556d34' } : {}}>
-            <Bike size={16} /> Delivery Partner
-          </button>
-        </div>
-
-        {/* Role-specific header */}
-        <div className="mb-5 text-center">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            {signInRole === 'dp' ? 'Partner Sign In' : 'Welcome Back'}
-          </h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {signInRole === 'dp' ? 'Sign in to your delivery partner dashboard' : 'Sign in to continue to PingGET'}
-          </p>
-        </div>
-
-        {error && <div className="mb-3"><ErrorBanner message={error} /></div>}
-
-        <form onSubmit={handleSignIn} className="space-y-4">
-          <div>
-            <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
-            <input
-              type="email"
-              className="input"
-              value={signInEmail}
-              onChange={e => setSignInEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              autoComplete="email"
-            />
-          </div>
-          <div>
-            <label className="label flex items-center gap-1.5"><Lock size={14} /> Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                className="input pr-10"
-                value={signInPassword}
-                onChange={e => setSignInPassword(e.target.value)}
-                placeholder="Your password"
-                required
-                autoComplete="current-password"
-              />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+  // ── Signup Form ──────────────────────────────────────────────────────────
+  if (mode === 'signup') {
+    return (
+      <AuthLayout showBrand>
+        <div className="card p-5 animate-fade-in">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #6e8c45, #374524)' }}>
+              <Sparkles size={20} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">Create Account</h2>
+              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Join pinGGet as a User</p>
             </div>
           </div>
-          <div className="text-right">
-            <button type="button" onClick={() => { setMode('forgot'); setError(null); setResetSent(false); setResetEmail(signInEmail) }} className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline">
-              Forgot password?
-            </button>
-          </div>
-          <button type="submit" disabled={loading} className="btn-primary w-full text-base">
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                Signing in...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                Sign In as {signInRole === 'dp' ? 'Delivery Partner' : 'User'}
-                <ArrowRight size={18} />
-              </span>
-            )}
-          </button>
-        </form>
 
-        <div className="relative my-5">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200 dark:border-gray-700"></div></div>
-          <div className="relative flex justify-center text-xs"><span className="bg-white dark:bg-gray-900 px-2 text-gray-500">New to PingGET?</span></div>
+          <form onSubmit={handleSignUp} className="space-y-3">
+            <div>
+              <label className="label flex items-center gap-1.5"><User size={13} /> Full Name *</label>
+              <input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required />
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><Phone size={13} /> Mobile Number *</label>
+              <input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required />
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><Home size={13} /> Address *</label>
+              <input className="input" value={address} onChange={e => setAddress(e.target.value)} placeholder="Your full address" required />
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><MapPin size={13} /> Area Pincode *</label>
+              <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} required />
+              {pincodeChecking && <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Checking service area...</p>}
+              {!pincodeChecking && pincodeStatus && (
+                <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${pincodeStatus.served ? 'text-green-300' : 'text-red-300'}`}
+                  style={{ background: pincodeStatus.served ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${pincodeStatus.served ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
+                  {pincodeStatus.served
+                    ? <><CheckCircle size={13} /> We serve {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!</>
+                    : <><XCircle size={13} /> Sorry, we don't serve this area yet.</>}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><Mail size={13} /> Email *</label>
+              <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><Lock size={13} /> Password *</label>
+              <div className="relative">
+                <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><Lock size={13} /> Confirm Password *</label>
+              <input type={showPassword ? 'text' : 'password'} className="input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter your password" required />
+              {confirmPassword && password !== confirmPassword && <p className="mt-1 text-xs text-red-400">Passwords do not match</p>}
+            </div>
+            {error && <ErrorBanner message={error} />}
+            <button type="submit" disabled={loading} className="btn-primary w-full">
+              {loading ? 'Creating account...' : 'Create Account'} <ArrowRight size={16} />
+            </button>
+          </form>
+          <button
+            onClick={() => { setMode('main'); setError(null) }}
+            className="mt-4 w-full text-center text-sm"
+            style={{ color: 'rgba(255,255,255,0.5)' }}
+          >
+            Already have an account? Sign in
+          </button>
+        </div>
+      </AuthLayout>
+    )
+  }
+
+  // ── Main Sign In ─────────────────────────────────────────────────────────
+  return (
+    <AuthLayout>
+      <div className="space-y-4 animate-fade-in">
+        {/* Role toggle */}
+        <div className="flex rounded-2xl p-1 glass">
+          {(['user', 'dp'] as SignInRole[]).map(role => (
+            <button
+              key={role}
+              onClick={() => { setSignInRole(role); setError(null) }}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all ${signInRole === role ? 'text-white shadow-sm' : ''}`}
+              style={signInRole === role ? { background: 'linear-gradient(135deg, #6e8c45, #42562a)' } : { color: 'rgba(255,255,255,0.5)' }}
+            >
+              {role === 'user' ? <User size={16} /> : <Bike size={16} />}
+              {role === 'user' ? 'User Login' : 'DP Login'}
+            </button>
+          ))}
         </div>
 
-        <button onClick={() => { setMode('signup'); setError(null) }} className="btn-secondary w-full mb-2.5 text-sm">
-          <User size={16} /> Sign Up as User
-        </button>
-        <button onClick={() => navigate('/dp-signup')} className="btn-secondary w-full text-sm">
-          <Bike size={16} /> Sign Up as Delivery Partner
-        </button>
+        {/* Sign in card */}
+        <div className="card p-5">
+          <form onSubmit={handleSignIn} className="space-y-4">
+            <div>
+              <label className="label flex items-center gap-1.5"><Mail size={13} /> Email</label>
+              <input type="email" className="input" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required />
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><Lock size={13} /> Password</label>
+              <div className="relative">
+                <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={signInPassword} onChange={e => setSignInPassword(e.target.value)} placeholder="Your password" autoComplete="current-password" required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <div className="mt-1.5 text-right">
+                <button type="button" onClick={() => { setMode('forgot'); setError(null) }} className="text-xs hover:underline" style={{ color: '#8fa964' }}>
+                  Forgot password?
+                </button>
+              </div>
+            </div>
+            {error && <ErrorBanner message={error} />}
+            <button type="submit" disabled={loading} className="btn-primary w-full">
+              {loading ? 'Signing in...' : `Sign In as ${signInRole === 'user' ? 'User' : 'Delivery Partner'}`}
+              <ChevronRight size={16} />
+            </button>
+          </form>
+        </div>
+
+        {/* Signup links */}
+        {signInRole === 'user' && (
+          <button
+            onClick={() => { setMode('signup'); setError(null) }}
+            className="w-full card p-4 flex items-center justify-between group"
+          >
+            <div className="text-left">
+              <p className="text-sm font-semibold text-white">New to pinGGet?</p>
+              <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Create a free user account</p>
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(110,140,69,0.2)' }}>
+              <ArrowRight size={16} style={{ color: '#8fa964' }} />
+            </div>
+          </button>
+        )}
 
         {signInRole === 'dp' && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl bg-accent-50 p-3 text-xs text-accent-700 dark:bg-accent-950/40 dark:text-accent-300 animate-fade-in">
-            <ShieldAlert size={14} className="mt-0.5 shrink-0" />
-            <span>Delivery Partner accounts need admin approval before they can sign in. If you don&apos;t have a DP account yet, tap &quot;Sign Up as Delivery Partner&quot;.</span>
-          </div>
+          <button
+            onClick={() => navigate('/dp-signup')}
+            className="w-full card p-4 flex items-center justify-between group"
+          >
+            <div className="text-left">
+              <p className="text-sm font-semibold text-white">New to pinGGet?</p>
+              <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Sign up as a Delivery Partner</p>
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(110,140,69,0.2)' }}>
+              <ArrowRight size={16} style={{ color: '#8fa964' }} />
+            </div>
+          </button>
         )}
+
+        {/* Always show the other signup option */}
+        <button
+          onClick={() => navigate('/dp-signup')}
+          className="w-full text-center text-xs hover:underline"
+          style={{ color: 'rgba(255,255,255,0.4)' }}
+        >
+          Want to deliver? Become a Delivery Partner
+        </button>
       </div>
     </AuthLayout>
   )

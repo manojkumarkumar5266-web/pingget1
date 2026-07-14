@@ -214,13 +214,13 @@ export default function AdminPayments() {
 
   return (
     <div className="p-4 md:p-8">
-      <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">Payments</h1>
+      <h1 className="mb-4 text-2xl font-bold text-white">Payments</h1>
 
       {/* Admin UPI setting */}
       <div className="mb-5 card p-4">
         <div className="flex items-center gap-2 mb-2">
-          <Settings size={15} className="text-gray-400" />
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Your UPI ID (shown to DPs for commission payment)</p>
+          <Settings size={15} className="text-white/40" />
+          <p className="text-sm font-semibold text-white/80">Your UPI ID (shown to DPs for commission payment)</p>
         </div>
         <div className="flex gap-2">
           <input className="input flex-1" value={adminUpi} onChange={e => setAdminUpi(e.target.value)} placeholder="yourname@upi" />
@@ -235,15 +235,15 @@ export default function AdminPayments() {
             <IndianRupee size={15} />
             <span className="text-xs font-semibold">Admin Commission</span>
           </div>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(confirmedCommissionTotal)}</p>
-          <p className="text-xs text-gray-400">Confirmed receipts only</p>
+          <p className="text-xl font-bold text-white">{formatCurrency(confirmedCommissionTotal)}</p>
+          <p className="text-xs text-white/40">Confirmed receipts only</p>
         </div>
         <div className="card p-4">
           <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400 mb-1">
             <IndianRupee size={15} />
             <span className="text-xs font-semibold">DP Earnings</span>
           </div>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalDpEarnings)}</p>
+          <p className="text-xl font-bold text-white">{formatCurrency(totalDpEarnings)}</p>
         </div>
         {totalOutstanding > 0 && (
           <div className="card p-4 border-2 border-error-300 dark:border-error-700">
@@ -251,7 +251,7 @@ export default function AdminPayments() {
               <AlertTriangle size={15} />
               <span className="text-xs font-semibold">Pending from DPs</span>
             </div>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalOutstanding)}</p>
+            <p className="text-xl font-bold text-white">{formatCurrency(totalOutstanding)}</p>
             <button onClick={() => setTab('pending')} className="text-xs text-error-600 underline mt-0.5">{dpPending.length} DPs owe</button>
           </div>
         )}
@@ -261,7 +261,7 @@ export default function AdminPayments() {
               <Clock size={15} />
               <span className="text-xs font-semibold">Pending Receipts</span>
             </div>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">{pendingReceiptsCount}</p>
+            <p className="text-xl font-bold text-white">{pendingReceiptsCount}</p>
             <button onClick={() => setTab('receipts')} className="text-xs text-warning-600 underline mt-0.5">Review now</button>
           </div>
         )}
@@ -284,36 +284,36 @@ export default function AdminPayments() {
       {tab === 'orders' && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Per-order commission breakdown</p>
+            <p className="text-sm text-white/50">Per-order commission breakdown</p>
             <button onClick={exportOrderCommissions} className="btn-secondary flex items-center gap-1.5 text-sm"><Download size={15} /> Export</button>
           </div>
           {orderCommissions.length === 0 ? (
             <EmptyState icon={<CreditCard size={48} />} title="No completed orders yet" />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800">
+            <div className="overflow-x-auto rounded-2xl border border-white/10">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400">DP</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400">Order</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">Charge</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">Admin Commission</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">DP Earned</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">Date</th>
+                  <tr className="border-b border-white/10 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                    <th className="px-4 py-3 text-left font-semibold text-white/60">DP</th>
+                    <th className="px-4 py-3 text-left font-semibold text-white/60">Order</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">Charge</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">Admin Commission</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">DP Earned</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {orderCommissions.map(o => (
-                    <tr key={o.id} className="bg-white dark:bg-gray-900">
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{o.dp_name}</td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 max-w-[120px] truncate">{o.items_summary || 'Delivery'}</td>
-                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{formatCurrency(o.delivery_charge)}</td>
+                    <tr key={o.id} className="glass">
+                      <td className="px-4 py-3 font-medium text-white">{o.dp_name}</td>
+                      <td className="px-4 py-3 text-white/50 max-w-[120px] truncate">{o.items_summary || 'Delivery'}</td>
+                      <td className="px-4 py-3 text-right text-white/80">{formatCurrency(o.delivery_charge)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-success-600 dark:text-success-400">
                         {formatCurrency(o.commission_amount)}
-                        <span className="ml-1 text-xs text-gray-400">({o.commission_pct}%)</span>
+                        <span className="ml-1 text-xs text-white/40">({o.commission_pct}%)</span>
                       </td>
                       <td className="px-4 py-3 text-right text-primary-600 dark:text-primary-400">{formatCurrency(o.dp_earnings)}</td>
-                      <td className="px-4 py-3 text-right text-xs text-gray-400">{formatTime(o.completed_at || o.created_at)}</td>
+                      <td className="px-4 py-3 text-right text-xs text-white/40">{formatTime(o.completed_at || o.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -327,32 +327,32 @@ export default function AdminPayments() {
       {tab === 'dp' && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Amount each DP earned from users</p>
+            <p className="text-sm text-white/50">Amount each DP earned from users</p>
             <button onClick={exportDpEarnings} className="btn-secondary flex items-center gap-1.5 text-sm"><Download size={15} /> Export</button>
           </div>
           {dpEarnings.length === 0 ? (
             <EmptyState icon={<CreditCard size={48} />} title="No DP earnings yet" />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800">
+            <div className="overflow-x-auto rounded-2xl border border-white/10">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400">Delivery Partner</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">Orders</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">Total from Users</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">DP Kept</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">Commission Owed</th>
+                  <tr className="border-b border-white/10 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                    <th className="px-4 py-3 text-left font-semibold text-white/60">Delivery Partner</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">Orders</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">Total from Users</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">DP Kept</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">Commission Owed</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {dpEarnings.map(d => (
-                    <tr key={d.dp_id} className="bg-white dark:bg-gray-900">
+                    <tr key={d.dp_id} className="glass">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900 dark:text-white">{d.dp_name}</p>
-                        {d.dp_phone && <p className="text-xs text-gray-400">{d.dp_phone}</p>}
+                        <p className="font-medium text-white">{d.dp_name}</p>
+                        {d.dp_phone && <p className="text-xs text-white/40">{d.dp_phone}</p>}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{d.orders}</td>
-                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{formatCurrency(d.total_charge)}</td>
+                      <td className="px-4 py-3 text-right text-white/80">{d.orders}</td>
+                      <td className="px-4 py-3 text-right text-white/80">{formatCurrency(d.total_charge)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-primary-600 dark:text-primary-400">{formatCurrency(d.total_earned)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-warning-600 dark:text-warning-400">{formatCurrency(d.commission_owed)}</td>
                     </tr>
@@ -368,7 +368,7 @@ export default function AdminPayments() {
       {tab === 'pending' && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Commission owed but not yet confirmed as received</p>
+            <p className="text-sm text-white/50">Commission owed but not yet confirmed as received</p>
             {dpPending.length > 0 && (
               <button onClick={exportPendingCommission} className="btn-secondary flex items-center gap-1.5 text-sm"><Download size={15} /> Export</button>
             )}
@@ -376,26 +376,26 @@ export default function AdminPayments() {
           {dpPending.length === 0 ? (
             <EmptyState icon={<CheckCircle size={48} />} title="All commissions cleared" description="No outstanding commission from any delivery partner." />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-800">
+            <div className="overflow-x-auto rounded-2xl border border-white/10">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-400">Delivery Partner</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">Orders</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">Total Commission</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">Confirmed Paid</th>
-                    <th className="px-4 py-3 text-right font-semibold text-gray-600 dark:text-gray-400">Outstanding</th>
+                  <tr className="border-b border-white/10 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                    <th className="px-4 py-3 text-left font-semibold text-white/60">Delivery Partner</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">Orders</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">Total Commission</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">Confirmed Paid</th>
+                    <th className="px-4 py-3 text-right font-semibold text-white/60">Outstanding</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {dpPending.map(d => (
-                    <tr key={d.dp_id} className="bg-white dark:bg-gray-900">
+                    <tr key={d.dp_id} className="glass">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900 dark:text-white">{d.dp_name}</p>
-                        {d.dp_phone && <p className="text-xs text-gray-400">{d.dp_phone}</p>}
+                        <p className="font-medium text-white">{d.dp_name}</p>
+                        {d.dp_phone && <p className="text-xs text-white/40">{d.dp_phone}</p>}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{d.orders}</td>
-                      <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{formatCurrency(d.total_commission)}</td>
+                      <td className="px-4 py-3 text-right text-white/80">{d.orders}</td>
+                      <td className="px-4 py-3 text-right text-white/80">{formatCurrency(d.total_commission)}</td>
                       <td className="px-4 py-3 text-right text-success-600 dark:text-success-400">{formatCurrency(d.confirmed_paid)}</td>
                       <td className="px-4 py-3 text-right">
                         <span className="inline-flex items-center gap-1 rounded-lg bg-error-50 px-2 py-1 text-sm font-bold text-error-700 dark:bg-error-900/30 dark:text-error-300">
@@ -414,7 +414,7 @@ export default function AdminPayments() {
       {/* Commission Receipts */}
       {tab === 'receipts' && (
         <div>
-          <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mb-3 text-sm text-white/50">
             DPs submit UPI payment receipts here. Confirm once you have received the payment.
           </p>
           {receipts.length === 0 ? (
@@ -426,7 +426,7 @@ export default function AdminPayments() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-gray-900 dark:text-white">{(r._dp as any)?.full_name || 'Unknown'}</p>
+                        <p className="font-semibold text-white">{(r._dp as any)?.full_name || 'Unknown'}</p>
                         <span className={`badge flex items-center gap-1 ${
                           r.status === 'confirmed' ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300'
                           : r.status === 'rejected' ? 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300'
@@ -436,9 +436,9 @@ export default function AdminPayments() {
                           {r.status === 'confirmed' ? 'Confirmed' : r.status === 'rejected' ? 'Rejected' : 'Pending'}
                         </span>
                       </div>
-                      <p className="text-lg font-bold text-gray-900 dark:text-white mt-0.5">{formatCurrency(r.amount)}</p>
-                      <p className="text-xs text-gray-400">UPI Ref: <span className="font-mono">{r.upi_ref}</span></p>
-                      <p className="text-xs text-gray-400">{formatTime(r.submitted_at)}</p>
+                      <p className="text-lg font-bold text-white mt-0.5">{formatCurrency(r.amount)}</p>
+                      <p className="text-xs text-white/40">UPI Ref: <span className="font-mono">{r.upi_ref}</span></p>
+                      <p className="text-xs text-white/40">{formatTime(r.submitted_at)}</p>
                       {r.reject_reason && <p className="text-xs text-error-600 mt-1">Reason: {r.reject_reason}</p>}
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
@@ -448,7 +448,7 @@ export default function AdminPayments() {
                             <img
                               src={r.screenshot_url}
                               alt="Payment screenshot"
-                              className="w-24 h-24 rounded-xl object-cover border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity"
+                              className="w-24 h-24 rounded-xl object-cover border border-white/15 cursor-pointer hover:opacity-90 transition-opacity"
                             />
                           </a>
                           <a href={r.screenshot_url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 underline">
@@ -485,7 +485,7 @@ export default function AdminPayments() {
       {rejectId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setRejectId(null)}>
           <div className="card w-full max-w-sm p-5 animate-scale-in" onClick={e => e.stopPropagation()}>
-            <h3 className="mb-3 text-base font-bold text-gray-900 dark:text-white">Reject Receipt</h3>
+            <h3 className="mb-3 text-base font-bold text-white">Reject Receipt</h3>
             <label className="label">Reason (optional)</label>
             <input className="input" value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="e.g. Amount mismatch, wrong reference" />
             <div className="mt-4 flex gap-2">

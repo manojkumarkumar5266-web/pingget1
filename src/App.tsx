@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAuth } from './context'
 import { FullScreenLoader } from './components/ui'
 import AuthScreen from './pages/AuthScreen'
@@ -9,7 +9,6 @@ import ResetPassword from './pages/ResetPassword'
 import UserApp from './pages/user/UserApp'
 import DpApp from './pages/dp/DpApp'
 import AdminApp from './pages/admin/AdminApp'
-import CompleteProfile from './pages/CompleteProfile'
 import SetupAdmin from './pages/SetupAdmin'
 import LandingPage from './pages/LandingPage'
 import Welcome from './components/Welcome'
@@ -20,7 +19,7 @@ const ONBOARDING_KEY = 'pingget_permissions_done'
 const WELCOME_KEY = 'pingget_welcomed'
 
 export default function App() {
-  const { session, profile, loading, passwordRecovery } = useAuth()
+  const { session, profile, loading, passwordRecovery, signOut } = useAuth()
   const location = useLocation()
   const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem(WELCOME_KEY))
   const [showPermissions, setShowPermissions] = useState(() => {
@@ -38,15 +37,9 @@ export default function App() {
     setShowPermissions(false)
   }
 
-  if (showWelcome) {
-    return <Welcome onDone={handleWelcomeDone} />
-  }
+  if (showWelcome) return <Welcome onDone={handleWelcomeDone} />
+  if (showPermissions) return <PermissionOnboarding onComplete={handlePermissionsDone} />
 
-  if (showPermissions) {
-    return <PermissionOnboarding onComplete={handlePermissionsDone} />
-  }
-
-  // Public routes that don't require auth
   const isPublicRoute = ['/setup-admin', '/admin/login', '/dp-signup', '/reset-password', '/landing'].includes(location.pathname)
 
   if (isPublicRoute && !session) {
@@ -67,7 +60,7 @@ export default function App() {
 
   if (loading) return <FullScreenLoader />
 
-  if (passwordRecovery || location.pathname === "/reset-password") {
+  if (passwordRecovery || location.pathname === '/reset-password') {
     return (
       <>
         <Watermark />
@@ -92,14 +85,21 @@ export default function App() {
     )
   }
 
+  // Signed in but no profile — could be loading delay or failed signup
   if (!profile) {
+    // Give profile a chance to load before signing out
+    if (!loading) {
+      signOut()
+    }
     return (
       <>
         <Watermark />
-        <Routes>
-          <Route path="/complete-profile" element={<CompleteProfile />} />
-          <Route path="*" element={<Navigate to="/complete-profile" replace />} />
-        </Routes>
+        {loading ? <FullScreenLoader /> : (
+          <Routes>
+            <Route path="/auth" element={<AuthScreen />} />
+            <Route path="*" element={<Navigate to="/auth" replace />} />
+          </Routes>
+        )}
       </>
     )
   }
@@ -122,13 +122,13 @@ export default function App() {
         <Watermark />
         <Routes>
           <Route path="/dp/*" element={<DpApp />} />
-          <Route path="/complete-profile" element={<CompleteProfile />} />
           <Route path="*" element={<Navigate to="/dp" replace />} />
         </Routes>
       </>
     )
   }
 
+  // User role
   return (
     <>
       <Watermark />

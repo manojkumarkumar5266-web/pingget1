@@ -127,7 +127,7 @@ export default function UserOrders() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-4">
-      <h1 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">My Orders</h1>
+      <h1 className="mb-4 text-xl font-bold text-white">My Orders</h1>
 
       <div className="mb-4 flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
         {(['active', 'completed', 'cancelled'] as Tab[]).map(t => (
@@ -139,7 +139,7 @@ export default function UserOrders() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-40 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />)}</div>
+        <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-40 animate-pulse rounded-2xl glass" />)}</div>
       ) : orders.length === 0 ? (
         <EmptyState icon={<ClipboardList size={48} />} title={`No ${tab} orders`} />
       ) : (
@@ -161,13 +161,13 @@ export default function UserOrders() {
                 <div className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 dark:text-white">{req.title}</p>
-                      <p className="mt-0.5 line-clamp-1 text-sm text-gray-500 dark:text-gray-400">{req.delivery_address}</p>
+                      <p className="font-semibold text-white">{req.title}</p>
+                      <p className="mt-0.5 line-clamp-1 text-sm text-white/50">{req.delivery_address}</p>
                     </div>
                     <StatusBadge status={req.status} />
                   </div>
 
-                  <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
+                  <div className="mt-2 flex items-center gap-4 text-xs text-white/40">
                     <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(req.created_at)}</span>
                     <span className="flex items-center gap-1"><MapPin size={12} /> {req.delivery_address}</span>
                   </div>
@@ -177,7 +177,7 @@ export default function UserOrders() {
                     <div className="mt-3 flex items-center gap-3 rounded-xl bg-primary-50 px-3 py-2.5 dark:bg-primary-900/20">
                       <Avatar url={req._dp.photo_url} name={req._dp.full_name || 'DP'} size={40} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{req._dp.full_name}</p>
+                        <p className="text-sm font-semibold text-white">{req._dp.full_name}</p>
                         {req._dp.phone && <p className="text-xs text-gray-500">{req._dp.phone}</p>}
                         <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">Your delivery partner</p>
                       </div>
@@ -197,7 +197,7 @@ export default function UserOrders() {
                       </div>
                       <div className="mt-1.5 flex">
                         {ORDER_FLOW.map((s, i) => (
-                          <span key={s} className={`flex-1 text-center text-[9px] font-semibold ${i === statusIdx ? 'text-primary-600 dark:text-primary-400' : i < statusIdx ? 'text-primary-500' : 'text-gray-400'}`}>
+                          <span key={s} className={`flex-1 text-center text-[9px] font-semibold ${i === statusIdx ? 'text-primary-600 dark:text-primary-400' : i < statusIdx ? 'text-primary-500' : 'text-white/40'}`}>
                             {STATUS_LABELS[s]?.split(' ')[0]}
                           </span>
                         ))}
@@ -231,7 +231,7 @@ export default function UserOrders() {
                     {req.accepted_dp_id && req.status !== 'cancelled' && (() => {
                       const chatClosed = req.status === 'delivered' || req.status === 'cash_received' || req.status === 'completed'
                       return chatClosed ? (
-                        <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-100 px-3 py-2.5 text-xs font-medium text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600">
+                        <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-gray-100 px-3 py-2.5 text-xs font-medium text-white/40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600">
                           <Lock size={13} /> Chat Closed
                         </div>
                       ) : (

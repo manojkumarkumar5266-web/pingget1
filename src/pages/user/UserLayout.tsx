@@ -24,11 +24,7 @@ export default function UserLayout() {
 
   const openChatFromToast = async (requestId: string) => {
     setAcceptedToast(null)
-    const { data } = await supabase
-      .from('chat_rooms')
-      .select('id')
-      .eq('request_id', requestId)
-      .maybeSingle()
+    const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
     if (data) navigate(`/app/chat/${data.id}`)
   }
 
@@ -75,39 +71,35 @@ export default function UserLayout() {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <div className="relative flex h-screen flex-col bg-gray-50/95 dark:bg-gray-950/95">
+    <div className="relative flex h-screen flex-col">
       <Watermark />
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-gray-100 px-4 py-3 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex items-center gap-2">
-          <Brand size="sm" showTagline={false} />
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={() => signOut()} className="p-2 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
-            <LogOut size={18} />
-          </button>
-        </div>
+      <header className="glass z-10 flex items-center justify-between px-4 py-3">
+        <Brand size="sm" showTagline={false} />
+        <button onClick={() => signOut()} className="p-2 transition-colors" style={{ color: 'rgba(255,255,255,0.5)' }}>
+          <LogOut size={18} />
+        </button>
       </header>
 
       {/* Real-time accepted toast */}
       {acceptedToast && (
-        <div className="fixed top-4 left-4 right-4 z-50 animate-slide-up">
-          <div className="mx-auto max-w-md rounded-2xl bg-gray-900 p-4 shadow-2xl dark:bg-gray-800">
+        <div className="fixed top-4 left-4 right-4 z-50 animate-fade-in">
+          <div className="mx-auto max-w-md rounded-2xl p-4 glass-dark shadow-2xl">
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success-500">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500">
                 <MessageCircle size={20} className="text-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-white text-sm">Request Accepted!</p>
-                <p className="mt-0.5 text-xs text-gray-300 line-clamp-2">{acceptedToast.body}</p>
+                <p className="mt-0.5 text-xs line-clamp-2" style={{ color: 'rgba(255,255,255,0.6)' }}>{acceptedToast.body}</p>
                 <button
                   onClick={() => openChatFromToast(acceptedToast.requestId)}
-                  className="mt-2 rounded-lg bg-success-500 px-4 py-1.5 text-xs font-bold text-white active:scale-95 transition-transform"
+                  className="mt-2 rounded-lg bg-green-500 px-4 py-1.5 text-xs font-bold text-white active:scale-95 transition-transform"
                 >
                   Open Chat
                 </button>
               </div>
-              <button onClick={() => setAcceptedToast(null)} className="shrink-0 text-gray-400 hover:text-gray-200 transition-colors">
+              <button onClick={() => setAcceptedToast(null)} className="shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>
                 <X size={16} />
               </button>
             </div>
@@ -125,14 +117,14 @@ export default function UserLayout() {
         <button
           onClick={() => navigate('/app/create')}
           className="fixed bottom-20 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-transform active:scale-90 hover:scale-105"
-          style={{ backgroundColor: '#556d34', boxShadow: '0 4px 14px rgba(85,109,52,0.4)' }}
+          style={{ background: 'linear-gradient(135deg, #6e8c45, #42562a)', boxShadow: '0 4px 14px rgba(85,109,52,0.4)' }}
         >
           <Plus size={26} />
         </button>
       )}
 
       {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-10 border-t border-gray-100 bg-white/90 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/90">
+      <nav className="fixed bottom-0 left-0 right-0 z-10 glass">
         <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
           {navItems.map(item => {
             const Icon = item.icon
@@ -140,12 +132,13 @@ export default function UserLayout() {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-colors ${isActive(item.path) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}
+                className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-colors ${isActive(item.path) ? 'text-primary-300' : ''}`}
+                style={!isActive(item.path) ? { color: 'rgba(255,255,255,0.4)' } : undefined}
               >
                 <Icon size={22} />
                 <span className="text-xs font-medium">{item.label}</span>
                 {item.badge ? (
-                  <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-500 px-1 text-xs font-bold text-white">
+                  <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
                     {item.badge}
                   </span>
                 ) : null}

@@ -29,7 +29,6 @@ export default function LandingPage() {
   return (
     <div
       className="relative min-h-screen overflow-hidden"
-      style={{ background: 'linear-gradient(160deg, #1c2a14 0%, #2a3d1c 40%, #374524 100%)' }}
     >
       <Watermark />
 
@@ -66,7 +65,7 @@ export default function LandingPage() {
         <div className="flex flex-1 flex-col justify-center max-w-md mx-auto w-full">
           {/* User side */}
           <div className={`mb-4 transition-all duration-700 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
+            <div className="card p-5">
               <div className="flex items-center gap-2 mb-3">
                 <User size={20} className="text-white" />
                 <h2 className="text-base font-bold text-white">For Users</h2>
@@ -136,10 +135,10 @@ export default function LandingPage() {
                   className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-bold text-white shadow-lg transition-all active:scale-95"
                   style={{ backgroundColor: '#808000' }}
                 >
-                  Get Started <ArrowRight size={16} />
+                  Sign Up <ArrowRight size={16} />
                 </button>
                 <button
-                  onClick={() => navigate('/dp-signup')}
+                  onClick={() => navigate('/auth')}
                   className="flex-1 rounded-xl border border-white/20 bg-white/10 py-3 text-sm font-bold text-white transition-all active:scale-95 hover:bg-white/20"
                 >
                   Sign In

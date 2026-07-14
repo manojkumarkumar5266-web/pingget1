@@ -20,18 +20,13 @@ export default function DpLayout() {
 
   useEffect(() => {
     const fetchDp = async () => {
-      const { data } = await supabase
-        .from('delivery_partners')
-        .select('*')
-        .eq('user_id', profile!.id)
-        .maybeSingle()
+      const { data } = await supabase.from('delivery_partners').select('*').eq('user_id', profile!.id).maybeSingle()
       setDp(data as DeliveryPartner | null)
       setDpLoaded(true)
     }
     fetchDp()
   }, [profile])
 
-  // After dp loads, calculate outstanding commission from completed orders vs confirmed receipts
   useEffect(() => {
     if (!dpLoaded || !profile) return
     const checkCommission = async () => {
@@ -45,14 +40,15 @@ export default function DpLayout() {
       const totalPaid = (confirmedRes.data || []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0)
       setCommissionOwed(Math.max(0, totalOwed - totalPaid))
       setSubmittedPending((submittedRes.data?.length ?? 0) > 0)
-      setReceiptRejected((rejectedRes.data?.length ?? 0) > 0 && (submittedRes.data?.length ?? 0) === 0)
+      setReceiptRejected((rejectedRes.data?.length ?? 0) > 0)
     }
     checkCommission()
   }, [dpLoaded, profile])
 
   if (!dpLoaded) return <FullScreenLoader />
-  if (!dp || dp.status === 'pending') return <DpPendingApproval />
-  if (dp.status === 'rejected' || dp.status === 'suspended') return <DpBlocked status={dp.status} />
+  if (!dp) return <DpSetupNeeded />
+  if (dp.status === 'pending') return <DpPendingApproval />
+  if (dp.status === 'rejected' || dp.status === 'suspended' || dp.status === 'deleted') return <DpBlocked status={dp.status} />
 
   const navItems = [
     { path: '/dp', label: 'Requests', icon: Home },
@@ -64,57 +60,54 @@ export default function DpLayout() {
 
   const handleToggleOnline = async () => {
     if (!dp) return
-    // Commission gate: block going online when commission is owed and not yet confirmed
-    if (!dp.is_online && commissionOwed > 0) {
-      navigate('/dp/wallet')
-      return
-    }
+    if (!dp.is_online && commissionOwed > 0) { navigate('/dp/wallet'); return }
     const newVal = !dp.is_online
     await supabase.from('delivery_partners').update({ is_online: newVal }).eq('id', dp.id)
     setDp({ ...dp, is_online: newVal })
   }
 
   return (
-    <div className="relative flex h-screen flex-col bg-gray-50/95 dark:bg-gray-950/95">
+    <div className="relative flex h-screen flex-col">
       <Watermark />
-      <header className="border-b border-gray-100 px-4 py-3 dark:border-gray-800 bg-white dark:bg-gray-900">
+      {/* Header */}
+      <header className="glass z-10 px-4 py-3">
         <div className="flex items-center justify-between">
+          <Brand size="sm" showTagline={false} />
           <div className="flex items-center gap-2">
-            <Brand size="sm" showTagline={false} />
-          </div>
-          <div className="flex items-center gap-1">
             <button
               onClick={handleToggleOnline}
-              title={commissionOwed > 0 ? `Pay ₹${commissionOwed} commission to go online` : undefined}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                dp.is_online
-                  ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300'
-                  : commissionOwed > 0
-                    ? 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+              title={commissionOwed > 0 ? `Pay ${formatCurrency(commissionOwed)} commission to go online` : undefined}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+                dp.is_online ? 'text-green-300' : commissionOwed > 0 ? 'text-yellow-300' : 'text-white/60'
               }`}
+              style={{
+                background: dp.is_online
+                  ? 'rgba(16,185,129,0.2)'
+                  : commissionOwed > 0
+                  ? 'rgba(245,158,11,0.2)'
+                  : 'rgba(255,255,255,0.1)',
+                border: `1px solid ${dp.is_online ? 'rgba(16,185,129,0.3)' : commissionOwed > 0 ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.1)'}`,
+              }}
             >
-              <span className={`h-2 w-2 rounded-full ${
-                dp.is_online ? 'bg-success-500 animate-pulse-soft' : commissionOwed > 0 ? 'bg-warning-500' : 'bg-gray-400'
-              }`} />
+              <span className={`h-2 w-2 rounded-full ${dp.is_online ? 'bg-green-400 animate-pulse' : commissionOwed > 0 ? 'bg-yellow-400' : 'bg-white/40'}`} />
               {dp.is_online ? 'Online' : commissionOwed > 0 ? 'Pay Due' : 'Offline'}
             </button>
-            <button onClick={() => signOut()} className="p-2 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+            <button onClick={() => signOut()} className="p-2 transition-colors" style={{ color: 'rgba(255,255,255,0.5)' }}>
               <LogOut size={18} />
             </button>
           </div>
         </div>
 
-        {/* Commission warning banner */}
         {commissionOwed > 0 && !dp.is_online && (
-          <div className="mt-2 flex items-start gap-2 rounded-xl bg-warning-50 px-3 py-2 text-xs text-warning-800 dark:bg-warning-900/30 dark:text-warning-300">
+          <div className="mt-2 flex items-start gap-2 rounded-xl px-3 py-2 text-xs"
+            style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.25)', color: '#fcd34d' }}>
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             <span>
               {receiptRejected
-                ? `Your payment receipt was rejected. Resubmit a valid receipt for ${formatCurrency(commissionOwed)} to go online.`
+                ? `Your payment receipt was rejected. Resubmit for ${formatCurrency(commissionOwed)} to go online.`
                 : submittedPending
-                ? `Payment of ${formatCurrency(commissionOwed)} submitted — waiting for admin to confirm.`
-                : `You owe ${formatCurrency(commissionOwed)} commission. Pay admin via UPI to go online.`}
+                ? `Payment of ${formatCurrency(commissionOwed)} submitted — waiting for admin confirmation.`
+                : `You owe ${formatCurrency(commissionOwed)} commission. Pay via UPI to go online.`}
               {!submittedPending && (
                 <button onClick={() => navigate('/dp/wallet')} className="ml-1 underline font-semibold">
                   {receiptRejected ? 'Resubmit' : 'Pay now'}
@@ -129,15 +122,16 @@ export default function DpLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-10 border-t border-gray-100 bg-white/90 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/90">
-        <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-10 glass">
+        <div className="flex items-center justify-around px-2 py-2">
           {navItems.map(item => {
             const Icon = item.icon
             return (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`flex flex-1 flex-col items-center gap-0.5 py-2 transition-colors ${isActive(item.path) ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}
+                className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-colors ${isActive(item.path) ? 'text-primary-300' : ''}`}
+                style={!isActive(item.path) ? { color: 'rgba(255,255,255,0.4)' } : undefined}
               >
                 <Icon size={22} />
                 <span className="text-xs font-medium">{item.label}</span>
@@ -150,15 +144,31 @@ export default function DpLayout() {
   )
 }
 
+function DpSetupNeeded() {
+  const { signOut } = useAuth()
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full glass">
+        <span className="text-4xl">&#x1F6E0;</span>
+      </div>
+      <h1 className="text-xl font-bold text-white">Setup Incomplete</h1>
+      <p className="mt-2 max-w-xs text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
+        Your delivery partner profile is being set up. Please contact admin.
+      </p>
+      <button onClick={() => signOut()} className="btn-secondary mt-6">Sign Out</button>
+    </div>
+  )
+}
+
 function DpPendingApproval() {
   const { signOut } = useAuth()
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-6 text-center dark:bg-gray-950">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-accent-100 dark:bg-accent-900/40">
-        <span className="text-4xl">⏳</span>
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full glass">
+        <span className="text-4xl">&#x23F3;</span>
       </div>
-      <h1 className="text-xl font-bold text-gray-900 dark:text-white">Approval Pending</h1>
-      <p className="mt-2 max-w-xs text-sm text-gray-500 dark:text-gray-400">
+      <h1 className="text-xl font-bold text-white">Approval Pending</h1>
+      <p className="mt-2 max-w-xs text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
         Your delivery partner account is under review. An admin will approve it shortly.
       </p>
       <button onClick={() => signOut()} className="btn-secondary mt-6">Sign Out</button>
@@ -169,12 +179,12 @@ function DpPendingApproval() {
 function DpBlocked({ status }: { status: string }) {
   const { signOut } = useAuth()
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-6 text-center dark:bg-gray-950">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-error-100 dark:bg-error-900/40">
-        <span className="text-4xl">🚫</span>
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full glass">
+        <span className="text-4xl">&#x1F6AB;</span>
       </div>
-      <h1 className="text-xl font-bold text-gray-900 dark:text-white">Account {status === 'suspended' ? 'Suspended' : 'Rejected'}</h1>
-      <p className="mt-2 max-w-xs text-sm text-gray-500 dark:text-gray-400">
+      <h1 className="text-xl font-bold text-white">Account {status === 'suspended' ? 'Suspended' : 'Rejected'}</h1>
+      <p className="mt-2 max-w-xs text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
         {status === 'suspended'
           ? 'Your account has been temporarily suspended. Contact support.'
           : 'Your delivery partner application was not approved. Contact support.'}

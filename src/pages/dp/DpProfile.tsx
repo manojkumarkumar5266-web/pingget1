@@ -60,12 +60,12 @@ export default function DpProfile() {
             </span>
           </div>
           <div className="mt-3">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">{profile?.full_name}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Delivery Partner</p>
+            <h2 className="text-lg font-bold text-white">{profile?.full_name}</h2>
+            <p className="text-sm text-white/50">Delivery Partner</p>
             {dp && dp.rating_count > 0 && (
               <div className="mt-2 flex items-center gap-2">
                 <StarRating value={dp.rating_avg} size={16} />
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{dp.rating_avg.toFixed(1)} ({dp.rating_count})</span>
+                <span className="text-sm font-medium text-white/60">{dp.rating_avg.toFixed(1)} ({dp.rating_count})</span>
               </div>
             )}
           </div>
@@ -75,31 +75,31 @@ export default function DpProfile() {
       {/* Contact info */}
       <div className="card overflow-hidden mb-4 animate-slide-up" style={{ animationDelay: '50ms' }}>
         <div className="flex items-center gap-3 border-b border-gray-50 dark:border-gray-800 px-4 py-3.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl glass">
             <Phone size={16} className="text-gray-500" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-gray-400">Phone</p>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{profile?.phone || 'Not set'}</p>
+            <p className="text-xs text-white/40">Phone</p>
+            <p className="text-sm font-medium text-white">{profile?.phone || 'Not set'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 border-b border-gray-50 dark:border-gray-800 px-4 py-3.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl glass">
             <MapPin size={16} className="text-gray-500" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-gray-400">Address</p>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{profile?.address || 'Not set'}</p>
-            <p className="text-xs text-gray-400">{profile?.city}</p>
+            <p className="text-xs text-white/40">Address</p>
+            <p className="text-sm font-medium text-white">{profile?.address || 'Not set'}</p>
+            <p className="text-xs text-white/40">{profile?.city}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 px-4 py-3.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl glass">
             <Bike size={16} className="text-gray-500" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-gray-400">Vehicle</p>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{dp?.vehicle_type || 'Bike'}</p>
+            <p className="text-xs text-white/40">Vehicle</p>
+            <p className="text-sm font-medium text-white">{dp?.vehicle_type || 'Bike'}</p>
           </div>
         </div>
       </div>
@@ -107,12 +107,12 @@ export default function DpProfile() {
       {/* UPI */}
       {dp?.upi_id && (
         <div className="card mb-4 p-4 flex items-center gap-3 animate-slide-up" style={{ animationDelay: '100ms' }}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl glass">
             <span className="text-sm font-bold text-gray-500">₹</span>
           </div>
           <div>
-            <p className="text-xs text-gray-400">UPI ID</p>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{dp.upi_id}</p>
+            <p className="text-xs text-white/40">UPI ID</p>
+            <p className="text-sm font-medium text-white">{dp.upi_id}</p>
           </div>
         </div>
       )}
@@ -123,9 +123,9 @@ export default function DpProfile() {
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40">
             <Headphones size={16} className="text-primary-600 dark:text-primary-400" />
           </div>
-          <h3 className="text-sm font-bold text-gray-900 dark:text-white">Customer Service</h3>
+          <h3 className="text-sm font-bold text-white">Customer Service</h3>
         </div>
-        <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mb-3 text-xs text-white/50">
           Send us an email with your request and our customer care executive will reach out to you shortly.
         </p>
         <a
@@ -142,7 +142,7 @@ export default function DpProfile() {
         <LogOut size={18} /> Sign Out
       </button>
 
-      <p className="mt-4 text-center text-xs text-gray-400">PingGET v1.0.0</p>
+      <p className="mt-4 text-center text-xs text-white/40">PingGET v1.0.0</p>
     </div>
   )
 }

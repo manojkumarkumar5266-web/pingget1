@@ -57,9 +57,10 @@ export type RequestStatus =
 export type DeliveryRequest = {
   id: string
   user_id: string
-  title: string
+  title: string | null
   description: string | null
   photo_url: string | null
+  photo_urls: string[] | null
   voice_note_url: string | null
   preferred_shop: string | null
   pickup_address: string | null

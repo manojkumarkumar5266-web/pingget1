@@ -127,7 +127,7 @@ export default function DpOrders() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-4">
-      <h1 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">My Deliveries</h1>
+      <h1 className="mb-4 text-xl font-bold text-white">My Deliveries</h1>
 
       {pendingCommission > 0 && (
         <button onClick={() => navigate('/dp/wallet')} className="mb-4 flex w-full items-center gap-3 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-left dark:border-warning-900/40 dark:bg-warning-950/30 animate-slide-up">
@@ -174,13 +174,13 @@ export default function DpOrders() {
               <div key={req.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-white">{req.title}</p>
-                    <p className="mt-0.5 line-clamp-1 text-sm text-gray-500 dark:text-gray-400">{req.delivery_address}</p>
+                    <p className="font-semibold text-white">{req.title}</p>
+                    <p className="mt-0.5 line-clamp-1 text-sm text-white/50">{req.delivery_address}</p>
                   </div>
                   <StatusBadge status={req.status} />
                 </div>
 
-                <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
+                <div className="mt-2 flex items-center gap-4 text-xs text-white/40">
                   <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(req.created_at)}</span>
                   {req.max_budget && <span className="font-medium text-gray-600 dark:text-gray-300">{formatCurrency(req.max_budget)}</span>}
                   <span className="flex items-center gap-1"><MapPin size={12} /> {req.radius_meters}m</span>
@@ -221,7 +221,7 @@ export default function DpOrders() {
                       {ORDER_FLOW.map((s, i) => (
                         <span key={s} className={`flex-1 text-center text-[9px] font-semibold ${
                           i === statusIdx ? 'text-primary-600 dark:text-primary-400' :
-                          i < statusIdx ? 'text-primary-500' : 'text-gray-400'
+                          i < statusIdx ? 'text-primary-500' : 'text-white/40'
                         }`}>
                           {STATUS_LABELS[s]?.split(' ')[0]}
                         </span>
@@ -273,7 +273,7 @@ export default function DpOrders() {
 
                   {req.status !== 'completed' && req.status !== 'cancelled' && (
                     chatClosed ? (
-                      <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm font-medium text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600">
+                      <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-gray-100 px-3 py-2.5 text-sm font-medium text-white/40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600">
                         <Lock size={14} /> Chat Closed
                       </div>
                     ) : (
