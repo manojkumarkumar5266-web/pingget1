@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell } from 'lucide-react'
+import Watermark from '../../components/Watermark'
 import Brand from '../../components/Brand'
 import { useEffect, useState } from 'react'
 
@@ -69,7 +70,8 @@ export default function AdminLayout() {
   )
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="relative flex min-h-screen bg-gray-50/95 dark:bg-gray-950/95">
+      <Watermark />
       <aside className="fixed left-0 top-0 z-20 hidden h-screen w-64 border-r border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900 md:block">
         <div className="flex items-center gap-2 border-b border-gray-100 px-6 py-4 dark:border-gray-800">
           <Brand size="lg" showTagline />

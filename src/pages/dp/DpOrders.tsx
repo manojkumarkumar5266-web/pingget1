@@ -4,7 +4,8 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
 import { EmptyState, StatusBadge, SkeletonCard, Tabs } from '../../components/ui'
 import { formatTime, formatCurrency, STATUS_LABELS } from '../../lib/utils'
-import { ClipboardList, Clock, MapPin, MessageCircle, Lock, Package } from 'lucide-react'
+import { ClipboardList, Clock, MapPin, MessageCircle, Lock, Package, Camera, Wallet } from 'lucide-react'
+import DeliveryProofUploader from '../../components/DeliveryProofUploader'
 
 type Tab = 'active' | 'completed' | 'cancelled'
 
@@ -26,6 +27,8 @@ export default function DpOrders() {
   const [orders, setOrders] = useState<DeliveryRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [proofReqId, setProofReqId] = useState<string | null>(null)
+  const [pendingCommission, setPendingCommission] = useState(0)
 
   const fetchOrders = useCallback(async () => {
     let query = supabase.from('requests').select('*').eq('accepted_dp_id', profile!.id)
@@ -56,6 +59,19 @@ export default function DpOrders() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [profile, fetchOrders])
+
+  useEffect(() => {
+    const checkCommission = async () => {
+      const [ordersRes, confirmedRes] = await Promise.all([
+        supabase.from('orders').select('commission_amount').eq('dp_id', profile!.id).eq('status', 'completed'),
+        supabase.from('dp_commission_receipts').select('amount').eq('dp_user_id', profile!.id).eq('status', 'confirmed'),
+      ])
+      const totalOwed = (ordersRes.data || []).reduce((s: number, o: any) => s + Number(o.commission_amount || 0), 0)
+      const totalPaid = (confirmedRes.data || []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0)
+      setPendingCommission(Math.max(0, totalOwed - totalPaid))
+    }
+    checkCommission()
+  }, [profile, orders])
 
   const cancelOrder = async (req: DeliveryRequest, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -113,6 +129,16 @@ export default function DpOrders() {
     <div className="mx-auto max-w-md px-4 py-4">
       <h1 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">My Deliveries</h1>
 
+      {pendingCommission > 0 && (
+        <button onClick={() => navigate('/dp/wallet')} className="mb-4 flex w-full items-center gap-3 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-left dark:border-warning-900/40 dark:bg-warning-950/30 animate-slide-up">
+          <Wallet size={20} className="shrink-0 text-warning-600 dark:text-warning-400" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-warning-700 dark:text-warning-300">Commission Due: {formatCurrency(pendingCommission)}</p>
+            <p className="text-xs text-warning-600 dark:text-warning-400">Tap to pay admin via UPI</p>
+          </div>
+        </button>
+      )}
+
       <div className="mb-4">
         <Tabs
           tabs={[
@@ -142,6 +168,7 @@ export default function DpOrders() {
             const isUpdating = updating === req.id
             const awaitingUser = req.status === 'delivered' || req.status === 'cash_received'
             const chatClosed = req.status === 'delivered' || req.status === 'cash_received'
+            const canUploadProof = req.status === 'arrived' || req.status === 'delivered' || req.status === 'cash_received'
 
             return (
               <div key={req.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
@@ -224,6 +251,20 @@ export default function DpOrders() {
                     </button>
                   )}
 
+                  {canUploadProof && !req.delivery_proof_url && (
+                    <button
+                      onClick={() => setProofReqId(req.id)}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary-300 bg-primary-50 py-2.5 text-sm font-semibold text-primary-700 transition-all active:scale-[0.98] dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-300"
+                    >
+                      <Camera size={16} /> Upload Delivery Proof
+                    </button>
+                  )}
+                  {req.delivery_proof_url && (
+                    <div className="flex items-center justify-center gap-2 rounded-xl bg-success-50 px-3 py-2.5 text-xs font-medium text-success-700 dark:bg-success-950/30 dark:text-success-300">
+                      <Camera size={14} /> Delivery proof uploaded
+                    </div>
+                  )}
+
                   {awaitingUser && (
                     <div className="flex items-center justify-center rounded-xl bg-warning-50 px-3 py-2.5 text-xs font-medium text-warning-700 dark:bg-warning-950/30 dark:text-warning-300 animate-pulse-soft">
                       Waiting for customer to confirm delivery...
@@ -246,6 +287,15 @@ export default function DpOrders() {
             )
           })}
         </div>
+      )}
+
+      {proofReqId && (
+        <DeliveryProofUploader
+          requestId={proofReqId}
+          userId={profile!.id}
+          onUploaded={() => fetchOrders()}
+          onClose={() => setProofReqId(null)}
+        />
       )}
     </div>
   )

@@ -6,6 +6,7 @@ import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { FullScreenLoader } from '../../components/ui'
 import { formatCurrency } from '../../lib/utils'
 import Brand from '../../components/Brand'
+import Watermark from '../../components/Watermark'
 
 export default function DpLayout() {
   const { profile, signOut } = useAuth()
@@ -74,7 +75,8 @@ export default function DpLayout() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="relative flex h-screen flex-col bg-gray-50/95 dark:bg-gray-950/95">
+      <Watermark />
       <header className="border-b border-gray-100 px-4 py-3 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

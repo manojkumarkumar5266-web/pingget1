@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
+import { useGps } from '../../hooks/useGps'
 import { EmptyState, ServiceStatusBanner, SkeletonCard, StatCard, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency } from '../../lib/utils'
-import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Zap, Bike, Activity, Navigation } from 'lucide-react'
+import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Zap, Bike, Activity, Navigation, Wallet } from 'lucide-react'
 
 type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
 
@@ -204,15 +205,20 @@ export default function DpHome() {
     navigate(`/dp/chat/${roomId}`)
   }
 
-  const getDistance = (req: DeliveryRequest): number => {
-    if (!profile?.gps_lat || !profile?.gps_lng || !req.delivery_lat || !req.delivery_lng) return 0
-    return haversineDistance(profile.gps_lat, profile.gps_lng, req.delivery_lat, req.delivery_lng)
+  const [pendingCommission, setPendingCommission] = useState(0)
+  const gps = useGps(profile?.id, true)
+
+  const getDistance = (req: DeliveryRequest): number | null => {
+    const lat = gps.lat ?? profile?.gps_lat
+    const lng = gps.lng ?? profile?.gps_lng
+    if (!lat || !lng || !req.delivery_lat || !req.delivery_lng) return null
+    return haversineDistance(lat, lng, req.delivery_lat, req.delivery_lng)
   }
 
   const rangeMeters = rangeKm * 1000
   const filtered = requests.filter(r => {
     const dist = getDistance(r)
-    if (dist === 0) return true
+    if (dist === null) return false
     return dist <= rangeMeters
   })
 
@@ -221,6 +227,20 @@ export default function DpHome() {
   const todayDeliveries = todayOrders.length
   const rating = dp?.rating_avg || 0
   const ratingCount = dp?.rating_count || 0
+
+  useEffect(() => {
+    const checkCommission = async () => {
+      if (!profile) return
+      const [ordersRes, confirmedRes] = await Promise.all([
+        supabase.from('orders').select('commission_amount').eq('dp_id', profile.id).eq('status', 'completed'),
+        supabase.from('dp_commission_receipts').select('amount').eq('dp_user_id', profile.id).eq('status', 'confirmed'),
+      ])
+      const totalOwed = (ordersRes.data || []).reduce((s: number, o: any) => s + Number(o.commission_amount || 0), 0)
+      const totalPaid = (confirmedRes.data || []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0)
+      setPendingCommission(Math.max(0, totalOwed - totalPaid))
+    }
+    checkCommission()
+  }, [profile, todayOrders])
 
   if (dpLoading) {
     return <div className="p-4 space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
@@ -251,6 +271,16 @@ export default function DpHome() {
         <div className="mb-3 flex items-center gap-2 rounded-xl bg-accent-50 px-3 py-2 text-xs font-medium text-accent-800 dark:bg-accent-900/40 dark:text-accent-200 animate-slide-up">
           <Bell size={14} className="shrink-0" /> {toast}
         </div>
+      )}
+
+      {pendingCommission > 0 && (
+        <button onClick={() => navigate('/dp/wallet')} className="mb-3 flex w-full items-center gap-3 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-left dark:border-warning-900/40 dark:bg-warning-950/30 animate-slide-up">
+          <Wallet size={20} className="shrink-0 text-warning-600 dark:text-warning-400" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-warning-700 dark:text-warning-300">Commission Due: {formatCurrency(pendingCommission)}</p>
+            <p className="text-xs text-warning-600 dark:text-warning-400">Tap to pay admin via UPI</p>
+          </div>
+        </button>
       )}
 
       {/* Earnings Dashboard */}
@@ -341,7 +371,7 @@ export default function DpHome() {
         <div className="space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
       ) : filtered.length === 0 ? (
         <EmptyState icon={<Package size={48} />} title="No requests in your range"
-          description={`No pending requests within ${rangeKm} km. Increase your range to see more.`} />
+          description={gps.loading ? 'Waiting for GPS location... Allow location access.' : `No pending requests within ${rangeKm} km. Increase your range to see more.`} />
       ) : (
         <div className="space-y-3">
           {filtered.map((req, i) => {
@@ -350,7 +380,7 @@ export default function DpHome() {
               <div key={req.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex items-start justify-between">
                   <p className="font-semibold text-gray-900 dark:text-white">{req.title}</p>
-                  {dist > 0 && (
+                  {dist !== null && (
                     <span className="badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                       {formatDistance(dist)}
                     </span>

@@ -38,6 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const p = data ? (data as Profile) : null
       setProfile(p)
+      if (p?.role === 'dp') {
+        supabase.from('delivery_partners')
+          .update({ is_online: true, last_online_at: new Date().toISOString() })
+          .eq('user_id', userId)
+          .then(() => {})
+      }
       return p
     } catch (e) {
       console.error('Profile load exception:', e)
@@ -114,6 +120,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
+    if (profile?.role === 'dp' && profile.id) {
+      await supabase.from('delivery_partners')
+        .update({ is_online: false })
+        .eq('user_id', profile.id)
+    }
     await supabase.auth.signOut()
     setProfile(null)
     setPasswordRecovery(false)

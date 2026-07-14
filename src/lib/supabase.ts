@@ -75,6 +75,9 @@ export type DeliveryRequest = {
   status: RequestStatus
   accepted_dp_id: string | null
   created_at: string
+  delivery_proof_url: string | null
+  delivery_proof_by: string | null
+  delivery_proof_at: string | null
 }
 
 export type ChatRoom = {

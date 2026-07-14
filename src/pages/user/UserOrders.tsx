@@ -4,7 +4,8 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile } from '../../lib/supabase'
 import { EmptyState, StatusBadge, Avatar } from '../../components/ui'
 import { formatTime, formatCurrency, STATUS_LABELS } from '../../lib/utils'
-import { ClipboardList, Clock, MapPin, Repeat, MessageCircle, PackageCheck, Lock, Bike } from 'lucide-react'
+import { ClipboardList, Clock, MapPin, Repeat, MessageCircle, PackageCheck, Lock, Bike, Camera } from 'lucide-react'
+import DeliveryProofUploader from '../../components/DeliveryProofUploader'
 
 type Tab = 'active' | 'completed' | 'cancelled'
 type RequestWithDp = DeliveryRequest & { _dp?: Profile }
@@ -18,6 +19,7 @@ export default function UserOrders() {
   const [orders, setOrders] = useState<RequestWithDp[]>([])
   const [loading, setLoading] = useState(true)
   const [confirming, setConfirming] = useState<string | null>(null)
+  const [proofReqId, setProofReqId] = useState<string | null>(null)
 
   const fetchOrders = useCallback(async () => {
     let query = supabase.from('requests').select('*').eq('user_id', profile!.id)
@@ -206,6 +208,17 @@ export default function UserOrders() {
                   {req.status === 'on_the_way' && <p className="mt-2 text-center text-xs font-medium text-warning-600 dark:text-warning-400">Your delivery partner is on the way!</p>}
                   {req.status === 'arrived' && <p className="mt-2 text-center text-xs font-medium text-warning-600 dark:text-warning-400">Your partner has arrived — please be ready!</p>}
 
+                  {isDelivered && !req.delivery_proof_url && (
+                    <button onClick={() => setProofReqId(req.id)}
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary-300 bg-primary-50 py-2.5 text-sm font-semibold text-primary-700 transition-all active:scale-[0.98] dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
+                      <Camera size={16} /> Upload Delivery Proof
+                    </button>
+                  )}
+                  {isDelivered && req.delivery_proof_url && (
+                    <div className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-success-50 px-3 py-2.5 text-xs font-medium text-success-700 dark:bg-success-950/30 dark:text-success-300">
+                      <Camera size={14} /> Delivery proof uploaded
+                    </div>
+                  )}
                   {isDelivered && (
                     <button onClick={() => confirmDelivery(req)} disabled={isConfirming}
                       className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-success-600 py-3 text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-60">
@@ -238,6 +251,15 @@ export default function UserOrders() {
             )
           })}
         </div>
+      )}
+
+      {proofReqId && (
+        <DeliveryProofUploader
+          requestId={proofReqId}
+          userId={profile!.id}
+          onUploaded={() => fetchOrders()}
+          onClose={() => setProofReqId(null)}
+        />
       )}
     </div>
   )

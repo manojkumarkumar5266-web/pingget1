@@ -340,7 +340,7 @@ export default function DpSignup() {
     <AuthLayout>
       <div className="mb-4 flex items-center gap-3">
         <button
-          onClick={() => { if (step === 2) { setStep(1); setError(null) } else if (step === 3) { setStep(2); setError(null) } else navigate('/auth') }}
+          onClick={() => { if (step === 2) { setStep(1); setError(null) } else if (step === 3) { setStep(2); setError(null) } else navigate('/landing') }}
           className="btn-ghost p-2 text-white"
         >
           <ArrowLeft size={20} />

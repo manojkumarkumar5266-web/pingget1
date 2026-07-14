@@ -4,6 +4,7 @@ import { Chrome as Home, Plus, ClipboardList, Bell, User, LogOut, X, MessageCirc
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import Brand from '../../components/Brand'
+import Watermark from '../../components/Watermark'
 
 type AcceptedToast = { requestId: string; body: string }
 
@@ -74,7 +75,8 @@ export default function UserLayout() {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="relative flex h-screen flex-col bg-gray-50/95 dark:bg-gray-950/95">
+      <Watermark />
       {/* Header */}
       <header className="flex items-center justify-between border-b border-gray-100 px-4 py-3 bg-white dark:border-gray-800 dark:bg-gray-900">
         <div className="flex items-center gap-2">

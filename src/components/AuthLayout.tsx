@@ -1,6 +1,7 @@
 import { ReactNode } from 'react'
 import { MessageCircle, MapPin, Bike, Package } from 'lucide-react'
 import Brand from './Brand'
+import Watermark from './Watermark'
 
 type AuthLayoutProps = {
   children: ReactNode
@@ -11,9 +12,10 @@ type AuthLayoutProps = {
 export default function AuthLayout({ children, brandSize = 'lg', showBrand = true }: AuthLayoutProps) {
   return (
     <div
-      className="min-h-screen overflow-hidden"
+      className="relative min-h-screen overflow-hidden"
       style={{ background: 'linear-gradient(160deg, #1c2a14 0%, #2a3d1c 40%, #374524 100%)' }}
     >
+      <Watermark />
       <div className="flex min-h-screen w-full flex-col justify-between px-4 py-3">
         {showBrand && (
           <div className="text-center pt-4">

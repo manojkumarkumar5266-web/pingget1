@@ -142,9 +142,14 @@ export default function AdminDashboard() {
   }, [])
 
   const markAllRead = async () => {
-    await supabase.from('admin_notifications').update({ is_read: true }).eq('is_read', false)
+    await supabase.from('admin_notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('is_read', false)
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
     setUnreadCount(0)
+  }
+
+  const openNotifPanel = () => {
+    setShowNotifPanel(true)
+    if (unreadCount > 0) markAllRead()
   }
 
   const markRead = async (id: string) => {
@@ -227,7 +232,7 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowNotifPanel(true)} className="relative btn-secondary flex items-center gap-1.5 text-sm">
+          <button onClick={openNotifPanel} className="relative btn-secondary flex items-center gap-1.5 text-sm">
             <Bell size={16} /> Notifications
             {unreadCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-error-500 px-1 text-[10px] font-bold text-white animate-pulse">

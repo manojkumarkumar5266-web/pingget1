@@ -109,8 +109,8 @@ export default function ChatScreen() {
 
       const otherUserId = isUser ? roomData.dp_id : roomData.user_id
       const { data: otherProfile } = await supabase
-        .from('profiles').select('*').eq('id', otherUserId).maybeSingle()
-      setOtherUser(otherProfile as Profile)
+        .from('profiles').select('id, full_name, photo_url, role, city, address, pincode').eq('id', otherUserId).maybeSingle()
+      setOtherUser(otherProfile as unknown as Profile)
 
       if (isUser) {
         const { data: dp } = await supabase
@@ -179,8 +179,8 @@ export default function ChatScreen() {
   }, [roomId, isUser, room])
 
   useEffect(() => {
-    if (!roomId) return
-    const channelName = `chat-room-${roomId}`
+    if (!roomId || !profile?.id) return
+    const channelName = `chat-room-${roomId}-${profile.id}`
     const channel = supabase.channel(channelName)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_room_id=eq.${roomId}` },
         (payload) => {
@@ -203,14 +203,14 @@ export default function ChatScreen() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' },
         (payload) => { setOrder(payload.new as Order) })
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           supabase.from('messages').select('*').eq('chat_room_id', roomId)
             .order('created_at', { ascending: true })
             .then(({ data }) => { if (data) setMessages(data as Message[]) })
         }
       })
     return () => { supabase.removeChannel(channel) }
-  }, [roomId])
+  }, [roomId, profile?.id])
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
@@ -325,6 +325,7 @@ export default function ChatScreen() {
         <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={40} />
         <div className="flex-1">
           <p className="font-semibold text-gray-900 dark:text-white">{otherUser?.full_name}</p>
+          <p className="text-[10px] text-gray-400">Phone numbers are hidden — chat here to communicate</p>
           {dpInfo ? (
             <p className="text-xs text-gray-400">
               {dpInfo.vehicle_type} • {dpInfo.rating_avg > 0 ? `${dpInfo.rating_avg.toFixed(1)}★` : 'New'} • {dpInfo.is_online ? 'Online' : 'Offline'}

@@ -11,7 +11,7 @@ type SignInRole = 'user' | 'dp'
 type PincodeStatus = { served: boolean; area?: string; city?: string } | null
 
 export default function AuthScreen() {
-  const { signInWithEmail, signUpWithEmail } = useAuth()
+  const { signInWithEmail, signUpWithEmail, refreshProfile } = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<Mode>('main')
@@ -135,6 +135,8 @@ export default function AuthScreen() {
         body: { to: email.trim(), type: 'welcome', data: { name: fullName.trim(), role: 'user' } },
       })
     } catch { /* best effort */ }
+
+    await refreshProfile()
 
     setLoading(false)
     setMode('signup_success')
@@ -291,6 +293,9 @@ export default function AuthScreen() {
   return (
     <AuthLayout>
       <div className="card p-6 animate-slide-up">
+        <button onClick={() => navigate('/landing')} className="text-sm text-white/60 mb-4 flex items-center gap-1 hover:text-white/80 transition-colors">
+          <ChevronRight size={14} className="rotate-180" /> Back to Home
+        </button>
         {/* Role toggle */}
         <div className="mb-5 flex rounded-2xl border border-gray-200 p-1 dark:border-gray-700">
           <button type="button" onClick={() => { setSignInRole('user'); setError(null) }}
