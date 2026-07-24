@@ -10,6 +10,7 @@ type AuthContextType = {
   passwordRecovery: boolean
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
+  signInWithGoogle: (role: 'user' | 'dp') => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>
@@ -52,11 +53,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const ensureProfile = useCallback(async (user: User): Promise<void> => {
+    const { data: existing } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle()
+    if (existing) return
+
+    const role = sessionStorage.getItem('pingget_oauth_role') || 'user'
+    const meta = user.user_metadata || {}
+    const fullName = meta.full_name || meta.name || user.email?.split('@')[0] || 'New User'
+    const phone = meta.phone || ''
+
+    const insertData: Record<string, unknown> = {
+      id: user.id, role, full_name: fullName, status: 'active', preferred_language: 'en',
+    }
+    if (phone) insertData.phone = phone
+    if (meta.avatar_url) insertData.photo_url = meta.avatar_url
+
+    const { error } = await supabase.from('profiles').insert(insertData)
+    if (error && !error.message.includes('duplicate')) {
+      console.error('OAuth profile creation failed:', error.message)
+    }
+    sessionStorage.removeItem('pingget_oauth_role')
+  }, [])
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       if (session?.user) {
-        loadProfile(session.user.id).finally(() => setLoading(false))
+        ensureProfile(session.user).then(() => loadProfile(session.user.id)).finally(() => setLoading(false))
       } else {
         setLoading(false)
       }
@@ -89,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (session?.user) {
         setLoading(true)
-        loadProfile(session.user.id).finally(() => setLoading(false))
+        ensureProfile(session.user).then(() => loadProfile(session.user.id)).finally(() => setLoading(false))
       } else {
         setProfile(null)
         setLoading(false)
@@ -97,10 +120,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [loadProfile])
+  }, [loadProfile, ensureProfile])
 
   const signInWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { error: error.message }
+    return { error: null }
+  }
+
+  const signInWithGoogle = async (role: 'user' | 'dp'): Promise<{ error: string | null }> => {
+    sessionStorage.setItem('pingget_oauth_role', role)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth` },
+    })
     if (error) return { error: error.message }
     return { error: null }
   }
@@ -148,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user: session?.user ?? null, profile, loading, passwordRecovery,
-      signInWithEmail, signUpWithEmail, signOut, refreshProfile, updatePassword, clearPasswordRecovery,
+      signInWithEmail, signUpWithEmail, signInWithGoogle, signOut, refreshProfile, updatePassword, clearPasswordRecovery,
     }}>
       {children}
     </AuthContext.Provider>
