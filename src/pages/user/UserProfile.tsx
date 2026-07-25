@@ -50,8 +50,8 @@ export default function UserProfile() {
       {/* Customer Service */}
       <div className="card mt-4 p-4">
         <div className="mb-3 flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: '#e5ecda' }}>
-            <Headphones size={16} style={{ color: '#556d34' }} />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: '#efefcc' }}>
+            <Headphones size={16} style={{ color: '#808000' }} />
           </div>
           <h3 className="text-sm font-bold text-white">Customer Service</h3>
         </div>
@@ -61,10 +61,10 @@ export default function UserProfile() {
         <a
           href="mailto:pinggetin@gmail.com"
           className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors active:scale-[0.98]"
-          style={{ backgroundColor: '#f0f5e9' }}
+          style={{ backgroundColor: '#f8f8ec' }}
         >
-          <Mail size={16} style={{ color: '#556d34' }} />
-          <span className="text-sm font-semibold" style={{ color: '#3d5226' }}>pinggetin@gmail.com</span>
+          <Mail size={16} style={{ color: '#808000' }} />
+          <span className="text-sm font-semibold" style={{ color: '#606000' }}>pinggetin@gmail.com</span>
         </a>
       </div>
 

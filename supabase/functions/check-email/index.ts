@@ -29,11 +29,15 @@ Deno.serve(async (req: Request) => {
     const { data, error } = await adminClient.auth.admin.listUsers({ perPage: 1000 })
     if (error) throw error
 
-    const exists = data.users.some(
+    const match = data.users.find(
       (u) => u.email?.toLowerCase() === email.toLowerCase().trim()
     )
 
-    return new Response(JSON.stringify({ exists }), {
+    const exists = !!match
+    const userId = match?.id || null
+    const providers = match?.app_metadata?.providers || []
+
+    return new Response(JSON.stringify({ exists, user_id: userId, providers }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })

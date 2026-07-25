@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useAuth } from './context'
 import { FullScreenLoader } from './components/ui'
 import AuthScreen from './pages/AuthScreen'
-import AdminLogin from './pages/AdminLogin'
 import ResetPassword from './pages/ResetPassword'
 import UserApp from './pages/user/UserApp'
 import DpApp from './pages/dp/DpApp'
@@ -39,7 +38,7 @@ export default function App() {
   if (showWelcome) return <Welcome onDone={handleWelcomeDone} />
   if (showPermissions) return <PermissionOnboarding onComplete={handlePermissionsDone} />
 
-  const isPublicRoute = ['/setup-admin', '/admin/login', '/reset-password', '/landing'].includes(location.pathname)
+  const isPublicRoute = ['/setup-admin', '/reset-password', '/landing'].includes(location.pathname)
 
   if (isPublicRoute && !session) {
     return (
@@ -47,8 +46,6 @@ export default function App() {
         <Watermark />
         <Routes>
           <Route path="/setup-admin" element={<SetupAdmin />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/landing" element={<LandingPage />} />
           <Route path="*" element={<Navigate to="/landing" replace />} />

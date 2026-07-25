@@ -3,7 +3,7 @@ import { useAuth } from '../../context'
 import { supabase, Profile } from '../../lib/supabase'
 import { Avatar, EmptyState, SkeletonCard } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
-import { Users, ShieldOff, Ban, CheckCircle, AlertTriangle, Download, Search, MapPin } from 'lucide-react'
+import { Users, ShieldOff, Ban, CheckCircle, AlertTriangle, Download, Search, MapPin, LogIn } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 type StatusFilter = 'all' | 'active' | 'suspended' | 'banned'
@@ -16,6 +16,7 @@ const STATUS_CONFIG = {
 
 export default function AdminUsers() {
   const { profile: adminProfile } = useAuth()
+  const [impersonating, setImpersonating] = useState(false)
   const [users, setUsers] = useState<Profile[]>([])
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
@@ -165,8 +166,23 @@ export default function AdminUsers() {
         <UserActionDrawer
           user={selected}
           updating={updating === selected.id}
+          impersonating={impersonating}
           onClose={() => setSelected(null)}
           onUpdateStatus={(status) => updateStatus(selected, status)}
+          onImpersonate={async () => {
+            setImpersonating(true)
+            try {
+              const { data, error } = await supabase.functions.invoke('impersonate-user', {
+                body: { user_id: selected.id },
+              })
+              if (error || !data?.url) throw new Error(error?.message || 'Failed to generate login link')
+              window.open(data.url, '_blank')
+            } catch (err: any) {
+              alert('Could not log in as user: ' + (err.message || err))
+            } finally {
+              setImpersonating(false)
+            }
+          }}
         />
       )}
     </div>
@@ -174,12 +190,14 @@ export default function AdminUsers() {
 }
 
 function UserActionDrawer({
-  user, updating, onClose, onUpdateStatus,
+  user, updating, impersonating, onClose, onUpdateStatus, onImpersonate,
 }: {
   user: Profile
   updating: boolean
+  impersonating: boolean
   onClose: () => void
   onUpdateStatus: (status: 'active' | 'suspended' | 'banned') => void
+  onImpersonate: () => void
 }) {
   const cfg = STATUS_CONFIG[user.status] || STATUS_CONFIG.active
   const [orders, setOrders] = useState<Array<{ id: string; status: string; created_at: string }>>([])
@@ -267,6 +285,10 @@ function UserActionDrawer({
 
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-white/40">Account Actions</p>
           <div className="space-y-2">
+            <button onClick={onImpersonate} disabled={impersonating}
+              className="flex w-full items-center gap-3 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-primary-800 dark:bg-primary-900/20 dark:text-primary-300">
+              <LogIn size={18} /> {impersonating ? 'Opening login...' : 'Login as this User'}
+            </button>
             {user.status !== 'active' && (
               <button onClick={() => onUpdateStatus('active')} disabled={updating}
                 className="flex w-full items-center gap-3 rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm font-semibold text-success-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-success-800 dark:bg-success-900/20 dark:text-success-300">

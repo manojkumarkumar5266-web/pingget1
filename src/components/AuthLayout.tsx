@@ -39,7 +39,7 @@ export default function AuthLayout({ children, brandSize = 'lg', showBrand = tru
                 className="flex flex-col items-center gap-1 px-1 py-3 text-center"
                 style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}
               >
-                <span style={{ color: '#8fa964' }}>{f.icon}</span>
+                <span style={{ color: '#808000' }}>{f.icon}</span>
                 <p className="mt-0.5 text-[10px] font-black tracking-wide text-white">{f.title}</p>
                 <p className="text-[8px] font-semibold leading-tight" style={{ color: 'rgba(255,255,255,0.65)' }}>{f.sub}</p>
               </div>

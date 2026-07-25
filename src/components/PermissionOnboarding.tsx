@@ -67,7 +67,7 @@ export default function PermissionOnboarding({ onComplete }: { onComplete: () =>
   const isGranted = granted[current.key]
 
   return (
-    <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center px-6" style={{ background: 'linear-gradient(160deg, #1c2a14 0%, #2a3d1c 40%, #374524 100%)' }}>
+    <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center px-6" style={{ background: 'linear-gradient(160deg, #181800 0%, #303000 40%, #484800 100%)' }}>
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
@@ -80,7 +80,7 @@ export default function PermissionOnboarding({ onComplete }: { onComplete: () =>
         <div className="rounded-2xl bg-white p-6 dark:bg-gray-900 animate-slide-up">
           <div className="mb-4 flex items-center gap-3">
             <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${isGranted ? 'bg-success-100 dark:bg-success-900/40' : 'bg-primary-100 dark:bg-primary-900/30'}`}>
-              {isGranted ? <CheckCircle size={24} className="text-success-600" /> : <Icon size={24} style={{ color: '#556d34' }} />}
+              {isGranted ? <CheckCircle size={24} className="text-success-600" /> : <Icon size={24} style={{ color: '#808000' }} />}
             </div>
             <div>
               <h3 className="text-base font-bold text-gray-900 dark:text-white">{current.title}</h3>

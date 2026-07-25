@@ -541,7 +541,7 @@ export default function ChatScreen() {
           <div className="mx-auto flex max-w-md items-center gap-2">
             <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)}
               className={`shrink-0 rounded-xl p-2.5 transition-colors ${showAttachMenu ? 'text-white' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-white/40'}`}
-              style={showAttachMenu ? { backgroundColor: '#556d34' } : {}}>
+              style={showAttachMenu ? { backgroundColor: '#808000' } : {}}>
               <Paperclip size={18} />
             </button>
             {recording ? (

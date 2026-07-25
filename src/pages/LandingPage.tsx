@@ -89,23 +89,7 @@ export default function LandingPage() {
           By continuing you agree to our Terms &amp; Privacy Policy
         </div>
 
-        {/* Bottom feature strip */}
-        <div className="mt-2 w-full overflow-hidden rounded-2xl border border-white/10" style={{ background: 'linear-gradient(135deg, #3a5228 0%, #4a6830 100%)' }}>
-          <div className="grid grid-cols-4">
-            {[
-              { icon: <MessageCircle size={22} />, title: 'CHAT', sub: 'Easy Conversation' },
-              { icon: <MapPin size={22} />, title: 'LOCATION', sub: 'Live Tracking' },
-              { icon: <Bike size={22} />, title: 'DELIVERY', sub: 'Fast & Reliable' },
-              { icon: <Package size={22} />, title: 'GET IT', sub: 'At Your Doorstep' },
-            ].map((f, i) => (
-              <div key={i} className="flex flex-col items-center gap-1 px-1 py-3 text-center" style={{ borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
-                <span className="text-white">{f.icon}</span>
-                <p className="mt-0.5 text-[10px] font-black tracking-wide text-white">{f.title}</p>
-                <p className="text-[8px] font-semibold leading-tight text-white/80">{f.sub}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+
       </div>
     </div>
   )

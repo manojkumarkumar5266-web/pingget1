@@ -175,8 +175,8 @@ export default function CreateRequest() {
         {/* What do you need? */}
         <div className="card p-5">
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(110,140,69,0.3), rgba(66,86,42,0.3))' }}>
-              <Package size={16} style={{ color: '#8fa964' }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(128,128,0,0.3), rgba(96,96,0,0.3))' }}>
+              <Package size={16} style={{ color: '#808000' }} />
             </div>
             <h2 className="text-sm font-bold text-white">What do you need?</h2>
           </div>
@@ -192,8 +192,8 @@ export default function CreateRequest() {
         {/* Photos */}
         <div className="card p-5">
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(110,140,69,0.3), rgba(66,86,42,0.3))' }}>
-              <Camera size={16} style={{ color: '#8fa964' }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(128,128,0,0.3), rgba(96,96,0,0.3))' }}>
+              <Camera size={16} style={{ color: '#808000' }} />
             </div>
             <h2 className="text-sm font-bold text-white">Add Photos</h2>
             <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>for DP reference</span>
@@ -218,7 +218,7 @@ export default function CreateRequest() {
           <button type="button" onClick={() => photoInputRef.current?.click()}
             className="w-full rounded-xl border-2 border-dashed py-4 text-sm font-medium transition-all"
             style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)' }}>
-            <Camera size={18} className="mx-auto mb-1" style={{ color: '#8fa964' }} />
+            <Camera size={18} className="mx-auto mb-1" style={{ color: '#808000' }} />
             {photoPreviews.length > 0 ? 'Add More Photos' : 'Add Photos'}
           </button>
         </div>
@@ -226,17 +226,17 @@ export default function CreateRequest() {
         {/* Voice Note */}
         <div className="card p-5">
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(110,140,69,0.3), rgba(66,86,42,0.3))' }}>
-              <Mic size={16} style={{ color: '#8fa964' }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(128,128,0,0.3), rgba(96,96,0,0.3))' }}>
+              <Mic size={16} style={{ color: '#808000' }} />
             </div>
             <h2 className="text-sm font-bold text-white">Voice Note</h2>
           </div>
 
           {voiceBlob ? (
-            <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: 'rgba(110,140,69,0.15)', border: '1px solid rgba(110,140,69,0.25)' }}>
+            <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: 'rgba(128,128,0,0.15)', border: '1px solid rgba(128,128,0,0.25)' }}>
               <button type="button" onClick={playVoice}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
-                style={{ background: 'linear-gradient(135deg, #6e8c45, #42562a)' }}>
+                style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
                 {playingVoice ? <Pause size={14} /> : <Play size={14} />}
               </button>
               <div className="flex-1">
@@ -255,7 +255,7 @@ export default function CreateRequest() {
             <button type="button" onClick={startRecording}
               className="w-full rounded-xl border-2 border-dashed py-4 text-sm font-medium transition-all"
               style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)' }}>
-              <Mic size={18} className="mx-auto mb-1" style={{ color: '#8fa964' }} />
+              <Mic size={18} className="mx-auto mb-1" style={{ color: '#808000' }} />
               Add Voice Note
             </button>
           )}

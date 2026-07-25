@@ -55,7 +55,7 @@ export function Avatar({ url, name, size = 40 }: { url?: string | null; name: st
   }
   return (
     <div
-      className="flex items-center justify-center rounded-full font-semibold ring-2 ring-white/20" style={{ width: size, height: size, fontSize: size * 0.4, background: "rgba(110,140,69,0.3)", color: "#afc28e" }}
+      className="flex items-center justify-center rounded-full font-semibold ring-2 ring-white/20" style={{ width: size, height: size, fontSize: size * 0.4, background: "rgba(128,128,0,0.3)", color: "#c8c855" }}
     >
       {initials}
     </div>

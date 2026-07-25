@@ -93,9 +93,9 @@ export default function UserHome() {
       {/* Hero CTA */}
       <div
         className="mb-6 overflow-hidden rounded-3xl p-5 text-white shadow-lg animate-slide-up relative"
-        style={{ background: 'linear-gradient(135deg, #556d34 0%, #374524 100%)', boxShadow: '0 8px 24px rgba(85,109,52,0.2)' }}
+        style={{ background: 'linear-gradient(135deg, #808000 0%, #484800 100%)', boxShadow: '0 8px 24px rgba(128,128,0,0.2)' }}
       >
-        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-10 blur-2xl" style={{ background: '#8fa964' }} />
+        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-10 blur-2xl" style={{ background: '#808000' }} />
         <div className="relative z-10">
           <p className="text-sm font-medium text-white/70">Need something?</p>
           <h2 className="mt-1 text-xl font-bold leading-tight">Get it delivered by a local partner</h2>
@@ -165,7 +165,7 @@ export default function UserHome() {
                     <div className="h-1.5 w-full overflow-hidden rounded-full glass">
                       <div
                         className="h-full rounded-full transition-all duration-700 ease-out"
-                        style={{ width: `${progress}%`, backgroundColor: '#6e8c45' }}
+                        style={{ width: `${progress}%`, backgroundColor: '#808000' }}
                       />
                     </div>
                   </div>

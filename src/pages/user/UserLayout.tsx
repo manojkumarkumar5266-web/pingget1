@@ -117,7 +117,7 @@ export default function UserLayout() {
         <button
           onClick={() => navigate('/app/create')}
           className="fixed bottom-20 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-transform active:scale-90 hover:scale-105"
-          style={{ background: 'linear-gradient(135deg, #6e8c45, #42562a)', boxShadow: '0 4px 14px rgba(85,109,52,0.4)' }}
+          style={{ background: 'linear-gradient(135deg, #808000, #606000)', boxShadow: '0 4px 14px rgba(128,128,0,0.4)' }}
         >
           <Plus size={26} />
         </button>

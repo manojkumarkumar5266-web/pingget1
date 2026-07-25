@@ -84,7 +84,7 @@ export default function AdminLayout() {
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${isActive(item.path) ? 'text-white' : ''}`}
-                style={isActive(item.path) ? { background: 'linear-gradient(135deg, rgba(110,140,69,0.35), rgba(66,86,42,0.35))', border: '1px solid rgba(110,140,69,0.25)' } : { color: 'rgba(255,255,255,0.55)' }}
+                style={isActive(item.path) ? { background: 'linear-gradient(135deg, rgba(128,128,0,0.35), rgba(96,96,0,0.35))', border: '1px solid rgba(128,128,0,0.25)' } : { color: 'rgba(255,255,255,0.55)' }}
               >
                 <Icon size={18} /> {item.label}
                 {renderBadge(item.badge)}

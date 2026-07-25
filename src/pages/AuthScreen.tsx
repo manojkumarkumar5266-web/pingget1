@@ -18,7 +18,7 @@ const VEHICLE_TYPES = ['Bicycle', 'Motorbike', 'Scooter', 'Auto', 'Car', 'Other'
 const LICENSE_REQUIRED = ['Motorbike', 'Scooter', 'Auto', 'Car', 'Other']
 
 export default function AuthScreen() {
-  const { signInWithEmail, signUpWithEmail, signInWithGoogle, refreshProfile } = useAuth()
+  const { signInWithEmail, signUpWithEmail, signInWithGoogle, refreshProfile, oauthError, clearOauthError } = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<Mode>('signin')
@@ -27,6 +27,10 @@ export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false)
+
+  useEffect(() => {
+    if (oauthError) { setError(oauthError); clearOauthError() }
+  }, [oauthError, clearOauthError])
 
   // Sign in fields
   const [signInEmail, setSignInEmail] = useState('')
@@ -138,9 +142,9 @@ export default function AuthScreen() {
       setSignInEmail(''); setSignInPassword(''); setLoading(false); return
     }
     if (userProfile.role === 'admin') {
-      await supabase.auth.signOut()
-      setError('Admin accounts must use the Admin Login page.')
-      setSignInEmail(''); setSignInPassword(''); setLoading(false); return
+      await refreshProfile()
+      setLoading(false)
+      return
     }
     if (userProfile.role === 'dp') {
       const { data: dp } = await supabase.from('delivery_partners').select('status').eq('user_id', session.user.id).maybeSingle()
@@ -293,6 +297,7 @@ export default function AuthScreen() {
   // ── Google ──
   const handleGoogle = async () => {
     setError(null); setLoading(true)
+    sessionStorage.setItem('pingget_oauth_mode', mode === 'signup' ? 'signup' : 'signin')
     const { error: googleError } = await signInWithGoogle(role)
     if (googleError) { setError(googleError); setLoading(false) }
   }
@@ -326,11 +331,11 @@ export default function AuthScreen() {
           <div className="fixed inset-0 z-10" onClick={() => setRoleDropdownOpen(false)} />
           <div className="absolute z-20 mt-1 w-full rounded-xl border border-white/10 overflow-hidden animate-fade-in" style={{ background: '#1c2a14' }}>
             <button type="button" onClick={() => { setRole('user'); setRoleDropdownOpen(false); setError(null); resetDpFields() }} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors">
-              <User size={18} className="mt-0.5 shrink-0" style={{ color: '#8fa964' }} />
+              <User size={18} className="mt-0.5 shrink-0" style={{ color: '#808000' }} />
               <div><p className="text-sm font-semibold text-white">User</p><p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Order groceries, medicines, parcels & more</p></div>
             </button>
             <button type="button" onClick={() => { setRole('dp'); setRoleDropdownOpen(false); setError(null); resetDpFields() }} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-t border-white/5">
-              <Bike size={18} className="mt-0.5 shrink-0" style={{ color: '#8fa964' }} />
+              <Bike size={18} className="mt-0.5 shrink-0" style={{ color: '#808000' }} />
               <div><p className="text-sm font-semibold text-white">Delivery Partner</p><p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Earn money delivering in your area</p></div>
             </button>
           </div>
@@ -373,7 +378,7 @@ export default function AuthScreen() {
     return (
       <AuthLayout showBrand={false}>
         <div className="card p-6 animate-fade-in">
-          <button onClick={() => { setMode('signin'); setError(null); setResetSent(false) }} className="text-sm mb-4 flex items-center gap-1" style={{ color: '#8fa964' }}>← Back to Sign In</button>
+          <button onClick={() => { setMode('signin'); setError(null); setResetSent(false) }} className="text-sm mb-4 flex items-center gap-1" style={{ color: '#808000' }}>← Back to Sign In</button>
           <h2 className="text-xl font-bold text-white mb-1">Forgot Password</h2>
           <p className="text-sm mb-5" style={{ color: 'rgba(255,255,255,0.55)' }}>Enter your email and we'll send a reset link.</p>
           {resetSent ? (
@@ -402,7 +407,7 @@ export default function AuthScreen() {
     return (
       <AuthLayout showBrand={false}>
         <div className="card p-8 text-center animate-fade-in">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #6e8c45, #374524)' }}>
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
             <CheckCircle size={32} className="text-white" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Welcome aboard!</h2>
@@ -420,13 +425,13 @@ export default function AuthScreen() {
     return (
       <AuthLayout showBrand={false}>
         <div className="card p-8 text-center animate-fade-in">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #6e8c45, #374524)' }}>
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
             <CheckCircle size={32} className="text-white" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Application Submitted!</h2>
           <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>Your delivery partner application is under review. We'll notify you once approved.</p>
           <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'rgba(143,169,100,0.3)', background: 'rgba(143,169,100,0.08)' }}>
-            <p className="text-sm font-medium" style={{ color: '#8fa964' }}>Once an admin approves your application, sign in with your email and password to start accepting requests.</p>
+            <p className="text-sm font-medium" style={{ color: '#808000' }}>Once an admin approves your application, sign in with your email and password to start accepting requests.</p>
           </div>
           <button onClick={() => { setMode('signin'); setRole('dp') }} className="btn-primary w-full">Go to Sign In <ArrowRight size={16} /></button>
         </div>
@@ -611,12 +616,12 @@ export default function AuthScreen() {
             <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.1)' }} />
           </div>
 
-          <GoogleButton label="Sign up with Google" />
+          {role === 'user' && <GoogleButton label="Sign up with Google" />}
 
           {/* Create account / Sign in link */}
           <p className="mt-4 text-center text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
             Already have an account?{' '}
-            <button onClick={switchToSignIn} className="font-semibold hover:underline" style={{ color: '#8fa964' }}>Sign in here</button>
+            <button onClick={switchToSignIn} className="font-semibold hover:underline" style={{ color: '#808000' }}>Sign in here</button>
           </p>
         </div>
       </AuthLayout>
@@ -651,7 +656,7 @@ export default function AuthScreen() {
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.45)' }}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
             </div>
             <div className="mt-1.5 text-right">
-              <button type="button" onClick={() => { setMode('forgot'); setError(null) }} className="text-xs hover:underline" style={{ color: '#8fa964' }}>Forgot password?</button>
+              <button type="button" onClick={() => { setMode('forgot'); setError(null) }} className="text-xs hover:underline" style={{ color: '#808000' }}>Forgot password?</button>
             </div>
           </div>
           {error && <ErrorBanner message={error} />}
@@ -670,8 +675,9 @@ export default function AuthScreen() {
         {/* Create account link */}
         <p className="mt-4 text-center text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
           Don't have an account?{' '}
-          <button onClick={switchToSignUp} className="font-semibold hover:underline" style={{ color: '#8fa964' }}>Create new account</button>
+          <button onClick={switchToSignUp} className="font-semibold hover:underline" style={{ color: '#808000' }}>Create new account</button>
         </p>
+
       </div>
     </AuthLayout>
   )

@@ -486,7 +486,7 @@ export default function DpSignup() {
 
       {step === 1 && (
         <p className="mt-4 text-center text-sm text-white/70">Already a delivery partner?{' '}
-          <button onClick={() => navigate('/auth')} className="font-semibold hover:underline" style={{ color: '#8fa964' }}>Sign in here</button>
+          <button onClick={() => navigate('/auth')} className="font-semibold hover:underline" style={{ color: '#808000' }}>Sign in here</button>
         </p>
       )}
     </AuthLayout>

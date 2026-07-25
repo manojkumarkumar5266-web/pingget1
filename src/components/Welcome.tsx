@@ -25,7 +25,7 @@ export default function Welcome({ onDone }: { onDone: () => void }) {
   return (
     <div
       className={`fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden transition-opacity duration-500 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}
-      style={{ background: 'linear-gradient(160deg, #1c2a14 0%, #2a3d1c 40%, #374524 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #181800 0%, #303000 40%, #484800 100%)' }}
     >
       {floatingIcons.map((item, i) => (
         <div

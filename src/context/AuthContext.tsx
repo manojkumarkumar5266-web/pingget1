@@ -8,6 +8,7 @@ type AuthContextType = {
   profile: Profile | null
   loading: boolean
   passwordRecovery: boolean
+  oauthError: string | null
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
   signInWithGoogle: (role: 'user' | 'dp') => Promise<{ error: string | null }>
@@ -15,12 +16,14 @@ type AuthContextType = {
   refreshProfile: () => Promise<void>
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>
   clearPasswordRecovery: () => void
+  clearOauthError: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
+  const [oauthError, setOauthError] = useState<string | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [passwordRecovery, setPasswordRecovery] = useState(false)
@@ -75,10 +78,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('pingget_oauth_role')
   }, [])
 
+  // Check if Google sign-in email matches an existing email-password account
+  const checkGoogleEmailMatch = useCallback(async (user: User): Promise<{ ok: boolean; error: string | null }> => {
+    const oauthMode = sessionStorage.getItem('pingget_oauth_mode') || 'signin'
+    sessionStorage.removeItem('pingget_oauth_mode')
+
+    if (oauthMode === 'signup') return { ok: true, error: null }
+
+    // Sign-in mode: check if the Google email already exists as an email/password account
+    const googleEmail = user.email?.toLowerCase()
+    if (!googleEmail) return { ok: true, error: null }
+
+    const isGoogleProvider = user.app_metadata?.provider === 'google'
+    if (!isGoogleProvider) return { ok: true, error: null }
+
+    // Look up auth.users by email using admin API via edge function
+    try {
+      const { data, error } = await supabase.functions.invoke('check-email', { body: { email: googleEmail } })
+      if (error) return { ok: true, error: null }
+
+      // If account exists with email/password and different ID, the email doesn't match
+      if (data?.exists && data?.user_id && data.user_id !== user.id) {
+        return {
+          ok: false,
+          error: `The Google email "${googleEmail}" does not match the email you signed up with. Please use the same email you used during signup, or sign in with your email and password.`,
+        }
+      }
+      return { ok: true, error: null }
+    } catch {
+      return { ok: true, error: null }
+    }
+  }, [])
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       if (session?.user) {
+        const { ok, error } = await checkGoogleEmailMatch(session.user)
+        if (!ok && error) {
+          setOauthError(error)
+          await supabase.auth.signOut()
+          setProfile(null)
+          setLoading(false)
+          return
+        }
         ensureProfile(session.user).then(() => loadProfile(session.user.id)).finally(() => setLoading(false))
       } else {
         setLoading(false)
@@ -112,7 +155,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (session?.user) {
         setLoading(true)
-        ensureProfile(session.user).then(() => loadProfile(session.user.id)).finally(() => setLoading(false))
+        checkGoogleEmailMatch(session.user).then(async ({ ok, error }) => {
+          if (!ok && error) {
+            setOauthError(error)
+            await supabase.auth.signOut()
+            setProfile(null)
+            setLoading(false)
+            return
+          }
+          ensureProfile(session.user).then(() => loadProfile(session.user.id)).finally(() => setLoading(false))
+        })
       } else {
         setProfile(null)
         setLoading(false)
@@ -120,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [loadProfile, ensureProfile])
+  }, [loadProfile, ensureProfile, checkGoogleEmailMatch])
 
   const signInWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -178,10 +230,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearPasswordRecovery = () => setPasswordRecovery(false)
 
+  const clearOauthError = () => setOauthError(null)
+
   return (
     <AuthContext.Provider value={{
-      session, user: session?.user ?? null, profile, loading, passwordRecovery,
-      signInWithEmail, signUpWithEmail, signInWithGoogle, signOut, refreshProfile, updatePassword, clearPasswordRecovery,
+      session, user: session?.user ?? null, profile, loading, passwordRecovery, oauthError,
+      signInWithEmail, signUpWithEmail, signInWithGoogle, signOut, refreshProfile, updatePassword, clearPasswordRecovery, clearOauthError,
     }}>
       {children}
     </AuthContext.Provider>
