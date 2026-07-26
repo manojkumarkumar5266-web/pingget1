@@ -14,7 +14,10 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { email, password, role, full_name, phone, pincode, address, vehicle_type, aadhaar_number, emergency_contact } = body;
+    const {
+      email, password, role, full_name, phone, pincode, city,
+      vehicle_type, aadhaar_number, emergency_contact,
+    } = body;
 
     if (!email || !password || !full_name || !role) {
       return new Response(JSON.stringify({ error: "email, password, full_name and role are required" }), {
@@ -44,15 +47,18 @@ Deno.serve(async (req: Request) => {
 
     const userId = userData.user.id;
 
-    // Insert profile row
-    const { error: profileError } = await supabase.from("profiles").insert({
+    // Insert profile row (service role bypasses RLS)
+    const profileRow: Record<string, any> = {
       id: userId,
       role,
       full_name,
       phone: phone || null,
-      address: address || null,
-      ...(pincode ? { pincode } : {}),
-    });
+      status: role === "dp" ? "pending" : "active",
+    };
+    if (pincode) profileRow.pincode = pincode;
+    if (city) profileRow.city = city;
+
+    const { error: profileError } = await supabase.from("profiles").insert(profileRow);
 
     if (profileError) {
       await supabase.auth.admin.deleteUser(userId);
@@ -73,7 +79,8 @@ Deno.serve(async (req: Request) => {
       if (emergency_contact) dpRecord.emergency_contact = emergency_contact;
 
       const { error: dpError } = await supabase.from("delivery_partners").insert(dpRecord);
-      if (dpError) {
+      if (dpError && !dpError.message.includes("duplicate")) {
+        await supabase.auth.admin.deleteUser(userId);
         return new Response(JSON.stringify({ error: dpError.message }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -81,7 +88,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    return new Response(JSON.stringify({ user_id: userId }), {
+    return new Response(JSON.stringify({ user_id: userId, success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {

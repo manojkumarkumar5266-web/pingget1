@@ -47,7 +47,7 @@ async function autoDetectPincode(setPin: (v: string) => void, setError: (e: stri
 }
 
 export default function DpSignup() {
-  const { signInWithEmail, signUpWithEmail } = useAuth()
+  const { signInWithEmail } = useAuth()
   const navigate = useNavigate()
 
   const [view, setView] = useState<View>('signup')
@@ -192,45 +192,26 @@ export default function DpSignup() {
         return
       }
 
-      // Create auth user
-      const { error: signUpError } = await signUpWithEmail(email.trim(), password)
-      if (signUpError) { setError(signUpError); setLoading(false); return }
-
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) { setError('Failed to create account. Please try again.'); setLoading(false); return }
-
-      const userId = session.user.id
-
-      // Insert profile
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: userId, role: 'dp', full_name: fullName.trim(),
-        phone: phoneDigits, pincode, status: 'pending',
+      // Create user + profile + delivery_partner record server-side (bypasses RLS)
+      const { data: signupData, error: signupError } = await supabase.functions.invoke('signup-user', {
+        body: {
+          email: email.trim(), password, role: 'dp', full_name: fullName.trim(),
+          phone: phoneDigits, pincode,
+          vehicle_type: vehicleType, aadhaar_number: aadhaarNumber, emergency_contact: emergencyContact,
+        },
       })
-
-      if (profileError) {
-        if (profileError.message.includes('profiles_phone_unique')) {
-          setError('This mobile number is already registered.')
-        } else if (profileError.message.includes('duplicate')) {
+      if (signupError || !signupData?.success) {
+        const msg = signupError?.message || signupData?.error || 'Failed to create account.'
+        if (msg.includes('already') || msg.includes('duplicate')) {
           setError('An account with this email already exists. Please sign in instead.')
         } else {
-          setError(profileError.message)
+          setError(msg)
         }
-        await supabase.auth.signOut()
         setLoading(false)
         return
       }
 
-      // Insert delivery_partner record
-      const { error: dpError } = await supabase.from('delivery_partners').insert({
-        user_id: userId, vehicle_type: vehicleType,
-        aadhaar_number: aadhaarNumber, emergency_contact: emergencyContact, status: 'pending',
-      })
-      if (dpError && !dpError.message.includes('duplicate')) {
-        setError(dpError.message)
-        await supabase.auth.signOut()
-        setLoading(false)
-        return
-      }
+      const userId = signupData.user_id
 
       // Upload documents
       if (photoFile) {
@@ -246,8 +227,6 @@ export default function DpSignup() {
         if (licenseUrl) await supabase.from('delivery_partners').update({ driving_license_url: licenseUrl }).eq('user_id', userId)
       }
 
-      // FIXED: Sign out the partial session and show step 4 success
-      await supabase.auth.signOut()
       setStep(4)
     } catch (err: any) {
       setError(err.message || 'Failed to complete signup')

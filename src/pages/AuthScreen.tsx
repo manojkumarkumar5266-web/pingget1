@@ -52,7 +52,7 @@ async function autoDetectPincode(setPin: (v: string) => void, setError: (e: stri
 }
 
 export default function AuthScreen() {
-  const { signInWithEmail, signUpWithEmail, signInWithGoogle, refreshProfile, signOut: authSignOut, oauthError, clearOauthError } = useAuth()
+  const { signInWithEmail, signInWithGoogle, refreshProfile, oauthError, clearOauthError } = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<Mode>('signin')
@@ -254,12 +254,6 @@ export default function AuthScreen() {
     const emailBlocked = await checkEmailAvailable(email, 'user')
     if (emailBlocked) { setError(emailBlocked); setLoading(false); return }
 
-    const { error: signUpError } = await signUpWithEmail(email.trim(), password)
-    if (signUpError) { setError(signUpError); setLoading(false); return }
-
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user) { setError('Failed to create account.'); setLoading(false); return }
-
     const { data: pinData } = await supabase.from('pincodes').select('city_id').eq('pincode', pincode).limit(1).maybeSingle()
     let cityName: string | null = null
     if (pinData?.city_id) {
@@ -267,22 +261,23 @@ export default function AuthScreen() {
       cityName = cityData?.name || null
     }
 
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: session.user.id, role: 'user', full_name: fullName.trim(),
-      phone: phoneDigits, pincode, city: cityName, status: 'active',
+    const { data: signupData, error: signupError } = await supabase.functions.invoke('signup-user', {
+      body: {
+        email: email.trim(), password, role: 'user', full_name: fullName.trim(),
+        phone: phoneDigits, pincode, city: cityName,
+      },
     })
-    if (profileError) {
-      if (profileError.message.includes('profiles_phone_unique')) setError('This mobile number is already registered.')
-      else if (profileError.message.includes('duplicate')) setError('An account with this email already exists.')
-      else setError(profileError.message)
-      await authSignOut(); setLoading(false); return
+    if (signupError || !signupData?.success) {
+      const msg = signupError?.message || signupData?.error || 'Failed to create account.'
+      if (msg.includes('already') || msg.includes('duplicate')) setError('An account with this email already exists.')
+      else setError(msg)
+      setLoading(false); return
     }
 
     try {
       await supabase.functions.invoke('send-email', { body: { to: email.trim(), type: 'welcome', data: { name: fullName.trim(), role: 'user' } } })
     } catch { /* best effort */ }
 
-    await refreshProfile()
     setLoading(false)
     setMode('signup_success')
   }
@@ -324,31 +319,21 @@ export default function AuthScreen() {
       const emailBlocked = await checkEmailAvailable(email, 'dp')
       if (emailBlocked) { setError(emailBlocked); setLoading(false); return }
 
-      const { error: signUpError } = await signUpWithEmail(email.trim(), password)
-      if (signUpError) { setError(signUpError); setLoading(false); return }
-
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) { setError('Failed to create account.'); setLoading(false); return }
-      const userId = session.user.id
-
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: userId, role: 'dp', full_name: fullName.trim(),
-        phone: phoneDigits, pincode, status: 'pending',
+      const { data: signupData, error: signupError } = await supabase.functions.invoke('signup-user', {
+        body: {
+          email: email.trim(), password, role: 'dp', full_name: fullName.trim(),
+          phone: phoneDigits, pincode,
+          vehicle_type: vehicleType, aadhaar_number: aadhaarNumber, emergency_contact: emergencyContact,
+        },
       })
-      if (profileError) {
-        if (profileError.message.includes('profiles_phone_unique')) setError('This mobile number is already registered.')
-        else if (profileError.message.includes('duplicate')) setError('An account with this email already exists.')
-        else setError(profileError.message)
-        await authSignOut(); setLoading(false); return
+      if (signupError || !signupData?.success) {
+        const msg = signupError?.message || signupData?.error || 'Failed to create account.'
+        if (msg.includes('already') || msg.includes('duplicate')) setError('An account with this email already exists.')
+        else setError(msg)
+        setLoading(false); return
       }
 
-      const { error: dpError } = await supabase.from('delivery_partners').insert({
-        user_id: userId, vehicle_type: vehicleType,
-        aadhaar_number: aadhaarNumber, emergency_contact: emergencyContact, status: 'pending',
-      })
-      if (dpError && !dpError.message.includes('duplicate')) {
-        setError(dpError.message); await authSignOut(); setLoading(false); return
-      }
+      const userId = signupData.user_id
 
       if (photoFile) {
         const photoUrl = await uploadFile(photoFile, `${userId}/photo`, 'avatars')
@@ -363,7 +348,6 @@ export default function AuthScreen() {
         if (licenseUrl) await supabase.from('delivery_partners').update({ driving_license_url: licenseUrl }).eq('user_id', userId)
       }
 
-      await authSignOut()
       setMode('dp_success')
     } catch (err: any) {
       setError(err.message || 'Failed to complete signup')

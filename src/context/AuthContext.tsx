@@ -212,17 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signUpWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
-    signupInProgress.current = true
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password })
-    if (signUpError) { signupInProgress.current = false; return { error: signUpError.message } }
-    const userId = signUpData.user?.id
-    if (userId) {
-      try {
-        await supabase.functions.invoke('confirm-email', { body: { user_id: userId } })
-      } catch { /* best effort */ }
-    }
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    if (signInError) { signupInProgress.current = false; return { error: signInError.message } }
+    const { error: signUpError } = await supabase.auth.signUp({ email, password })
+    if (signUpError) return { error: signUpError.message }
     return { error: null }
   }
 
