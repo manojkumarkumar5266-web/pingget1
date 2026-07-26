@@ -206,7 +206,7 @@ function UserActionDrawer({
   useEffect(() => {
     supabase
       .from('requests')
-      .select('id, title, status, created_at')
+      .select('id, description, status, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(10)
@@ -268,7 +268,7 @@ function UserActionDrawer({
               <div className="space-y-1.5">
                 {orders.map(o => (
                   <div key={o.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 dark:bg-gray-800">
-                    <p className="text-sm font-medium text-white truncate max-w-[60%]">{(o as any).title || 'Request'}</p>
+                    <p className="text-sm font-medium text-white truncate max-w-[60%]">{(o as any).description?.split('\n')[0]?.trim() || 'Request'}</p>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                         o.status === 'completed' ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' :

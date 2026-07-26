@@ -174,7 +174,7 @@ export default function DpOrders() {
               <div key={req.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white">{req.title}</p>
+                    <p className="font-semibold text-white">{req.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
                     <p className="mt-0.5 line-clamp-1 text-sm text-white/50">{req.delivery_address}</p>
                   </div>
                   <StatusBadge status={req.status} />

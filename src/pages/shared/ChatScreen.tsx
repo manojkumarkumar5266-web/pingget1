@@ -600,7 +600,7 @@ function OrderSummaryMessage({ data, isOwn }: { data: any; isOwn: boolean }) {
   return (
     <div className="space-y-2.5 min-w-[200px]">
       <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${mutedColor}`}><ShoppingBag size={11} /> Order Request</div>
-      <p className={`text-sm font-semibold leading-snug ${textColor}`}>{data.title}</p>
+      <p className={`text-sm font-semibold leading-snug ${textColor}`}>{data.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
       {data.description && (
         <ul className="space-y-0.5">
           {String(data.description).split('\n').map((line: string, i: number) => line.trim() ? (

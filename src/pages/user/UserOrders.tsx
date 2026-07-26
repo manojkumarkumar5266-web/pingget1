@@ -115,7 +115,7 @@ export default function UserOrders() {
 
   const repeatRequest = async (req: DeliveryRequest) => {
     await supabase.from('requests').insert({
-      user_id: profile!.id, title: req.title, description: req.description,
+      user_id: profile!.id, title: null, description: req.description,
       preferred_shop: req.preferred_shop, pickup_address: req.pickup_address,
       delivery_address: req.delivery_address, delivery_lat: req.delivery_lat,
       delivery_lng: req.delivery_lng, max_budget: req.max_budget,
@@ -161,7 +161,7 @@ export default function UserOrders() {
                 <div className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-white">{req.title}</p>
+                      <p className="font-semibold text-white">{req.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
                       <p className="mt-0.5 line-clamp-1 text-sm text-white/50">{req.delivery_address}</p>
                     </div>
                     <StatusBadge status={req.status} />

@@ -173,7 +173,7 @@ export default function DpHome() {
     await supabase.from('messages').insert({
       chat_room_id: roomId, sender_id: req.user_id, message_type: 'order_summary',
       quotation_data: {
-        title: req.title, description: req.description,
+        title: null, description: req.description,
         preferred_shop: req.preferred_shop, pickup_address: req.pickup_address,
         delivery_address: req.delivery_address, expected_time: req.expected_time,
         photo_url: req.photo_url, voice_note_url: req.voice_note_url,
@@ -379,7 +379,7 @@ export default function DpHome() {
             return (
               <div key={req.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex items-start justify-between">
-                  <p className="font-semibold text-white">{req.title}</p>
+                  <p className="font-semibold text-white">{req.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
                   {dist !== null && (
                     <span className="badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                       {formatDistance(dist)}

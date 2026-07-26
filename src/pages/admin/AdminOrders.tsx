@@ -26,7 +26,7 @@ export default function AdminOrders() {
 
   const filtered = orders.filter(o =>
     !search ||
-    o._request?.title?.toLowerCase().includes(search.toLowerCase()) ||
+    o._request?.description?.toLowerCase().includes(search.toLowerCase()) ||
     o.items_summary?.toLowerCase().includes(search.toLowerCase()) ||
     o.id.toLowerCase().includes(search.toLowerCase())
   )
@@ -34,7 +34,7 @@ export default function AdminOrders() {
   const exportOrders = () => {
     const rows = filtered.map(o => ({
       'Order ID': o.id,
-      Title: o._request?.title || 'Delivery',
+      Description: o._request?.description || 'Delivery',
       Summary: o.items_summary || '',
       Status: o.status,
       'Delivery Address': o._request?.delivery_address || '',
@@ -66,7 +66,7 @@ export default function AdminOrders() {
         <div className="relative flex-1">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search by title or order ID..." className="input pl-10" />
+            placeholder="Search by description or order ID..." className="input pl-10" />
         </div>
         <button onClick={exportOrders} className="btn-secondary shrink-0 text-sm flex items-center gap-1.5">
           <Download size={16} /> Export
@@ -84,7 +84,7 @@ export default function AdminOrders() {
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-white truncate">
-                    {o._request?.title || o.items_summary || 'Delivery'}
+                    {o._request?.description?.split('\n')[0]?.trim() || o.items_summary || 'Delivery'}
                   </p>
                   <p className="mt-0.5 text-xs text-white/40">ID: {o.id.slice(0, 12)}...</p>
                 </div>
@@ -158,7 +158,7 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
 
           {/* Title */}
           <div>
-            <p className="text-sm font-bold text-white">{req.title || order.items_summary || 'Delivery'}</p>
+            <p className="text-sm font-bold text-white">{req.description?.split('\n')[0]?.trim() || order.items_summary || 'Delivery'}</p>
             {req.description && (
               <ul className="mt-1.5 space-y-0.5">
                 {req.description.split('\n').map((line: string, i: number) => line.trim() && (

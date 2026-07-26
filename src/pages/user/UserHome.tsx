@@ -153,7 +153,7 @@ export default function UserHome() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white">{req.title}</p>
+                    <p className="font-semibold text-white">{req.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
                     <p className="mt-0.5 line-clamp-1 text-sm text-white/50">{req.delivery_address}</p>
                   </div>
                   <StatusBadge status={req.status} />
@@ -203,7 +203,7 @@ export default function UserHome() {
                   <CheckCircle2 size={18} className="text-success-600 dark:text-success-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white text-sm truncate">{req.title}</p>
+                  <p className="font-medium text-white text-sm truncate">{req.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
                   <p className="text-xs text-white/40">{formatTime(req.created_at)}</p>
                 </div>
                 <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
