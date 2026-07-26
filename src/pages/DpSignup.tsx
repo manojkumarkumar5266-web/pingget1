@@ -255,10 +255,9 @@ export default function DpSignup() {
     if (!resetEmail.trim()) { setError('Please enter your email address'); return }
     setLoading(true)
 
-    const { data: checkData, error: checkError } = await supabase.functions.invoke('check-email', {
-      body: { email: resetEmail.trim() },
-    })
-    if (checkError || !checkData?.exists) {
+    const { data: profileData } = await supabase
+      .from('profiles').select('id').ilike('email', resetEmail.trim()).maybeSingle()
+    if (!profileData) {
       setError('No account found with this email address.')
       setLoading(false)
       return

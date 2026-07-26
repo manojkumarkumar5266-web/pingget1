@@ -115,7 +115,7 @@ export default function UserOrders() {
 
   const repeatRequest = async (req: DeliveryRequest) => {
     await supabase.from('requests').insert({
-      user_id: profile!.id, title: null, description: req.description,
+      user_id: profile!.id, description: req.description,
       preferred_shop: req.preferred_shop, pickup_address: req.pickup_address,
       delivery_address: req.delivery_address, delivery_lat: req.delivery_lat,
       delivery_lng: req.delivery_lng, max_budget: req.max_budget,

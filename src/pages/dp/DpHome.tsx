@@ -176,7 +176,7 @@ export default function DpHome() {
         title: null, description: req.description,
         preferred_shop: req.preferred_shop, pickup_address: req.pickup_address,
         delivery_address: req.delivery_address, expected_time: req.expected_time,
-        photo_url: req.photo_url, voice_note_url: req.voice_note_url,
+        photo_urls: req.photo_urls, voice_note_url: req.voice_note_url,
         delivery_lat: req.delivery_lat, delivery_lng: req.delivery_lng,
       },
     })
@@ -396,10 +396,14 @@ export default function DpHome() {
                     ))}
                   </ul>
                 )}
-                {req.photo_url && (
-                  <a href={req.photo_url} target="_blank" rel="noopener noreferrer" className="mt-2 block">
-                    <img src={req.photo_url} alt="Order" className="w-full max-h-40 rounded-xl object-cover" />
-                  </a>
+                {req.photo_urls && req.photo_urls.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {req.photo_urls.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
+                        <img src={url} alt={`Order ${i + 1}`} className="h-20 w-20 rounded-xl object-cover" />
+                      </a>
+                    ))}
+                  </div>
                 )}
                 <div className="mt-3 space-y-1.5 text-xs">
                   <div className="flex items-center gap-2 text-white/50">

@@ -143,7 +143,6 @@ export default function CreateRequest() {
       const { error } = await supabase.from('requests').insert({
         user_id: profile!.id,
         description: description.trim(),
-        photo_url: photoUrls.length > 0 ? photoUrls[0] : null,
         photo_urls: photoUrls.length > 0 ? photoUrls : null,
         voice_note_url: voiceUrl,
         preferred_shop: preferredShop.trim() || null,

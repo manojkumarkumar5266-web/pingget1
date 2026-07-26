@@ -59,10 +59,10 @@ export default function CompleteProfile() {
       if (error) throw error
 
       if (role === "dp") {
-        const { error: dpError } = await supabase.from("delivery_partners").insert({ user_id: userId, vehicle_type: "Bike" })
-        if (dpError && !dpError.message.includes("duplicate")) throw dpError
-        const { error: walletError } = await supabase.from("wallets").insert({ dp_user_id: userId })
-        if (walletError && !walletError.message.includes("duplicate")) throw walletError
+        const { error: dpError } = await supabase.from("delivery_partners")
+          .update({ service_range_meters: 3000 })
+          .eq("user_id", userId)
+        if (dpError) console.warn('[CompleteProfile] DP update skipped:', dpError.message)
       }
 
       await refreshProfile()

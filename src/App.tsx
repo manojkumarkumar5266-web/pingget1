@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from './context'
 import { FullScreenLoader } from './components/ui'
 import AuthScreen from './pages/AuthScreen'
@@ -12,9 +12,44 @@ import LandingPage from './pages/LandingPage'
 import Welcome from './components/Welcome'
 import PermissionOnboarding from './components/PermissionOnboarding'
 import Watermark from './components/Watermark'
+import { Clock, XCircle, ArrowLeft } from 'lucide-react'
 
 const ONBOARDING_KEY = 'pingget_permissions_done'
 const WELCOME_KEY = 'pingget_welcomed'
+
+function DpPendingScreen() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center animate-fade-in">
+      <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl glass animate-bounce-in">
+        <Clock size={48} className="text-yellow-400" />
+      </div>
+      <h1 className="mb-2 text-2xl font-bold text-white">Awaiting Approval</h1>
+      <p className="mb-6 max-w-sm text-sm text-white/60">
+        Your delivery partner application is under review. You will be notified once an admin approves it.
+      </p>
+      <a href="/auth" className="btn-primary inline-flex items-center gap-2">
+        <ArrowLeft size={16} /> Back to Sign In
+      </a>
+    </div>
+  )
+}
+
+function DpRejectedScreen() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center animate-fade-in">
+      <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl glass animate-bounce-in">
+        <XCircle size={48} className="text-red-400" />
+      </div>
+      <h1 className="mb-2 text-2xl font-bold text-white">Application Not Approved</h1>
+      <p className="mb-6 max-w-sm text-sm text-white/60">
+        Your delivery partner application was not approved. Please contact support for more details.
+      </p>
+      <a href="/auth" className="btn-primary inline-flex items-center gap-2">
+        <ArrowLeft size={16} /> Back to Sign In
+      </a>
+    </div>
+  )
+}
 
 export default function App() {
   const { session, profile, loading, passwordRecovery, signOut } = useAuth()
@@ -25,18 +60,16 @@ export default function App() {
     return !localStorage.getItem(ONBOARDING_KEY) && !sessionStorage.getItem(WELCOME_KEY)
   })
 
-  const handleWelcomeDone = () => {
-    sessionStorage.setItem(WELCOME_KEY, '1')
-    setShowWelcome(false)
-  }
+  // Handle missing profile in useEffect — never during render
+  useEffect(() => {
+    if (!loading && session && !profile) {
+      console.warn('[Auth] Profile missing after loading completed — signing out')
+      signOut()
+    }
+  }, [loading, session, profile, signOut])
 
-  const handlePermissionsDone = () => {
-    localStorage.setItem(ONBOARDING_KEY, '1')
-    setShowPermissions(false)
-  }
-
-  if (showWelcome) return <Welcome onDone={handleWelcomeDone} />
-  if (showPermissions) return <PermissionOnboarding onComplete={handlePermissionsDone} />
+  if (showWelcome) return <Welcome onDone={() => { sessionStorage.setItem(WELCOME_KEY, '1'); setShowWelcome(false) }} />
+  if (showPermissions) return <PermissionOnboarding onComplete={() => { localStorage.setItem(ONBOARDING_KEY, '1'); setShowPermissions(false) }} />
 
   const isPublicRoute = ['/setup-admin', '/reset-password', '/landing'].includes(location.pathname)
 
@@ -81,24 +114,8 @@ export default function App() {
     )
   }
 
-  // Signed in but no profile — could be loading delay or failed signup
-  if (!profile) {
-    // Give profile a chance to load before signing out
-    if (!loading) {
-      signOut()
-    }
-    return (
-      <>
-        <Watermark />
-        {loading ? <FullScreenLoader /> : (
-          <Routes>
-            <Route path="/auth" element={<AuthScreen />} />
-            <Route path="*" element={<Navigate to="/auth" replace />} />
-          </Routes>
-        )}
-      </>
-    )
-  }
+  // Signed in but profile still loading
+  if (!profile) return <FullScreenLoader />
 
   if (profile.role === 'admin') {
     return (
@@ -113,13 +130,21 @@ export default function App() {
   }
 
   if (profile.role === 'dp') {
-    if (profile.status === 'pending' || profile.status === 'rejected') {
-      const msg = profile.status === 'pending'
-        ? 'Your application is awaiting admin approval. Please check back later.'
-        : 'Your delivery partner application was not approved. Please contact support.'
-      sessionStorage.setItem('pingget_dp_blocked_msg', msg)
-      signOut()
-      return <FullScreenLoader />
+    if (profile.status === 'pending') {
+      return (
+        <>
+          <Watermark />
+          <DpPendingScreen />
+        </>
+      )
+    }
+    if (profile.status === 'rejected' || profile.status === 'suspended' || profile.status === 'banned') {
+      return (
+        <>
+          <Watermark />
+          <DpRejectedScreen />
+        </>
+      )
     }
     return (
       <>

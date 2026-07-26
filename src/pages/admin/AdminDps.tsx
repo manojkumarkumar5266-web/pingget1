@@ -35,6 +35,7 @@ export default function AdminDps() {
   const updateStatus = async (dp: DpWithProfile, newStatus: 'approved' | 'rejected') => {
     const { error } = await supabase.from('delivery_partners').update({ status: newStatus }).eq('id', dp.id)
     if (!error) {
+      await supabase.from('profiles').update({ status: newStatus }).eq('id', dp.user_id)
       await supabase.from('admin_logs').insert({
         admin_id: adminProfile!.id, action: `dp_${newStatus}`, target_id: dp.user_id, details: `DP ${dp.id} -> ${newStatus}`,
       })
@@ -46,6 +47,15 @@ export default function AdminDps() {
           : 'Your delivery partner application was not approved. Please contact support.',
         type: 'dp_status',
       })
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            to: dp.user_id,
+            type: newStatus === 'approved' ? 'dp_approved' : 'dp_rejected',
+            data: { name: dp.profile?.full_name || 'Partner' },
+          },
+        })
+      } catch { /* best effort */ }
       setSelected(null)
       fetchDps(filter)
     }

@@ -31,115 +31,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Set by signUpWithEmail so onAuthStateChange knows to wait for the
   // signup flow to finish inserting the profile before checking it.
   const signupInProgress = useRef(false)
+  // Prevent duplicate profile loads racing against each other
+  const profileLoadingRef = useRef(false)
 
   const loadProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+    if (profileLoadingRef.current) {
+      console.log('[Auth] loadProfile skipped — already loading')
+      return null
+    }
+    profileLoadingRef.current = true
     try {
+      console.log('[Auth] loadProfile start for user:', userId)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
       if (error) {
-        console.error('Profile load error:', error.message)
+        console.error('[Auth] Profile load error:', error.message)
         setProfile(null)
         return null
       }
       const p = data ? (data as Profile) : null
+      console.log('[Auth] loadProfile result:', p ? `role=${p.role} status=${p.status}` : 'null')
       setProfile(p)
       if (p?.role === 'dp') {
         supabase.from('delivery_partners')
-          .update({ is_online: true, last_online_at: new Date().toISOString() })
+          .update({ is_online: true })
           .eq('user_id', userId)
           .then(() => {})
       }
       return p
     } catch (e) {
-      console.error('Profile load exception:', e)
+      console.error('[Auth] Profile load exception:', e)
       setProfile(null)
       return null
+    } finally {
+      profileLoadingRef.current = false
     }
   }, [])
 
-  // Block Google users that have no profile (they must sign up first)
-  const blockGoogleWithoutProfile = useCallback((user: User, profile: Profile | null): string | null => {
+  // Google users must have an existing profile — check via profiles table directly (no edge function)
+  const validateGoogleProfile = useCallback((user: User, profile: Profile | null): string | null => {
     if (user.app_metadata?.provider !== 'google') return null
     if (profile) return null
     sessionStorage.removeItem('pingget_oauth_role')
     return `No account found for "${user.email}". Please sign up first, then sign in with Google.`
   }, [])
 
-  // Check if Google sign-in email matches an existing email-password account
-  const checkGoogleEmailMatch = useCallback(async (user: User): Promise<{ ok: boolean; error: string | null }> => {
-    const oauthMode = sessionStorage.getItem('pingget_oauth_mode') || 'signin'
-    sessionStorage.removeItem('pingget_oauth_mode')
-
-    if (oauthMode === 'signup') return { ok: true, error: null }
-
-    // Sign-in mode: the Google email must match an existing account
-    const googleEmail = user.email?.toLowerCase()
-    if (!googleEmail) return { ok: true, error: null }
-
-    const isGoogleProvider = user.app_metadata?.provider === 'google'
-    if (!isGoogleProvider) return { ok: true, error: null }
-
-    // Look up auth.users by email using admin API via edge function
-    try {
-      const { data, error } = await supabase.functions.invoke('check-email', { body: { email: googleEmail } })
-      if (error) return { ok: true, error: null }
-
-      // Sign-in: the account must already exist
-      if (!data?.exists) {
-        return {
-          ok: false,
-          error: `No account found for "${googleEmail}". Please sign up first using the same email, then sign in with Google.`,
-        }
-      }
-
-      // If account exists but belongs to a different user ID, the email doesn't match
-      if (data?.user_id && data.user_id !== user.id) {
-        return {
-          ok: false,
-          error: `The Google email "${googleEmail}" does not match the email you signed up with. Please use the same email you used during signup, or sign in with your email and password.`,
-        }
-      }
-      return { ok: true, error: null }
-    } catch {
-      return { ok: true, error: null }
-    }
-  }, [])
-
   useEffect(() => {
+    console.log('[Auth] Initial session restore starting')
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('[Auth] Session restore:', session?.user?.id || 'no session')
       setSession(session)
       if (session?.user) {
-        const { ok, error } = await checkGoogleEmailMatch(session.user)
-        if (!ok && error) {
-          setOauthError(error)
+        const p = await loadProfile(session.user.id)
+        const blockErr = validateGoogleProfile(session.user, p)
+        if (blockErr) {
+          console.warn('[Auth] Google user blocked:', blockErr)
+          setOauthError(blockErr)
           await supabase.auth.signOut()
           setProfile(null)
-          setLoading(false)
-          return
         }
-        loadProfile(session.user.id).then((p) => {
-          const blockErr = blockGoogleWithoutProfile(session.user, p)
-          if (blockErr) {
-            setOauthError(blockErr)
-            supabase.auth.signOut().then(() => { setProfile(null); setLoading(false) })
-            return
-          }
-          setLoading(false)
-        })
-      } else {
-        setLoading(false)
       }
+      setLoading(false)
+      console.log('[Auth] Initial session restore complete, loading=false')
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[Auth] onAuthStateChange:', event, session?.user?.id || 'no session')
+
       if (event === 'INITIAL_SESSION') return
-      // Don't re-fetch profile on token refresh — just update session silently
-      if (event === 'TOKEN_REFRESHED') { setSession(session); return }
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('[Auth] Token refreshed, updating session silently')
+        setSession(session)
+        return
+      }
 
       if (event === 'PASSWORD_RECOVERY') {
+        console.log('[Auth] Password recovery event')
         setSession(session)
         setPasswordRecovery(true)
         if (session?.user) {
@@ -153,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session)
 
       if (event === 'SIGNED_OUT') {
+        console.log('[Auth] Signed out event')
         setProfile(null)
         setPasswordRecovery(false)
         setLoading(false)
@@ -163,28 +134,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // If signup is in progress, the AuthScreen flow will insert the
         // profile and call refreshProfile — don't check or load it here.
         if (signupInProgress.current) {
+          console.log('[Auth] Signup in progress, skipping profile load')
           setSession(session)
           setLoading(false)
           return
         }
         setLoading(true)
-        checkGoogleEmailMatch(session.user).then(async ({ ok, error }) => {
-          if (!ok && error) {
-            setOauthError(error)
-            await supabase.auth.signOut()
-            setProfile(null)
-            setLoading(false)
+        loadProfile(session.user.id).then((p) => {
+          const blockErr = validateGoogleProfile(session.user, p)
+          if (blockErr) {
+            console.warn('[Auth] Google user blocked:', blockErr)
+            setOauthError(blockErr)
+            supabase.auth.signOut().then(() => {
+              setProfile(null)
+              setLoading(false)
+            })
             return
           }
-          loadProfile(session.user.id).then((p) => {
-            const blockErr = blockGoogleWithoutProfile(session.user, p)
-            if (blockErr) {
-              setOauthError(blockErr)
-              supabase.auth.signOut().then(() => { setProfile(null); setLoading(false) })
-              return
-            }
-            setLoading(false)
-          })
+          setLoading(false)
+          console.log('[Auth] Profile loaded via onAuthStateChange, loading=false')
         })
       } else {
         setProfile(null)
@@ -193,31 +161,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [loadProfile, blockGoogleWithoutProfile, checkGoogleEmailMatch])
+  }, [loadProfile, validateGoogleProfile])
 
   const signInWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
+    console.log('[Auth] signInWithEmail:', email)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return { error: error.message }
+    if (error) {
+      console.error('[Auth] signInWithEmail error:', error.message)
+      return { error: error.message }
+    }
+    console.log('[Auth] signInWithEmail success')
     return { error: null }
   }
 
   const signInWithGoogle = async (role: 'user' | 'dp'): Promise<{ error: string | null }> => {
+    console.log('[Auth] signInWithGoogle, role:', role)
     sessionStorage.setItem('pingget_oauth_role', role)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth` },
     })
-    if (error) return { error: error.message }
+    if (error) {
+      console.error('[Auth] signInWithGoogle error:', error.message)
+      return { error: error.message }
+    }
     return { error: null }
   }
 
   const signUpWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
+    console.log('[Auth] signUpWithEmail:', email)
+    signupInProgress.current = true
     const { error: signUpError } = await supabase.auth.signUp({ email, password })
-    if (signUpError) return { error: signUpError.message }
+    if (signUpError) {
+      console.error('[Auth] signUpWithEmail error:', signUpError.message)
+      signupInProgress.current = false
+      return { error: signUpError.message }
+    }
+    console.log('[Auth] signUpWithEmail success')
     return { error: null }
   }
 
   const signOut = async () => {
+    console.log('[Auth] signOut called')
     signupInProgress.current = false
     if (profile?.role === 'dp' && profile.id) {
       await supabase.from('delivery_partners')
@@ -230,12 +215,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const refreshProfile = async () => {
+    console.log('[Auth] refreshProfile called')
     signupInProgress.current = false
     const { data: { session: currentSession } } = await supabase.auth.getSession()
     if (currentSession?.user) await loadProfile(currentSession.user.id)
   }
 
   const updatePassword = async (newPassword: string): Promise<{ error: string | null }> => {
+    console.log('[Auth] updatePassword called')
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     if (error) return { error: error.message }
     setPasswordRecovery(false)
@@ -245,7 +232,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const clearPasswordRecovery = () => setPasswordRecovery(false)
-
   const clearOauthError = () => setOauthError(null)
 
   return (

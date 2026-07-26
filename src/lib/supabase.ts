@@ -27,6 +27,7 @@ export type Profile = {
   photo_url: string | null
   address: string | null
   city: string | null
+  pincode: string | null
   gps_lat: number | null
   gps_lng: number | null
   preferred_language: string
@@ -57,9 +58,7 @@ export type RequestStatus =
 export type DeliveryRequest = {
   id: string
   user_id: string
-  title: string | null
   description: string | null
-  photo_url: string | null
   photo_urls: string[] | null
   voice_note_url: string | null
   preferred_shop: string | null

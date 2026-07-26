@@ -159,9 +159,9 @@ export default function AuthScreen() {
     const email = rawEmail.trim().toLowerCase()
     if (!email) return null
     try {
-      const { data, error } = await supabase.functions.invoke('check-email', { body: { email } })
+      const { data, error } = await supabase
+        .from('profiles').select('role').ilike('email', email).maybeSingle()
       if (error || !data) return null
-      if (!data.exists) return null
       const existingRole: string | null = data.role || null
       if (existingRole === 'admin') return 'This email belongs to an admin account and cannot be used to sign up.'
       const existingLabel = existingRole === 'dp' ? 'a Delivery Partner' : 'a User'
@@ -223,16 +223,20 @@ export default function AuthScreen() {
     if (userProfile.role === 'dp') {
       const { data: dp } = await supabase.from('delivery_partners').select('status').eq('user_id', session.user.id).maybeSingle()
       if (dp?.status === 'pending') {
-        await supabase.auth.signOut()
-        setError('Your delivery partner application is still under review. Please wait for admin approval.')
-        setSignInEmail(''); setSignInPassword(''); setLoading(false); return
+        console.log('[AuthScreen] DP pending — letting App.tsx show pending screen')
+        await refreshProfile()
+        setLoading(false)
+        return
       }
       if (dp?.status === 'rejected' || dp?.status === 'suspended' || dp?.status === 'deleted') {
-        await supabase.auth.signOut()
-        setError(`Your delivery partner account is ${dp.status}. Please contact support.`)
-        setSignInEmail(''); setSignInPassword(''); setLoading(false); return
+        console.log('[AuthScreen] DP rejected — letting App.tsx show rejected screen')
+        await refreshProfile()
+        setLoading(false)
+        return
       }
     }
+    await refreshProfile()
+    setLoading(false)
   }
 
   // ── Sign Up: User ──
