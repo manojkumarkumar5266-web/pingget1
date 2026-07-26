@@ -204,7 +204,7 @@ export default function DpSignup() {
       // Insert profile
       const { error: profileError } = await supabase.from('profiles').insert({
         id: userId, role: 'dp', full_name: fullName.trim(),
-        phone: phoneDigits, pincode, status: 'active',
+        phone: phoneDigits, pincode, status: 'pending',
       })
 
       if (profileError) {
@@ -388,23 +388,7 @@ export default function DpSignup() {
 
   // ---- SUCCESS (step 4) ----
   if (step === 4) {
-    return (
-      <AuthLayout showBrand={false}>
-        <div className="card p-6 text-center">
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full ">
-              <CheckCircle size={32} className="text-green-400" />
-            </div>
-          </div>
-          <h2 className="text-lg font-bold text-white">Application Submitted!</h2>
-          <p className="mt-2 text-sm text-white/50">Your delivery partner application is under review. We&apos;ll notify you once approved.</p>
-          <div className="mt-4 rounded-xl border p-4">
-            <p className="text-sm font-medium text-primary-300">Once an admin approves your application, sign in with your email and password to start accepting requests.</p>
-          </div>
-          <button onClick={() => navigate('/auth')} className="btn-primary mt-5 w-full">Go to Sign In</button>
-        </div>
-      </AuthLayout>
-    )
+    return <DpSuccessScreen onContinue={() => navigate('/auth')} />
   }
 
   // ---- SIGNUP FLOW (steps 1-3) ----
@@ -560,6 +544,32 @@ export default function DpSignup() {
           <button onClick={() => navigate('/auth')} className="font-semibold hover:underline" style={{ color: '#808000' }}>Sign in here</button>
         </p>
       )}
+    </AuthLayout>
+  )
+}
+
+function DpSuccessScreen({ onContinue }: { onContinue: () => void }) {
+  const [countdown, setCountdown] = useState(5)
+  useEffect(() => {
+    if (countdown <= 0) { onContinue(); return }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [countdown, onContinue])
+
+  return (
+    <AuthLayout showBrand={false}>
+      <div className="card p-8 text-center animate-bounce-in">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
+          <CheckCircle size={32} className="text-white" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Application Submitted!</h2>
+        <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>Your delivery partner application is now under review. You'll be notified once an admin approves it.</p>
+        <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'rgba(143,169,100,0.3)', background: 'rgba(143,169,100,0.08)' }}>
+          <p className="text-sm font-medium" style={{ color: '#808000' }}>Awaiting Admin Approval</p>
+          <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Redirecting to sign in page in {countdown}s...</p>
+        </div>
+        <button onClick={onContinue} className="btn-primary w-full">Go to Sign In Now</button>
+      </div>
     </AuthLayout>
   )
 }

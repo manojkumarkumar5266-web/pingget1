@@ -8,8 +8,10 @@ import * as XLSX from 'xlsx'
 
 type StatusFilter = 'all' | 'active' | 'suspended' | 'banned'
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   active:    { label: 'Active',    badge: 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' },
+  pending:   { label: 'Pending',   badge: 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300' },
+  rejected:  { label: 'Rejected',  badge: 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300' },
   suspended: { label: 'Suspended', badge: 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300' },
   banned:    { label: 'Banned',    badge: 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300' },
 }

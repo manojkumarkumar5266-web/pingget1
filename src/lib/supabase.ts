@@ -21,7 +21,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export type Profile = {
   id: string
   role: 'user' | 'dp' | 'admin'
-  status: 'active' | 'suspended' | 'banned'
+  status: 'active' | 'suspended' | 'banned' | 'pending' | 'rejected'
   full_name: string
   phone: string | null
   photo_url: string | null

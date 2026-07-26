@@ -60,33 +60,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Only auto-create a profile for OAuth (Google) users — email/password
-  // users must go through the sign-up flow, which creates the profile with
-  // full data (name, phone, address, etc.). Auto-creating during sign-in
-  // would let someone sign in without having signed up.
-  const ensureProfile = useCallback(async (user: User): Promise<void> => {
+  // For Google sign-in, block access if no existing profile (user hasn't signed up)
+  const ensureProfile = useCallback(async (user: User): Promise<{ blocked: boolean; error: string | null }> => {
     const provider = user.app_metadata?.provider
-    if (provider !== 'google') return
+    if (provider !== 'google') return { blocked: false, error: null }
 
     const { data: existing } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle()
-    if (existing) return
+    if (existing) return { blocked: false, error: null }
 
-    const role = sessionStorage.getItem('pingget_oauth_role') || 'user'
-    const meta = user.user_metadata || {}
-    const fullName = meta.full_name || meta.name || user.email?.split('@')[0] || 'New User'
-    const phone = meta.phone || ''
-
-    const insertData: Record<string, unknown> = {
-      id: user.id, role, full_name: fullName, status: 'active', preferred_language: 'en',
-    }
-    if (phone) insertData.phone = phone
-    if (meta.avatar_url) insertData.photo_url = meta.avatar_url
-
-    const { error } = await supabase.from('profiles').insert(insertData)
-    if (error && !error.message.includes('duplicate')) {
-      console.error('OAuth profile creation failed:', error.message)
-    }
     sessionStorage.removeItem('pingget_oauth_role')
+    return {
+      blocked: true,
+      error: `No account found for "${user.email}". Please sign up first, then sign in with Google.`,
+    }
   }, [])
 
   // Check if Google sign-in email matches an existing email-password account
@@ -141,7 +127,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false)
           return
         }
-        ensureProfile(session.user).then(() => loadProfile(session.user.id)).finally(() => setLoading(false))
+        ensureProfile(session.user).then(({ blocked, error: ensureErr }) => {
+          if (blocked && ensureErr) {
+            setOauthError(ensureErr)
+            supabase.auth.signOut().then(() => { setProfile(null); setLoading(false) })
+            return
+          }
+          loadProfile(session.user.id).finally(() => setLoading(false))
+        })
       } else {
         setLoading(false)
       }
@@ -189,7 +182,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false)
             return
           }
-          ensureProfile(session.user).then(() => loadProfile(session.user.id)).finally(() => setLoading(false))
+          ensureProfile(session.user).then(({ blocked, error: ensureErr }) => {
+            if (blocked && ensureErr) {
+              setOauthError(ensureErr)
+              supabase.auth.signOut().then(() => { setProfile(null); setLoading(false) })
+              return
+            }
+            loadProfile(session.user.id).finally(() => setLoading(false))
+          })
         })
       } else {
         setProfile(null)

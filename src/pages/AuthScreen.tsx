@@ -66,6 +66,11 @@ export default function AuthScreen() {
     if (oauthError) { setError(oauthError); clearOauthError() }
   }, [oauthError, clearOauthError])
 
+  useEffect(() => {
+    const dpBlocked = sessionStorage.getItem('pingget_dp_blocked_msg')
+    if (dpBlocked) { setError(dpBlocked); sessionStorage.removeItem('pingget_dp_blocked_msg') }
+  }, [])
+
   // Sign in fields
   const [signInEmail, setSignInEmail] = useState('')
   const [signInPassword, setSignInPassword] = useState('')
@@ -328,7 +333,7 @@ export default function AuthScreen() {
 
       const { error: profileError } = await supabase.from('profiles').insert({
         id: userId, role: 'dp', full_name: fullName.trim(),
-        phone: phoneDigits, pincode, status: 'active',
+        phone: phoneDigits, pincode, status: 'pending',
       })
       if (profileError) {
         if (profileError.message.includes('profiles_phone_unique')) setError('This mobile number is already registered.')
@@ -495,21 +500,7 @@ export default function AuthScreen() {
   // DP SIGNUP SUCCESS
   // ═══════════════════════════════════════════════
   if (mode === 'dp_success') {
-    return (
-      <AuthLayout showBrand={false}>
-        <div className="card p-8 text-center animate-fade-in">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
-            <CheckCircle size={32} className="text-white" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Application Submitted!</h2>
-          <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>Your delivery partner application is under review. We'll notify you once approved.</p>
-          <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'rgba(143,169,100,0.3)', background: 'rgba(143,169,100,0.08)' }}>
-            <p className="text-sm font-medium" style={{ color: '#808000' }}>Once an admin approves your application, sign in with your email and password to start accepting requests.</p>
-          </div>
-          <button onClick={() => { setMode('signin'); setRole('dp') }} className="btn-primary w-full">Go to Sign In <ArrowRight size={16} /></button>
-        </div>
-      </AuthLayout>
-    )
+    return <DpSuccessScreen onContinue={() => { setMode('signin'); setRole('dp') }} />
   }
 
   // ═══════════════════════════════════════════════
@@ -748,6 +739,32 @@ export default function AuthScreen() {
           <button onClick={switchToSignUp} className="font-semibold hover:underline" style={{ color: '#808000' }}>Create new account</button>
         </p>
 
+      </div>
+    </AuthLayout>
+  )
+}
+
+function DpSuccessScreen({ onContinue }: { onContinue: () => void }) {
+  const [countdown, setCountdown] = useState(5)
+  useEffect(() => {
+    if (countdown <= 0) { onContinue(); return }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [countdown, onContinue])
+
+  return (
+    <AuthLayout showBrand={false}>
+      <div className="card p-8 text-center animate-bounce-in">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
+          <CheckCircle size={32} className="text-white" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Application Submitted!</h2>
+        <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>Your delivery partner application is now under review. You'll be notified once an admin approves it.</p>
+        <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'rgba(143,169,100,0.3)', background: 'rgba(143,169,100,0.08)' }}>
+          <p className="text-sm font-medium" style={{ color: '#808000' }}>Awaiting Admin Approval</p>
+          <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Redirecting to sign in page in {countdown}s...</p>
+        </div>
+        <button onClick={onContinue} className="btn-primary w-full">Go to Sign In Now</button>
       </div>
     </AuthLayout>
   )

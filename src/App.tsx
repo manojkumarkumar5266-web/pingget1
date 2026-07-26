@@ -113,6 +113,14 @@ export default function App() {
   }
 
   if (profile.role === 'dp') {
+    if (profile.status === 'pending' || profile.status === 'rejected') {
+      const msg = profile.status === 'pending'
+        ? 'Your application is awaiting admin approval. Please check back later.'
+        : 'Your delivery partner application was not approved. Please contact support.'
+      sessionStorage.setItem('pingget_dp_blocked_msg', msg)
+      signOut()
+      return <FullScreenLoader />
+    }
     return (
       <>
         <Watermark />

@@ -8,7 +8,7 @@ import AuthLayout from '../components/AuthLayout'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
-  const { updatePassword, session, loading: authLoading } = useAuth()
+  const { updatePassword, passwordRecovery, loading: authLoading } = useAuth()
 
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -16,34 +16,17 @@ export default function ResetPassword() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [sessionReady, setSessionReady] = useState(false)
-  const [sessionCheckDone, setSessionCheckDone] = useState(false)
+  // Wait up to 4s for the PASSWORD_RECOVERY event before declaring expired
+  const [waited, setWaited] = useState(false)
 
   useEffect(() => {
-    let cancelled = false
-    const checkSession = async () => {
-      const { data: { session: s } } = await supabase.auth.getSession()
-      if (!cancelled) {
-        setSessionReady(!!s)
-        setSessionCheckDone(true)
-      }
-    }
-    checkSession()
-    const timer = setTimeout(checkSession, 2000)
-    return () => { cancelled = true; clearTimeout(timer) }
+    const t = setTimeout(() => setWaited(true), 4000)
+    return () => clearTimeout(t)
   }, [])
-
-  useEffect(() => {
-    if (!authLoading && session) {
-      setSessionReady(true)
-      setSessionCheckDone(true)
-    }
-  }, [session, authLoading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     if (password !== confirmPassword) { setError('Passwords do not match'); return }
 
@@ -57,13 +40,13 @@ export default function ResetPassword() {
 
     const { error } = await updatePassword(password)
     setLoading(false)
-
     if (error) { setError(error); return }
     setSuccess(true)
     setTimeout(() => navigate('/auth'), 2500)
   }
 
-  if (authLoading || !sessionCheckDone) {
+  // Still waiting for auth state
+  if (authLoading || (!passwordRecovery && !waited)) {
     return (
       <AuthLayout showBrand={false}>
         <div className="card p-8 text-center animate-fade-in">
@@ -74,7 +57,8 @@ export default function ResetPassword() {
     )
   }
 
-  if (!sessionReady) {
+  // No recovery session found after waiting
+  if (!passwordRecovery) {
     return (
       <AuthLayout showBrand={false}>
         <div className="card p-6 text-center animate-fade-in">
