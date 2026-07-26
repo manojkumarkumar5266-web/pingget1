@@ -1,0 +1,1 @@
+ALTER TABLE requests ALTER COLUMN delivery_address DROP NOT NULL;
