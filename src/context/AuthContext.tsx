@@ -240,7 +240,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     signupInProgress.current = false
-    if (session?.user) await loadProfile(session.user.id)
+    const { data: { session: currentSession } } = await supabase.auth.getSession()
+    if (currentSession?.user) await loadProfile(currentSession.user.id)
   }
 
   const updatePassword = async (newPassword: string): Promise<{ error: string | null }> => {

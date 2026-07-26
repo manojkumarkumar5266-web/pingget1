@@ -26,7 +26,7 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { error } = await supabase.auth.admin.updateUser(user_id, {
+    const { error } = await supabase.auth.admin.updateUserById(user_id, {
       email_confirm: true,
     });
 
