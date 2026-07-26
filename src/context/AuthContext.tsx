@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase, Profile } from '../lib/supabase'
 
@@ -28,6 +28,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [passwordRecovery, setPasswordRecovery] = useState(false)
 
+  // Set by signUpWithEmail so onAuthStateChange knows to wait for the
+  // signup flow to finish inserting the profile before checking it.
+  const signupInProgress = useRef(false)
+
   const loadProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
       const { data, error } = await supabase
@@ -56,7 +60,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // Only auto-create a profile for OAuth (Google) users — email/password
+  // users must go through the sign-up flow, which creates the profile with
+  // full data (name, phone, address, etc.). Auto-creating during sign-in
+  // would let someone sign in without having signed up.
   const ensureProfile = useCallback(async (user: User): Promise<void> => {
+    const provider = user.app_metadata?.provider
+    if (provider !== 'google') return
+
     const { data: existing } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle()
     if (existing) return
 
@@ -162,6 +173,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (session?.user) {
+        // If signup is in progress, the AuthScreen flow will insert the
+        // profile and call refreshProfile — don't check or load it here.
+        if (signupInProgress.current) {
+          setSession(session)
+          setLoading(false)
+          return
+        }
         setLoading(true)
         checkGoogleEmailMatch(session.user).then(async ({ ok, error }) => {
           if (!ok && error) {
@@ -199,8 +217,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signUpWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
+    signupInProgress.current = true
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password })
-    if (signUpError) return { error: signUpError.message }
+    if (signUpError) { signupInProgress.current = false; return { error: signUpError.message } }
     const userId = signUpData.user?.id
     if (userId) {
       try {
@@ -208,11 +227,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch { /* best effort */ }
     }
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    if (signInError) return { error: signInError.message }
+    if (signInError) { signupInProgress.current = false; return { error: signInError.message } }
     return { error: null }
   }
 
   const signOut = async () => {
+    signupInProgress.current = false
     if (profile?.role === 'dp' && profile.id) {
       await supabase.from('delivery_partners')
         .update({ is_online: false })
@@ -224,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const refreshProfile = async () => {
+    signupInProgress.current = false
     if (session?.user) await loadProfile(session.user.id)
   }
 
