@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../context'
 import { supabase, City, Pincode } from '../../lib/supabase'
 import { EmptyState, ErrorBanner, SkeletonCard } from '../../components/ui'
-import { Plus, MapPin, Pause, Play, X, ChevronDown, ChevronRight, ToggleLeft, ToggleRight, Download } from 'lucide-react'
+import { Plus, MapPin, Pause, Play, X, ChevronDown, ChevronRight, ToggleLeft, ToggleRight, Download, Pencil, Check } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 type CityWithPincodes = City & { pincodes?: Pincode[] }
@@ -19,6 +19,9 @@ export default function AdminCities() {
   const [newPincode, setNewPincode] = useState('')
   const [newAreaName, setNewAreaName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [editingPinId, setEditingPinId] = useState<string | null>(null)
+  const [editPincode, setEditPincode] = useState('')
+  const [editAreaName, setEditAreaName] = useState('')
 
   useEffect(() => { fetchCities() }, [])
 
@@ -74,6 +77,24 @@ export default function AdminCities() {
 
   const togglePincode = async (pincode: Pincode) => {
     await supabase.from('pincodes').update({ is_active: !pincode.is_active }).eq('id', pincode.id)
+    fetchCities()
+  }
+
+  const startEditPincode = (pincode: Pincode) => {
+    setEditingPinId(pincode.id)
+    setEditPincode(pincode.pincode)
+    setEditAreaName(pincode.area_name || '')
+  }
+
+  const saveEditPincode = async (pincode: Pincode) => {
+    if (!editPincode.trim()) { setError('Pincode cannot be empty'); return }
+    const { error: updateError } = await supabase.from('pincodes')
+      .update({ pincode: editPincode.trim(), area_name: editAreaName.trim() || null })
+      .eq('id', pincode.id)
+    if (updateError) { setError(updateError.message); return }
+    await logAction('pincode_edit', `Updated pincode ${pincode.pincode} → ${editPincode.trim()} (${editAreaName.trim() || 'no area'})`)
+    setEditingPinId(null)
+    setError(null)
     fetchCities()
   }
 
@@ -187,15 +208,31 @@ export default function AdminCities() {
                   <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                     {(city.pincodes || []).map(p => (
                       <div key={p.id} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${p.is_active ? 'bg-success-50 dark:bg-success-900/20' : 'bg-gray-50 dark:bg-gray-800'}`}>
-                        <div>
-                          <span className="font-mono font-semibold text-white">{p.pincode}</span>
-                          {p.area_name && <span className="ml-2 text-xs text-gray-500">{p.area_name}</span>}
-                        </div>
-                        <button onClick={() => togglePincode(p)} className="btn-ghost p-1">
-                          {p.is_active
-                            ? <ToggleRight size={18} className="text-success-600" />
-                            : <ToggleLeft size={18} className="text-white/40" />}
-                        </button>
+                        {editingPinId === p.id ? (
+                          <div className="flex flex-1 flex-col gap-1.5 sm:flex-row sm:items-center">
+                            <input className="input h-7 w-24 py-1 text-xs" value={editPincode} onChange={e => setEditPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Pincode" maxLength={6} />
+                            <input className="input h-7 flex-1 py-1 text-xs" value={editAreaName} onChange={e => setEditAreaName(e.target.value)} placeholder="Area name" />
+                            <div className="flex gap-1">
+                              <button onClick={() => saveEditPincode(p)} className="btn-ghost p-1" title="Save"><Check size={14} className="text-success-600" /></button>
+                              <button onClick={() => setEditingPinId(null)} className="btn-ghost p-1" title="Cancel"><X size={14} /></button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="font-mono font-semibold text-white">{p.pincode}</span>
+                            {p.area_name && <span className="ml-2 text-xs text-gray-500">{p.area_name}</span>}
+                          </div>
+                        )}
+                        {editingPinId !== p.id && (
+                          <div className="flex items-center gap-0.5">
+                            <button onClick={() => startEditPincode(p)} className="btn-ghost p-1" title="Edit"><Pencil size={14} className="text-white/40" /></button>
+                            <button onClick={() => togglePincode(p)} className="btn-ghost p-1">
+                              {p.is_active
+                                ? <ToggleRight size={18} className="text-success-600" />
+                                : <ToggleLeft size={18} className="text-white/40" />}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                     {(city.pincodes || []).length === 0 && (

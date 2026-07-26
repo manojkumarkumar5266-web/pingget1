@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Lock, Eye, EyeOff, CheckCircle, KeyRound } from 'lucide-react'
+import { Lock, Eye, EyeOff, CheckCircle, KeyRound, Loader2, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context'
+import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
-  const { updatePassword } = useAuth()
+  const { updatePassword, session, loading: authLoading } = useAuth()
 
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -15,6 +16,29 @@ export default function ResetPassword() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [sessionReady, setSessionReady] = useState(false)
+  const [sessionCheckDone, setSessionCheckDone] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    const checkSession = async () => {
+      const { data: { session: s } } = await supabase.auth.getSession()
+      if (!cancelled) {
+        setSessionReady(!!s)
+        setSessionCheckDone(true)
+      }
+    }
+    checkSession()
+    const timer = setTimeout(checkSession, 2000)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [])
+
+  useEffect(() => {
+    if (!authLoading && session) {
+      setSessionReady(true)
+      setSessionCheckDone(true)
+    }
+  }, [session, authLoading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,6 +48,13 @@ export default function ResetPassword() {
     if (password !== confirmPassword) { setError('Passwords do not match'); return }
 
     setLoading(true)
+    const { data: { session: s } } = await supabase.auth.getSession()
+    if (!s) {
+      setError('Your reset link has expired. Please request a new password reset link.')
+      setLoading(false)
+      return
+    }
+
     const { error } = await updatePassword(password)
     setLoading(false)
 
@@ -32,13 +63,41 @@ export default function ResetPassword() {
     setTimeout(() => navigate('/auth'), 2500)
   }
 
+  if (authLoading || !sessionCheckDone) {
+    return (
+      <AuthLayout showBrand={false}>
+        <div className="card p-8 text-center animate-fade-in">
+          <Loader2 size={32} className="mx-auto mb-4 animate-spin" style={{ color: '#808000' }} />
+          <p className="text-sm text-white/50">Verifying your reset link...</p>
+        </div>
+      </AuthLayout>
+    )
+  }
+
+  if (!sessionReady) {
+    return (
+      <AuthLayout showBrand={false}>
+        <div className="card p-6 text-center animate-fade-in">
+          <div className="mb-4 flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'rgba(239,68,68,0.15)' }}>
+              <AlertCircle size={32} className="text-red-400" />
+            </div>
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Reset Link Expired</h2>
+          <p className="text-sm text-white/50 mb-6">This password reset link is invalid or has expired. Please request a new one.</p>
+          <button onClick={() => navigate('/auth')} className="btn-primary w-full">Back to Sign In</button>
+        </div>
+      </AuthLayout>
+    )
+  }
+
   if (success) {
     return (
       <AuthLayout showBrand={false}>
         <div className="card p-6 text-center animate-bounce-in">
           <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-100 dark:bg-success-900/40">
-              <CheckCircle size={32} className="text-success-600 dark:text-success-400" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
+              <CheckCircle size={32} className="text-white" />
             </div>
           </div>
           <h2 className="text-lg font-bold text-white">Password Updated!</h2>
@@ -54,8 +113,8 @@ export default function ResetPassword() {
     <AuthLayout showBrand={false}>
       <div className="card p-6 animate-slide-up">
         <div className="mb-4 flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/40">
-            <KeyRound size={20} className="text-primary-600 dark:text-primary-400" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: 'rgba(128,128,0,0.15)' }}>
+            <KeyRound size={20} style={{ color: '#808000' }} />
           </div>
           <div>
             <h2 className="text-xl font-bold text-white">Reset Password</h2>
@@ -76,7 +135,7 @@ export default function ResetPassword() {
                 required
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-gray-600">
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
@@ -93,7 +152,7 @@ export default function ResetPassword() {
               required
             />
             {confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-xs text-error-600">Passwords do not match</p>
+              <p className="mt-1 text-xs text-red-400">Passwords do not match</p>
             )}
           </div>
 

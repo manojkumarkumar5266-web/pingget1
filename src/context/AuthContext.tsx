@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (oauthMode === 'signup') return { ok: true, error: null }
 
-    // Sign-in mode: check if the Google email already exists as an email/password account
+    // Sign-in mode: the Google email must match an existing account
     const googleEmail = user.email?.toLowerCase()
     if (!googleEmail) return { ok: true, error: null }
 
@@ -97,8 +97,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.functions.invoke('check-email', { body: { email: googleEmail } })
       if (error) return { ok: true, error: null }
 
-      // If account exists with email/password and different ID, the email doesn't match
-      if (data?.exists && data?.user_id && data.user_id !== user.id) {
+      // Sign-in: the account must already exist
+      if (!data?.exists) {
+        return {
+          ok: false,
+          error: `No account found for "${googleEmail}". Please sign up first using the same email, then sign in with Google.`,
+        }
+      }
+
+      // If account exists but belongs to a different user ID, the email doesn't match
+      if (data?.user_id && data.user_id !== user.id) {
         return {
           ok: false,
           error: `The Google email "${googleEmail}" does not match the email you signed up with. Please use the same email you used during signup, or sign in with your email and password.`,

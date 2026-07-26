@@ -14,6 +14,38 @@ const LICENSE_REQUIRED = ['Motorbike', 'Scooter', 'Auto', 'Car', 'Other']
 
 type PincodeStatus = { served: boolean; area?: string; city?: string } | null
 
+async function autoDetectPincode(setPin: (v: string) => void, setError: (e: string | null) => void) {
+  if (!navigator.geolocation) { setError('Location not supported on this device'); return }
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&addressdetails=1`)
+        const data = await res.json()
+        const addr = data?.address || {}
+        const rawPin = (addr.postcode || addr.postal_code || '').replace(/\D/g, '').slice(0, 6)
+        const areaBits = [addr.suburb, addr.neighbourhood, addr.quarter, addr.city_district, addr.locality, addr.town, addr.village].filter(Boolean)
+        const areaName = areaBits.join(' ').toLowerCase().trim()
+
+        if (areaName) {
+          const { data: allPins } = await supabase.from('pincodes').select('pincode, area_name').eq('is_active', true)
+          const matched = (allPins || []).find((p: any) => {
+            const dbArea = (p.area_name || '').toLowerCase()
+            return dbArea && (areaName.includes(dbArea) || dbArea.includes(areaName))
+          })
+          if (matched?.pincode) { setPin(matched.pincode); return }
+        }
+
+        if (rawPin) setPin(rawPin)
+        else setError('Could not detect pincode for your location. Please enter it manually.')
+      } catch {
+        setError('Could not detect pincode. Please enter it manually.')
+      }
+    },
+    () => setError('Location permission denied. Please enter pincode manually.'),
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  )
+}
+
 export default function DpSignup() {
   const { signInWithEmail, signUpWithEmail } = useAuth()
   const navigate = useNavigate()
@@ -27,6 +59,10 @@ export default function DpSignup() {
   // Sign-in fields (DP sign in)
   const [signInEmail, setSignInEmail] = useState('')
   const [signInPassword, setSignInPassword] = useState('')
+  const [signInPincode, setSignInPincode] = useState('')
+  const [signInPincodeStatus, setSignInPincodeStatus] = useState<PincodeStatus>(null)
+  const [signInPincodeChecking, setSignInPincodeChecking] = useState(false)
+  const signInPinDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Forgot password
   const [resetEmail, setResetEmail] = useState('')
@@ -61,6 +97,23 @@ export default function DpSignup() {
   const licenseInputRef = useRef<HTMLInputElement>(null)
 
   const needsLicense = LICENSE_REQUIRED.includes(vehicleType)
+
+  // ── Pincode check for DP sign-in ──
+  useEffect(() => {
+    if (signInPincode.length !== 6) { setSignInPincodeStatus(null); return }
+    if (signInPinDebounceRef.current) clearTimeout(signInPinDebounceRef.current)
+    signInPinDebounceRef.current = setTimeout(async () => {
+      setSignInPincodeChecking(true)
+      const { data: pins } = await supabase.from('pincodes').select('area_name, city_id').eq('pincode', signInPincode).eq('is_active', true).limit(1)
+      const pin = pins?.[0]
+      if (!pin) { setSignInPincodeChecking(false); setSignInPincodeStatus({ served: false }); return }
+      const { data: city } = await supabase.from('cities').select('name, is_active').eq('id', pin.city_id).maybeSingle()
+      setSignInPincodeChecking(false)
+      if (city?.is_active) setSignInPincodeStatus({ served: true, area: pin.area_name || '', city: city.name })
+      else setSignInPincodeStatus({ served: false })
+    }, 500)
+    return () => { if (signInPinDebounceRef.current) clearTimeout(signInPinDebounceRef.current) }
+  }, [signInPincode])
 
   useEffect(() => {
     if (pincode.length !== 6) { setPincodeStatus(null); return }
@@ -209,6 +262,10 @@ export default function DpSignup() {
     e.preventDefault()
     setError(null)
     if (!signInEmail.trim() || !signInPassword) { setError('Please enter your email and password'); return }
+    if (signInPincode.length === 6 && !signInPincodeStatus?.served) {
+      setError('Sorry, we do not operate in this area yet. Please check back later.')
+      return
+    }
     setLoading(true)
     const { error: signInError } = await signInWithEmail(signInEmail.trim(), signInPassword)
     if (signInError) { setError(signInError); setSignInEmail(''); setSignInPassword(''); setLoading(false); return }
@@ -299,6 +356,23 @@ export default function DpSignup() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+            </div>
+            <div>
+              <label className="label flex items-center gap-1.5"><MapPin size={14} /> Your Area Pincode (optional)</label>
+              <div className="flex gap-2">
+                <input className="input flex-1" value={signInPincode} onChange={e => setSignInPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} />
+                <button type="button" onClick={() => autoDetectPincode(setSignInPincode, setError)} className="btn-ghost shrink-0 px-3" title="Detect my location">
+                  <MapPin size={16} style={{ color: '#808000' }} />
+                </button>
+              </div>
+              {signInPincodeChecking && <p className="mt-1 text-xs text-white/40">Checking service area...</p>}
+              {!signInPincodeChecking && signInPincodeStatus && (
+                <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${signInPincodeStatus.served ? 'text-green-300' : 'text-red-300'}`} style={{ background: signInPincodeStatus.served ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${signInPincodeStatus.served ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
+                  {signInPincodeStatus.served
+                    ? <><CheckCircle size={13} /> We serve {signInPincodeStatus.area}{signInPincodeStatus.city ? `, ${signInPincodeStatus.city}` : ''}!</>
+                    : <><XCircle size={13} /> Sorry, we don&apos;t serve this area yet.</>}
+                </div>
+              )}
             </div>
             <div className="text-right">
               <button type="button" onClick={() => { setView('forgot'); setError(null); setResetSent(false) }} className="text-xs text-primary-300 hover:underline">Forgot password?</button>
