@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, Eye, EyeOff, CheckCircle, KeyRound, Loader2, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context'
-import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 
@@ -30,14 +29,12 @@ export default function ResetPassword() {
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     if (password !== confirmPassword) { setError('Passwords do not match'); return }
 
-    setLoading(true)
-    const { data: { session: s } } = await supabase.auth.getSession()
-    if (!s) {
+    if (!passwordRecovery) {
       setError('Your reset link has expired. Please request a new password reset link.')
-      setLoading(false)
       return
     }
 
+    setLoading(true)
     const { error } = await updatePassword(password)
     setLoading(false)
     if (error) { setError(error); return }

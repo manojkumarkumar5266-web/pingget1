@@ -60,19 +60,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // For Google sign-in, block access if no existing profile (user hasn't signed up)
-  const ensureProfile = useCallback(async (user: User): Promise<{ blocked: boolean; error: string | null }> => {
-    const provider = user.app_metadata?.provider
-    if (provider !== 'google') return { blocked: false, error: null }
-
-    const { data: existing } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle()
-    if (existing) return { blocked: false, error: null }
-
+  // Block Google users that have no profile (they must sign up first)
+  const blockGoogleWithoutProfile = useCallback((user: User, profile: Profile | null): string | null => {
+    if (user.app_metadata?.provider !== 'google') return null
+    if (profile) return null
     sessionStorage.removeItem('pingget_oauth_role')
-    return {
-      blocked: true,
-      error: `No account found for "${user.email}". Please sign up first, then sign in with Google.`,
-    }
+    return `No account found for "${user.email}". Please sign up first, then sign in with Google.`
   }, [])
 
   // Check if Google sign-in email matches an existing email-password account
@@ -127,13 +120,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false)
           return
         }
-        ensureProfile(session.user).then(({ blocked, error: ensureErr }) => {
-          if (blocked && ensureErr) {
-            setOauthError(ensureErr)
+        loadProfile(session.user.id).then((p) => {
+          const blockErr = blockGoogleWithoutProfile(session.user, p)
+          if (blockErr) {
+            setOauthError(blockErr)
             supabase.auth.signOut().then(() => { setProfile(null); setLoading(false) })
             return
           }
-          loadProfile(session.user.id).finally(() => setLoading(false))
+          setLoading(false)
         })
       } else {
         setLoading(false)
@@ -182,13 +176,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false)
             return
           }
-          ensureProfile(session.user).then(({ blocked, error: ensureErr }) => {
-            if (blocked && ensureErr) {
-              setOauthError(ensureErr)
+          loadProfile(session.user.id).then((p) => {
+            const blockErr = blockGoogleWithoutProfile(session.user, p)
+            if (blockErr) {
+              setOauthError(blockErr)
               supabase.auth.signOut().then(() => { setProfile(null); setLoading(false) })
               return
             }
-            loadProfile(session.user.id).finally(() => setLoading(false))
+            setLoading(false)
           })
         })
       } else {
@@ -198,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [loadProfile, ensureProfile, checkGoogleEmailMatch])
+  }, [loadProfile, blockGoogleWithoutProfile, checkGoogleEmailMatch])
 
   const signInWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
