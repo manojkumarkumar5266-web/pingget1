@@ -52,7 +52,7 @@ async function autoDetectPincode(setPin: (v: string) => void, setError: (e: stri
 }
 
 export default function AuthScreen() {
-  const { signInWithEmail, signUpWithEmail, signInWithGoogle, refreshProfile, oauthError, clearOauthError } = useAuth()
+  const { signInWithEmail, signUpWithEmail, signInWithGoogle, refreshProfile, signOut: authSignOut, oauthError, clearOauthError } = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<Mode>('signin')
@@ -275,7 +275,7 @@ export default function AuthScreen() {
       if (profileError.message.includes('profiles_phone_unique')) setError('This mobile number is already registered.')
       else if (profileError.message.includes('duplicate')) setError('An account with this email already exists.')
       else setError(profileError.message)
-      await supabase.auth.signOut(); setLoading(false); return
+      await authSignOut(); setLoading(false); return
     }
 
     try {
@@ -339,7 +339,7 @@ export default function AuthScreen() {
         if (profileError.message.includes('profiles_phone_unique')) setError('This mobile number is already registered.')
         else if (profileError.message.includes('duplicate')) setError('An account with this email already exists.')
         else setError(profileError.message)
-        await supabase.auth.signOut(); setLoading(false); return
+        await authSignOut(); setLoading(false); return
       }
 
       const { error: dpError } = await supabase.from('delivery_partners').insert({
@@ -347,7 +347,7 @@ export default function AuthScreen() {
         aadhaar_number: aadhaarNumber, emergency_contact: emergencyContact, status: 'pending',
       })
       if (dpError && !dpError.message.includes('duplicate')) {
-        setError(dpError.message); await supabase.auth.signOut(); setLoading(false); return
+        setError(dpError.message); await authSignOut(); setLoading(false); return
       }
 
       if (photoFile) {
@@ -363,7 +363,7 @@ export default function AuthScreen() {
         if (licenseUrl) await supabase.from('delivery_partners').update({ driving_license_url: licenseUrl }).eq('user_id', userId)
       }
 
-      await supabase.auth.signOut()
+      await authSignOut()
       setMode('dp_success')
     } catch (err: any) {
       setError(err.message || 'Failed to complete signup')
