@@ -70,7 +70,18 @@ Deno.serve(async (req: Request) => {
     const userId = match?.id || null
     const providers = match?.app_metadata?.providers || []
 
-    return new Response(JSON.stringify({ exists, user_id: userId, providers }), {
+    // Look up the role from profiles so callers can give role-aware messages
+    let role: string | null = null
+    if (userId) {
+      const { data: profileRow } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle()
+      if (profileRow?.role) role = profileRow.role
+    }
+
+    return new Response(JSON.stringify({ exists, user_id: userId, providers, role }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })

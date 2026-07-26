@@ -148,6 +148,26 @@ export default function AuthScreen() {
     return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
   }
 
+  // Pre-flight: ensure the email isn't already used by the other role.
+  // Supabase auth already enforces one email per account globally; this
+  // gives the user a clear, role-aware message instead of a generic duplicate.
+  const checkEmailAvailable = async (rawEmail: string, chosenRole: Role): Promise<string | null> => {
+    const email = rawEmail.trim().toLowerCase()
+    if (!email) return null
+    try {
+      const { data, error } = await supabase.functions.invoke('check-email', { body: { email } })
+      if (error || !data) return null
+      if (!data.exists) return null
+      const existingRole: string | null = data.role || null
+      if (existingRole === 'admin') return 'This email belongs to an admin account and cannot be used to sign up.'
+      const existingLabel = existingRole === 'dp' ? 'a Delivery Partner' : 'a User'
+      const chosenLabel = chosenRole === 'dp' ? 'Delivery Partner' : 'User'
+      return `This email is already registered as ${existingLabel}. Please use a different email, or sign in as ${existingLabel} instead. You cannot use the same email for both ${chosenLabel} and ${existingLabel} accounts.`
+    } catch {
+      return null
+    }
+  }
+
   const pickDpFile = (file: File, type: 'photo' | 'aadhaar' | 'license') => {
     const url = URL.createObjectURL(file)
     if (type === 'photo') { setPhotoFile(file); setPhotoPreview(url) }
@@ -161,13 +181,21 @@ export default function AuthScreen() {
     if (!signInEmail.trim() || !signInPassword) { setError('Please enter your email and password'); return }
     setLoading(true)
     const { error: signInError } = await signInWithEmail(signInEmail.trim(), signInPassword)
-    if (signInError) { setError(signInError); setSignInEmail(''); setSignInPassword(''); setLoading(false); return }
+    if (signInError) {
+      const msg = signInError.toLowerCase()
+      if (msg.includes('invalid login') || msg.includes('invalid credentials')) {
+        setError('These credentials do not match our records. Please check your email and password, or sign up first.')
+      } else {
+        setError(signInError)
+      }
+      setSignInEmail(''); setSignInPassword(''); setLoading(false); return
+    }
 
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) { setError('Authentication failed. Please try again.'); setSignInEmail(''); setSignInPassword(''); setLoading(false); return }
 
     const { data: userProfile } = await supabase.from('profiles').select('role, status').eq('id', session.user.id).maybeSingle()
-    if (!userProfile) { setError('Account not found. Please sign up first.'); await supabase.auth.signOut(); setSignInEmail(''); setSignInPassword(''); setLoading(false); return }
+    if (!userProfile) { setError('No account found for this email. Please sign up first, then sign in.'); await supabase.auth.signOut(); setSignInEmail(''); setSignInPassword(''); setLoading(false); return }
     if (userProfile.status === 'banned' || userProfile.status === 'suspended') {
       await supabase.auth.signOut()
       setError(`Your account is ${userProfile.status}. Please contact support.`)
@@ -175,12 +203,12 @@ export default function AuthScreen() {
     }
     if (role === 'dp' && userProfile.role !== 'dp') {
       await supabase.auth.signOut()
-      setError("You don't have a Delivery Partner account. Please select \"User\" to sign in.")
+      setError("This email is registered as a User, not a Delivery Partner. Please select \"User\" to sign in, or sign up as a Delivery Partner with a different email.")
       setSignInEmail(''); setSignInPassword(''); setLoading(false); return
     }
     if (role === 'user' && userProfile.role === 'dp') {
       await supabase.auth.signOut()
-      setError('This account is a Delivery Partner. Please select "Delivery Partner" to sign in.')
+      setError('This email is registered as a Delivery Partner, not a User. Please select "Delivery Partner" to sign in, or sign up as a User with a different email.')
       setSignInEmail(''); setSignInPassword(''); setLoading(false); return
     }
     if (userProfile.role === 'admin') {
@@ -219,6 +247,9 @@ export default function AuthScreen() {
     setLoading(true)
     const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('phone', phoneDigits)
     if ((count ?? 0) > 0) { setError('This mobile number is already registered.'); setLoading(false); return }
+
+    const emailBlocked = await checkEmailAvailable(email, 'user')
+    if (emailBlocked) { setError(emailBlocked); setLoading(false); return }
 
     const { error: signUpError } = await signUpWithEmail(email.trim(), password)
     if (signUpError) { setError(signUpError); setLoading(false); return }
@@ -287,6 +318,9 @@ export default function AuthScreen() {
       const phoneDigits = phone.replace(/\D/g, '')
       const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('phone', phoneDigits)
       if ((count ?? 0) > 0) { setError('This mobile number is already registered.'); setLoading(false); return }
+
+      const emailBlocked = await checkEmailAvailable(email, 'dp')
+      if (emailBlocked) { setError(emailBlocked); setLoading(false); return }
 
       const { error: signUpError } = await signUpWithEmail(email.trim(), password)
       if (signUpError) { setError(signUpError); setLoading(false); return }
