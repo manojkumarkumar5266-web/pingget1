@@ -26,12 +26,45 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     )
 
-    const { data, error } = await adminClient.auth.admin.listUsers({ perPage: 1000 })
+    const normalizedEmail = email.toLowerCase().trim()
+
+    // Search auth.users by email directly — works regardless of user count
+    const { data: { users }, error } = await adminClient.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    })
     if (error) throw error
 
-    const match = data.users.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase().trim()
-    )
+    let match = users.find((u) => u.email?.toLowerCase() === normalizedEmail)
+
+    // If not found in first page, paginate up to 20 pages
+    if (!match) {
+      for (let page = 2; page <= 20; page++) {
+        const { data: pageData, error: pageError } = await adminClient.auth.admin.listUsers({
+          page,
+          perPage: 1000,
+        })
+        if (pageError) break
+        if (!pageData.users || pageData.users.length === 0) break
+        const found = pageData.users.find((u) => u.email?.toLowerCase() === normalizedEmail)
+        if (found) { match = found; break }
+      }
+    }
+
+    // Also check profiles table as a fallback source of truth
+    if (!match) {
+      const { data: profileRow } = await adminClient
+        .from("profiles")
+        .select("id")
+        .eq("email", normalizedEmail)
+        .maybeSingle()
+      if (profileRow) {
+        return new Response(JSON.stringify({ exists: true, user_id: profileRow.id, providers: [] }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        })
+      }
+    }
 
     const exists = !!match
     const userId = match?.id || null

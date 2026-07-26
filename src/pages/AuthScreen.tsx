@@ -7,7 +7,7 @@ import AuthLayout from '../components/AuthLayout'
 import {
   User, Phone, Chrome as Home, MapPin, Mail, Lock, Eye, EyeOff,
   CircleCheck as CheckCircle, Circle as XCircle, ArrowRight, KeyRound,
-  ChevronDown, Shield, Bike, Truck, FileText, Camera, Upload,
+  ChevronDown, Shield, Bike, Truck, FileText, Camera, Upload, Loader2,
 } from 'lucide-react'
 
 type Mode = 'signin' | 'signup' | 'signup_success' | 'dp_success' | 'forgot'
@@ -69,10 +69,6 @@ export default function AuthScreen() {
   // Sign in fields
   const [signInEmail, setSignInEmail] = useState('')
   const [signInPassword, setSignInPassword] = useState('')
-  const [signInPincode, setSignInPincode] = useState('')
-  const [signInPincodeStatus, setSignInPincodeStatus] = useState<PincodeStatus>(null)
-  const [signInPincodeChecking, setSignInPincodeChecking] = useState(false)
-  const signInPinDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Sign up fields (user)
   const [fullName, setFullName] = useState('')
@@ -124,22 +120,13 @@ export default function AuthScreen() {
     return () => { if (pinDebounceRef.current) clearTimeout(pinDebounceRef.current) }
   }, [pincode])
 
-  // ── Pincode check for sign-in ──
+  // ── Auto-detect pincode in background on mount (for signup forms) ──
+  const [autoDetecting, setAutoDetecting] = useState(false)
   useEffect(() => {
-    if (signInPincode.length !== 6) { setSignInPincodeStatus(null); return }
-    if (signInPinDebounceRef.current) clearTimeout(signInPinDebounceRef.current)
-    signInPinDebounceRef.current = setTimeout(async () => {
-      setSignInPincodeChecking(true)
-      const { data: pins } = await supabase.from('pincodes').select('area_name, city_id').eq('pincode', signInPincode).eq('is_active', true).limit(1)
-      const pin = pins?.[0]
-      if (!pin) { setSignInPincodeChecking(false); setSignInPincodeStatus({ served: false }); return }
-      const { data: city } = await supabase.from('cities').select('name, is_active').eq('id', pin.city_id).maybeSingle()
-      setSignInPincodeChecking(false)
-      if (city?.is_active) setSignInPincodeStatus({ served: true, area: pin.area_name || '', city: city.name })
-      else setSignInPincodeStatus({ served: false })
-    }, 500)
-    return () => { if (signInPinDebounceRef.current) clearTimeout(signInPinDebounceRef.current) }
-  }, [signInPincode])
+    if (mode !== 'signup' || pincode) return
+    setAutoDetecting(true)
+    autoDetectPincode((v) => { setPincode(v); setAutoDetecting(false) }, () => setAutoDetecting(false))
+  }, [mode, pincode])
 
   // ── Helpers ──
   const resetDpFields = () => {
@@ -153,7 +140,6 @@ export default function AuthScreen() {
   }
   const switchToSignIn = () => {
     setMode('signin'); setError(null); resetDpFields()
-    setSignInPincode(''); setSignInPincodeStatus(null)
   }
 
   const uploadFile = async (file: File, path: string, bucket: string): Promise<string | null> => {
@@ -173,10 +159,6 @@ export default function AuthScreen() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null)
     if (!signInEmail.trim() || !signInPassword) { setError('Please enter your email and password'); return }
-    if (signInPincode.length === 6 && !signInPincodeStatus?.served) {
-      setError('Sorry, we do not operate in this area yet. Please check back later.')
-      setLoading(false); return
-    }
     setLoading(true)
     const { error: signInError } = await signInWithEmail(signInEmail.trim(), signInPassword)
     if (signInError) { setError(signInError); setSignInEmail(''); setSignInPassword(''); setLoading(false); return }
@@ -525,8 +507,12 @@ export default function AuthScreen() {
               <div><label className="label flex items-center gap-1.5"><Home size={13} /> Address *</label><input className="input" value={address} onChange={e => setAddress(e.target.value)} placeholder="Your full address" required /></div>
               <div>
                 <label className="label flex items-center gap-1.5"><MapPin size={13} /> Area Pincode *</label>
-                <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} required />
+                <div className="relative">
+                  <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder={autoDetecting ? 'Detecting your location...' : '6-digit pincode'} maxLength={6} required />
+                  {autoDetecting && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Loader2 size={16} className="animate-spin" style={{ color: '#808000' }} /></div>}
+                </div>
                 <PincodeBadge />
+                {autoDetecting && <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Detecting pincode from your location...</p>}
               </div>
               <div><label className="label flex items-center gap-1.5"><Mail size={13} /> Email *</label><input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required /></div>
               <div>
@@ -569,8 +555,12 @@ export default function AuthScreen() {
                   <div><label className="label flex items-center gap-1.5"><Phone size={13} /> Phone Number *</label><input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required /></div>
                   <div>
                     <label className="label flex items-center gap-1.5"><MapPin size={13} /> Area Pincode *</label>
-                    <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} required />
+                    <div className="relative">
+                      <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder={autoDetecting ? 'Detecting your location...' : '6-digit pincode'} maxLength={6} required />
+                      {autoDetecting && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Loader2 size={16} className="animate-spin" style={{ color: '#808000' }} /></div>}
+                    </div>
                     <PincodeBadge />
+                    {autoDetecting && <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Detecting pincode from your location...</p>}
                   </div>
                   <div><label className="label flex items-center gap-1.5"><Mail size={13} /> Email *</label><input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required /></div>
                   <div>
@@ -718,23 +708,6 @@ export default function AuthScreen() {
             <div className="mt-1.5 text-right">
               <button type="button" onClick={() => { setMode('forgot'); setError(null) }} className="text-xs hover:underline" style={{ color: '#808000' }}>Forgot password?</button>
             </div>
-          </div>
-          <div>
-            <label className="label flex items-center gap-1.5"><MapPin size={13} /> Your Area Pincode (optional)</label>
-            <div className="flex gap-2">
-              <input className="input flex-1" value={signInPincode} onChange={e => setSignInPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} />
-              <button type="button" onClick={() => autoDetectPincode(setSignInPincode, setError)} disabled={signInPincodeChecking} className="btn-ghost shrink-0 px-3" title="Detect my location">
-                <MapPin size={16} style={{ color: '#808000' }} />
-              </button>
-            </div>
-            {signInPincodeChecking && <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Checking service area...</p>}
-            {!signInPincodeChecking && signInPincodeStatus && (
-              <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${signInPincodeStatus.served ? 'text-green-300' : 'text-red-300'}`} style={{ background: signInPincodeStatus.served ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${signInPincodeStatus.served ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
-                {signInPincodeStatus.served
-                  ? <><CheckCircle size={13} /> We serve {signInPincodeStatus.area}{signInPincodeStatus.city ? `, ${signInPincodeStatus.city}` : ''}!</>
-                  : <><XCircle size={13} /> Sorry, we don't serve this area yet.</>}
-              </div>
-            )}
           </div>
           {error && <ErrorBanner message={error} />}
           <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Signing in...' : 'Sign In'} <ArrowRight size={16} /></button>
