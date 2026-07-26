@@ -49,9 +49,6 @@ export default function Welcome({ onDone }: { onDone: () => void }) {
       <p className="mt-6 text-sm text-white/60 animate-fade-in tracking-wide">
         Welcome to pinGGet
       </p>
-      <p className="mt-1 text-xs text-white/40 animate-fade-in">
-        CHAT . ORDER . GET IT
-      </p>
 
       <style>{`
         @keyframes float {

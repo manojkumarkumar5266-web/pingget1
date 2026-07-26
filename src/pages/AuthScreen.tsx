@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 import {
-  User, Phone, Chrome as Home, MapPin, Mail, Lock, Eye, EyeOff,
+  User, Phone, MapPin, Mail, Lock, Eye, EyeOff,
   CircleCheck as CheckCircle, Circle as XCircle, ArrowRight, KeyRound,
   ChevronDown, Shield, Bike, Truck, FileText, Camera, Upload, Loader2,
 } from 'lucide-react'
@@ -73,7 +73,6 @@ export default function AuthScreen() {
   // Sign up fields (user)
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
   const [pincode, setPincode] = useState('')
   const [pincodeStatus, setPincodeStatus] = useState<PincodeStatus>(null)
   const [pincodeChecking, setPincodeChecking] = useState(false)
@@ -237,7 +236,6 @@ export default function AuthScreen() {
     if (!fullName.trim()) { setError('Full name is required'); return }
     const phoneDigits = phone.replace(/\D/g, '')
     if (phoneDigits.length < 10) { setError('Please enter a valid 10-digit mobile number'); return }
-    if (!address.trim()) { setError('Address is required'); return }
     if (pincode.length !== 6) { setError('Please enter a 6-digit pincode'); return }
     if (!pincodeStatus?.served) { setError('Sorry, we do not operate in this area yet.'); return }
     if (!email.trim() || !email.includes('@')) { setError('Please enter a valid email address'); return }
@@ -266,7 +264,7 @@ export default function AuthScreen() {
 
     const { error: profileError } = await supabase.from('profiles').insert({
       id: session.user.id, role: 'user', full_name: fullName.trim(),
-      phone: phoneDigits, address: address.trim(), pincode, city: cityName, status: 'active',
+      phone: phoneDigits, pincode, city: cityName, status: 'active',
     })
     if (profileError) {
       if (profileError.message.includes('profiles_phone_unique')) setError('This mobile number is already registered.')
@@ -288,7 +286,6 @@ export default function AuthScreen() {
   const handleDpStep1 = (e: React.FormEvent) => {
     e.preventDefault(); setError(null)
     if (!fullName.trim()) { setError('Full name is required'); return }
-    if (!address.trim()) { setError('Address is required'); return }
     const phoneDigits = phone.replace(/\D/g, '')
     if (phoneDigits.length < 10) { setError('Please enter a valid 10-digit phone number'); return }
     if (pincode.length !== 6) { setError('Please enter a 6-digit pincode'); return }
@@ -331,7 +328,7 @@ export default function AuthScreen() {
 
       const { error: profileError } = await supabase.from('profiles').insert({
         id: userId, role: 'dp', full_name: fullName.trim(),
-        phone: phoneDigits, address: address.trim(), pincode, status: 'active',
+        phone: phoneDigits, pincode, status: 'active',
       })
       if (profileError) {
         if (profileError.message.includes('profiles_phone_unique')) setError('This mobile number is already registered.')
@@ -538,7 +535,6 @@ export default function AuthScreen() {
             <form onSubmit={handleUserSignUp} className="space-y-3">
               <div><label className="label flex items-center gap-1.5"><User size={13} /> Full Name *</label><input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required /></div>
               <div><label className="label flex items-center gap-1.5"><Phone size={13} /> Mobile Number *</label><input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required /></div>
-              <div><label className="label flex items-center gap-1.5"><Home size={13} /> Address *</label><input className="input" value={address} onChange={e => setAddress(e.target.value)} placeholder="Your full address" required /></div>
               <div>
                 <label className="label flex items-center gap-1.5"><MapPin size={13} /> Area Pincode *</label>
                 <div className="relative">
@@ -585,7 +581,6 @@ export default function AuthScreen() {
                 <form onSubmit={handleDpStep1} className="space-y-3">
                   <h3 className="text-sm font-bold text-white">Basic Information</h3>
                   <div><label className="label flex items-center gap-1.5"><User size={13} /> Full Name *</label><input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required /></div>
-                  <div><label className="label flex items-center gap-1.5"><Home size={13} /> Address *</label><input className="input" value={address} onChange={e => setAddress(e.target.value)} placeholder="Your full address" required /></div>
                   <div><label className="label flex items-center gap-1.5"><Phone size={13} /> Phone Number *</label><input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required /></div>
                   <div>
                     <label className="label flex items-center gap-1.5"><MapPin size={13} /> Area Pincode *</label>
@@ -692,15 +687,6 @@ export default function AuthScreen() {
               )}
             </div>
           )}
-
-          {/* Divider */}
-          <div className="my-4 flex items-center gap-3">
-            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.1)' }} />
-            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>or</span>
-            <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.1)' }} />
-          </div>
-
-          {role === 'user' && <GoogleButton label="Sign up with Google" />}
 
           {/* Create account / Sign in link */}
           <p className="mt-4 text-center text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>

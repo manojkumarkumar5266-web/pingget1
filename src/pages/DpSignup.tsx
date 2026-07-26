@@ -4,7 +4,7 @@ import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
-import { ArrowLeft, ArrowRight, Camera, Upload, Mail, MapPin, User, Phone, Truck, FileText, Shield, CircleCheck as CheckCircle, Circle as XCircle, Chrome as Home, Lock, Eye, EyeOff, KeyRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Camera, Upload, Mail, MapPin, User, Phone, Truck, FileText, Shield, CircleCheck as CheckCircle, Circle as XCircle, Lock, Eye, EyeOff, KeyRound } from 'lucide-react'
 
 type View = 'signup' | 'signin' | 'forgot' | 'success'
 type Step = 1 | 2 | 3 | 4
@@ -70,7 +70,6 @@ export default function DpSignup() {
 
   // Step 1 — basic info + credentials
   const [fullName, setFullName] = useState('')
-  const [address, setAddress] = useState('')
   const [phone, setPhone] = useState('')
   const [pincode, setPincode] = useState('')
   const [pincodeStatus, setPincodeStatus] = useState<PincodeStatus>(null)
@@ -153,7 +152,6 @@ export default function DpSignup() {
     e.preventDefault()
     setError(null)
     if (!fullName.trim()) { setError('Full name is required'); return }
-    if (!address.trim()) { setError('Address is required'); return }
     const phoneDigits = phone.replace(/\D/g, '')
     if (phoneDigits.length < 10) { setError('Please enter a valid 10-digit phone number'); return }
     if (pincode.length !== 6) { setError('Please enter a 6-digit pincode'); return }
@@ -206,7 +204,7 @@ export default function DpSignup() {
       // Insert profile
       const { error: profileError } = await supabase.from('profiles').insert({
         id: userId, role: 'dp', full_name: fullName.trim(),
-        phone: phoneDigits, address: address.trim(), pincode, status: 'active',
+        phone: phoneDigits, pincode, status: 'active',
       })
 
       if (profileError) {
@@ -446,7 +444,6 @@ export default function DpSignup() {
             <p className="mb-5 text-sm text-white/50">All fields are required</p>
             <form onSubmit={handleStep1} className="space-y-3">
               <div><label className="label flex items-center gap-1.5"><User size={14} /> Full Name *</label><input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required /></div>
-              <div><label className="label flex items-center gap-1.5"><Home size={14} /> Address *</label><input className="input" value={address} onChange={e => setAddress(e.target.value)} placeholder="Your full address" required /></div>
               <div><label className="label flex items-center gap-1.5"><Phone size={14} /> Phone Number *</label><input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required /></div>
               <div>
                 <label className="label flex items-center gap-1.5"><MapPin size={14} /> Your Area Pincode *</label>
