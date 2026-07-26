@@ -71,12 +71,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Google users must have an existing profile — check via profiles table directly (no edge function)
-  const validateGoogleProfile = useCallback((user: User, profile: Profile | null): string | null => {
+  // Google users: link their Google auth user to an existing email/password profile,
+  // or create a new profile if this is a signup. Uses an edge function because
+  // changing the primary key of a profile row requires service-role access.
+  const resolveGoogleProfile = useCallback(async (user: User): Promise<Profile | null> => {
     if (user.app_metadata?.provider !== 'google') return null
-    if (profile) return null
-    sessionStorage.removeItem('pingget_oauth_role')
-    return `No account found for "${user.email}". Please sign up first, then sign in with Google.`
+    const role = sessionStorage.getItem('pingget_oauth_role') as 'user' | 'dp' | null
+    const mode = sessionStorage.getItem('pingget_oauth_mode') as 'signup' | 'signin' | null
+    try {
+      const { data, error } = await supabase.functions.invoke('link-google-account', {
+        body: { user_id: user.id, email: user.email, role: role || 'user', mode: mode || 'signin' },
+      })
+      if (error || !data?.success) {
+        console.error('[Auth] link-google-account error:', error?.message || data?.error)
+        sessionStorage.removeItem('pingget_oauth_role')
+        sessionStorage.removeItem('pingget_oauth_mode')
+        setOauthError(data?.error || 'Failed to link Google account.')
+        await supabase.auth.signOut()
+        setProfile(null)
+        return null
+      }
+      sessionStorage.removeItem('pingget_oauth_role')
+      sessionStorage.removeItem('pingget_oauth_mode')
+      const p = data.profile as Profile
+      setProfile(p)
+      console.log('[Auth] Google profile resolved:', p ? `role=${p.role} status=${p.status}` : 'null')
+      return p
+    } catch (e) {
+      console.error('[Auth] link-google-account exception:', e)
+      sessionStorage.removeItem('pingget_oauth_role')
+      sessionStorage.removeItem('pingget_oauth_mode')
+      setOauthError('Failed to link Google account.')
+      await supabase.auth.signOut()
+      setProfile(null)
+      return null
+    }
   }, [])
 
   useEffect(() => {
@@ -85,13 +114,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[Auth] Session restore:', session?.user?.id || 'no session')
       setSession(session)
       if (session?.user) {
-        const p = await loadProfile(session.user.id)
-        const blockErr = validateGoogleProfile(session.user, p)
-        if (blockErr) {
-          console.warn('[Auth] Google user blocked:', blockErr)
-          setOauthError(blockErr)
-          await supabase.auth.signOut()
-          setProfile(null)
+        if (session.user.app_metadata?.provider === 'google') {
+          await resolveGoogleProfile(session.user)
+        } else {
+          await loadProfile(session.user.id)
         }
       }
       setLoading(false)
@@ -140,20 +166,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return
         }
         setLoading(true)
-        loadProfile(session.user.id).then((p) => {
-          const blockErr = validateGoogleProfile(session.user, p)
-          if (blockErr) {
-            console.warn('[Auth] Google user blocked:', blockErr)
-            setOauthError(blockErr)
-            supabase.auth.signOut().then(() => {
-              setProfile(null)
-              setLoading(false)
-            })
-            return
-          }
-          setLoading(false)
-          console.log('[Auth] Profile loaded via onAuthStateChange, loading=false')
-        })
+        if (session.user.app_metadata?.provider === 'google') {
+          resolveGoogleProfile(session.user).finally(() => setLoading(false))
+        } else {
+          loadProfile(session.user.id).finally(() => setLoading(false))
+        }
       } else {
         setProfile(null)
         setLoading(false)
@@ -161,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [loadProfile, validateGoogleProfile])
+  }, [loadProfile, resolveGoogleProfile])
 
   const signInWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
     console.log('[Auth] signInWithEmail:', email)

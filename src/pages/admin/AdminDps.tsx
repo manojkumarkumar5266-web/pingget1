@@ -36,6 +36,7 @@ export default function AdminDps() {
     const { error } = await supabase.from('delivery_partners').update({ status: newStatus }).eq('id', dp.id)
     if (!error) {
       await supabase.from('profiles').update({ status: newStatus }).eq('id', dp.user_id)
+      await supabase.from('admin_notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('related_id', dp.user_id).eq('is_read', false)
       await supabase.from('admin_logs').insert({
         admin_id: adminProfile!.id, action: `dp_${newStatus}`, target_id: dp.user_id, details: `DP ${dp.id} -> ${newStatus}`,
       })

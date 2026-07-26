@@ -59,6 +59,7 @@ export default function AuthScreen() {
   const [role, setRole] = useState<Role>('user')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const submittingRef = useRef(false)
   const [showPassword, setShowPassword] = useState(false)
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false)
 
@@ -242,6 +243,7 @@ export default function AuthScreen() {
   // ── Sign Up: User ──
   const handleUserSignUp = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null)
+    if (submittingRef.current) return
     if (!fullName.trim()) { setError('Full name is required'); return }
     const phoneDigits = phone.replace(/\D/g, '')
     if (phoneDigits.length < 10) { setError('Please enter a valid 10-digit mobile number'); return }
@@ -251,12 +253,13 @@ export default function AuthScreen() {
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     if (password !== confirmPassword) { setError('Passwords do not match'); return }
 
+    submittingRef.current = true
     setLoading(true)
     const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('phone', phoneDigits)
-    if ((count ?? 0) > 0) { setError('This mobile number is already registered.'); setLoading(false); return }
+    if ((count ?? 0) > 0) { setError('This mobile number is already registered.'); setLoading(false); submittingRef.current = false; return }
 
     const emailBlocked = await checkEmailAvailable(email, 'user')
-    if (emailBlocked) { setError(emailBlocked); setLoading(false); return }
+    if (emailBlocked) { setError(emailBlocked); setLoading(false); submittingRef.current = false; return }
 
     const { data: pinData } = await supabase.from('pincodes').select('city_id').eq('pincode', pincode).limit(1).maybeSingle()
     let cityName: string | null = null
@@ -275,7 +278,7 @@ export default function AuthScreen() {
       const msg = signupError?.message || signupData?.error || 'Failed to create account.'
       if (msg.includes('already') || msg.includes('duplicate')) setError('An account with this email already exists.')
       else setError(msg)
-      setLoading(false); return
+      setLoading(false); submittingRef.current = false; return
     }
 
     try {
@@ -283,6 +286,7 @@ export default function AuthScreen() {
     } catch { /* best effort */ }
 
     setLoading(false)
+    submittingRef.current = false
     setMode('signup_success')
   }
 
@@ -310,18 +314,20 @@ export default function AuthScreen() {
 
   const handleDpStep3 = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null)
+    if (submittingRef.current) return
     if (!photoFile) { setError('Profile photo is required'); return }
     if (!aadhaarFile) { setError('Aadhaar document is required'); return }
     if (needsLicense && !licenseFile) { setError('Driving licence is required for your vehicle type'); return }
 
+    submittingRef.current = true
     setLoading(true)
     try {
       const phoneDigits = phone.replace(/\D/g, '')
       const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('phone', phoneDigits)
-      if ((count ?? 0) > 0) { setError('This mobile number is already registered.'); setLoading(false); return }
+      if ((count ?? 0) > 0) { setError('This mobile number is already registered.'); setLoading(false); submittingRef.current = false; return }
 
       const emailBlocked = await checkEmailAvailable(email, 'dp')
-      if (emailBlocked) { setError(emailBlocked); setLoading(false); return }
+      if (emailBlocked) { setError(emailBlocked); setLoading(false); submittingRef.current = false; return }
 
       const { data: signupData, error: signupError } = await supabase.functions.invoke('signup-user', {
         body: {
@@ -334,7 +340,7 @@ export default function AuthScreen() {
         const msg = signupError?.message || signupData?.error || 'Failed to create account.'
         if (msg.includes('already') || msg.includes('duplicate')) setError('An account with this email already exists.')
         else setError(msg)
-        setLoading(false); return
+        setLoading(false); submittingRef.current = false; return
       }
 
       const userId = signupData.user_id
@@ -357,6 +363,7 @@ export default function AuthScreen() {
       setError(err.message || 'Failed to complete signup')
     } finally {
       setLoading(false)
+      submittingRef.current = false
     }
   }
 
