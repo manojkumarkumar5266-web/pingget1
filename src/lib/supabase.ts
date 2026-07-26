@@ -23,6 +23,7 @@ export type Profile = {
   role: 'user' | 'dp' | 'admin'
   status: 'active' | 'suspended' | 'banned' | 'pending' | 'rejected'
   full_name: string
+  email: string | null
   phone: string | null
   photo_url: string | null
   address: string | null

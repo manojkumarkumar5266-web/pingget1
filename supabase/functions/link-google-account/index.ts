@@ -13,7 +13,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { user_id, email, role, mode } = await req.json()
+    const { user_id, email, role, mode, full_name } = await req.json()
 
     if (!user_id || !email) {
       return new Response(
@@ -49,51 +49,65 @@ Deno.serve(async (req: Request) => {
       .maybeSingle()
 
     if (existingByEmail) {
-      const oldUserId = existingByEmail.id
-
-      // Update the profile ID to the Google user's ID
-      const { data: updatedProfile, error: profileError } = await supabase
+      // Create a NEW profile for the Google auth user, copying data from the
+      // existing email/password profile. We do NOT change the existing profile's
+      // id (primary key) because it's referenced by other tables and the old
+      // auth user still exists.
+      const { data: newProfile, error: createError } = await supabase
         .from("profiles")
-        .update({ id: user_id })
-        .eq("id", oldUserId)
+        .insert({
+          id: user_id,
+          role: existingByEmail.role,
+          full_name: existingByEmail.full_name,
+          email,
+          phone: existingByEmail.phone,
+          photo_url: existingByEmail.photo_url,
+          address: existingByEmail.address,
+          city: existingByEmail.city,
+          pincode: existingByEmail.pincode,
+          gps_lat: existingByEmail.gps_lat,
+          gps_lng: existingByEmail.gps_lng,
+          status: existingByEmail.status,
+          preferred_language: existingByEmail.preferred_language,
+        })
         .select()
         .single()
 
-      if (profileError) {
+      if (createError) {
         return new Response(
-          JSON.stringify({ error: "Failed to link profile: " + profileError.message }),
+          JSON.stringify({ error: "Failed to create profile: " + createError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         )
       }
 
-      // Update delivery_partners.user_id if the user is a DP
-      await supabase.from("delivery_partners").update({ user_id }).eq("user_id", oldUserId)
+      // If the existing profile was a DP, create a delivery_partners row for the Google user
+      if (existingByEmail.role === "dp") {
+        const { data: existingDp } = await supabase
+          .from("delivery_partners")
+          .select("*")
+          .eq("user_id", existingByEmail.id)
+          .maybeSingle()
 
-      // Update requests.user_id
-      await supabase.from("requests").update({ user_id }).eq("user_id", oldUserId)
-
-      // Update notifications.user_id
-      await supabase.from("notifications").update({ user_id }).eq("user_id", oldUserId)
-
-      // Update chat_rooms.user_id and dp_id
-      await supabase.from("chat_rooms").update({ user_id }).eq("user_id", oldUserId)
-      await supabase.from("chat_rooms").update({ dp_id: user_id }).eq("dp_id", oldUserId)
-
-      // Update messages.sender_id
-      await supabase.from("messages").update({ sender_id: user_id }).eq("sender_id", oldUserId)
-
-      // Update wallets.dp_user_id if DP
-      await supabase.from("wallets").update({ dp_user_id: user_id }).eq("dp_user_id", oldUserId)
-
-      // Update ratings
-      await supabase.from("ratings").update({ user_id }).eq("user_id", oldUserId)
-      await supabase.from("ratings").update({ dp_id: user_id }).eq("dp_id", oldUserId)
-
-      // Update quotations
-      await supabase.from("quotations").update({ dp_id: user_id }).eq("dp_id", oldUserId)
+        if (existingDp) {
+          await supabase.from("delivery_partners").insert({
+            user_id,
+            status: existingDp.status,
+            vehicle_type: existingDp.vehicle_type,
+            aadhaar_number: existingDp.aadhaar_number,
+            emergency_contact: existingDp.emergency_contact,
+            driving_license_url: existingDp.driving_license_url,
+            upi_id: existingDp.upi_id,
+            bank_account: existingDp.bank_account,
+            is_online: false,
+            rating_avg: existingDp.rating_avg,
+            rating_count: existingDp.rating_count,
+            service_range_meters: existingDp.service_range_meters,
+          })
+        }
+      }
 
       return new Response(
-        JSON.stringify({ success: true, profile: updatedProfile, action: "linked" }),
+        JSON.stringify({ success: true, profile: newProfile, action: "linked" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
@@ -103,7 +117,8 @@ Deno.serve(async (req: Request) => {
       const profileRow: Record<string, any> = {
         id: user_id,
         role,
-        full_name: "",
+        full_name: full_name || "",
+        email,
         status: role === "dp" ? "pending" : "active",
       }
 

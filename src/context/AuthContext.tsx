@@ -9,6 +9,7 @@ type AuthContextType = {
   loading: boolean
   passwordRecovery: boolean
   oauthError: string | null
+  oauthResolving: boolean
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>
   signInWithGoogle: (role: 'user' | 'dp') => Promise<{ error: string | null }>
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [passwordRecovery, setPasswordRecovery] = useState(false)
+  const [oauthResolving, setOauthResolving] = useState(false)
 
   // Set by signUpWithEmail so onAuthStateChange knows to wait for the
   // signup flow to finish inserting the profile before checking it.
@@ -76,11 +78,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // changing the primary key of a profile row requires service-role access.
   const resolveGoogleProfile = useCallback(async (user: User): Promise<Profile | null> => {
     if (user.app_metadata?.provider !== 'google') return null
+    setOauthResolving(true)
     const role = sessionStorage.getItem('pingget_oauth_role') as 'user' | 'dp' | null
     const mode = sessionStorage.getItem('pingget_oauth_mode') as 'signup' | 'signin' | null
     try {
       const { data, error } = await supabase.functions.invoke('link-google-account', {
-        body: { user_id: user.id, email: user.email, role: role || 'user', mode: mode || 'signin' },
+        body: {
+          user_id: user.id,
+          email: user.email,
+          role: role || 'user',
+          mode: mode || 'signin',
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        },
       })
       if (error || !data?.success) {
         console.error('[Auth] link-google-account error:', error?.message || data?.error)
@@ -89,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOauthError(data?.error || 'Failed to link Google account.')
         await supabase.auth.signOut()
         setProfile(null)
+        setOauthResolving(false)
         return null
       }
       sessionStorage.removeItem('pingget_oauth_role')
@@ -96,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const p = data.profile as Profile
       setProfile(p)
       console.log('[Auth] Google profile resolved:', p ? `role=${p.role} status=${p.status}` : 'null')
+      setOauthResolving(false)
       return p
     } catch (e) {
       console.error('[Auth] link-google-account exception:', e)
@@ -104,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setOauthError('Failed to link Google account.')
       await supabase.auth.signOut()
       setProfile(null)
+      setOauthResolving(false)
       return null
     }
   }, [])
@@ -253,7 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      session, user: session?.user ?? null, profile, loading, passwordRecovery, oauthError,
+      session, user: session?.user ?? null, profile, loading, passwordRecovery, oauthError, oauthResolving,
       signInWithEmail, signUpWithEmail, signInWithGoogle, signOut, refreshProfile, updatePassword, clearPasswordRecovery, clearOauthError,
     }}>
       {children}

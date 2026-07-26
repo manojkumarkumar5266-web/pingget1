@@ -52,7 +52,7 @@ function DpRejectedScreen() {
 }
 
 export default function App() {
-  const { session, profile, loading, passwordRecovery, signOut } = useAuth()
+  const { session, profile, loading, passwordRecovery, oauthResolving, signOut } = useAuth()
   const location = useLocation()
   const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem(WELCOME_KEY))
   const [showPermissions, setShowPermissions] = useState(() => {
@@ -62,11 +62,11 @@ export default function App() {
 
   // Handle missing profile in useEffect — never during render
   useEffect(() => {
-    if (!loading && session && !profile) {
+    if (!loading && session && !profile && !passwordRecovery && !oauthResolving) {
       console.warn('[Auth] Profile missing after loading completed — signing out')
       signOut()
     }
-  }, [loading, session, profile, signOut])
+  }, [loading, session, profile, signOut, passwordRecovery, oauthResolving])
 
   if (showWelcome) return <Welcome onDone={() => { sessionStorage.setItem(WELCOME_KEY, '1'); setShowWelcome(false) }} />
   if (showPermissions) return <PermissionOnboarding onComplete={() => { localStorage.setItem(ONBOARDING_KEY, '1'); setShowPermissions(false) }} />

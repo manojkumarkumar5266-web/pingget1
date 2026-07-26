@@ -140,6 +140,12 @@ export default function AuthScreen() {
     setLicenseFile(null); setLicensePreview(null)
   }
 
+  const resetAllSignupFields = () => {
+    setFullName(''); setPhone(''); setPincode(''); setPincodeStatus(null)
+    setEmail(''); setPassword(''); setConfirmPassword('')
+    resetDpFields()
+  }
+
   const switchToSignUp = () => {
     setMode('signup'); setError(null); resetDpFields()
   }
@@ -403,11 +409,11 @@ export default function AuthScreen() {
         <>
           <div className="fixed inset-0 z-10" onClick={() => setRoleDropdownOpen(false)} />
           <div className="absolute z-20 mt-1 w-full rounded-xl border border-white/10 overflow-hidden animate-fade-in" style={{ background: '#1c2a14' }}>
-            <button type="button" onClick={() => { setRole('user'); setRoleDropdownOpen(false); setError(null); resetDpFields() }} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors">
+            <button type="button" onClick={() => { setRole('user'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors">
               <User size={18} className="mt-0.5 shrink-0" style={{ color: '#808000' }} />
               <div><p className="text-sm font-semibold text-white">User</p><p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Order groceries, medicines, parcels & more</p></div>
             </button>
-            <button type="button" onClick={() => { setRole('dp'); setRoleDropdownOpen(false); setError(null); resetDpFields() }} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-t border-white/5">
+            <button type="button" onClick={() => { setRole('dp'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-t border-white/5">
               <Bike size={18} className="mt-0.5 shrink-0" style={{ color: '#808000' }} />
               <div><p className="text-sm font-semibold text-white">Delivery Partner</p><p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Earn money delivering in your area</p></div>
             </button>

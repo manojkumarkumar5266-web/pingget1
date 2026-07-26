@@ -211,14 +211,19 @@ export default function DpHome() {
   const getDistance = (req: DeliveryRequest): number | null => {
     const lat = gps.lat ?? profile?.gps_lat
     const lng = gps.lng ?? profile?.gps_lng
-    if (!lat || !lng || !req.delivery_lat || !req.delivery_lng) return null
-    return haversineDistance(lat, lng, req.delivery_lat, req.delivery_lng)
+    // Try delivery location first, fall back to pickup location
+    const targetLat = req.delivery_lat ?? req.pickup_lat
+    const targetLng = req.delivery_lng ?? req.pickup_lng
+    if (!lat || !lng || !targetLat || !targetLng) return null
+    return haversineDistance(lat, lng, targetLat, targetLng)
   }
 
   const rangeMeters = rangeKm * 1000
   const filtered = requests.filter(r => {
     const dist = getDistance(r)
-    if (dist === null) return false
+    // If we can't compute distance (no GPS yet), show the request anyway
+    // so the DP doesn't miss orders while waiting for location.
+    if (dist === null) return true
     return dist <= rangeMeters
   })
 

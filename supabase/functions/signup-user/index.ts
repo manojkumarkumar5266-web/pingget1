@@ -52,6 +52,7 @@ Deno.serve(async (req: Request) => {
       id: userId,
       role,
       full_name,
+      email,
       phone: phone || null,
       status: role === "dp" ? "pending" : "active",
     };
