@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from './context'
-import { supabase } from './lib/supabase'
 import { FullScreenLoader } from './components/ui'
 import AuthScreen from './pages/AuthScreen'
 import ResetPassword from './pages/ResetPassword'
@@ -61,56 +60,18 @@ export default function App() {
     return !localStorage.getItem(ONBOARDING_KEY) && !sessionStorage.getItem(WELCOME_KEY)
   })
 
-  // Handle missing profile — retry a few times before signing out, to avoid
-  // auth loops when profile loading is temporarily slow or has a transient error.
-  const profileRetryRef = useRef(0)
+  // Handle missing profile in useEffect — never during render
   useEffect(() => {
     if (!loading && session && !profile && !passwordRecovery && !oauthResolving) {
-      profileRetryRef.current += 1
-      if (profileRetryRef.current > 3) {
-        console.warn('[Auth] Profile missing after 3 retries — signing out')
-        signOut()
-      } else {
-        console.warn(`[Auth] Profile missing, retry ${profileRetryRef.current}/3`)
-        const t = setTimeout(() => {
-          supabase.auth.getSession().then(({ data: { session: s } }) => {
-            if (s?.user) {
-              supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle()
-                .then(({ data }) => {
-                  if (data) window.location.reload()
-                })
-            }
-          })
-        }, 1500)
-        return () => clearTimeout(t)
-      }
+      console.warn('[Auth] Profile missing after loading completed — signing out')
+      signOut()
     }
-    if (profile) profileRetryRef.current = 0
   }, [loading, session, profile, signOut, passwordRecovery, oauthResolving])
-
-  // Password recovery takes priority over EVERYTHING — even the Welcome screen.
-  // If a recovery token is in the URL or the auth context detected recovery, go straight to reset.
-  const isRecoveryRoute = location.pathname === '/reset-password' ||
-    location.hash.includes('type=recovery') ||
-    location.search.includes('type=recovery') ||
-    passwordRecovery
-
-  if (isRecoveryRoute) {
-    return (
-      <>
-        <Watermark />
-        <Routes>
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="*" element={<Navigate to="/reset-password" replace />} />
-        </Routes>
-      </>
-    )
-  }
 
   if (showWelcome) return <Welcome onDone={() => { sessionStorage.setItem(WELCOME_KEY, '1'); setShowWelcome(false) }} />
   if (showPermissions) return <PermissionOnboarding onComplete={() => { localStorage.setItem(ONBOARDING_KEY, '1'); setShowPermissions(false) }} />
 
-  const isPublicRoute = ['/setup-admin', '/landing'].includes(location.pathname)
+  const isPublicRoute = ['/setup-admin', '/reset-password', '/landing'].includes(location.pathname)
 
   if (isPublicRoute && !session) {
     return (
@@ -127,6 +88,18 @@ export default function App() {
   }
 
   if (loading) return <FullScreenLoader />
+
+  if (passwordRecovery || location.pathname === '/reset-password') {
+    return (
+      <>
+        <Watermark />
+        <Routes>
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="*" element={<Navigate to="/reset-password" replace />} />
+        </Routes>
+      </>
+    )
+  }
 
   if (!session) {
     return (

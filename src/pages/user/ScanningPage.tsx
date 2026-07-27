@@ -5,17 +5,11 @@ import { supabase } from '../../lib/supabase'
 import { formatDistance } from '../../lib/utils'
 import { CheckCircle2, ChevronRight, Bike, X } from 'lucide-react'
 
-type NearbyDp = {
-  dp_user_id: string
-  full_name: string
-  gps_lat: number
-  gps_lng: number
-  distance_meters: number
-  service_range_meters: number
-}
+type DpDot = { id: string; angle: number; radius: number; dist: number }
 
-const SCAN_RADIUS_KM = 10
-const SCAN_INTERVAL_MS = 3000
+const SCAN_RADIUS_KM = 5
+const SCAN_INTERVAL_MS = 3500
+const MAX_SCANS = 6
 
 export default function ScanningPage() {
   const { requestId } = useParams<{ requestId: string }>()
@@ -23,17 +17,16 @@ export default function ScanningPage() {
   const navigate = useNavigate()
 
   const [phase, setPhase] = useState<'scanning' | 'found' | 'none'>('scanning')
-  const [nearbyDps, setNearbyDps] = useState<NearbyDp[]>([])
+  const [dpCount, setDpCount] = useState(0)
+  const [avgDist, setAvgDist] = useState(0)
+  const [dots, setDots] = useState<DpDot[]>([])
   const [scanAngle, setScanAngle] = useState(0)
+  const [scanCount, setScanCount] = useState(0)
   const [requestCancelled, setRequestCancelled] = useState(false)
-  const [requestStatus, setRequestStatus] = useState<string>('pending')
 
   const sweepRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const scanRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const realtimeRef = useRef<any>(null)
-
-  const userLat = profile?.gps_lat
-  const userLng = profile?.gps_lng
+  const scanCountRef = useRef(0)
 
   // Animate sweep line
   useEffect(() => {
@@ -43,67 +36,47 @@ export default function ScanningPage() {
     return () => { if (sweepRef.current) clearInterval(sweepRef.current) }
   }, [])
 
-  // Scan for nearby DPs using the RPC + realtime subscription
+  // Scan for DPs
   useEffect(() => {
-    if (!userLat || !userLng) return
-
     const doScan = async () => {
+      if (!profile?.gps_lat || !profile?.gps_lng) return
       try {
-        const { data, error } = await supabase.rpc('scan_nearby_dps', {
-          p_user_lat: userLat,
-          p_user_lng: userLng,
+        const { data } = await supabase.rpc('scan_nearby_dps', {
+          p_user_lat: profile.gps_lat,
+          p_user_lng: profile.gps_lng,
           p_radius_meters: SCAN_RADIUS_KM * 1000,
-          p_request_id: requestId,
         })
-        if (error) {
-          console.warn('[Scan] RPC error:', error.message)
-          return
+        const row = data?.[0]
+        const count = row?.dp_count ?? 0
+        const avg = row?.avg_distance_meters ?? 0
+        setDpCount(count)
+        setAvgDist(avg)
+        scanCountRef.current += 1
+        setScanCount(scanCountRef.current)
+
+        // Generate dot positions for found DPs
+        if (count > 0) {
+          const newDots: DpDot[] = Array.from({ length: Math.min(count, 8) }, (_, i) => ({
+            id: `dp-${i}`,
+            angle: (i * (360 / Math.min(count, 8)) + Math.random() * 30) % 360,
+            radius: 35 + Math.random() * 40,
+            dist: avg * (0.7 + Math.random() * 0.6),
+          }))
+          setDots(newDots)
         }
-        const dps = (data || []) as NearbyDp[]
-        setNearbyDps(dps)
-        if (dps.length > 0 && phase === 'scanning') {
-          setPhase('found')
+
+        if (scanCountRef.current >= MAX_SCANS) {
           if (sweepRef.current) clearInterval(sweepRef.current)
+          if (scanRef.current) clearInterval(scanRef.current)
+          setPhase(count > 0 ? 'found' : 'none')
         }
-      } catch (err) {
-        console.warn('[Scan] Exception:', err)
-      }
+      } catch { /* ignore */ }
     }
 
     doScan()
     scanRef.current = setInterval(doScan, SCAN_INTERVAL_MS)
-
-    // Realtime: listen for request status changes (accepted by a DP)
-    if (requestId) {
-      realtimeRef.current = supabase
-        .channel(`scan-request-${requestId}`)
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'requests',
-          filter: `id=eq.${requestId}`,
-        }, (payload: any) => {
-          const newStatus = payload.new?.status
-          setRequestStatus(newStatus)
-          if (newStatus === 'accepted') {
-            setPhase('found')
-            if (sweepRef.current) clearInterval(sweepRef.current)
-            if (scanRef.current) clearInterval(scanRef.current)
-            // Navigate to orders after a brief delay
-            setTimeout(() => navigate('/app/orders'), 1500)
-          }
-          if (newStatus === 'cancelled') {
-            navigate('/app')
-          }
-        })
-        .subscribe()
-    }
-
-    return () => {
-      if (scanRef.current) clearInterval(scanRef.current)
-      if (realtimeRef.current) supabase.removeChannel(realtimeRef.current)
-    }
-  }, [userLat, userLng, requestId, phase, navigate])
+    return () => { if (scanRef.current) clearInterval(scanRef.current) }
+  }, [profile])
 
   const cancelRequest = async () => {
     if (!requestId) return
@@ -114,7 +87,7 @@ export default function ScanningPage() {
 
   const viewOrder = () => navigate('/app/orders')
 
-  const size = 280
+  const size = 280 // radar circle diameter
   const cx = size / 2
   const cy = size / 2
   const r = size / 2 - 10
@@ -122,23 +95,6 @@ export default function ScanningPage() {
   const sweepRad = (scanAngle * Math.PI) / 180
   const sweepX = cx + r * Math.cos(sweepRad)
   const sweepY = cy + r * Math.sin(sweepRad)
-
-  const dpCount = nearbyDps.length
-  const avgDist = dpCount > 0
-    ? nearbyDps.reduce((s, d) => s + d.distance_meters, 0) / dpCount
-    : 0
-
-  // Generate dot positions for the radar from actual DP data
-  const dots = nearbyDps.slice(0, 8).map((dp, i) => {
-    const angle = (i * (360 / Math.min(dpCount, 8)) + scanAngle * 0.5) % 360
-    const radiusPct = Math.min(1, dp.distance_meters / (SCAN_RADIUS_KM * 1000))
-    return {
-      id: dp.dp_user_id,
-      angle,
-      radius: 20 + radiusPct * 70,
-      dist: dp.distance_meters,
-    }
-  })
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden"
@@ -170,18 +126,21 @@ export default function ScanningPage() {
       {/* Radar */}
       <div className="relative flex items-center justify-center">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {/* Background rings */}
           {[0.25, 0.5, 0.75, 1].map((pct, i) => (
             <circle key={i} cx={cx} cy={cy} r={r * pct}
               fill="none" stroke="rgba(128,160,0,0.15)" strokeWidth={1} />
           ))}
 
+          {/* Sweep gradient */}
           <defs>
             <radialGradient id="sweepGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#809000" stopOpacity={0.35} />
-              <stop offset="100%" stopColor="#809000" stopOpacity={0} />
+              <stop offset="0%" stopColor="#809000" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#809000" stopOpacity="0" />
             </radialGradient>
           </defs>
 
+          {/* Sweep sector — 60 degree cone */}
           {phase === 'scanning' && (() => {
             const sweepEndRad = ((scanAngle - 60) * Math.PI) / 180
             const x1 = cx + r * Math.cos(sweepRad)
@@ -196,11 +155,13 @@ export default function ScanningPage() {
             )
           })()}
 
+          {/* Sweep line */}
           {phase === 'scanning' && (
             <line x1={cx} y1={cy} x2={sweepX} y2={sweepY}
               stroke="#a0b800" strokeWidth={2} opacity={0.8} />
           )}
 
+          {/* DP dots */}
           {dots.map(dot => {
             const rad = (dot.angle * Math.PI) / 180
             const dr = (dot.radius / 100) * r
@@ -215,11 +176,13 @@ export default function ScanningPage() {
             )
           })}
 
+          {/* Center user dot */}
           <circle cx={cx} cy={cy} r={8} fill="#ff4444" />
           <circle cx={cx} cy={cy} r={14} fill="none" stroke="#ff4444" strokeWidth={2} opacity={0.5} />
           <circle cx={cx} cy={cy} r={20} fill="none" stroke="#ff4444" strokeWidth={1} opacity={0.25} />
         </svg>
 
+        {/* Pulsing rings behind radar */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           {[1, 2, 3].map(i => (
             <div key={i} className="absolute rounded-full border border-yellow-700/20"
@@ -235,6 +198,19 @@ export default function ScanningPage() {
 
       {/* Bottom status panel */}
       <div className="w-full max-w-md px-5 pb-10">
+
+        {/* Scan count indicator */}
+        <div className="mb-4 flex items-center justify-center gap-1.5">
+          {Array.from({ length: MAX_SCANS }).map((_, i) => (
+            <div key={i}
+              className="h-1.5 rounded-full transition-all duration-500"
+              style={{
+                width: i < scanCount ? 20 : 8,
+                background: i < scanCount ? '#808000' : 'rgba(255,255,255,0.15)',
+              }} />
+          ))}
+        </div>
+
         {phase === 'scanning' && (
           <div className="rounded-2xl p-5 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <p className="text-sm font-medium text-white/60">
@@ -265,11 +241,6 @@ export default function ScanningPage() {
                 <CheckCircle2 size={22} className="text-green-400 shrink-0" />
               </div>
             </div>
-            {requestStatus === 'accepted' && (
-              <div className="rounded-xl p-3 text-center text-sm font-medium text-green-400 animate-fade-in">
-                A delivery partner accepted your request! Redirecting...
-              </div>
-            )}
             <button onClick={viewOrder}
               className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white transition-all active:scale-95"
               style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
