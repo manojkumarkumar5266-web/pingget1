@@ -144,7 +144,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const urlHash = initialAuthUrl.hash
     const urlParams = new URLSearchParams(initialAuthUrl.search)
     const urlQuery = urlParams.get('type')
-    if ((urlHash && urlHash.includes('type=recovery')) || urlQuery === 'recovery') {
+    // Mobile (Capacitor): the deep link handler calls setSession() which
+    // fires SIGNED_IN (not PASSWORD_RECOVERY), so it sets a sessionStorage
+    // flag we check here.
+    const mobileRecoveryFlag = sessionStorage.getItem('pingget_password_recovery')
+    if (mobileRecoveryFlag === 'true') {
+      console.log('[Auth] Recovery flag detected from mobile deep link')
+      sessionStorage.removeItem('pingget_password_recovery')
+      recoveryFromUrl.current = true
+      passwordRecoveryRef.current = true
+      setPasswordRecovery(true)
+    } else if ((urlHash && urlHash.includes('type=recovery')) || urlQuery === 'recovery') {
       console.log('[Auth] Recovery token detected in URL')
       recoveryFromUrl.current = true
       passwordRecoveryRef.current = true
