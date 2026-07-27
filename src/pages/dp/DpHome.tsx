@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
 import { useGps } from '../../hooks/useGps'
-import { EmptyState, ServiceStatusBanner, SkeletonCard, StatCard, CountUp } from '../../components/ui'
+import { EmptyState, ServiceStatusBanner, SkeletonCard, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency } from '../../lib/utils'
-import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Zap, Bike, Activity, Navigation, Wallet } from 'lucide-react'
+import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Activity, Navigation, Wallet } from 'lucide-react'
 
-type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
+type NearbyRequest = DeliveryRequest & {
+  user_full_name?: string
+  user_gps_lat?: number | null
+  user_gps_lng?: number | null
+  distance_meters?: number
+}
 
 function VoicePlayer({ url }: { url: string }) {
   const [playing, setPlaying] = useState(false)
@@ -33,9 +38,9 @@ function VoicePlayer({ url }: { url: string }) {
 }
 
 export default function DpHome() {
-  const { profile, refreshProfile } = useAuth()
+  const { profile } = useAuth()
   const navigate = useNavigate()
-  const [requests, setRequests] = useState<RequestWithUser[]>([])
+  const [requests, setRequests] = useState<NearbyRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [dp, setDp] = useState<DeliveryPartner | null>(null)
   const [dpLoading, setDpLoading] = useState(true)
@@ -47,6 +52,9 @@ export default function DpHome() {
   const [todayOrders, setTodayOrders] = useState<Order[]>([])
   const [weekOrders, setWeekOrders] = useState<Order[]>([])
   const [totalOrders, setTotalOrders] = useState(0)
+  const [accepting, setAccepting] = useState<string | null>(null)
+
+  const gps = useGps(profile?.id, true)
 
   const showToast = (msg: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current)
@@ -54,7 +62,9 @@ export default function DpHome() {
     toastTimer.current = setTimeout(() => setToast(null), 5000)
   }
 
+  // Load DP record
   useEffect(() => {
+    if (!profile) return
     const fetchDp = async () => {
       const { data } = await supabase
         .from('delivery_partners').select('*').eq('user_id', profile!.id).maybeSingle()
@@ -69,6 +79,7 @@ export default function DpHome() {
     return () => { supabase.removeChannel(dpChannel) }
   }, [profile])
 
+  // Load stats
   useEffect(() => {
     if (dpLoading || !profile) return
     const fetchStats = async () => {
@@ -85,6 +96,7 @@ export default function DpHome() {
     fetchStats()
   }, [dpLoading, profile])
 
+  // Initialize range slider
   useEffect(() => {
     if (dp && !rangeInitialised.current) {
       rangeInitialised.current = true
@@ -93,46 +105,36 @@ export default function DpHome() {
     }
   }, [dp])
 
+  // Fetch nearby requests using server-side GPS distance RPC
+  const fetchRequests = async () => {
+    if (!profile) return
+    const { data, error } = await supabase.rpc('get_nearby_requests', {
+      p_dp_user_id: profile.id,
+    })
+    if (error) {
+      console.warn('[DpHome] get_nearby_requests error:', error.message)
+      setLoading(false)
+      return
+    }
+    if (!data) { setLoading(false); return }
+    setRequests(data as NearbyRequest[])
+    setLoading(false)
+  }
+
+  // Realtime subscription for new requests + request status changes
   useEffect(() => {
     if (dpLoading) return
     if (!dp?.is_online) { setLoading(false); setRequests([]); return }
     setLoading(true)
-
-    const fetchRequests = async () => {
-      const { data } = await supabase
-        .from('requests')
-        .select('*')
-        .eq('status', 'pending')
-        .not('declined_by', 'cs', `{${profile!.id}}`)
-        .order('created_at', { ascending: false })
-      if (!data) { setLoading(false); return }
-      const userIds = [...new Set(data.map((r: any) => r.user_id))]
-      let profileMap = new Map<string, Profile>()
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('*').in('id', userIds)
-        profiles?.forEach((p: any) => profileMap.set(p.id, p as Profile))
-      }
-      setRequests((data as DeliveryRequest[]).map(r => ({ ...r, user_profile: profileMap.get(r.user_id) })))
-      setLoading(false)
-    }
     fetchRequests()
 
-    const channel = supabase.channel('dp-requests')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: 'status=eq.pending' },
+    const channel = supabase.channel('dp-requests-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests' },
         () => { showToast('New delivery request nearby!'); fetchRequests() })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' },
-        (payload: any) => {
-          const updated = payload.new
-          if (updated.status === 'accepted' && updated.accepted_dp_id !== profile!.id) {
-            setRequests(prev => {
-              if (prev.some(r => r.id === updated.id)) {
-                showToast('A nearby request was just accepted by another delivery partner')
-              }
-              return prev
-            })
-          }
-          fetchRequests()
-        })
+        () => { fetchRequests() })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' },
+        () => { fetchRequests() })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [dp?.is_online, dpLoading, profile])
@@ -142,9 +144,10 @@ export default function DpHome() {
     setSavingRange(true)
     await supabase.from('delivery_partners').update({ service_range_meters: km * 1000 }).eq('user_id', profile!.id)
     setSavingRange(false)
+    fetchRequests()
   }
 
-  const declineRequest = async (req: RequestWithUser) => {
+  const declineRequest = async (req: NearbyRequest) => {
     setRequests(prev => prev.filter(r => r.id !== req.id))
     const { error } = await supabase.rpc('append_declined_by', { row_id: req.id, dp_id: profile!.id })
     if (error) {
@@ -154,86 +157,44 @@ export default function DpHome() {
     }
   }
 
-  const acceptRequest = async (req: RequestWithUser) => {
-    const { error } = await supabase.from('requests')
-      .update({ status: 'accepted', accepted_dp_id: profile!.id })
-      .eq('id', req.id).eq('status', 'pending')
-    if (error) { showToast('This request was already accepted by another delivery partner'); return }
-
-    const { data: existing } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).limit(1)
-    let roomId: string | undefined = existing?.[0]?.id
-    if (!roomId) {
-      const { data: room, error: roomError } = await supabase.from('chat_rooms')
-        .insert({ request_id: req.id, user_id: req.user_id, dp_id: profile!.id })
-        .select().single()
-      if (roomError || !room) { showToast('Failed to create chat room'); return }
-      roomId = room.id
-    }
-
-    await supabase.from('messages').insert({
-      chat_room_id: roomId, sender_id: req.user_id, message_type: 'order_summary',
-      quotation_data: {
-        title: null, description: req.description,
-        preferred_shop: req.preferred_shop, pickup_address: req.pickup_address,
-        delivery_address: req.delivery_address, expected_time: req.expected_time,
-        photo_urls: req.photo_urls, voice_note_url: req.voice_note_url,
-        delivery_lat: req.delivery_lat, delivery_lng: req.delivery_lng,
-      },
-    })
-
-    const userName = req.user_profile?.full_name ? `Hi ${req.user_profile.full_name}! ` : 'Hello! '
-    await supabase.from('messages').insert({
-      chat_room_id: roomId, sender_id: profile!.id,
-      content: `${userName}I'm ${profile!.full_name} and I've accepted your delivery request. I can see your order details above — let me know if anything needs clarification and we'll get started!`,
-      message_type: 'text',
-    })
-
-    if (req.delivery_lat && req.delivery_lng) {
-      await supabase.from('messages').insert({
-        chat_room_id: roomId, sender_id: profile!.id,
-        content: req.delivery_address || 'Delivery location',
-        message_type: 'location', location_lat: req.delivery_lat, location_lng: req.delivery_lng,
+  const acceptRequest = async (req: NearbyRequest) => {
+    setAccepting(req.id)
+    try {
+      const { data, error } = await supabase.rpc('accept_request', {
+        p_request_id: req.id,
+        p_dp_user_id: profile!.id,
       })
+      if (error) {
+        showToast('Failed to accept: ' + error.message)
+        setAccepting(null)
+        return
+      }
+      const result = (data as any[])?.[0]
+      if (!result?.success) {
+        showToast(result?.error_msg || 'This request was already accepted')
+        setAccepting(null)
+        fetchRequests()
+        return
+      }
+      showToast('Request accepted! Opening chat...')
+      navigate(`/dp/chat/${result.chat_room_id}`)
+    } catch (err: any) {
+      showToast('Failed to accept: ' + (err.message || 'Unknown error'))
+    } finally {
+      setAccepting(null)
     }
-
-    await supabase.from('notifications').insert({
-      user_id: req.user_id, title: 'Request Accepted!',
-      body: `${profile!.full_name} accepted your request. Tap to open chat now.`,
-      type: 'request_accepted', related_id: req.id,
-    })
-
-    navigate(`/dp/chat/${roomId}`)
   }
 
-  const [pendingCommission, setPendingCommission] = useState(0)
-  const gps = useGps(profile?.id, true)
-
-  const getDistance = (req: DeliveryRequest): number | null => {
+  const getDistance = (req: NearbyRequest): number | null => {
     const lat = gps.lat ?? profile?.gps_lat
     const lng = gps.lng ?? profile?.gps_lng
-    const r = req as RequestWithUser
-    // Use the user's live GPS from their profile (most accurate), then fall back to
-    // the request's saved coordinates (pickup_lat = user GPS at submit time).
-    const userLat = r.user_profile?.gps_lat ?? req.pickup_lat ?? req.delivery_lat
-    const userLng = r.user_profile?.gps_lng ?? req.pickup_lng ?? req.delivery_lng
-    if (!lat || !lng || !userLat || !userLng) return null
+    const userLat = req.user_gps_lat ?? req.pickup_lat ?? req.delivery_lat
+    const userLng = req.user_gps_lng ?? req.pickup_lng ?? req.delivery_lng
+    if (!lat || !lng || !userLat || !userLng) return req.distance_meters ?? null
     return haversineDistance(lat, lng, userLat, userLng)
   }
 
-  const rangeMeters = rangeKm * 1000
-  // Filter requests by distance — only show requests within the DP's selected range.
-  // If GPS isn't available yet, show all requests so DPs don't miss orders while waiting.
-  const filtered = requests.filter(r => {
-    const dist = getDistance(r)
-    if (dist === null) return true
-    return dist <= rangeMeters
-  })
-
-  const todayEarnings = todayOrders.reduce((s, o) => s + Number(o.dp_earnings || 0), 0)
-  const weekEarnings = weekOrders.reduce((s, o) => s + Number(o.dp_earnings || 0), 0)
-  const todayDeliveries = todayOrders.length
-  const rating = dp?.rating_avg || 0
-  const ratingCount = dp?.rating_count || 0
+  const [pendingCommission, setPendingCommission] = useState(0)
 
   useEffect(() => {
     const checkCommission = async () => {
@@ -296,7 +257,7 @@ export default function DpHome() {
           <div>
             <p className="text-sm text-primary-100">Today&apos;s Earnings</p>
             <p className="mt-1 text-3xl font-bold">
-              <CountUp value={todayEarnings} prefix="₹" />
+              <CountUp value={todayOrders.reduce((s, o) => s + Number(o.dp_earnings || 0), 0)} prefix="₹" />
             </p>
           </div>
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm">
@@ -306,11 +267,11 @@ export default function DpHome() {
         <div className="mt-4 flex gap-4">
           <div className="flex-1 rounded-xl bg-white/10 px-3 py-2">
             <p className="text-xs text-primary-100">This Week</p>
-            <p className="text-lg font-bold">{formatCurrency(weekEarnings)}</p>
+            <p className="text-lg font-bold">{formatCurrency(weekOrders.reduce((s, o) => s + Number(o.dp_earnings || 0), 0))}</p>
           </div>
           <div className="flex-1 rounded-xl bg-white/10 px-3 py-2">
             <p className="text-xs text-primary-100">Deliveries</p>
-            <p className="text-lg font-bold">{todayDeliveries} today</p>
+            <p className="text-lg font-bold">{todayOrders.length} today</p>
           </div>
         </div>
       </div>
@@ -319,8 +280,8 @@ export default function DpHome() {
       <div className="mb-4 grid grid-cols-3 gap-2">
         <div className="card p-3 text-center animate-slide-up">
           <Star size={18} className="mx-auto mb-1 text-accent-400" />
-          <p className="text-lg font-bold text-white">{rating > 0 ? rating.toFixed(1) : '—'}</p>
-          <p className="text-[10px] text-gray-500">Rating{ratingCount > 0 ? ` (${ratingCount})` : ''}</p>
+          <p className="text-lg font-bold text-white">{(dp?.rating_avg || 0) > 0 ? Number(dp?.rating_avg).toFixed(1) : '—'}</p>
+          <p className="text-[10px] text-gray-500">Rating{(dp?.rating_count || 0) > 0 ? ` (${dp?.rating_count})` : ''}</p>
         </div>
         <div className="card p-3 text-center animate-slide-up" style={{ animationDelay: '50ms' }}>
           <Package size={18} className="mx-auto mb-1 text-primary-500" />
@@ -342,7 +303,6 @@ export default function DpHome() {
           </div>
           <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">{rangeKm}<span className="text-sm font-medium text-white/40 ml-0.5">km</span></span>
         </div>
-        {/* Modern slider with gradient track */}
         <div className="relative mb-3">
           <input
             type="range" min={1} max={10} step={1} value={rangeKm}
@@ -353,7 +313,6 @@ export default function DpHome() {
             style={{ background: `linear-gradient(to right, #808000 0%, #808000 ${((rangeKm - 1) / 9) * 100}%, rgba(255,255,255,0.1) ${((rangeKm - 1) / 9) * 100}%, rgba(255,255,255,0.1) 100%)` }}
           />
         </div>
-        {/* Preset chips */}
         <div className="flex flex-wrap gap-2">
           {[1, 2, 3, 5, 7, 10].map(km => (
             <button
@@ -369,10 +328,10 @@ export default function DpHome() {
             </button>
           ))}
         </div>
-        {profile?.gps_lat ? (
+        {gps.lat ? (
           <div className="mt-3 flex items-center gap-1.5 text-xs text-success-600 dark:text-success-400">
             <MapPin size={12} className="shrink-0" />
-            <span>Location: {profile.gps_lat.toFixed(4)}, {profile.gps_lng!.toFixed(4)}</span>
+            <span>Location: {gps.lat.toFixed(4)}, {gps.lng!.toFixed(4)}</span>
           </div>
         ) : (
           <div className="mt-3 flex items-center gap-1.5 text-xs text-warning-600 dark:text-warning-400">
@@ -386,19 +345,19 @@ export default function DpHome() {
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h3 className="text-base font-bold text-white">Available Requests</h3>
-          <p className="text-xs text-white/50">{filtered.length} within {rangeKm} km {filtered.length === 1 ? 'request' : 'requests'}</p>
+          <p className="text-xs text-white/50">{requests.length} within {rangeKm} km {requests.length === 1 ? 'request' : 'requests'}</p>
         </div>
         {savingRange && <span className="text-xs text-white/40 animate-pulse">Saving...</span>}
       </div>
 
       {loading ? (
         <div className="space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
-      ) : filtered.length === 0 ? (
+      ) : requests.length === 0 ? (
         <EmptyState icon={<Package size={48} />} title="No requests in range"
           description={gps.loading ? 'Waiting for GPS location... Allow location access.' : `No pending requests within ${rangeKm} km. Try increasing your range.`} />
       ) : (
         <div className="space-y-3">
-          {filtered.map((req, i) => {
+          {requests.map((req, i) => {
             const dist = getDistance(req)
             return (
               <div key={req.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
@@ -458,8 +417,11 @@ export default function DpHome() {
                 </div>
                 {req.voice_note_url && <VoicePlayer url={req.voice_note_url} />}
                 <div className="mt-3 flex gap-2">
-                  <button onClick={() => acceptRequest(req)} className="btn-primary flex-1 active:scale-95 transition-transform">
-                    <Check size={18} /> Accept
+                  <button
+                    onClick={() => acceptRequest(req)}
+                    disabled={accepting === req.id}
+                    className="btn-primary flex-1 active:scale-95 transition-transform disabled:opacity-50">
+                    {accepting === req.id ? 'Accepting...' : <><Check size={18} /> Accept</>}
                   </button>
                   <button onClick={() => declineRequest(req)} className="btn-secondary px-4 active:scale-95 transition-transform">
                     <X size={18} />

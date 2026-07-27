@@ -152,7 +152,7 @@ export default function CreateRequest() {
         pickup_lat: gpsLat, pickup_lng: gpsLng,
         delivery_lat: gpsLat, delivery_lng: gpsLng,
         expected_time: null, max_budget: null, special_instructions: null,
-        radius_meters: 0, status: 'pending',
+        radius_meters: 10000, status: 'pending',
       }).select('id').single()
       if (error) throw error
       navigate(`/app/scanning/${inserted.id}`)

@@ -64,12 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const p = data ? (data as Profile) : null
       console.log('[Auth] loadProfile result:', p ? `role=${p.role} status=${p.status}` : 'null')
       setProfile(p)
-      if (p?.role === 'dp') {
-        supabase.from('delivery_partners')
-          .update({ is_online: true })
-          .eq('user_id', userId)
-          .then(() => {})
-      }
       return p
     } catch (e) {
       console.error('[Auth] Profile load exception:', e)
