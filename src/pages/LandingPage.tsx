@@ -50,11 +50,8 @@ export default function LandingPage() {
         <div className="flex flex-1 flex-col justify-center max-w-md mx-auto w-full">
           {/* Description */}
           <div className={`mb-6 text-center transition-all duration-700 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            <h1 className="text-2xl font-bold text-white mb-3">
-              Chat with delivery partners, order groceries, medicines, parcels, and more
-            </h1>
             <p className="text-sm text-white/60">
-              Delivered to your doorstep. Or become a delivery partner and earn money in your neighbourhood.
+              Order groceries, medicines, parcels and more — or earn by delivering in your neighbourhood.
             </p>
           </div>
 

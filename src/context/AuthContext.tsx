@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react'
 import { Session, User } from '@supabase/supabase-js'
-import { supabase, Profile } from '../lib/supabase'
+import { supabase, Profile, initialAuthUrl } from '../lib/supabase'
 
 type AuthContextType = {
   session: Session | null
@@ -138,10 +138,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     console.log('[Auth] Initial session restore starting')
-    // Detect password recovery from URL hash OR query params before anything else
-    const urlHash = window.location.hash
-    const urlParams = new URLSearchParams(window.location.search)
-    const urlQuery = urlParams.get('type') || urlParams.get('type')
+    // Detect password recovery from URL hash OR query params before anything else.
+    // Use initialAuthUrl (captured before the Supabase client cleared the hash)
+    // because window.location.hash is already empty by the time this runs.
+    const urlHash = initialAuthUrl.hash
+    const urlParams = new URLSearchParams(initialAuthUrl.search)
+    const urlQuery = urlParams.get('type')
     if ((urlHash && urlHash.includes('type=recovery')) || urlQuery === 'recovery') {
       console.log('[Auth] Recovery token detected in URL')
       recoveryFromUrl.current = true

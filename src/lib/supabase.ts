@@ -7,6 +7,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase env vars. Check .env file.')
 }
 
+// Capture the initial URL hash/search BEFORE the Supabase client processes
+// and clears it (detectSessionInUrl: true). Used by AuthContext to detect
+// password recovery links that fire their event before we subscribe.
+export const initialAuthUrl = typeof window !== 'undefined'
+  ? { hash: window.location.hash, search: window.location.search }
+  : { hash: '', search: '' }
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,

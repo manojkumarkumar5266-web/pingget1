@@ -41,10 +41,11 @@ export default function ScanningPage() {
     const doScan = async () => {
       if (!profile?.gps_lat || !profile?.gps_lng) return
       try {
-        const { data } = await supabase.rpc('scan_nearby_dps', {
+        const { data } = await supabase.rpc('scan_nearby_dps_stats', {
           p_user_lat: profile.gps_lat,
           p_user_lng: profile.gps_lng,
           p_radius_meters: SCAN_RADIUS_KM * 1000,
+          p_request_id: requestId,
         })
         const row = data?.[0]
         const count = row?.dp_count ?? 0

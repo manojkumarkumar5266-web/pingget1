@@ -19,9 +19,7 @@ export function useGps(profileId: string | undefined, enabled = true) {
     }
 
     const saveGps = async (lat: number, lng: number) => {
-      await supabase.from('profiles')
-        .update({ gps_lat: lat, gps_lng: lng })
-        .eq('id', profileId)
+      await supabase.rpc('update_location', { p_lat: lat, p_lng: lng })
       setGps(prev => ({ ...prev, lat, lng, loading: false, error: null }))
     }
 

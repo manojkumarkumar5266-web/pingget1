@@ -155,54 +155,14 @@ export default function DpHome() {
   }
 
   const acceptRequest = async (req: RequestWithUser) => {
-    const { error } = await supabase.from('requests')
-      .update({ status: 'accepted', accepted_dp_id: profile!.id })
-      .eq('id', req.id).eq('status', 'pending')
-    if (error) { showToast('This request was already accepted by another delivery partner'); return }
-
-    const { data: existing } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).limit(1)
-    let roomId: string | undefined = existing?.[0]?.id
-    if (!roomId) {
-      const { data: room, error: roomError } = await supabase.from('chat_rooms')
-        .insert({ request_id: req.id, user_id: req.user_id, dp_id: profile!.id })
-        .select().single()
-      if (roomError || !room) { showToast('Failed to create chat room'); return }
-      roomId = room.id
+    const { data, error } = await supabase.rpc('accept_request', {
+      p_request_id: req.id, p_dp_user_id: profile!.id,
+    })
+    if (error || !data?.success) {
+      showToast(data?.error_msg || 'Failed to accept request')
+      return
     }
-
-    await supabase.from('messages').insert({
-      chat_room_id: roomId, sender_id: req.user_id, message_type: 'order_summary',
-      quotation_data: {
-        title: null, description: req.description,
-        preferred_shop: req.preferred_shop, pickup_address: req.pickup_address,
-        delivery_address: req.delivery_address, expected_time: req.expected_time,
-        photo_urls: req.photo_urls, voice_note_url: req.voice_note_url,
-        delivery_lat: req.delivery_lat, delivery_lng: req.delivery_lng,
-      },
-    })
-
-    const userName = req.user_profile?.full_name ? `Hi ${req.user_profile.full_name}! ` : 'Hello! '
-    await supabase.from('messages').insert({
-      chat_room_id: roomId, sender_id: profile!.id,
-      content: `${userName}I'm ${profile!.full_name} and I've accepted your delivery request. I can see your order details above — let me know if anything needs clarification and we'll get started!`,
-      message_type: 'text',
-    })
-
-    if (req.delivery_lat && req.delivery_lng) {
-      await supabase.from('messages').insert({
-        chat_room_id: roomId, sender_id: profile!.id,
-        content: req.delivery_address || 'Delivery location',
-        message_type: 'location', location_lat: req.delivery_lat, location_lng: req.delivery_lng,
-      })
-    }
-
-    await supabase.from('notifications').insert({
-      user_id: req.user_id, title: 'Request Accepted!',
-      body: `${profile!.full_name} accepted your request. Tap to open chat now.`,
-      type: 'request_accepted', related_id: req.id,
-    })
-
-    navigate(`/dp/chat/${roomId}`)
+    navigate(`/dp/chat/${data.chat_room_id}`)
   }
 
   const [pendingCommission, setPendingCommission] = useState(0)
