@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
 import { EmptyState, StatusBadge, ServiceStatusBanner } from '../../components/ui'
-import { formatTime, formatCurrency, haversineDistance, formatDistance } from '../../lib/utils'
-import { Package, Plus, Search, Clock, MapPin, TrendingUp, CheckCircle2, Bike, ChevronRight, Radar, Navigation, Loader2, Zap } from 'lucide-react'
+import { formatTime, formatCurrency } from '../../lib/utils'
+import { Package, Plus, Clock, MapPin, CheckCircle2, Bike, ChevronRight } from 'lucide-react'
 
 export default function UserHome() {
   const { profile } = useAuth()
@@ -13,11 +13,6 @@ export default function UserHome() {
   const [recentCompleted, setRecentCompleted] = useState<DeliveryRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ total: 0, completed: 0, active: 0 })
-
-  // Rapido-style nearby DP scanning
-  const [scanning, setScanning] = useState(false)
-  const [scanResult, setScanResult] = useState<{ dpCount: number; avgDistance: number } | null>(null)
-  const [scanRadius, setScanRadius] = useState(5) // km
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -60,33 +55,6 @@ export default function UserHome() {
 
     return () => { supabase.removeChannel(channel) }
   }, [profile])
-
-  // Rapido-style nearby DP scanning
-  const scanForDps = async () => {
-    if (!profile?.gps_lat || !profile?.gps_lng) {
-      setScanResult({ dpCount: 0, avgDistance: 0 })
-      return
-    }
-    setScanning(true)
-    setScanResult(null)
-    try {
-      const { data, error } = await supabase.rpc('scan_nearby_dps', {
-        p_user_lat: profile.gps_lat,
-        p_user_lng: profile.gps_lng,
-        p_radius_meters: scanRadius * 1000
-      })
-      if (error) throw error
-      if (data && data.length > 0) {
-        setScanResult({ dpCount: data[0].dp_count, avgDistance: data[0].avg_distance_meters })
-      } else {
-        setScanResult({ dpCount: 0, avgDistance: 0 })
-      }
-    } catch (e: any) {
-      setScanResult({ dpCount: 0, avgDistance: 0 })
-    } finally {
-      setScanning(false)
-    }
-  }
 
   const statusSteps: Record<string, number> = {
     pending: 0, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
@@ -138,111 +106,6 @@ export default function UserHome() {
           >
             <Plus size={18} /> New Delivery Request
           </button>
-        </div>
-      </div>
-
-      {/* Rapido-style Nearby DP Scanner */}
-      <div className="mb-6 card p-5 animate-slide-up">
-        <div className="mb-3 flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(128,128,0,0.3), rgba(96,96,0,0.3))' }}>
-            <Radar size={16} style={{ color: '#808000' }} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-white">Find Nearby Partners</h3>
-            <p className="text-xs text-white/50">Scan for available delivery partners around you</p>
-          </div>
-        </div>
-
-        {/* Radius selector */}
-        <div className="mb-3 flex flex-wrap gap-2">
-          {[1, 2, 3, 5, 7, 10].map(km => (
-            <button
-              key={km}
-              type="button"
-              onClick={() => setScanRadius(km)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95 ${scanRadius === km ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
-              style={scanRadius === km
-                ? { background: 'linear-gradient(135deg, #808000, #606000)' }
-                : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              {km} km
-            </button>
-          ))}
-        </div>
-
-        {/* Scan button */}
-        <button
-          type="button"
-          onClick={scanForDps}
-          disabled={scanning}
-          className="w-full rounded-xl py-3 text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-60"
-          style={{ background: scanning ? 'rgba(128,128,0,0.3)' : 'linear-gradient(135deg, #808000, #606000)' }}
-        >
-          {scanning ? (
-            <span className="flex items-center justify-center gap-2">
-              <Loader2 size={16} className="animate-spin" /> Scanning...
-            </span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <Zap size={16} /> Scan Now
-            </span>
-          )}
-        </button>
-
-        {/* Scan results */}
-        {scanResult && !scanning && (
-          <div className="mt-3 rounded-xl p-4 animate-fade-in" style={{
-            background: scanResult.dpCount > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${scanResult.dpCount > 0 ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.1)'}`
-          }}>
-            {scanResult.dpCount > 0 ? (
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" style={{ background: 'rgba(16,185,129,0.2)' }}>
-                  <Bike size={20} className="text-green-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-white">
-                    {scanResult.dpCount} {scanResult.dpCount === 1 ? 'partner' : 'partners'} available!
-                  </p>
-                  <p className="text-xs text-white/50">
-                    {scanResult.avgDistance > 0 ? `Avg distance: ${formatDistance(scanResult.avgDistance)}` : 'Nearby and ready to deliver'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => navigate('/app/create')}
-                  className="rounded-lg px-3 py-2 text-xs font-bold text-white transition-all active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}
-                >
-                  Request Now
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                  <Navigation size={20} className="text-white/40" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-white">No partners nearby</p>
-                  <p className="text-xs text-white/50">
-                    {!profile?.gps_lat ? 'Enable location access to scan accurately' : `No online partners within ${scanRadius} km. Try increasing the radius.`}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* GPS status indicator */}
-        <div className="mt-2 flex items-center gap-1.5 text-xs">
-          {profile?.gps_lat ? (
-            <span className="flex items-center gap-1 text-green-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" /> Location detected
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-white/40">
-              <span className="h-1.5 w-1.5 rounded-full bg-white/30" /> Waiting for location...
-            </span>
-          )}
         </div>
       </div>
 

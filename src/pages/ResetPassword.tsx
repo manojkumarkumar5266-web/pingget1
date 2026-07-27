@@ -15,11 +15,11 @@ export default function ResetPassword() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  // Wait up to 4s for the PASSWORD_RECOVERY event before declaring expired
+  // Wait up to 8s for the PASSWORD_RECOVERY event before declaring expired
   const [waited, setWaited] = useState(false)
 
   useEffect(() => {
-    const t = setTimeout(() => setWaited(true), 4000)
+    const t = setTimeout(() => setWaited(true), 8000)
     return () => clearTimeout(t)
   }, [])
 

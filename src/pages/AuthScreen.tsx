@@ -389,9 +389,15 @@ export default function AuthScreen() {
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), { redirectTo: `${window.location.origin}/reset-password` })
       if (resetError) {
-        try { await supabase.functions.invoke('send-email', { body: { to: resetEmail.trim(), type: 'password_reset', data: { name: '', reset_url: `${window.location.origin}/reset-password` } } }) } catch { /* fallback */ }
+        setError(resetError.message)
+        setLoading(false)
+        return
       }
-    } catch { /* best effort */ }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email')
+      setLoading(false)
+      return
+    }
     setLoading(false); setResetSent(true)
   }
 

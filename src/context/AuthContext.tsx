@@ -40,6 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const googleResolvingRef = useRef(false)
   // Track if we've seen the initial session
   const initialSessionDone = useRef(false)
+  // Track if we've detected a recovery token from the URL
+  const recoveryFromUrl = useRef(false)
 
   const loadProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     if (profileLoadingRef.current) {
@@ -136,10 +138,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     console.log('[Auth] Initial session restore starting')
-    // Detect password recovery from URL hash before anything else
+    // Detect password recovery from URL hash OR query params before anything else
     const urlHash = window.location.hash
-    if (urlHash && urlHash.includes('type=recovery')) {
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlQuery = urlParams.get('type') || urlParams.get('type')
+    if ((urlHash && urlHash.includes('type=recovery')) || urlQuery === 'recovery') {
       console.log('[Auth] Recovery token detected in URL')
+      recoveryFromUrl.current = true
+      passwordRecoveryRef.current = true
       setPasswordRecovery(true)
     }
 
