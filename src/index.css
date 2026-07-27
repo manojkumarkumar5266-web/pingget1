@@ -171,3 +171,44 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in-up { animation: fade-in-up 0.4s ease-out both; }
+
+/* Modern range slider for DP service range */
+.dp-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+.dp-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #808000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.dp-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.dp-range-slider::-webkit-slider-thumb:active {
+  transform: scale(1.25);
+}
+.dp-range-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #808000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.dp-range-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+}

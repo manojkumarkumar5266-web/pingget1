@@ -219,10 +219,10 @@ export default function DpHome() {
   }
 
   const rangeMeters = rangeKm * 1000
+  // Filter requests by distance — only show requests within the DP's selected range.
+  // If GPS isn't available yet, show all requests so DPs don't miss orders while waiting.
   const filtered = requests.filter(r => {
     const dist = getDistance(r)
-    // If we can't compute distance (no GPS yet), show the request anyway
-    // so the DP doesn't miss orders while waiting for location.
     if (dist === null) return true
     return dist <= rangeMeters
   })
@@ -334,29 +334,46 @@ export default function DpHome() {
 
       {/* Service Range */}
       <div className="mb-4 card p-4 animate-slide-up">
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-white/50">
             <Sliders size={13} /> Service range
           </div>
-          <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{rangeKm} km</span>
+          <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">{rangeKm}<span className="text-sm font-medium text-white/40 ml-0.5">km</span></span>
         </div>
-        <input
-          type="range" min={1} max={50} step={1} value={rangeKm}
-          onChange={e => setRangeKm(Number(e.target.value))}
-          onMouseUp={(e: any) => changeRange(Number(e.target.value))}
-          onTouchEnd={(e: any) => changeRange(Number(e.target.value))}
-          className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700 accent-primary-600"
-        />
-        <div className="mt-1 flex justify-between text-[10px] text-white/40">
-          <span>1 km</span><span>25 km</span><span>50 km</span>
+        {/* Modern slider with gradient track */}
+        <div className="relative mb-3">
+          <input
+            type="range" min={1} max={10} step={1} value={rangeKm}
+            onChange={e => setRangeKm(Number(e.target.value))}
+            onMouseUp={(e: any) => changeRange(Number(e.target.value))}
+            onTouchEnd={(e: any) => changeRange(Number(e.target.value))}
+            className="dp-range-slider w-full"
+            style={{ background: `linear-gradient(to right, #808000 0%, #808000 ${((rangeKm - 1) / 9) * 100}%, rgba(255,255,255,0.1) ${((rangeKm - 1) / 9) * 100}%, rgba(255,255,255,0.1) 100%)` }}
+          />
+        </div>
+        {/* Preset chips */}
+        <div className="flex flex-wrap gap-2">
+          {[1, 2, 3, 5, 7, 10].map(km => (
+            <button
+              key={km}
+              type="button"
+              onClick={() => { setRangeKm(km); changeRange(km) }}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95 ${rangeKm === km ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
+              style={rangeKm === km
+                ? { background: 'linear-gradient(135deg, #808000, #606000)' }
+                : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+            >
+              {km} km
+            </button>
+          ))}
         </div>
         {profile?.gps_lat ? (
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-success-600 dark:text-success-400">
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-success-600 dark:text-success-400">
             <MapPin size={12} className="shrink-0" />
-            <span>Location auto-detected: {profile.gps_lat.toFixed(4)}, {profile.gps_lng!.toFixed(4)}</span>
+            <span>Location: {profile.gps_lat.toFixed(4)}, {profile.gps_lng!.toFixed(4)}</span>
           </div>
         ) : (
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-warning-600 dark:text-warning-400">
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-warning-600 dark:text-warning-400">
             <Navigation size={12} className="shrink-0 animate-pulse" />
             <span>Waiting for GPS location... Allow location access.</span>
           </div>
@@ -366,8 +383,8 @@ export default function DpHome() {
       {/* Nearby Requests */}
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="text-base font-bold text-white">Nearby Requests</h3>
-          <p className="text-xs text-white/50">{filtered.length} within {rangeKm} km</p>
+          <h3 className="text-base font-bold text-white">Available Requests</h3>
+          <p className="text-xs text-white/50">{filtered.length} within {rangeKm} km {filtered.length === 1 ? 'request' : 'requests'}</p>
         </div>
         {savingRange && <span className="text-xs text-white/40 animate-pulse">Saving...</span>}
       </div>
@@ -375,8 +392,8 @@ export default function DpHome() {
       {loading ? (
         <div className="space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<Package size={48} />} title="No requests in your range"
-          description={gps.loading ? 'Waiting for GPS location... Allow location access.' : `No pending requests within ${rangeKm} km. Increase your range to see more.`} />
+        <EmptyState icon={<Package size={48} />} title="No requests in range"
+          description={gps.loading ? 'Waiting for GPS location... Allow location access.' : `No pending requests within ${rangeKm} km. Try increasing your range.`} />
       ) : (
         <div className="space-y-3">
           {filtered.map((req, i) => {

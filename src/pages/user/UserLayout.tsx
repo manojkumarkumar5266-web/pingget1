@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import Brand from '../../components/Brand'
 import Watermark from '../../components/Watermark'
+import { useGps } from '../../hooks/useGps'
 
 type AcceptedToast = { requestId: string; body: string }
 
@@ -15,6 +16,9 @@ export default function UserLayout() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [acceptedToast, setAcceptedToast] = useState<AcceptedToast | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Auto-detect GPS in the background whenever the user opens the app
+  useGps(profile?.id, !!profile)
 
   const showToast = (toast: AcceptedToast) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)

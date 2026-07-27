@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [passwordRecovery, setPasswordRecovery] = useState(false)
+  const passwordRecoveryRef = useRef(false)
   const [oauthResolving, setOauthResolving] = useState(false)
 
   // Set by signUpWithEmail so onAuthStateChange knows to wait for the
@@ -35,6 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signupInProgress = useRef(false)
   // Prevent duplicate profile loads racing against each other
   const profileLoadingRef = useRef(false)
+  // Prevent duplicate Google profile resolution calls
+  const googleResolvingRef = useRef(false)
+  // Track if we've seen the initial session
+  const initialSessionDone = useRef(false)
 
   const loadProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     if (profileLoadingRef.current) {
@@ -78,6 +83,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // changing the primary key of a profile row requires service-role access.
   const resolveGoogleProfile = useCallback(async (user: User): Promise<Profile | null> => {
     if (user.app_metadata?.provider !== 'google') return null
+    // Prevent duplicate calls — both getSession() and onAuthStateChange may fire
+    if (googleResolvingRef.current) {
+      console.log('[Auth] resolveGoogleProfile skipped — already resolving')
+      return null
+    }
+    googleResolvingRef.current = true
     setOauthResolving(true)
     const role = sessionStorage.getItem('pingget_oauth_role') as 'user' | 'dp' | null
     const mode = sessionStorage.getItem('pingget_oauth_mode') as 'signup' | 'signin' | null
@@ -99,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut()
         setProfile(null)
         setOauthResolving(false)
+        googleResolvingRef.current = false
         return null
       }
       sessionStorage.removeItem('pingget_oauth_role')
@@ -107,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(p)
       console.log('[Auth] Google profile resolved:', p ? `role=${p.role} status=${p.status}` : 'null')
       setOauthResolving(false)
+      googleResolvingRef.current = false
       return p
     } catch (e) {
       console.error('[Auth] link-google-account exception:', e)
@@ -116,16 +129,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut()
       setProfile(null)
       setOauthResolving(false)
+      googleResolvingRef.current = false
       return null
     }
   }, [])
 
   useEffect(() => {
     console.log('[Auth] Initial session restore starting')
+    // Detect password recovery from URL hash before anything else
+    const urlHash = window.location.hash
+    if (urlHash && urlHash.includes('type=recovery')) {
+      console.log('[Auth] Recovery token detected in URL')
+      setPasswordRecovery(true)
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('[Auth] Session restore:', session?.user?.id || 'no session')
+      initialSessionDone.current = true
       setSession(session)
       if (session?.user) {
+        // Don't load profile during password recovery
+        if (passwordRecoveryRef.current) {
+          console.log('[Auth] Password recovery in progress, skipping profile load')
+          setLoading(false)
+          return
+        }
         if (session.user.app_metadata?.provider === 'google') {
           await resolveGoogleProfile(session.user)
         } else {
@@ -148,13 +176,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event === 'PASSWORD_RECOVERY') {
         console.log('[Auth] Password recovery event')
-        setSession(session)
+        passwordRecoveryRef.current = true
         setPasswordRecovery(true)
-        if (session?.user) {
-          loadProfile(session.user.id).finally(() => setLoading(false))
-        } else {
-          setLoading(false)
-        }
+        setSession(session)
+        // Don't load profile during recovery — the recovery user may not have one
+        setLoading(false)
         return
       }
 
@@ -164,6 +190,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('[Auth] Signed out event')
         setProfile(null)
         setPasswordRecovery(false)
+        passwordRecoveryRef.current = false
+        setLoading(false)
+        return
+      }
+
+      // If password recovery is in progress, ignore SIGNED_IN events
+      if (passwordRecoveryRef.current) {
+        console.log('[Auth] Password recovery in progress, ignoring', event)
         setLoading(false)
         return
       }
@@ -175,6 +209,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('[Auth] Signup in progress, skipping profile load')
           setSession(session)
           setLoading(false)
+          return
+        }
+        // Skip if initial session hasn't been processed yet (avoids double-load race)
+        if (!initialSessionDone.current) {
+          console.log('[Auth] Initial session not done yet, skipping')
           return
         }
         setLoading(true)
@@ -260,7 +299,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }
 
-  const clearPasswordRecovery = () => setPasswordRecovery(false)
+  const clearPasswordRecovery = () => { setPasswordRecovery(false); passwordRecoveryRef.current = false }
   const clearOauthError = () => setOauthError(null)
 
   return (

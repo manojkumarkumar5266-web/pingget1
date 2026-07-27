@@ -7,9 +7,12 @@ import { FullScreenLoader } from '../../components/ui'
 import { formatCurrency } from '../../lib/utils'
 import Brand from '../../components/Brand'
 import Watermark from '../../components/Watermark'
+import { useGps } from '../../hooks/useGps'
 
 export default function DpLayout() {
   const { profile, signOut } = useAuth()
+  // Auto-detect GPS in the background whenever the DP opens the app
+  useGps(profile?.id, !!profile)
   const navigate = useNavigate()
   const location = useLocation()
   const [dp, setDp] = useState<DeliveryPartner | null>(null)
