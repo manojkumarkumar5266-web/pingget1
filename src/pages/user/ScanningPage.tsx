@@ -71,8 +71,9 @@ export default function ScanningPage() {
           if (scanRef.current) clearInterval(scanRef.current)
           setPhase(count > 0 ? 'found' : 'none')
         }
-      } catch { /* ignore */ }
-    }
+      } catch (error) {
+  console.error("scan_nearby_dps_stats failed", error);
+}
 
     doScan()
     scanRef.current = setInterval(doScan, SCAN_INTERVAL_MS)
