@@ -140,7 +140,7 @@ export default function CreateRequest() {
 
       const voiceUrl = voiceBlob ? await uploadToStorage(voiceBlob, `requests/${profile!.id}/${ts}-voice.webm`) : null
 
-      const { error } = await supabase.from('requests').insert({
+      const { data: inserted, error } = await supabase.from('requests').insert({
         user_id: profile!.id,
         description: description.trim(),
         photo_urls: photoUrls.length > 0 ? photoUrls : null,
@@ -148,12 +148,14 @@ export default function CreateRequest() {
         preferred_shop: preferredShop.trim() || null,
         pickup_address: pickupAddress.trim() || null,
         delivery_address: profile?.address || null,
+        // Save user GPS as BOTH pickup and delivery coords so DPs can compute distance
+        pickup_lat: gpsLat, pickup_lng: gpsLng,
         delivery_lat: gpsLat, delivery_lng: gpsLng,
         expected_time: null, max_budget: null, special_instructions: null,
         radius_meters: 0, status: 'pending',
-      })
+      }).select('id').single()
       if (error) throw error
-      navigate('/app/orders')
+      navigate(`/app/scanning/${inserted.id}`)
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
   }
 

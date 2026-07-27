@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import UserLayout from './UserLayout'
 import UserHome from './UserHome'
 import CreateRequest from './CreateRequest'
+import ScanningPage from './ScanningPage'
 import UserOrders from './UserOrders'
 import ChatScreen from '../shared/ChatScreen'
 import UserProfile from './UserProfile'
@@ -13,6 +14,7 @@ export default function UserApp() {
       <Route element={<UserLayout />}>
         <Route path="/" element={<UserHome />} />
         <Route path="/create" element={<CreateRequest />} />
+        <Route path="/scanning/:requestId" element={<ScanningPage />} />
         <Route path="/orders" element={<UserOrders />} />
         <Route path="/notifications" element={<UserNotifications />} />
         <Route path="/profile" element={<UserProfile />} />

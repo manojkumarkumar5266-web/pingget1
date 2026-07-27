@@ -211,11 +211,13 @@ export default function DpHome() {
   const getDistance = (req: DeliveryRequest): number | null => {
     const lat = gps.lat ?? profile?.gps_lat
     const lng = gps.lng ?? profile?.gps_lng
-    // Try delivery location first, fall back to pickup location
-    const targetLat = req.delivery_lat ?? req.pickup_lat
-    const targetLng = req.delivery_lng ?? req.pickup_lng
-    if (!lat || !lng || !targetLat || !targetLng) return null
-    return haversineDistance(lat, lng, targetLat, targetLng)
+    const r = req as RequestWithUser
+    // Use the user's live GPS from their profile (most accurate), then fall back to
+    // the request's saved coordinates (pickup_lat = user GPS at submit time).
+    const userLat = r.user_profile?.gps_lat ?? req.pickup_lat ?? req.delivery_lat
+    const userLng = r.user_profile?.gps_lng ?? req.pickup_lng ?? req.delivery_lng
+    if (!lat || !lng || !userLat || !userLng) return null
+    return haversineDistance(lat, lng, userLat, userLng)
   }
 
   const rangeMeters = rangeKm * 1000
