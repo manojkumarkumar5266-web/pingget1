@@ -3,13 +3,27 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { formatDistance } from '../../lib/utils'
-import { CheckCircle2, ChevronRight, Bike, X } from 'lucide-react'
+import { CheckCircle2, ChevronRight, X, Bike, Car, Truck } from 'lucide-react'
 
-type DpDot = { id: string; angle: number; radius: number; dist: number }
+type DpSpot = {
+  id: string
+  angle: number
+  radius: number
+  dist: number
+  vehicle_type: string | null
+}
 
 const SCAN_RADIUS_KM = 5
 const SCAN_INTERVAL_MS = 3500
 const MAX_SCANS = 6
+
+function vehicleIcon(vehicleType: string | null) {
+  const v = (vehicleType || '').toLowerCase()
+  if (v === 'bicycle') return Bike
+  if (v === 'motorbike' || v === 'scooter' || v === 'auto') return Bike
+  if (v === 'car') return Car
+  return Truck
+}
 
 export default function ScanningPage() {
   const { requestId } = useParams<{ requestId: string }>()
@@ -19,7 +33,7 @@ export default function ScanningPage() {
   const [phase, setPhase] = useState<'scanning' | 'found' | 'none'>('scanning')
   const [dpCount, setDpCount] = useState(0)
   const [avgDist, setAvgDist] = useState(0)
-  const [dots, setDots] = useState<DpDot[]>([])
+  const [spots, setSpots] = useState<DpSpot[]>([])
   const [scanAngle, setScanAngle] = useState(0)
   const [scanCount, setScanCount] = useState(0)
   const [requestCancelled, setRequestCancelled] = useState(false)
@@ -36,34 +50,47 @@ export default function ScanningPage() {
     return () => { if (sweepRef.current) clearInterval(sweepRef.current) }
   }, [])
 
-  // Scan for DPs
+  // Scan for nearby DPs — fetch actual positions + vehicle types
   useEffect(() => {
     const doScan = async () => {
       if (!profile?.gps_lat || !profile?.gps_lng) return
       try {
-        const { data } = await supabase.rpc('scan_nearby_dps_stats', {
+        const { data } = await supabase.rpc('scan_nearby_dps', {
           p_user_lat: profile.gps_lat,
           p_user_lng: profile.gps_lng,
           p_radius_meters: SCAN_RADIUS_KM * 1000,
           p_request_id: requestId,
         })
-        const row = data?.[0]
-        const count = row?.dp_count ?? 0
-        const avg = row?.avg_distance_meters ?? 0
+        const dps = (data as any[]) || []
+        const count = dps.length
+        const avg = count > 0
+          ? dps.reduce((s, d) => s + Number(d.distance_meters || 0), 0) / count
+          : 0
         setDpCount(count)
         setAvgDist(avg)
         scanCountRef.current += 1
         setScanCount(scanCountRef.current)
 
-        // Generate dot positions for found DPs
+        // Map actual DPs to radar spots with deterministic-ish positions
         if (count > 0) {
-          const newDots: DpDot[] = Array.from({ length: Math.min(count, 8) }, (_, i) => ({
-            id: `dp-${i}`,
-            angle: (i * (360 / Math.min(count, 8)) + Math.random() * 30) % 360,
-            radius: 35 + Math.random() * 40,
-            dist: avg * (0.7 + Math.random() * 0.6),
-          }))
-          setDots(newDots)
+          const newSpots: DpSpot[] = dps.slice(0, 8).map((d, i) => {
+            const dist = Number(d.distance_meters || 0)
+            const maxDist = SCAN_RADIUS_KM * 1000
+            // scale distance to radar radius (35%–90% of r)
+            const radiusPct = maxDist > 0
+              ? 35 + Math.min(55, (dist / maxDist) * 55)
+              : 50
+            return {
+              id: d.dp_user_id || `dp-${i}`,
+              angle: (i * (360 / Math.min(count, 8)) + (dist % 30)) % 360,
+              radius: radiusPct,
+              dist,
+              vehicle_type: d.vehicle_type || null,
+            }
+          })
+          setSpots(newSpots)
+        } else {
+          setSpots([])
         }
 
         if (scanCountRef.current >= MAX_SCANS) {
@@ -72,14 +99,14 @@ export default function ScanningPage() {
           setPhase(count > 0 ? 'found' : 'none')
         }
       } catch (error) {
-        console.error("scan_nearby_dps_stats failed", error);
+        console.error("scan_nearby_dps failed", error)
       }
     }
 
     doScan()
     scanRef.current = setInterval(doScan, SCAN_INTERVAL_MS)
     return () => { if (scanRef.current) clearInterval(scanRef.current) }
-  }, [profile])
+  }, [profile, requestId])
 
   const cancelRequest = async () => {
     if (!requestId) return
@@ -90,7 +117,7 @@ export default function ScanningPage() {
 
   const viewOrder = () => navigate('/app/orders')
 
-  const size = 280 // radar circle diameter
+  const size = 280
   const cx = size / 2
   const cy = size / 2
   const r = size / 2 - 10
@@ -138,8 +165,8 @@ export default function ScanningPage() {
           {/* Sweep gradient */}
           <defs>
             <radialGradient id="sweepGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#809000" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#809000" stopOpacity="0" />
+              <stop offset="0%" stopColor="#809000" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#809000" stopOpacity={0} />
             </radialGradient>
           </defs>
 
@@ -164,17 +191,24 @@ export default function ScanningPage() {
               stroke="#a0b800" strokeWidth={2} opacity={0.8} />
           )}
 
-          {/* DP dots */}
-          {dots.map(dot => {
-            const rad = (dot.angle * Math.PI) / 180
-            const dr = (dot.radius / 100) * r
+          {/* DP vehicle markers */}
+          {spots.map(spot => {
+            const rad = (spot.angle * Math.PI) / 180
+            const dr = (spot.radius / 100) * r
             const dx = cx + dr * Math.cos(rad)
             const dy = cy + dr * Math.sin(rad)
+            const Icon = vehicleIcon(spot.vehicle_type)
             return (
-              <g key={dot.id}>
-                <circle cx={dx} cy={dy} r={6} fill="#ffd700" opacity={0.9} />
-                <circle cx={dx} cy={dy} r={10} fill="none" stroke="#ffd700"
-                  strokeWidth={1.5} opacity={0.4} />
+              <g key={spot.id}>
+                {/* Glow ring */}
+                <circle cx={dx} cy={dy} r={13} fill="none"
+                  stroke="#809000" strokeWidth={1.5} opacity={0.4} />
+                {/* Background circle for the icon */}
+                <circle cx={dx} cy={dy} r={10} fill="#809000" opacity={0.9} />
+                {/* Vehicle icon */}
+                <g transform={`translate(${dx - 8}, ${dy - 8}) scale(0.66)`}>
+                  <Icon size={24} className="text-white" strokeWidth={2.5} />
+                </g>
               </g>
             )
           })}
@@ -198,6 +232,20 @@ export default function ScanningPage() {
           ))}
         </div>
       </div>
+
+      {/* Vehicle legend */}
+      {spots.length > 0 && (
+        <div className="flex flex-wrap items-center justify-center gap-3 px-5">
+          {Array.from(new Set(spots.map(s => s.vehicle_type || 'Vehicle'))).map(v => {
+            const Icon = vehicleIcon(v)
+            return (
+              <div key={v} className="flex items-center gap-1.5 text-xs text-white/50">
+                <Icon size={14} className="text-[#a0b800]" /> {v}
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Bottom status panel */}
       <div className="w-full max-w-md px-5 pb-10">
