@@ -155,7 +155,7 @@ export default function CreateRequest() {
         radius_meters: 0, status: 'pending',
       }).select('id').single()
       if (error) throw error
-      navigate(`/app/scanning/${inserted.id}`)
+      navigate(`/app/searching/${inserted.id}`)
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
   }
 
