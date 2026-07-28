@@ -155,6 +155,34 @@ export type Notification = {
   related_id: string | null
   is_read: boolean
   created_at: string
+  image_url: string | null
+  route: string | null
+  entity_id: string | null
+  notification_type: string | null
+  read_at: string | null
+  deleted_at: string | null
+}
+
+export type DeviceToken = {
+  id: string
+  user_id: string
+  token: string
+  platform: string
+  app_version: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type NotificationDeliveryLog = {
+  id: string
+  notification_id: string | null
+  device_token_id: string | null
+  token: string | null
+  status: string
+  error_message: string | null
+  fcm_message_id: string | null
+  created_at: string
 }
 
 export type Wallet = {
