@@ -32,6 +32,15 @@ export default function AdminDps() {
 
   useEffect(() => { fetchDps(filter) }, [filter])
 
+  // Realtime: listen for new/updated delivery partners and profiles
+  useEffect(() => {
+    const channel = supabase.channel('admin-dps-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_partners' }, () => fetchDps(filter))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchDps(filter))
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [filter])
+
   const updateStatus = async (dp: DpWithProfile, newStatus: 'approved' | 'rejected') => {
     const { error } = await supabase.from('delivery_partners').update({ status: newStatus }).eq('id', dp.id)
     if (!error) {

@@ -6,6 +6,8 @@ import { supabase } from '../../lib/supabase'
 import Brand from '../../components/Brand'
 import Watermark from '../../components/Watermark'
 import { useGps } from '../../hooks/useGps'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
+import { NotificationBadge } from '../../components/NotificationBadge'
 
 type AcceptedToast = { requestId: string; body: string }
 
@@ -19,6 +21,9 @@ export default function UserLayout() {
 
   // Auto-detect GPS in the background whenever the user opens the app
   useGps(profile?.id, !!profile)
+
+  // FCM push notifications: register device, listen for taps, track unread count
+  usePushNotifications()
 
   const showToast = (toast: AcceptedToast) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)

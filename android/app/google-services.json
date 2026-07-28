@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "867983892189",
+    "project_id": "pingget-fe189",
+    "storage_bucket": "pingget-fe189.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867983892189:android:09662fd6c07791f639c534",
+        "android_client_info": {
+          "package_name": "com.pingget.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0QlPf2yEk_aC2IOwzFnVwggk4_9Upjf4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

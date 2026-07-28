@@ -5,9 +5,13 @@ import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, User
 import Watermark from '../../components/Watermark'
 import Brand from '../../components/Brand'
 import { useEffect, useState } from 'react'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 export default function AdminLayout() {
   const { profile, signOut } = useAuth()
+
+  // FCM push notifications: register device, listen for taps, track unread count
+  usePushNotifications()
   const navigate = useNavigate()
   const location = useLocation()
   const [unreadCount, setUnreadCount] = useState(0)
@@ -42,6 +46,7 @@ export default function AdminLayout() {
     { path: '/admin/cities', label: 'Cities', icon: MapPin, badge: 0 },
     { path: '/admin/orders', label: 'Orders', icon: ClipboardList, badge: 0 },
     { path: '/admin/payments', label: 'Payments', icon: CreditCard, badge: pendingReceipts },
+    { path: '/admin/notifications', label: 'Notify', icon: Bell, badge: 0 },
   ]
 
   const isActive = (path: string) => location.pathname === path

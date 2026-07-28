@@ -22,6 +22,13 @@ export default function AdminOrders() {
       setLoading(false)
     }
     fetchOrders()
+
+    // Realtime: listen for new/updated orders
+    const channel = supabase.channel('admin-orders-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => fetchOrders())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   const filtered = orders.filter(o =>

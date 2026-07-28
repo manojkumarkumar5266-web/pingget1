@@ -8,11 +8,15 @@ import { formatCurrency } from '../../lib/utils'
 import Brand from '../../components/Brand'
 import Watermark from '../../components/Watermark'
 import { useGps } from '../../hooks/useGps'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 export default function DpLayout() {
   const { profile, signOut } = useAuth()
   // Auto-detect GPS in the background whenever the DP opens the app
   useGps(profile?.id, !!profile)
+
+  // FCM push notifications: register device, listen for taps, track unread count
+  usePushNotifications()
   const navigate = useNavigate()
   const location = useLocation()
   const [dp, setDp] = useState<DeliveryPartner | null>(null)
@@ -28,6 +32,19 @@ export default function DpLayout() {
       setDpLoaded(true)
     }
     fetchDp()
+
+    // Realtime: listen for changes to this DP's record (online/offline toggle by admin, status changes)
+    const channel = supabase.channel(`dp-layout-${profile!.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'delivery_partners',
+        filter: `user_id=eq.${profile!.id}`,
+      }, (payload: any) => {
+        if (payload.new) setDp(payload.new as DeliveryPartner)
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [profile])
 
   useEffect(() => {
@@ -46,6 +63,17 @@ export default function DpLayout() {
       setReceiptRejected((rejectedRes.data?.length ?? 0) > 0)
     }
     checkCommission()
+
+    // Realtime: listen for commission receipt status changes (admin confirm/reject)
+    const channel = supabase.channel(`dp-commission-${profile.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'dp_commission_receipts',
+        filter: `dp_user_id=eq.${profile.id}`,
+      }, () => checkCommission())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [dpLoaded, profile])
 
   if (!dpLoaded) return <FullScreenLoader />

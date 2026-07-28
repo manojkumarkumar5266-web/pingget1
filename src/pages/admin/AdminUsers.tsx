@@ -37,6 +37,14 @@ export default function AdminUsers() {
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
 
+  // Realtime: listen for profile status changes (new users, suspensions, etc.)
+  useEffect(() => {
+    const channel = supabase.channel('admin-users-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchUsers())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [fetchUsers])
+
   const updateStatus = async (user: Profile, newStatus: 'active' | 'suspended' | 'banned') => {
     setUpdating(user.id)
     const { error } = await supabase.from('profiles').update({ status: newStatus }).eq('id', user.id)

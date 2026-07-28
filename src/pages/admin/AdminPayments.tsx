@@ -121,6 +121,16 @@ export default function AdminPayments() {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
+  // Realtime: listen for new/updated receipts and orders so admin sees live updates
+  useEffect(() => {
+    const channel = supabase.channel('admin-payments-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dp_commission_receipts' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'commission_payments' }, () => fetchAll())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [fetchAll])
+
   const saveAdminUpi = async () => {
     setSavingUpi(true)
     await supabase.from('app_settings').upsert({ key: 'admin_upi_id', value: adminUpi })

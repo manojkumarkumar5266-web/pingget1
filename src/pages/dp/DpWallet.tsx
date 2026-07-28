@@ -35,6 +35,17 @@ export default function DpWallet() {
       setLoading(false)
     }
     fetchAll()
+
+    // Realtime: listen for receipt status changes (admin confirms/rejects payment)
+    const channel = supabase.channel(`dp-wallet-${profile!.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'dp_commission_receipts',
+        filter: `dp_user_id=eq.${profile!.id}`,
+      }, () => fetchAll())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [profile])
 
   const submitReceipt = async (amount: number, upiRef: string, screenshotFile: File) => {
