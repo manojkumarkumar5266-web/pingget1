@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile } from '../../lib/supabase'
 import { EmptyState, StatusBadge, Avatar } from '../../components/ui'
 import { formatTime, formatCurrency, STATUS_LABELS } from '../../lib/utils'
-import { ClipboardList, Clock, MapPin, Repeat, MessageCircle, PackageCheck, Lock, Bike, Camera } from 'lucide-react'
+import { ClipboardList, Clock, MapPin, Repeat, MessageCircle, PackageCheck, Lock, Bike, Camera, XCircle } from 'lucide-react'
 import DeliveryProofUploader from '../../components/DeliveryProofUploader'
 
 type Tab = 'active' | 'completed' | 'cancelled'
@@ -19,6 +19,7 @@ export default function UserOrders() {
   const [orders, setOrders] = useState<RequestWithDp[]>([])
   const [loading, setLoading] = useState(true)
   const [confirming, setConfirming] = useState<string | null>(null)
+  const [updating, setUpdating] = useState<string | null>(null)
   const [proofReqId, setProofReqId] = useState<string | null>(null)
 
   const fetchOrders = useCallback(async () => {
@@ -97,6 +98,14 @@ export default function UserOrders() {
       related_id: req.id,
     })
     setConfirming(null)
+    fetchOrders()
+  }
+
+  const cancelRequest = async (req: DeliveryRequest) => {
+    if (!confirm('Cancel this request? This cannot be undone.')) return
+    setUpdating(req.id)
+    await supabase.from('requests').update({ status: 'cancelled' }).eq('id', req.id)
+    setUpdating(null)
     fetchOrders()
   }
 
@@ -224,6 +233,17 @@ export default function UserOrders() {
                       className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-success-600 py-3 text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-60">
                       <PackageCheck size={18} />
                       {isConfirming ? 'Confirming...' : 'Confirm & Accept Delivery'}
+                    </button>
+                  )}
+
+                  {req.status === 'pending' && (
+                    <button
+                      onClick={() => cancelRequest(req)}
+                      disabled={updating === req.id}
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-error-200 bg-error-50 py-2.5 text-sm font-semibold text-error-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-error-900/40 dark:bg-error-950/30 dark:text-error-300"
+                    >
+                      <XCircle size={16} />
+                      {updating === req.id ? 'Cancelling...' : 'Cancel Request'}
                     </button>
                   )}
 

@@ -57,4 +57,9 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION scan_nearby_dps TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION scan_nearby_dps(
+  double precision,
+  double precision,
+  integer,
+  uuid
+) TO authenticated, anon;

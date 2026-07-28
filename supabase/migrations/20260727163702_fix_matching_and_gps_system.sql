@@ -396,8 +396,36 @@ END;
 $function$;
 
 -- 11. Grant execute permissions
-GRANT EXECUTE ON FUNCTION scan_nearby_dps TO authenticated;
-GRANT EXECUTE ON FUNCTION scan_nearby_dps_stats TO authenticated;
-GRANT EXECUTE ON FUNCTION get_nearby_requests TO authenticated;
-GRANT EXECUTE ON FUNCTION accept_request TO authenticated;
-GRANT EXECUTE ON FUNCTION update_location TO authenticated;
+GRANT EXECUTE ON FUNCTION scan_nearby_dps(
+    double precision,
+    double precision,
+    integer
+) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION scan_nearby_dps(
+    double precision,
+    double precision,
+    integer,
+    uuid
+) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION scan_nearby_dps_stats(
+    double precision,
+    double precision,
+    integer,
+    uuid
+) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION get_nearby_requests(
+    uuid
+) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION accept_request(
+    uuid,
+    uuid
+) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION update_location(
+    double precision,
+    double precision
+) TO authenticated;
