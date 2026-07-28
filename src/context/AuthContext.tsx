@@ -311,9 +311,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('[Auth] updatePassword called')
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     if (error) return { error: error.message }
-    setPasswordRecovery(false)
+    // Don't clear passwordRecovery here — the ResetPassword component
+    // needs it to stay true so it can show the success screen.
+    // It will be cleared after signOut completes via onAuthStateChange.
     await supabase.auth.signOut()
-    setProfile(null)
     return { error: null }
   }
 

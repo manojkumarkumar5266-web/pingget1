@@ -42,6 +42,24 @@ export default function ResetPassword() {
     setTimeout(() => navigate('/auth'), 2500)
   }
 
+  if (success) {
+    return (
+      <AuthLayout showBrand={false}>
+        <div className="card p-6 text-center animate-bounce-in">
+          <div className="mb-4 flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
+              <CheckCircle size={32} className="text-white" />
+            </div>
+          </div>
+          <h2 className="text-lg font-bold text-white">Password Updated!</h2>
+          <p className="mt-2 text-sm text-white/50">
+            Your password has been changed successfully. Redirecting to sign in...
+          </p>
+        </div>
+      </AuthLayout>
+    )
+  }
+
   // Still waiting for auth state
   if (authLoading || (!passwordRecovery && !waited)) {
     return (
@@ -67,24 +85,6 @@ export default function ResetPassword() {
           <h2 className="text-xl font-bold text-white mb-2">Reset Link Expired</h2>
           <p className="text-sm text-white/50 mb-6">This password reset link is invalid or has expired. Please request a new one.</p>
           <button onClick={() => navigate('/auth')} className="btn-primary w-full">Back to Sign In</button>
-        </div>
-      </AuthLayout>
-    )
-  }
-
-  if (success) {
-    return (
-      <AuthLayout showBrand={false}>
-        <div className="card p-6 text-center animate-bounce-in">
-          <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
-              <CheckCircle size={32} className="text-white" />
-            </div>
-          </div>
-          <h2 className="text-lg font-bold text-white">Password Updated!</h2>
-          <p className="mt-2 text-sm text-white/50">
-            Your password has been changed successfully. Redirecting to sign in...
-          </p>
         </div>
       </AuthLayout>
     )

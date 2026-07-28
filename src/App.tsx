@@ -68,8 +68,10 @@ export default function App() {
     }
   }, [loading, session, profile, signOut, passwordRecovery, oauthResolving])
 
-  if (showWelcome) return <Welcome onDone={() => { sessionStorage.setItem(WELCOME_KEY, '1'); setShowWelcome(false) }} />
-  if (showPermissions) return <PermissionOnboarding onComplete={() => { localStorage.setItem(ONBOARDING_KEY, '1'); setShowPermissions(false) }} />
+  const isRecoveryRoute = location.pathname === '/reset-password' || passwordRecovery
+
+  if (!isRecoveryRoute && showWelcome) return <Welcome onDone={() => { sessionStorage.setItem(WELCOME_KEY, '1'); setShowWelcome(false) }} />
+  if (!isRecoveryRoute && showPermissions) return <PermissionOnboarding onComplete={() => { localStorage.setItem(ONBOARDING_KEY, '1'); setShowPermissions(false) }} />
 
   const isPublicRoute = ['/setup-admin', '/reset-password', '/landing'].includes(location.pathname)
 

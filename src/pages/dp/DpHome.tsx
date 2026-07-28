@@ -148,9 +148,8 @@ export default function DpHome() {
     setRequests(prev => prev.filter(r => r.id !== req.id))
     const { error } = await supabase.rpc('append_declined_by', { row_id: req.id, dp_id: profile!.id })
     if (error) {
-      await supabase.from('requests')
-        .update({ declined_by: [...((req as any).declined_by ?? []), profile!.id] })
-        .eq('id', req.id)
+      console.error('[DpHome] decline RPC failed:', error.message)
+      showToast('Could not decline request — it may reappear. Check your connection.')
     }
   }
 
@@ -158,11 +157,12 @@ export default function DpHome() {
     const { data, error } = await supabase.rpc('accept_request', {
       p_request_id: req.id, p_dp_user_id: profile!.id,
     })
-    if (error || !data?.success) {
-      showToast(data?.error_msg || 'Failed to accept request')
+    const row = Array.isArray(data) ? data[0] : data
+    if (error || !row?.success) {
+      showToast(row?.error_msg || error?.message || 'Failed to accept request')
       return
     }
-    navigate(`/dp/chat/${data.chat_room_id}`)
+    navigate(`/dp/chat/${row.chat_room_id}`)
   }
 
   const [pendingCommission, setPendingCommission] = useState(0)
