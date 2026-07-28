@@ -99,12 +99,18 @@ export default function DpHome() {
     setLoading(true)
 
     const fetchRequests = async () => {
-      const { data } = await supabase
-        .from('requests')
-        .select('*')
-        .eq('status', 'pending')
-        .not('declined_by', 'cs', `{${profile!.id}}`)
-        .order('created_at', { ascending: false })
+      const { data, error } = await supabase.rpc(
+  'get_nearby_requests',
+  {
+    p_dp_user_id: profile!.id,
+  }
+)
+
+if (error) {
+  console.error('[DpHome] get_nearby_requests:', error)
+  setLoading(false)
+  return
+}
       if (!data) { setLoading(false); return }
       const userIds = [...new Set(data.map((r: any) => r.user_id))]
       let profileMap = new Map<string, Profile>()
