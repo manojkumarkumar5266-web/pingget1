@@ -5,6 +5,7 @@ import DpOrders from './DpOrders'
 import ChatScreen from '../shared/ChatScreen'
 import DpWallet from './DpWallet'
 import DpProfile from './DpProfile'
+import DpNavigationPage from './DpNavigationPage'
 
 export default function DpApp() {
   return (
@@ -16,6 +17,7 @@ export default function DpApp() {
         <Route path="/profile" element={<DpProfile />} />
       </Route>
       <Route path="/chat/:roomId" element={<ChatScreen />} />
+      <Route path="/navigate/:requestId" element={<DpNavigationPage />} />
       <Route path="*" element={<Navigate to="/dp" replace />} />
     </Routes>
   )

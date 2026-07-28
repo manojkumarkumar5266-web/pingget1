@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
-import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell } from 'lucide-react'
+import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity } from 'lucide-react'
 import Watermark from '../../components/Watermark'
 import Brand from '../../components/Brand'
 import { useEffect, useState } from 'react'
@@ -47,9 +47,10 @@ export default function AdminLayout() {
     { path: '/admin/orders', label: 'Orders', icon: ClipboardList, badge: 0 },
     { path: '/admin/payments', label: 'Payments', icon: CreditCard, badge: pendingReceipts },
     { path: '/admin/notifications', label: 'Notify', icon: Bell, badge: 0 },
+    { path: '/admin/operations', label: 'Live Ops', icon: Activity, badge: 0 },
   ]
 
-  const isActive = (path: string) => location.pathname === path
+  const isActive = (path: string) => location.pathname === path || (path === '/admin' && location.pathname === '/admin/operations')
 
   const renderBadge = (count: number) => count > 0 ? (
     <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-error-500 px-1 text-[10px] font-bold text-white animate-pulse">

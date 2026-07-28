@@ -56,6 +56,12 @@ export type DeliveryPartner = {
   rating_avg: number
   rating_count: number
   service_range_meters: number
+  current_lat: number | null
+  current_lng: number | null
+  heading: number | null
+  speed_kmh: number | null
+  battery_level: number | null
+  last_location_at: string | null
   created_at: string
 }
 
@@ -86,6 +92,10 @@ export type DeliveryRequest = {
   delivery_proof_url: string | null
   delivery_proof_by: string | null
   delivery_proof_at: string | null
+  dp_lat: number | null
+  dp_lng: number | null
+  dp_heading: number | null
+  dp_last_update: string | null
 }
 
 export type ChatRoom = {

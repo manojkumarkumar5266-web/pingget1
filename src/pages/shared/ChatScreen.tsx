@@ -38,10 +38,14 @@ export default function ChatScreen() {
   const [showPickupPhoto, setShowPickupPhoto] = useState(false)
   const [recording, setRecording] = useState(false)
   const [voiceDuration, setVoiceDuration] = useState(0)
+  const [otherTyping, setOtherTyping] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const typingChannelRef = useRef<any>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isTypingRef = useRef(false)
 
   const isUser = profile?.role === 'user'
 
@@ -214,6 +218,55 @@ export default function ChatScreen() {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
+  // Typing indicator: broadcast via realtime channel (ephemeral, no DB writes)
+  useEffect(() => {
+    if (!roomId || !profile?.id) return
+    const channel = supabase.channel(`typing-${roomId}`, {
+      config: { broadcast: { self: false } }
+    })
+    typingChannelRef.current = channel
+    channel
+      .on('broadcast', { event: 'typing' }, (payload: any) => {
+        if (payload.payload?.userId !== profile.id && payload.payload?.isTyping) {
+          setOtherTyping(true)
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+          typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), 4000)
+        } else if (payload.payload?.userId !== profile.id && !payload.payload?.isTyping) {
+          setOtherTyping(false)
+        }
+      })
+      .subscribe()
+    return () => {
+      if (typingTimeoutRef.current) { clearTimeout(typingTimeoutRef.current); typingTimeoutRef.current = null }
+      supabase.removeChannel(channel)
+      typingChannelRef.current = null
+    }
+  }, [roomId, profile?.id])
+
+  const sendTyping = (isTyping: boolean) => {
+    if (isTypingRef.current === isTyping) return
+    isTypingRef.current = isTyping
+    typingChannelRef.current?.send({
+      type: 'broadcast', event: 'typing', payload: { userId: profile?.id, isTyping }
+    })
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+    if (e.target.value.trim()) {
+      sendTyping(true)
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+      typingTimeoutRef.current = setTimeout(() => sendTyping(false), 2000)
+    } else {
+      sendTyping(false)
+    }
+  }
+
+  const handleSend = () => {
+    sendTyping(false)
+    sendMessage(input)
+  }
+
   const sendMessage = async (content: string, type: string = 'text', extra?: any) => {
     if (!content.trim() && type === 'text') return
     const { data, error } = await supabase.from('messages').insert({
@@ -325,18 +378,31 @@ export default function ChatScreen() {
         <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={40} />
         <div className="flex-1">
           <p className="font-semibold text-white">{otherUser?.full_name}</p>
-          <p className="text-[10px] text-white/40">Phone numbers are hidden — chat here to communicate</p>
-          {dpInfo ? (
-            <p className="text-xs text-white/40">
-              {dpInfo.vehicle_type} • {dpInfo.rating_avg > 0 ? `${dpInfo.rating_avg.toFixed(1)}★` : 'New'} • {dpInfo.is_online ? 'Online' : 'Offline'}
-            </p>
+          {otherTyping ? (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-primary-300">typing</span>
+              <span className="flex gap-0.5">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-300" style={{ animationDelay: '0ms' }} />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-300" style={{ animationDelay: '150ms' }} />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary-300" style={{ animationDelay: '300ms' }} />
+              </span>
+            </div>
           ) : (
-            (() => {
-              const lastOwnMsg = [...messages].reverse().find(m => m.sender_id === profile?.id)
-              if (lastOwnMsg?.read_at) return <p className="text-xs text-success-500 flex items-center gap-0.5"><CheckCheck size={11} /> Seen</p>
-              if (lastOwnMsg) return <p className="text-xs text-white/40 flex items-center gap-0.5"><Check size={11} /> Delivered</p>
-              return <p className="text-xs text-white/40">Online</p>
-            })()
+            <>
+              <p className="text-[10px] text-white/40">Phone numbers are hidden — chat here to communicate</p>
+              {dpInfo ? (
+                <p className="text-xs text-white/40">
+                  {dpInfo.vehicle_type} • {dpInfo.rating_avg > 0 ? `${dpInfo.rating_avg.toFixed(1)}★` : 'New'} • {dpInfo.is_online ? 'Online' : 'Offline'}
+                </p>
+              ) : (
+                (() => {
+                  const lastOwnMsg = [...messages].reverse().find(m => m.sender_id === profile?.id)
+                  if (lastOwnMsg?.read_at) return <p className="text-xs text-success-500 flex items-center gap-0.5"><CheckCheck size={11} /> Seen</p>
+                  if (lastOwnMsg) return <p className="text-xs text-white/40 flex items-center gap-0.5"><Check size={11} /> Delivered</p>
+                  return <p className="text-xs text-white/40">Online</p>
+                })()
+              )}
+            </>
           )}
         </div>
         {order && <StatusBadge status={order.status} />}
@@ -553,14 +619,14 @@ export default function ChatScreen() {
             ) : (
               <input
                 value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
+                onChange={handleInputChange}
+                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
                 placeholder="Type a message..."
                 className="input flex-1"
               />
             )}
             {!recording && (
-              <button onClick={() => sendMessage(input)} className="btn-primary shrink-0 p-3">
+              <button onClick={handleSend} className="btn-primary shrink-0 p-3">
                 <Send size={18} />
               </button>
             )}

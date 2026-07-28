@@ -1,6 +1,9 @@
+@import 'leaflet/dist/leaflet.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
 
 :root {
   --color-primary-50:  #f4f7ee;
@@ -211,4 +214,416 @@
 }
 .dp-range-slider::-moz-range-thumb:hover {
   transform: scale(1.15);
+}
+
+/* ==================== LEAFLET MAP STYLES ==================== */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #1a1a2e;
+  font-family: inherit;
+  z-index: 0;
+}
+
+.light-mode .leaflet-container {
+  background: #e8e8e8;
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(255,255,255,0.95) !important;
+  color: #333 !important;
+  border-radius: 12px !important;
+  margin-bottom: 4px !important;
+  width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  font-size: 18px !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.dark-mode .leaflet-control-zoom a {
+  background: rgba(30,30,46,0.95) !important;
+  color: #fff !important;
+}
+
+.leaflet-control-zoom a:hover {
+  transform: scale(1.05);
+}
+
+.leaflet-bar {
+  border: none !important;
+}
+
+/* ==================== VEHICLE MARKER ==================== */
+.dp-vehicle-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.dp-marker-wrapper {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dp-marker-body {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  transition: transform 1s linear;
+  border: 2px solid rgba(255,255,255,0.9);
+}
+
+.dp-marker-body svg {
+  transform: rotate(0deg);
+  transition: transform 0.3s ease;
+}
+
+.dp-marker-arrow {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  margin-left: -5px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 8px solid #808000;
+  transform-origin: 50% 100%;
+  transition: transform 1s linear;
+}
+
+.dp-marker-pulse {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #808000;
+  opacity: 0;
+  animation: dp-pulse-ring 2s ease-out infinite;
+}
+
+@keyframes dp-pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+/* ==================== USER LOCATION MARKER ==================== */
+.user-location-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.user-location-marker {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-location-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.5);
+  z-index: 2;
+}
+
+.user-location-pulse {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(59,130,246,0.2);
+  animation: user-pulse 2s ease-out infinite;
+}
+
+@keyframes user-pulse {
+  0% { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* ==================== PICKUP / DESTINATION MARKERS ==================== */
+.pickup-icon, .destination-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.pickup-marker {
+  width: 32px;
+  height: 40px;
+  position: relative;
+}
+
+.pickup-marker-inner {
+  width: 32px;
+  height: 32px;
+  background: #f59e0b;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border: 2px solid #fff;
+}
+
+.destination-marker {
+  width: 32px;
+  height: 40px;
+  position: relative;
+}
+
+.destination-marker-inner {
+  width: 32px;
+  height: 32px;
+  background: #ef4444;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border: 2px solid #fff;
+}
+
+/* ==================== ROUTE LINE ANIMATION ==================== */
+.route-line-animated {
+  stroke-dasharray: 8 6;
+  animation: route-dash 1s linear infinite;
+}
+
+@keyframes route-dash {
+  to { stroke-dashoffset: -14; }
+}
+
+.route-line-drawing {
+  animation: route-draw 1.5s ease-out forwards;
+}
+
+@keyframes route-draw {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* ==================== MAP CONTROLS ==================== */
+.map-control-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.map-control-btn:hover {
+  transform: scale(1.05);
+}
+
+.map-control-btn:active {
+  transform: scale(0.95);
+}
+
+.map-control-light {
+  background: rgba(255,255,255,0.95);
+  color: #333;
+}
+
+.map-control-dark {
+  background: rgba(30,30,46,0.95);
+  color: #fff;
+}
+
+.map-control-active {
+  background: #808000 !important;
+  color: #fff !important;
+}
+
+/* ==================== SEARCHING RIPPLE ==================== */
+.searching-ripple {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid #808000;
+  opacity: 0;
+  animation: searching-ripple 2s ease-out infinite;
+}
+
+@keyframes searching-ripple {
+  0% { transform: scale(0.3); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* ==================== BOTTOM SHEET ==================== */
+.bottom-sheet {
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+.bottom-sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.3);
+  margin: 0 auto 8px;
+  cursor: pointer;
+}
+
+/* ==================== OFFLINE BANNER ==================== */
+.offline-banner {
+  animation: slide-down 0.3s ease-out;
+}
+
+@keyframes slide-down {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ==================== TIMELINE ==================== */
+.timeline-step {
+  transition: all 0.4s ease;
+}
+
+.timeline-step.completed .timeline-dot {
+  background: #808000;
+  border-color: #808000;
+}
+
+.timeline-step.active .timeline-dot {
+  background: #808000;
+  border-color: #808000;
+  box-shadow: 0 0 0 4px rgba(128,128,0,0.3);
+  animation: timeline-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes timeline-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(128,128,0,0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(128,128,0,0.15); }
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: transparent;
+  transition: all 0.4s ease;
+}
+
+.timeline-line {
+  width: 2px;
+  flex: 1;
+  background: rgba(255,255,255,0.1);
+  transition: background 0.4s ease;
+}
+
+.timeline-line.completed {
+  background: #808000;
+}
+
+/* ==================== CLUSTER ==================== */
+.cluster-marker {
+  background: rgba(128,128,0,0.85);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* ==================== POPUP ==================== */
+.leaflet-popup-content-wrapper {
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25) !important;
+}
+
+.dark-mode .leaflet-popup-content-wrapper {
+  background: #1e1e2e !important;
+  color: #fff !important;
+}
+
+.dark-mode .leaflet-popup-tip {
+  background: #1e1e2e !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px 16px !important;
+  font-size: 13px !important;
+}
+
+/* ==================== FULLSCREEN ==================== */
+.map-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+}
+
+/* ==================== COMPASS ==================== */
+.compass-needle {
+  transition: transform 0.3s ease;
+}
+
+/* ==================== ACCURACY CIRCLE ==================== */
+.accuracy-circle {
+  fill: rgba(59,130,246,0.1);
+  stroke: rgba(59,130,246,0.3);
+  stroke-width: 1;
+}
+
+/* ==================== DELIVERED ANIMATION ==================== */
+@keyframes delivered-bounce {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.delivered-anim {
+  animation: delivered-bounce 0.6s ease-out;
+}
+
+/* ==================== GLASSMORPHISM MAP OVERLAY ==================== */
+.map-glass-panel {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+}
+
+.dark-mode .map-glass-panel {
+  background: rgba(20,20,35,0.6);
+  border: 1px solid rgba(255,255,255,0.08);
 }
