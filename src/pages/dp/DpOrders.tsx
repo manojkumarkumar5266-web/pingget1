@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
 import { EmptyState, StatusBadge, SkeletonCard, Tabs } from '../../components/ui'
 import { formatTime, formatCurrency, STATUS_LABELS } from '../../lib/utils'
-import { ClipboardList, Clock, MapPin, MessageCircle, Lock, Package, Camera, Wallet } from 'lucide-react'
+import { ClipboardList, Clock, MapPin, MessageCircle, Lock, Package, Camera, Wallet, Navigation } from 'lucide-react'
 import DeliveryProofUploader from '../../components/DeliveryProofUploader'
 
 type Tab = 'active' | 'completed' | 'cancelled'
@@ -272,15 +272,22 @@ export default function DpOrders() {
                   )}
 
                   {req.status !== 'completed' && req.status !== 'cancelled' && (
+                    <div className="flex gap-2">
                     chatClosed ? (
-                      <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-gray-100 px-3 py-2.5 text-sm font-medium text-white/40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600">
+                      <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-gray-100 px-3 py-2.5 text-sm font-medium text-white/40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600">
                         <Lock size={14} /> Chat Closed
                       </div>
                     ) : (
-                      <button onClick={(e) => goToChat(req, e)} className="btn-secondary w-full gap-1.5 text-sm">
-                        <MessageCircle size={15} /> Open Chat
+                      <button onClick={(e) => goToChat(req, e)} className="btn-secondary flex-1 gap-1.5 text-sm">
+                        <MessageCircle size={15} /> Chat
                       </button>
                     )
+                    {['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived'].includes(req.status) && (
+                      <button onClick={(e) => { e.stopPropagation(); navigate(`/dp/navigate/${req.id}`) }} className="btn-primary flex-1 gap-1.5 text-sm">
+                        <Navigation size={15} /> Navigate
+                      </button>
+                    )}
+                    </div>
                   )}
                 </div>
               </div>

@@ -218,6 +218,13 @@ export default function ChatScreen() {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
+  // Auto-navigate DP to map/navigation page when quotation is accepted by user
+  useEffect(() => {
+    if (!isUser && order?.status === 'confirmed' && room?.request_id) {
+      navigate(`/dp/navigate/${room.request_id}`)
+    }
+  }, [order?.status, isUser, room?.request_id, navigate])
+
   // Typing indicator: broadcast via realtime channel (ephemeral, no DB writes)
   useEffect(() => {
     if (!roomId || !profile?.id) return
@@ -320,7 +327,7 @@ export default function ChatScreen() {
       body: 'The customer rejected your quotation. The order has been cancelled.',
       type: 'order_cancelled', related_id: room.request_id,
     })
-    navigate(isUser ? '/app/orders' : '/dp/orders')
+    navigate(isUser ? '/app/orders' : '/dp')
   }
 
   const updateOrderStatus = async (newStatus: string) => {
@@ -372,7 +379,7 @@ export default function ChatScreen() {
   return (
     <div className="flex h-screen flex-col ">
       <header className="flex items-center gap-3 border-b border-white/10 bg-white/80 px-4 py-3 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
-        <button onClick={() => navigate(isUser ? '/app/orders' : '/dp/orders')} className="btn-ghost p-2">
+        <button onClick={() => navigate(isUser ? (room ? `/app/track/${room.request_id}` : '/app/orders') : '/dp')} className="btn-ghost p-2">
           <ArrowLeft size={20} />
         </button>
         <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={40} />

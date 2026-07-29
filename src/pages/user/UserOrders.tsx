@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile } from '../../lib/supabase'
 import { EmptyState, StatusBadge, Avatar } from '../../components/ui'
 import { formatTime, formatCurrency, STATUS_LABELS } from '../../lib/utils'
-import { ClipboardList, Clock, MapPin, Repeat, MessageCircle, PackageCheck, Lock, Bike, Camera, XCircle } from 'lucide-react'
+import { ClipboardList, Clock, MapPin, Repeat, MessageCircle, PackageCheck, Lock, Bike, Camera, XCircle, Navigation } from 'lucide-react'
 import DeliveryProofUploader from '../../components/DeliveryProofUploader'
 
 type Tab = 'active' | 'completed' | 'cancelled'
@@ -256,10 +256,15 @@ export default function UserOrders() {
                         </div>
                       ) : (
                         <button onClick={() => goToChat(req)} className="btn-secondary flex-1 gap-1.5 text-xs">
-                          <MessageCircle size={14} /> Open Chat
+                          <MessageCircle size={14} /> Chat
                         </button>
                       )
                     })()}
+                    {req.accepted_dp_id && req.status !== 'cancelled' && req.status !== 'delivered' && req.status !== 'cash_received' && req.status !== 'completed' && (
+                      <button onClick={() => navigate(`/app/track/${req.id}`)} className="btn-secondary flex-1 gap-1.5 text-xs">
+                        <Navigation size={14} /> Track
+                      </button>
+                    )}
                     {tab !== 'active' && (
                       <button onClick={() => repeatRequest(req)} className="btn-ghost flex-1 text-xs">
                         <Repeat size={14} /> Repeat

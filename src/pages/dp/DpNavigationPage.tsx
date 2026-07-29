@@ -3,17 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, type DeliveryRequest } from '../../lib/supabase'
 import { useAuth } from '../../context'
 import { useLeafletMap } from '../../hooks/useLeafletMap'
-import { useTheme } from '../../context'
-import { createVehicleIcon, createPickupIcon, createDestinationIcon, fetchRoute, formatETA, formatSpeed, vehicleLabel, normalizeVehicle, type LatLng } from '../../lib/mapUtils'
+import { createVehicleIcon, createPickupIcon, createDestinationIcon, fetchRoute, formatETA, formatSpeed, normalizeVehicle, type LatLng } from '../../lib/mapUtils'
 import { formatDistance as fmtDist, STATUS_LABELS } from '../../lib/utils'
 import L from 'leaflet'
-import { ArrowLeft, Navigation, MapPin, Clock, Gauge, Route as RouteIcon, CheckCircle2, Package } from 'lucide-react'
+import { ArrowLeft, Navigation, MapPin, Clock, Gauge, Route as RouteIcon, CheckCircle2, MessageCircle, Package } from 'lucide-react'
 
 export default function DpNavigationPage() {
   const { requestId } = useParams<{ requestId: string }>()
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const { theme } = useTheme()
 
   const [request, setRequest] = useState<DeliveryRequest | null>(null)
   const [dpPosition, setDpPosition] = useState<LatLng | null>(null)
@@ -117,13 +115,13 @@ export default function DpNavigationPage() {
       }
     }
 
-    // Route from DP to destination
+    // Route from DP to destination — olive green path
     if (request?.delivery_lat && request?.delivery_lng) {
       fetchRoute(dpPosition, { lat: request.delivery_lat, lng: request.delivery_lng }).then(r => {
         if (!r || !map) return
         if (routeLineRef.current) map.removeLayer(routeLineRef.current)
         routeLineRef.current = L.polyline(r.coordinates, {
-          color: '#808000', weight: 5, opacity: 0.8, dashArray: '8 6', className: 'route-line-animated',
+          color: '#808000', weight: 5, opacity: 0.8, className: 'route-line-animated',
         }).addTo(map)
         setRoute({ distance: r.distance_meters, duration: r.duration_seconds, coords: r.coordinates })
       })
@@ -131,124 +129,141 @@ export default function DpNavigationPage() {
   }, [map, dpPosition, request])
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-white/50">Loading...</div>
+    return <div className="flex min-h-screen items-center justify-center text-gray-400">Loading...</div>
   }
 
   if (!request) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-white/60">Order not found</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
+        <p className="text-gray-500">Order not found</p>
         <button onClick={() => navigate('/dp')} className="btn-primary">Back</button>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: theme === 'dark' ? '#0f1a0d' : '#f5f5f5' }}>
-      <div id="dp-nav-map" className="absolute inset-0" />
+    <div className="fixed inset-0 z-50 flex flex-col bg-gray-50">
+      {/* Top half: Map */}
+      <div className="relative" style={{ height: '50vh', minHeight: '280px' }}>
+        <div id="dp-nav-map" className="absolute inset-0" />
 
-      {/* Top bar */}
-      <div className="absolute left-0 right-0 top-0 z-[1000] px-4 pt-12">
-        <div className="map-glass-panel flex items-center gap-3 p-3">
-          <button onClick={() => navigate('/dp')} className="map-control-btn map-control-dark">
-            <ArrowLeft size={18} />
-          </button>
-          <div className="flex-1">
-            <p className="text-xs text-white/50">Navigation</p>
-            <p className="text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
+        {/* Top bar overlay */}
+        <div className="absolute left-0 right-0 top-0 z-[1000] px-4 pt-12">
+          <div className="map-glass-panel flex items-center gap-3 p-3">
+            <button onClick={() => navigate('/dp')} className="map-control-btn map-control-dark">
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex-1">
+              <p className="text-xs text-white/50">Navigation</p>
+              <p className="text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
+            </div>
+            <button onClick={async () => {
+              const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
+              if (data) navigate(`/dp/chat/${data.id}`)
+            }} className="map-control-btn map-control-dark">
+              <MessageCircle size={18} />
+            </button>
+            <button onClick={() => {
+              if (dpPosition && request.delivery_lat && request.delivery_lng) {
+                window.open(`https://www.openstreetmap.org/directions?from=${dpPosition.lat},${dpPosition.lng}&to=${request.delivery_lat},${request.delivery_lng}`, '_blank')
+              }
+            }} className="map-control-btn map-control-active">
+              <Navigation size={18} />
+            </button>
           </div>
-          <button onClick={() => {
-            if (dpPosition && request.delivery_lat && request.delivery_lng) {
-              window.open(`https://www.openstreetmap.org/directions?from=${dpPosition.lat},${dpPosition.lng}&to=${request.delivery_lat},${request.delivery_lng}`, '_blank')
-            }
-          }} className="map-control-btn map-control-active">
-            <Navigation size={18} />
-          </button>
         </div>
       </div>
 
-      {/* Bottom sheet with stats */}
-      <div className="absolute bottom-0 left-0 right-0 z-[1000]">
-        <div className="map-glass-panel mx-3 mb-4 max-w-md mx-auto p-5">
-          <div className="bottom-sheet-handle" />
-
+      {/* Bottom half: Status updates panel */}
+      <div className="flex-1 overflow-y-auto bg-gray-50 px-4 py-4">
+        <div className="mx-auto max-w-md">
           {/* Stats grid */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center">
-              <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-                <Clock size={18} className="text-[#808000]" />
+          <div className="mb-4 grid grid-cols-3 gap-3">
+            <div className="rounded-2xl border border-gray-200 bg-white p-3 text-center">
+              <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+                <Clock size={18} className="text-amber-600" />
               </div>
-              <p className="text-base font-bold text-white">{route ? formatETA(route.duration) : '--'}</p>
-              <p className="text-[10px] text-white/40">ETA</p>
+              <p className="text-base font-bold text-gray-900">{route ? formatETA(route.duration) : '--'}</p>
+              <p className="text-[10px] text-gray-500">ETA</p>
             </div>
-            <div className="text-center">
-              <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-                <RouteIcon size={18} className="text-blue-400" />
+            <div className="rounded-2xl border border-gray-200 bg-white p-3 text-center">
+              <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+                <RouteIcon size={18} className="text-blue-600" />
               </div>
-              <p className="text-base font-bold text-white">{route ? fmtDist(route.distance) : '--'}</p>
-              <p className="text-[10px] text-white/40">Remaining</p>
+              <p className="text-base font-bold text-gray-900">{route ? fmtDist(route.distance) : '--'}</p>
+              <p className="text-[10px] text-gray-500">Remaining</p>
             </div>
-            <div className="text-center">
-              <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-                <Gauge size={18} className="text-green-400" />
+            <div className="rounded-2xl border border-gray-200 bg-white p-3 text-center">
+              <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-xl bg-green-100">
+                <Gauge size={18} className="text-green-600" />
               </div>
-              <p className="text-base font-bold text-white">{formatSpeed(speed)}</p>
-              <p className="text-[10px] text-white/40">Speed</p>
+              <p className="text-base font-bold text-gray-900">{formatSpeed(speed)}</p>
+              <p className="text-[10px] text-gray-500">Speed</p>
             </div>
           </div>
 
           {/* Addresses */}
-          <div className="mt-4 space-y-2 border-t border-white/10 pt-4">
-            {request.pickup_address && (
-              <div className="flex items-start gap-2">
-                <MapPin size={14} className="mt-0.5 shrink-0 text-yellow-400" />
-                <div>
-                  <p className="text-[10px] uppercase text-white/40">Pickup</p>
-                  <p className="text-xs text-white/70">{request.pickup_address}</p>
+          <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Delivery Details</div>
+            <div className="space-y-3">
+              {request.pickup_address && (
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-yellow-100">
+                    <MapPin size={14} className="text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase text-gray-400">Pickup</p>
+                    <p className="text-sm text-gray-700">{request.pickup_address}</p>
+                  </div>
                 </div>
-              </div>
-            )}
-            <div className="flex items-start gap-2">
-              <MapPin size={14} className="mt-0.5 shrink-0 text-red-400" />
-              <div>
-                <p className="text-[10px] uppercase text-white/40">Destination</p>
-                <p className="text-xs text-white/70">{request.delivery_address}</p>
+              )}
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100">
+                  <MapPin size={14} className="text-red-600" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-gray-400">Destination</p>
+                  <p className="text-sm text-gray-700">{request.delivery_address}</p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Status update buttons */}
-          <div className="mt-4 flex gap-2">
-            {request.status === 'accepted' && (
-              <button onClick={async () => {
-                await supabase.from('requests').update({ status: 'on_the_way' }).eq('id', requestId)
-              }} className="flex-1 rounded-xl py-3 text-sm font-bold text-white active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                Start Trip
-              </button>
-            )}
-            {request.status === 'on_the_way' && (
-              <button onClick={async () => {
-                await supabase.from('requests').update({ status: 'arrived' }).eq('id', requestId)
-              }} className="flex-1 rounded-xl py-3 text-sm font-bold text-white active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                Mark Arrived
-              </button>
-            )}
-            {request.status === 'arrived' && (
-              <button onClick={async () => {
-                await supabase.from('requests').update({ status: 'delivered' }).eq('id', requestId)
-              }} className="flex-1 rounded-xl py-3 text-sm font-bold text-white active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                Mark Delivered
-              </button>
-            )}
-            {(request.status === 'delivered' || request.status === 'completed') && (
-              <div className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-green-400"
-                style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <CheckCircle2 size={18} /> Delivered
-              </div>
-            )}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Update Status</div>
+            <div className="space-y-2">
+              {request.status === 'accepted' && (
+                <button onClick={async () => {
+                  await supabase.from('requests').update({ status: 'on_the_way' }).eq('id', requestId)
+                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                  <Navigation size={18} /> Start Trip
+                </button>
+              )}
+              {request.status === 'on_the_way' && (
+                <button onClick={async () => {
+                  await supabase.from('requests').update({ status: 'arrived' }).eq('id', requestId)
+                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                  <MapPin size={18} /> Mark Arrived
+                </button>
+              )}
+              {request.status === 'arrived' && (
+                <button onClick={async () => {
+                  await supabase.from('requests').update({ status: 'delivered' }).eq('id', requestId)
+                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                  <CheckCircle2 size={18} /> Mark Delivered
+                </button>
+              )}
+              {(request.status === 'delivered' || request.status === 'completed') && (
+                <div className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-green-600"
+                  style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <CheckCircle2 size={18} /> Delivered Successfully
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

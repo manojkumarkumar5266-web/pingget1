@@ -3,29 +3,25 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } from '../../lib/supabase'
 import { useAuth } from '../../context'
 import { useLeafletMap } from '../../hooks/useLeafletMap'
-import { useTheme } from '../../context'
-import { createVehicleIcon, createUserLocationIcon, createPickupIcon, createDestinationIcon, fetchRoute, formatETA, formatDistance, vehicleLabel, normalizeVehicle, type VehicleType, type LatLng } from '../../lib/mapUtils'
+import { createVehicleIcon, createUserLocationIcon, createPickupIcon, createDestinationIcon, fetchRoute, formatETA, vehicleLabel, normalizeVehicle, type LatLng } from '../../lib/mapUtils'
 import { formatDistance as fmtDist, STATUS_LABELS } from '../../lib/utils'
 import L from 'leaflet'
 import { ArrowLeft, Phone, MessageCircle, Star, MapPin, Clock, Bike, Navigation, CheckCircle2, Package } from 'lucide-react'
 
 const TRACKING_STEPS = [
-  { key: 'pending', label: 'Searching', icon: MapPin },
-  { key: 'accepted', label: 'Accepted', icon: CheckCircle2 },
-  { key: 'confirmed', label: 'Confirmed', icon: CheckCircle2 },
-  { key: 'shopping', label: 'Shopping', icon: Package },
-  { key: 'purchased', label: 'Purchased', icon: Package },
-  { key: 'on_the_way', label: 'Partner Coming', icon: Bike },
-  { key: 'arrived', label: 'Arrived', icon: MapPin },
+  { key: 'accepted', label: 'Order Accepted', icon: CheckCircle2 },
+  { key: 'confirmed', label: 'Quotation Confirmed', icon: CheckCircle2 },
+  { key: 'shopping', label: 'Partner Shopping', icon: Package },
+  { key: 'purchased', label: 'Items Purchased', icon: Package },
+  { key: 'on_the_way', label: 'Partner On The Way', icon: Bike },
+  { key: 'arrived', label: 'Partner Arrived', icon: MapPin },
   { key: 'delivered', label: 'Delivered', icon: CheckCircle2 },
-  { key: 'completed', label: 'Completed', icon: CheckCircle2 },
 ]
 
 export default function LiveTrackingPage() {
   const { requestId } = useParams<{ requestId: string }>()
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const { theme } = useTheme()
 
   const [request, setRequest] = useState<DeliveryRequest | null>(null)
   const [dpProfile, setDpProfile] = useState<Profile | null>(null)
@@ -43,11 +39,12 @@ export default function LiveTrackingPage() {
   const routeLineRef = useRef<L.Polyline | null>(null)
   const prevPosRef = useRef<LatLng | null>(null)
   const animFrameRef = useRef<number | null>(null)
-  const isFollowingRef = useRef(true)
 
   // Fetch request + DP data
   useEffect(() => {
     if (!requestId) return
+    let dpId: string | null = null
+
     const fetchData = async () => {
       const { data: req } = await supabase
         .from('requests')
@@ -56,6 +53,7 @@ export default function LiveTrackingPage() {
         .maybeSingle()
       if (!req) { setLoading(false); return }
       setRequest(req as DeliveryRequest)
+      dpId = req.accepted_dp_id
 
       if (req.accepted_dp_id) {
         const { data: dpProf } = await supabase
@@ -80,7 +78,6 @@ export default function LiveTrackingPage() {
     }
     fetchData()
 
-    // Realtime subscription for request updates
     const channel = supabase
       .channel(`tracking-${requestId}`)
       .on('postgres_changes', {
@@ -95,13 +92,14 @@ export default function LiveTrackingPage() {
         event: '*',
         schema: 'public',
         table: 'delivery_partners',
-        filter: `user_id=eq.${request?.accepted_dp_id || ''}`,
       }, (payload: any) => {
         const dp = payload.new as DeliveryPartner
-        if (dp.current_lat && dp.current_lng) {
-          setDpPosition({ lat: dp.current_lat, lng: dp.current_lng })
+        if (dpId && dp.user_id === dpId) {
+          if (dp.current_lat && dp.current_lng) {
+            setDpPosition({ lat: dp.current_lat, lng: dp.current_lng })
+          }
+          setDpData(dp)
         }
-        setDpData(dp)
       })
       .subscribe()
 
@@ -138,7 +136,7 @@ export default function LiveTrackingPage() {
     }
   }, [map, request])
 
-  // DP marker with smooth animation
+  // DP marker with smooth animation + route line
   useEffect(() => {
     if (!map || !dpPosition) return
     const vehicle = normalizeVehicle(dpData?.vehicle_type ?? null)
@@ -164,7 +162,6 @@ export default function LiveTrackingPage() {
         const lng = from.lng + (to.lng - from.lng) * fraction
         dpMarkerRef.current?.setLatLng([lat, lng])
 
-        // Compute heading
         const dLng = (to.lng - from.lng) * Math.PI / 180
         const lat1 = from.lat * Math.PI / 180
         const lat2 = to.lat * Math.PI / 180
@@ -173,9 +170,7 @@ export default function LiveTrackingPage() {
         const heading = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360
         dpMarkerRef.current?.setIcon(createVehicleIcon(vehicle, heading, true))
 
-        if (isFollowingRef.current) {
-          map.panTo([lat, lng], { animate: false })
-        }
+        map.panTo([lat, lng], { animate: false })
 
         if (fraction < 1) {
           animFrameRef.current = requestAnimationFrame(animate)
@@ -187,7 +182,7 @@ export default function LiveTrackingPage() {
       animFrameRef.current = requestAnimationFrame(animate)
     }
 
-    // Fetch route from DP to destination
+    // Fetch route from DP to user's delivery location — olive green path
     if (request?.delivery_lat && request?.delivery_lng) {
       fetchRoute(dpPosition, { lat: request.delivery_lat, lng: request.delivery_lng }).then(route => {
         if (!route || !map) return
@@ -196,7 +191,6 @@ export default function LiveTrackingPage() {
           color: '#808000',
           weight: 5,
           opacity: 0.8,
-          dashArray: '8 6',
           className: 'route-line-animated',
         }).addTo(map)
         setEta(formatETA(route.duration_seconds))
@@ -207,16 +201,16 @@ export default function LiveTrackingPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-pulse text-white/50">Loading tracking...</div>
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="animate-pulse text-gray-400">Loading tracking...</div>
       </div>
     )
   }
 
   if (!request) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-white/60">Order not found</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
+        <p className="text-gray-500">Order not found</p>
         <button onClick={() => navigate('/app')} className="btn-primary">Back Home</button>
       </div>
     )
@@ -224,60 +218,92 @@ export default function LiveTrackingPage() {
 
   const currentStepIndex = TRACKING_STEPS.findIndex(s => s.key === request.status)
   const isCancelled = request.status === 'cancelled'
+  const isPending = request.status === 'pending'
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: theme === 'dark' ? '#0f1a0d' : '#f5f5f5' }}>
-      {/* Map */}
-      <div id="tracking-map" className="absolute inset-0" />
+    <div className="fixed inset-0 z-50 flex flex-col bg-gray-50">
+      {/* Top half: Map */}
+      <div className="relative" style={{ height: '50vh', minHeight: '280px' }}>
+        <div id="tracking-map" className="absolute inset-0" />
 
-      {/* Top bar */}
-      <div className="absolute left-0 right-0 top-0 z-[1000] px-4 pt-12">
-        <div className="map-glass-panel flex items-center gap-3 p-3">
-          <button onClick={() => navigate('/app')} className="map-control-btn map-control-dark">
-            <ArrowLeft size={18} />
-          </button>
-          <div className="flex-1">
-            <p className="text-xs text-white/50">Order Tracking</p>
-            <p className="text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
+        {/* Top bar overlay */}
+        <div className="absolute left-0 right-0 top-0 z-[1000] px-4 pt-12">
+          <div className="map-glass-panel flex items-center gap-3 p-3">
+            <button onClick={() => navigate('/app')} className="map-control-btn map-control-dark">
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex-1">
+              <p className="text-xs text-white/50">Order Tracking</p>
+              <p className="text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
+            </div>
+            {dpProfile && (
+              <div className="flex items-center gap-2">
+                <button onClick={() => window.location.href = `tel:${dpProfile.phone || ''}`}
+                  className="map-control-btn map-control-dark">
+                  <Phone size={18} />
+                </button>
+                <button onClick={async () => {
+                  const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
+                  if (data) navigate(`/app/chat/${data.id}`)
+                }} className="map-control-btn map-control-dark">
+                  <MessageCircle size={18} />
+                </button>
+              </div>
+            )}
           </div>
-          {dpProfile && (
-            <div className="flex items-center gap-2">
-              <button onClick={() => window.location.href = `tel:${dpProfile.phone || ''}`}
-                className="map-control-btn map-control-dark">
-                <Phone size={18} />
-              </button>
+        </div>
+
+        {/* ETA badge on map */}
+        {dpPosition && !isPending && (
+          <div className="absolute bottom-3 left-1/2 z-[1000] -translate-x-1/2">
+            <div className="map-glass-panel flex items-center gap-3 px-4 py-2">
+              <Clock size={16} className="text-[#808000]" />
+              <span className="text-sm font-bold text-white">{eta}</span>
+              <span className="text-xs text-white/50">{dist > 0 ? fmtDist(dist) : ''} away</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom half: Live updates panel */}
+      <div className="flex-1 overflow-y-auto bg-gray-50 px-4 py-4">
+        <div className="mx-auto max-w-md">
+          {/* Pending state */}
+          {isPending && (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center">
+                <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100">
+                  <Clock size={22} className="animate-pulse text-amber-600" />
+                </div>
+                <p className="font-bold text-gray-900">Waiting for partner to accept</p>
+                <p className="mt-1 text-xs text-gray-500">Your request is live. Chat will open automatically when a partner accepts.</p>
+              </div>
               <button onClick={async () => {
-                const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
-                if (data) navigate(`/app/chat/${data.id}`)
-              }} className="map-control-btn map-control-dark">
-                <MessageCircle size={18} />
+                await supabase.from('requests').update({ status: 'cancelled' }).eq('id', requestId)
+                navigate('/app')
+              }} className="w-full rounded-2xl py-3 text-sm font-semibold text-red-600 active:scale-95"
+                style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+                Cancel Request
               </button>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Bottom sheet */}
-      <div className="absolute bottom-0 left-0 right-0 z-[1000]">
-        <div className="map-glass-panel mx-3 mb-4 max-w-md mx-auto">
-          <div className="bottom-sheet-handle pt-3" />
 
           {/* DP info card */}
-          {dpProfile && (
-            <div className="px-5 pb-4">
+          {dpProfile && !isCancelled && (
+            <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4 animate-slide-up">
               <div className="flex items-center gap-3">
-                <div className="h-14 w-14 overflow-hidden rounded-2xl bg-white/10">
+                <div className="h-14 w-14 overflow-hidden rounded-2xl bg-gray-100">
                   {dpProfile.photo_url ? (
                     <img src={dpProfile.photo_url} alt={dpProfile.full_name} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-white/40">
+                    <div className="flex h-full w-full items-center justify-center text-gray-400">
                       <Bike size={24} />
                     </div>
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold text-white">{dpProfile.full_name}</p>
-                  <div className="flex items-center gap-2 text-xs text-white/50">
+                  <p className="font-bold text-gray-900">{dpProfile.full_name}</p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
                     <span className="flex items-center gap-0.5">
                       <Star size={12} className="text-yellow-400" />
                       {dpData?.rating_avg?.toFixed(1) || '0.0'}
@@ -286,18 +312,21 @@ export default function LiveTrackingPage() {
                     <span>{vehicleLabel(normalizeVehicle(dpData?.vehicle_type ?? null))}</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-white">{eta}</p>
-                  <p className="text-xs text-white/40">{dist > 0 ? fmtDist(dist) : ''} away</p>
-                </div>
+                <button onClick={async () => {
+                  const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
+                  if (data) navigate(`/app/chat/${data.id}`)
+                }} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-white active:scale-95"
+                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                  <MessageCircle size={16} /> Chat
+                </button>
               </div>
             </div>
           )}
 
-          {/* Timeline */}
-          {!isCancelled && (
-            <div className="px-5 pb-5">
-              <div className="mb-3 text-xs font-medium uppercase tracking-wider text-white/40">Order Status</div>
+          {/* Timeline / live updates */}
+          {!isCancelled && !isPending && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-4">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Live Updates</div>
               <div className="space-y-0">
                 {TRACKING_STEPS.map((step, idx) => {
                   const Icon = step.icon
@@ -307,15 +336,18 @@ export default function LiveTrackingPage() {
                   return (
                     <div key={step.key} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`timeline-step ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}`}>
-                          <div className="timeline-dot" />
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${isCompleted ? 'bg-green-100' : isActive ? 'bg-amber-100' : 'bg-gray-100'}`}>
+                          <Icon size={14} className={isCompleted ? 'text-green-600' : isActive ? 'text-amber-600 animate-pulse' : 'text-gray-400'} />
                         </div>
-                        {!isLast && <div className={`timeline-line ${isCompleted ? 'completed' : ''}`} style={{ minHeight: 24 }} />}
+                        {!isLast && <div className={`w-0.5 ${isCompleted ? 'bg-green-300' : 'bg-gray-200'}`} style={{ minHeight: 28 }} />}
                       </div>
-                      <div className="pb-4 pt-0.5">
-                        <p className={`text-sm font-medium ${isActive ? 'text-white' : isCompleted ? 'text-white/70' : 'text-white/30'}`}>
+                      <div className="pb-4 pt-1.5">
+                        <p className={`text-sm font-medium ${isActive ? 'text-gray-900' : isCompleted ? 'text-gray-600' : 'text-gray-400'}`}>
                           {step.label}
                         </p>
+                        {isActive && (
+                          <p className="text-xs text-amber-600 mt-0.5">In progress...</p>
+                        )}
                       </div>
                     </div>
                   )
@@ -324,9 +356,10 @@ export default function LiveTrackingPage() {
             </div>
           )}
 
+          {/* Cancelled state */}
           {isCancelled && (
-            <div className="px-5 pb-5 text-center">
-              <p className="font-semibold text-red-400">Order Cancelled</p>
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-center">
+              <p className="font-semibold text-red-600">Order Cancelled</p>
               <button onClick={() => navigate('/app')} className="btn-primary mt-3">Back Home</button>
             </div>
           )}
