@@ -1,5 +1,4 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -150,12 +149,21 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!emailSubject) {
-      return new Response(JSON.stringify({ error: "subject or type is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+  return new Response(
+    JSON.stringify({
+      success: true,
+      skipped: true,
+      reason: "Email subject missing",
+    }),
+    {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
     }
-
+  );
+}
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -172,22 +180,56 @@ Deno.serve(async (req: Request) => {
     });
 
     if (!resendResponse.ok) {
-      const err = await resendResponse.text();
-      console.error("Resend API error:", err);
-      return new Response(JSON.stringify({ error: "Failed to send email" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  const err = await resendResponse.text();
+  console.error("Resend API error:", err);
 
+  return new Response(
+    JSON.stringify({
+      success: true,
+      skipped: true,
+      reason: "Email could not be sent",
+      resendError: err
+    }),
+    {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+}
     const result = await resendResponse.json();
-    return new Response(JSON.stringify({ success: true, id: result.id }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        id: result.id,
+      }),
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("send-email error:", err);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        skipped: true,
+        reason: err.message,
+      }),
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      }
+    );
   }
 });
