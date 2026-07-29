@@ -167,7 +167,7 @@ export default function DpNavigationPage() {
 
   if (!request) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black">
         <p className="text-gray-500">Order not found</p>
         <button onClick={() => navigate('/dp')} className="btn-primary">Back</button>
       </div>
@@ -175,7 +175,7 @@ export default function DpNavigationPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-gray-50">
+    <div className="fixed inset-0 z-50 flex flex-col bg-black">
       {/* Top half: Map */}
       <div className="relative" style={{ height: '50vh', minHeight: '280px' }}>
         <div id="dp-nav-map" className="absolute inset-0" />
@@ -208,7 +208,7 @@ export default function DpNavigationPage() {
       </div>
 
       {/* Bottom half: Status updates panel */}
-      <div className="flex-1 overflow-y-auto bg-gray-50 px-4 py-4">
+      <div className="flex-1 overflow-y-auto bg-black px-4 py-4">
         <div className="mx-auto max-w-md">
           {/* Stats grid */}
           <div className="mb-4 grid grid-cols-3 gap-3">
@@ -321,11 +321,15 @@ export default function DpNavigationPage() {
                 </button>
               )}
               {(request.status === 'delivered' || request.status === 'completed') && (
-                <div className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-green-600"
-                  style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  <CheckCircle2 size={18} />
-                  {request.status === 'completed' ? 'Order Completed!' : 'Delivered — Awaiting Customer Confirmation'}
-                </div>
+                <button onClick={async () => {
+                  if (request.status === 'delivered') {
+                    await supabase.from('requests').update({ status: 'completed' }).eq('id', requestId)
+                    await supabase.from('orders').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('request_id', requestId)
+                  }
+                  navigate('/dp')
+                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform" style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+                  <CheckCircle2 size={18} /> {request.status === 'completed' ? 'Back to Dashboard' : 'Complete & Go Home'}
+                </button>
               )}
             </div>
           </div>

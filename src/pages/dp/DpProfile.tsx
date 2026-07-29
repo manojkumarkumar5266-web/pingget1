@@ -129,11 +129,11 @@ export default function DpProfile() {
           Send us an email with your request and our customer care executive will reach out to you shortly.
         </p>
         <a
-          href="mailto:pinggetin@gmail.com"
+          href="mailto:support@pingget.in"
           className="flex items-center gap-3 rounded-xl bg-primary-50 px-4 py-3 transition-all active:scale-[0.98] dark:bg-primary-900/20"
         >
           <Mail size={16} className="text-primary-600 dark:text-primary-400" />
-          <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">pinggetin@gmail.com</span>
+          <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">support@pingget.in</span>
           <ChevronRight size={16} className="ml-auto text-primary-400" />
         </a>
       </div>

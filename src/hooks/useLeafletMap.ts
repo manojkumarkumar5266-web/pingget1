@@ -56,8 +56,8 @@ export function useLeafletMap(
     if (tileRef.current) {
       mapRef.current.removeLayer(tileRef.current)
     }
-    const url = theme === 'dark' ? TILE_URL_DARK : TILE_URL_LIGHT
-    const attr = theme === 'dark' ? TILE_ATTR_DARK : TILE_ATTR_LIGHT
+    const url = TILE_URL_DARK
+    const attr = TILE_ATTR_DARK
     tileRef.current = L.tileLayer(url, { attribution: attr, maxZoom: 19 })
     tileRef.current.addTo(mapRef.current)
   }, [theme, ready])

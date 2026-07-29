@@ -232,16 +232,16 @@ export default function LiveTrackingPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="animate-pulse text-gray-400">Loading tracking...</div>
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <div className="animate-pulse text-white/40">Loading tracking...</div>
       </div>
     )
   }
 
   if (!request) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50">
-        <p className="text-gray-500">Order not found</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black">
+        <p className="text-white/50">Order not found</p>
         <button onClick={() => navigate('/app')} className="btn-primary">Back Home</button>
       </div>
     )
@@ -269,7 +269,7 @@ export default function LiveTrackingPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-gray-50">
+    <div className="fixed inset-0 z-50 flex flex-col bg-black">
       {/* Top half: Map */}
       <div className="relative" style={{ height: '50vh', minHeight: '280px' }}>
         <div id="tracking-map" className="absolute inset-0" />
@@ -314,7 +314,7 @@ export default function LiveTrackingPage() {
       </div>
 
       {/* Bottom half: Live updates panel */}
-      <div className="flex-1 overflow-y-auto bg-gray-50 px-4 py-4">
+      <div className="flex-1 overflow-y-auto bg-black px-4 py-4">
         <div className="mx-auto max-w-md">
           {/* Pending state */}
           {isPending && (

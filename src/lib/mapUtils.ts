@@ -3,8 +3,8 @@ import L from 'leaflet'
 export const DEFAULT_CENTER: [number, number] = [17.385, 78.4867] // Hyderabad fallback
 export const DEFAULT_ZOOM = 14
 
-export const TILE_URL_LIGHT = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-export const TILE_URL_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+export const TILE_URL_DARK = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
+export const TILE_URL_LIGHT = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
 export const TILE_ATTR_LIGHT = '&copy; OpenStreetMap contributors'
 export const TILE_ATTR_DARK = '&copy; OpenStreetMap contributors &copy; CARTO'
 
@@ -86,8 +86,8 @@ export function createVehicleIcon(vehicle: VehicleType, heading: number, isOnlin
   })
 }
 
-export const ROUTE_COLOR = '#a8c020'
-export const ROUTE_CASING_COLOR = '#1a1a2e'
+export const ROUTE_COLOR = '#ef4444'
+export const ROUTE_CASING_COLOR = '#7f1d1d'
 
 export function createRoutePolyline(map: L.Map, coordinates: [number, number][]): L.Polyline {
   const casing = L.polyline(coordinates, {

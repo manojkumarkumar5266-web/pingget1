@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { ErrorBanner } from '../../components/ui'
-import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Image as ImageIcon, Package } from 'lucide-react'
+import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Image as ImageIcon, Package, ShoppingCart, Pill, Package2, Utensils, BookOpen, Wrench, Gift, Dumbbell, Heart } from 'lucide-react'
 
 export default function CreateRequest() {
   const { profile } = useAuth()
@@ -179,6 +179,34 @@ export default function CreateRequest() {
               <Package size={16} style={{ color: '#808000' }} />
             </div>
             <h2 className="text-sm font-bold text-white">What do you need?</h2>
+          </div>
+          {/* Category chips */}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {[
+              { icon: ShoppingCart, label: 'Groceries' },
+              { icon: Pill, label: 'Medicine' },
+              { icon: Utensils, label: 'Food' },
+              { icon: Package2, label: 'Parcel' },
+              { icon: BookOpen, label: 'Stationery' },
+              { icon: Wrench, label: 'Hardware' },
+              { icon: Gift, label: 'Gifts' },
+              { icon: Heart, label: 'Personal Care' },
+            ].map(({ icon: Icon, label }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setDescription(prev => {
+                  const prefix = `[${label}] `
+                  if (prev.startsWith(prefix)) return prev
+                  return prefix + (prev.startsWith('[') ? prev.replace(/^\[[^\]]+\]\s*/, '') : prev)
+                })}
+                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition-all active:scale-95 hover:border-olive hover:text-white"
+                style={{ borderColor: 'rgba(128,128,0,0.2)' }}
+              >
+                <Icon size={14} style={{ color: '#a8c020' }} />
+                {label}
+              </button>
+            ))}
           </div>
           <textarea
             className="input min-h-24 resize-none"

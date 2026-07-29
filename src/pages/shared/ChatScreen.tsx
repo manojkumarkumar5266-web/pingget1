@@ -322,7 +322,7 @@ export default function ChatScreen() {
       body: 'The customer rejected your quotation. The order has been cancelled.',
       type: 'order_cancelled', related_id: room.request_id,
     })
-    navigate(isUser ? '/app/orders' : '/dp')
+    navigate(isUser ? '/app' : '/dp')
   }
 
   const submitRating = async (stars: number, review: string) => {
@@ -342,10 +342,7 @@ export default function ChatScreen() {
 
   return (
     <div className="flex h-screen flex-col ">
-      <header className="flex items-center gap-3 border-b border-white/10 bg-white/80 px-4 py-3 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
-        <button onClick={() => navigate(isUser ? (room ? `/app/track/${room.request_id}` : '/app/orders') : '/dp')} className="btn-ghost p-2">
-          <ArrowLeft size={20} />
-        </button>
+      <header className="flex items-center gap-3 border-b border-white/10 bg-black px-4 py-3 backdrop-blur-md">
         <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={40} />
         <div className="flex-1">
           <p className="font-semibold text-white">{otherUser?.full_name}</p>
@@ -377,6 +374,18 @@ export default function ChatScreen() {
           )}
         </div>
         {order && <StatusBadge status={order.status} />}
+        <button
+          onClick={async () => {
+            if (!room) return
+            if (confirm('Cancel this request? Chat will close and you will be taken to the home page.')) {
+              await supabase.from('requests').update({ status: 'cancelled' }).eq('id', room.request_id)
+              navigate(isUser ? '/app' : '/dp')
+            }
+          }}
+          className="ml-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-400 transition-all active:scale-95 hover:bg-red-500/20"
+        >
+          Cancel
+        </button>
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">

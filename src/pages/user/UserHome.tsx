@@ -125,12 +125,7 @@ export default function UserHome() {
         <EmptyState
           icon={<Package size={48} />}
           title="No active orders"
-          description="Create a request to get items delivered to you."
-          action={
-            <button onClick={() => navigate('/app/create')} className="btn-primary">
-              <Plus size={16} /> Create Request
-            </button>
-          }
+          description="Tap 'New Delivery Request' above to get started."
         />
       ) : (
         <div className="space-y-3">

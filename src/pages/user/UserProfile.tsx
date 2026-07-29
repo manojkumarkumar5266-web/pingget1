@@ -59,12 +59,12 @@ export default function UserProfile() {
           Send us an email with your request our customer care executive will reach out to you shortly.
         </p>
         <a
-          href="mailto:pinggetin@gmail.com"
+          href="mailto:support@pingget.in"
           className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors active:scale-[0.98]"
           style={{ backgroundColor: '#f8f8ec' }}
         >
           <Mail size={16} style={{ color: '#808000' }} />
-          <span className="text-sm font-semibold" style={{ color: '#606000' }}>pinggetin@gmail.com</span>
+          <span className="text-sm font-semibold" style={{ color: '#606000' }}>support@pingget.in</span>
         </a>
       </div>
 
