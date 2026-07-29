@@ -274,22 +274,43 @@ export default function AuthScreen() {
       cityName = cityData?.name || null
     }
 
-    const { data: signupData, error: signupError } = await supabase.functions.invoke('signup-user', {
-      body: {
-        email: email.trim(), password, role: 'user', full_name: fullName.trim(),
-        phone: phoneDigits, pincode, city: cityName,
-      },
-    })
+    let signupData: any = null
+    let signupError: any = null
+    try {
+      const result = await supabase.functions.invoke('signup-user', {
+        body: {
+          email: email.trim(), password, role: 'user', full_name: fullName.trim(),
+          phone: phoneDigits, pincode, city: cityName,
+        },
+      })
+      signupData = result.data
+      signupError = result.error
+    } catch (err: any) {
+      signupError = err
+    }
+
     if (signupError || !signupData?.success) {
+      // The edge function may have failed AFTER creating the account.
+      // Check if the profile actually exists — if so, treat as success.
+      const { data: existingProfile } = await supabase
+        .from('profiles').select('id, role').ilike('email', email.trim()).maybeSingle()
+      if (existingProfile) {
+        // Account was created — don't treat the edge function error as a signup failure
+        supabase.functions.invoke('send-email', { body: { to: email.trim(), type: 'welcome', data: { name: fullName.trim(), role: 'user' } } })
+          .catch(() => {})
+        setLoading(false); submittingRef.current = false
+        setMode('signup_success')
+        return
+      }
       const msg = signupError?.message || signupData?.error || 'Failed to create account.'
       if (msg.includes('already') || msg.includes('duplicate')) setError('An account with this email already exists.')
       else setError(msg)
       setLoading(false); submittingRef.current = false; return
     }
 
-    try {
-      await supabase.functions.invoke('send-email', { body: { to: email.trim(), type: 'welcome', data: { name: fullName.trim(), role: 'user' } } })
-    } catch { /* best effort */ }
+    // Welcome email is best-effort — never block signup success on it
+    supabase.functions.invoke('send-email', { body: { to: email.trim(), type: 'welcome', data: { name: fullName.trim(), role: 'user' } } })
+      .catch(() => {})
 
     setLoading(false)
     submittingRef.current = false
@@ -335,14 +356,45 @@ export default function AuthScreen() {
       const emailBlocked = await checkEmailAvailable(email, 'dp')
       if (emailBlocked) { setError(emailBlocked); setLoading(false); submittingRef.current = false; return }
 
-      const { data: signupData, error: signupError } = await supabase.functions.invoke('signup-user', {
-        body: {
-          email: email.trim(), password, role: 'dp', full_name: fullName.trim(),
-          phone: phoneDigits, pincode,
-          vehicle_type: vehicleType, aadhaar_number: aadhaarNumber, emergency_contact: emergencyContact,
-        },
-      })
+      let signupData: any = null
+      let signupError: any = null
+      try {
+        const result = await supabase.functions.invoke('signup-user', {
+          body: {
+            email: email.trim(), password, role: 'dp', full_name: fullName.trim(),
+            phone: phoneDigits, pincode,
+            vehicle_type: vehicleType, aadhaar_number: aadhaarNumber, emergency_contact: emergencyContact,
+          },
+        })
+        signupData = result.data
+        signupError = result.error
+      } catch (err: any) {
+        signupError = err
+      }
+
       if (signupError || !signupData?.success) {
+        // The edge function may have failed AFTER creating the account.
+        // Check if the profile actually exists — if so, treat as success.
+        const { data: existingProfile } = await supabase
+          .from('profiles').select('id, role').ilike('email', email.trim()).maybeSingle()
+        if (existingProfile) {
+          // Account was created — proceed to upload docs and show success
+          const userId = existingProfile.id
+          if (photoFile) {
+            const photoUrl = await uploadFile(photoFile, `${userId}/photo`, 'avatars')
+            if (photoUrl) await supabase.from('profiles').update({ photo_url: photoUrl }).eq('id', userId)
+          }
+          if (aadhaarFile) {
+            const aadhaarUrl = await uploadFile(aadhaarFile, `${userId}/aadhaar`, 'media')
+            if (aadhaarUrl) await supabase.from('delivery_partners').update({ aadhaar_url: aadhaarUrl }).eq('user_id', userId)
+          }
+          if (needsLicense && licenseFile) {
+            const licenseUrl = await uploadFile(licenseFile, `${userId}/license`, 'media')
+            if (licenseUrl) await supabase.from('delivery_partners').update({ driving_license_url: licenseUrl }).eq('user_id', userId)
+          }
+          setMode('dp_success')
+          return
+        }
         const msg = signupError?.message || signupData?.error || 'Failed to create account.'
         if (msg.includes('already') || msg.includes('duplicate')) setError('An account with this email already exists.')
         else setError(msg)

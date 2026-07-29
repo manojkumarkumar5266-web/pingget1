@@ -61,15 +61,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(null)
         return null
       }
-      const p = data ? (data as Profile) : null
-      console.log('[Auth] loadProfile result:', p ? `role=${p.role} status=${p.status}` : 'null')
-      setProfile(p)
+      let p = data ? (data as Profile) : null
+      // For DP accounts, delivery_partners.status is the authoritative approval
+      // status. The profiles.status may lag behind (e.g. admin approved the DP
+      // but profiles.status wasn't updated due to a CHECK constraint). Sync them.
       if (p?.role === 'dp') {
+        const { data: dpRow } = await supabase
+          .from('delivery_partners')
+          .select('status')
+          .eq('user_id', userId)
+          .maybeSingle()
+        if (dpRow?.status && dpRow.status !== p.status) {
+          p = { ...p, status: dpRow.status }
+        }
         supabase.from('delivery_partners')
           .update({ is_online: true })
           .eq('user_id', userId)
           .then(() => {})
       }
+      console.log('[Auth] loadProfile result:', p ? `role=${p.role} status=${p.status}` : 'null')
+      setProfile(p)
       return p
     } catch (e) {
       console.error('[Auth] Profile load exception:', e)

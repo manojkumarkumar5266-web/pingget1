@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from './context'
 import { FullScreenLoader } from './components/ui'
@@ -18,6 +18,9 @@ const ONBOARDING_KEY = 'pingget_permissions_done'
 const WELCOME_KEY = 'pingget_welcomed'
 
 function DpPendingScreen() {
+  const { signOut } = useAuth()
+  const navigate = useNavigate()
+  const handleBack = async () => { await signOut(); navigate('/auth', { replace: true }) }
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center animate-fade-in">
       <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl glass animate-bounce-in">
@@ -27,14 +30,17 @@ function DpPendingScreen() {
       <p className="mb-6 max-w-sm text-sm text-white/60">
         Your delivery partner application is under review. You will be notified once an admin approves it.
       </p>
-      <a href="/auth" className="btn-primary inline-flex items-center gap-2">
+      <button onClick={handleBack} className="btn-primary inline-flex items-center gap-2">
         <ArrowLeft size={16} /> Back to Sign In
-      </a>
+      </button>
     </div>
   )
 }
 
 function DpRejectedScreen() {
+  const { signOut } = useAuth()
+  const navigate = useNavigate()
+  const handleBack = async () => { await signOut(); navigate('/auth', { replace: true }) }
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center animate-fade-in">
       <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl glass animate-bounce-in">
@@ -44,9 +50,9 @@ function DpRejectedScreen() {
       <p className="mb-6 max-w-sm text-sm text-white/60">
         Your delivery partner application was not approved. Please contact support for more details.
       </p>
-      <a href="/auth" className="btn-primary inline-flex items-center gap-2">
+      <button onClick={handleBack} className="btn-primary inline-flex items-center gap-2">
         <ArrowLeft size={16} /> Back to Sign In
-      </a>
+      </button>
     </div>
   )
 }
