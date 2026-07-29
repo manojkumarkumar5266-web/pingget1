@@ -120,7 +120,7 @@ export default function SearchingMapPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-white">
+    <div className="fixed inset-0 z-50 bg-black">
       {/* Full screen map */}
       <div id="searching-map" className="absolute inset-0" />
 
