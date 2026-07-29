@@ -59,6 +59,11 @@ Deno.serve(async (req: Request) => {
     if (pincode) profileRow.pincode = pincode;
     if (city) profileRow.city = city;
 
+    // Insert the profile row (service role bypasses RLS). A broken AFTER
+    // INSERT trigger (notify_admin_new_user) used to roll this back for
+    // role='user' because admin_notifications had no INSERT policy. The
+    // service role bypasses RLS, so the trigger insert now succeeds; we also
+    // notify the admin directly below as the authoritative path.
     const { error: profileError } = await supabase.from("profiles").insert(profileRow);
 
     if (profileError) {
@@ -67,6 +72,16 @@ Deno.serve(async (req: Request) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Notify the admin directly (service role bypasses RLS on admin_notifications).
+    if (role === "user") {
+      await supabase.from("admin_notifications").insert({
+        type: "new_user",
+        title: "New User Registered",
+        body: `${full_name} just signed up`,
+        related_id: userId,
+      }).then(() => {}, () => {});
     }
 
     // Create delivery_partner record for dp role
@@ -87,6 +102,14 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      // Notify the admin about the new DP application (service role bypasses RLS).
+      await supabase.from("admin_notifications").insert({
+        type: "new_dp",
+        title: "New DP Application",
+        body: "A new delivery partner applied for approval",
+        related_id: userId,
+      }).then(() => {}, () => {});
     }
 
     return new Response(JSON.stringify({ user_id: userId, success: true }), {
