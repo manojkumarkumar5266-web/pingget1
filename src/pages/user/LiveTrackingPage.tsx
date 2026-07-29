@@ -6,7 +6,7 @@ import { useLeafletMap } from '../../hooks/useLeafletMap'
 import { createVehicleIcon, createUserLocationIcon, createPickupIcon, createDestinationIcon, fetchRoute, formatETA, vehicleLabel, normalizeVehicle, type LatLng } from '../../lib/mapUtils'
 import { formatDistance as fmtDist, STATUS_LABELS } from '../../lib/utils'
 import L from 'leaflet'
-import { ArrowLeft, Phone, MessageCircle, Star, MapPin, Clock, Bike, Navigation, CheckCircle2, Package } from 'lucide-react'
+import { ArrowLeft, Phone, MessageCircle, Star, MapPin, Clock, Bike, CheckCircle2, Package, PackageCheck } from 'lucide-react'
 
 const TRACKING_STEPS = [
   { key: 'accepted', label: 'Order Accepted', icon: CheckCircle2 },
@@ -219,6 +219,23 @@ export default function LiveTrackingPage() {
   const currentStepIndex = TRACKING_STEPS.findIndex(s => s.key === request.status)
   const isCancelled = request.status === 'cancelled'
   const isPending = request.status === 'pending'
+  const isDelivered = request.status === 'delivered' || request.status === 'cash_received'
+
+  const confirmDelivery = async () => {
+    await supabase.from('requests').update({ status: 'completed' }).eq('id', requestId)
+    await supabase.from('orders').update({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    }).eq('request_id', requestId)
+    await supabase.from('notifications').insert({
+      user_id: request.accepted_dp_id,
+      title: 'Delivery Confirmed',
+      body: 'Customer confirmed receipt. The order is now complete.',
+      type: 'order_completed',
+      related_id: requestId,
+    })
+    navigate('/app')
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-gray-50">
@@ -320,6 +337,28 @@ export default function LiveTrackingPage() {
                   <MessageCircle size={16} /> Chat
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Accept Delivery button */}
+          {isDelivered && (
+            <div className="mb-4 rounded-2xl border border-green-200 bg-green-50 p-4 animate-slide-up">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-100">
+                  <PackageCheck size={20} className="text-green-600" />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">Order has been delivered!</p>
+                  <p className="text-xs text-gray-500">Confirm receipt to complete the order</p>
+                </div>
+              </div>
+              <button
+                onClick={confirmDelivery}
+                className="w-full rounded-2xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
+                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}
+              >
+                Accept Delivery
+              </button>
             </div>
           )}
 

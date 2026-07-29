@@ -231,36 +231,67 @@ export default function DpNavigationPage() {
 
           {/* Status update buttons */}
           <div className="rounded-2xl border border-gray-200 bg-white p-4">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Update Status</div>
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Update Delivery Status</div>
             <div className="space-y-2">
               {request.status === 'accepted' && (
                 <button onClick={async () => {
+                  await supabase.from('requests').update({ status: 'confirmed' }).eq('id', requestId)
+                  await supabase.from('orders').update({ status: 'confirmed' }).eq('request_id', requestId)
+                  await supabase.from('notifications').insert({ user_id: request.user_id, title: 'Order Confirmed', body: 'Your delivery partner confirmed. They will start shopping soon.', type: 'order_status', related_id: requestId })
+                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform" style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                  <Package size={18} /> Confirm Order
+                </button>
+              )}
+              {request.status === 'confirmed' && (
+                <button onClick={async () => {
+                  await supabase.from('requests').update({ status: 'shopping' }).eq('id', requestId)
+                  await supabase.from('orders').update({ status: 'shopping' }).eq('request_id', requestId)
+                  await supabase.from('notifications').insert({ user_id: request.user_id, title: 'Shopping Started', body: 'Your delivery partner is now shopping for your items.', type: 'order_status', related_id: requestId })
+                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform" style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                  <Package size={18} /> Start Shopping
+                </button>
+              )}
+              {request.status === 'shopping' && (
+                <button onClick={async () => {
+                  await supabase.from('requests').update({ status: 'purchased' }).eq('id', requestId)
+                  await supabase.from('orders').update({ status: 'purchased' }).eq('request_id', requestId)
+                  await supabase.from('notifications').insert({ user_id: request.user_id, title: 'Items Purchased', body: 'Items purchased! Your delivery partner is heading your way soon.', type: 'order_status', related_id: requestId })
+                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform" style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                  <Package size={18} /> Items Purchased
+                </button>
+              )}
+              {request.status === 'purchased' && (
+                <button onClick={async () => {
                   await supabase.from('requests').update({ status: 'on_the_way' }).eq('id', requestId)
-                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                  <Navigation size={18} /> Start Trip
+                  await supabase.from('orders').update({ status: 'on_the_way' }).eq('request_id', requestId)
+                  await supabase.from('notifications').insert({ user_id: request.user_id, title: 'On The Way!', body: 'Your delivery partner is heading to your location.', type: 'order_status', related_id: requestId })
+                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform" style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                  <Navigation size={18} /> On The Way
                 </button>
               )}
               {request.status === 'on_the_way' && (
                 <button onClick={async () => {
                   await supabase.from('requests').update({ status: 'arrived' }).eq('id', requestId)
-                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                  await supabase.from('orders').update({ status: 'arrived' }).eq('request_id', requestId)
+                  await supabase.from('notifications').insert({ user_id: request.user_id, title: 'Partner Arrived', body: 'Your delivery partner has arrived. Please be ready to receive.', type: 'order_status', related_id: requestId })
+                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform" style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
                   <MapPin size={18} /> Mark Arrived
                 </button>
               )}
               {request.status === 'arrived' && (
                 <button onClick={async () => {
                   await supabase.from('requests').update({ status: 'delivered' }).eq('id', requestId)
-                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                  await supabase.from('orders').update({ status: 'delivered' }).eq('request_id', requestId)
+                  await supabase.from('notifications').insert({ user_id: request.user_id, title: 'Order Delivered', body: 'Your order has been delivered. Please confirm receipt in the app.', type: 'order_status', related_id: requestId })
+                }} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform" style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
                   <CheckCircle2 size={18} /> Mark Delivered
                 </button>
               )}
               {(request.status === 'delivered' || request.status === 'completed') && (
                 <div className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-green-600"
                   style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  <CheckCircle2 size={18} /> Delivered Successfully
+                  <CheckCircle2 size={18} />
+                  {request.status === 'completed' ? 'Order Completed!' : 'Delivered — Awaiting Customer Confirmation'}
                 </div>
               )}
             </div>

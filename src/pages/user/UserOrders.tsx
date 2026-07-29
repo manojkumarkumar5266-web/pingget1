@@ -3,14 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile } from '../../lib/supabase'
 import { EmptyState, StatusBadge, Avatar } from '../../components/ui'
-import { formatTime, formatCurrency, STATUS_LABELS } from '../../lib/utils'
-import { ClipboardList, Clock, MapPin, Repeat, MessageCircle, PackageCheck, Lock, Bike, Camera, XCircle, Navigation } from 'lucide-react'
-import DeliveryProofUploader from '../../components/DeliveryProofUploader'
+import { formatTime } from '../../lib/utils'
+import { ClipboardList, Clock, MapPin, Repeat, MessageCircle, Lock, Bike, XCircle, Navigation } from 'lucide-react'
 
 type Tab = 'active' | 'completed' | 'cancelled'
 type RequestWithDp = DeliveryRequest & { _dp?: Profile }
-
-const ORDER_FLOW = ['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'completed']
 
 export default function UserOrders() {
   const { profile } = useAuth()
@@ -18,9 +15,7 @@ export default function UserOrders() {
   const [tab, setTab] = useState<Tab>('active')
   const [orders, setOrders] = useState<RequestWithDp[]>([])
   const [loading, setLoading] = useState(true)
-  const [confirming, setConfirming] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
-  const [proofReqId, setProofReqId] = useState<string | null>(null)
 
   const fetchOrders = useCallback(async () => {
     let query = supabase.from('requests').select('*').eq('user_id', profile!.id)
@@ -34,7 +29,6 @@ export default function UserOrders() {
     const { data } = await query.order('created_at', { ascending: false })
     const requests = (data as DeliveryRequest[]) || []
 
-    // Load DP profiles for accepted requests
     const dpIds = [...new Set(requests.map(r => r.accepted_dp_id).filter(Boolean))] as string[]
     let dpMap = new Map<string, Profile>()
     if (dpIds.length > 0) {
@@ -50,7 +44,6 @@ export default function UserOrders() {
     fetchOrders()
   }, [fetchOrders])
 
-  // Live updates + auto-open chat when DP accepts
   useEffect(() => {
     const channel = supabase
       .channel(`user-orders-${profile!.id}`)
@@ -59,7 +52,6 @@ export default function UserOrders() {
         filter: `user_id=eq.${profile!.id}`,
       }, async (payload) => {
         fetchOrders()
-        // Auto-navigate to chat when DP accepts — retry because DP may not have created room yet
         if ((payload.new as any).status === 'accepted' && (payload.new as any).accepted_dp_id) {
           const reqId = (payload.new as any).id
           const dpId = (payload.new as any).accepted_dp_id
@@ -83,24 +75,6 @@ export default function UserOrders() {
     return () => { supabase.removeChannel(channel) }
   }, [profile, fetchOrders, navigate])
 
-  const confirmDelivery = async (req: DeliveryRequest) => {
-    if (!req.accepted_dp_id) return
-    setConfirming(req.id)
-    await supabase.from('requests').update({ status: 'completed' }).eq('id', req.id)
-    await supabase.from('orders')
-      .update({ status: 'completed', completed_at: new Date().toISOString() })
-      .eq('request_id', req.id)
-    await supabase.from('notifications').insert({
-      user_id: req.accepted_dp_id,
-      title: 'Delivery Confirmed',
-      body: 'Customer confirmed receipt. The order is now complete.',
-      type: 'order_completed',
-      related_id: req.id,
-    })
-    setConfirming(null)
-    fetchOrders()
-  }
-
   const cancelRequest = async (req: DeliveryRequest) => {
     if (!confirm('Cancel this request? This cannot be undone.')) return
     setUpdating(req.id)
@@ -111,10 +85,9 @@ export default function UserOrders() {
 
   const goToChat = async (req: DeliveryRequest) => {
     if (!req.accepted_dp_id) return
-    const { data: rooms, error } = await supabase
+    const { data: rooms } = await supabase
       .from('chat_rooms').select('id').eq('request_id', req.id)
       .order('created_at', { ascending: true }).limit(1)
-    if (error) return
     if (rooms && rooms.length > 0) { navigate(`/app/chat/${rooms[0].id}`); return }
     const { data: newRoom } = await supabase.from('chat_rooms')
       .insert({ request_id: req.id, user_id: profile!.id, dp_id: req.accepted_dp_id })
@@ -148,143 +121,80 @@ export default function UserOrders() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-40 animate-pulse rounded-2xl glass" />)}</div>
+        <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-36 animate-pulse rounded-2xl glass" />)}</div>
       ) : orders.length === 0 ? (
         <EmptyState icon={<ClipboardList size={48} />} title={`No ${tab} orders`} />
       ) : (
         <div className="space-y-3">
           {orders.map(req => {
-            const displayStatus = req.status === 'cash_received' ? 'delivered' : req.status
-            const statusIdx = ORDER_FLOW.indexOf(displayStatus)
-            const showTracker = statusIdx !== -1
-            const isDelivered = req.status === 'delivered' || req.status === 'cash_received'
-            const isConfirming = confirming === req.id
+            const chatClosed = ['delivered', 'cash_received', 'completed'].includes(req.status)
+            const canTrack = !!req.accepted_dp_id && !['cancelled', 'completed'].includes(req.status)
 
             return (
-              <div key={req.id} className="card overflow-hidden animate-slide-up">
-                {isDelivered && (
-                  <div className="bg-success-500 px-4 py-2 text-center">
-                    <p className="text-xs font-bold text-white">Your order has been delivered — please confirm receipt</p>
+              <div key={req.id} className="card p-4 animate-slide-up">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-white">{req.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
+                    <p className="mt-0.5 line-clamp-1 text-sm text-white/50">{req.delivery_address}</p>
+                  </div>
+                  <StatusBadge status={req.status} />
+                </div>
+
+                <div className="mt-2 flex items-center gap-4 text-xs text-white/40">
+                  <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(req.created_at)}</span>
+                  <span className="flex items-center gap-1"><MapPin size={12} /> {req.delivery_address?.slice(0, 30)}</span>
+                </div>
+
+                {req.accepted_dp_id && req._dp && req.status !== 'cancelled' && (
+                  <div className="mt-3 flex items-center gap-3 rounded-xl bg-primary-50 px-3 py-2.5 dark:bg-primary-900/20">
+                    <Avatar url={req._dp.photo_url} name={req._dp.full_name || 'DP'} size={40} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-white">{req._dp.full_name}</p>
+                      {req._dp.phone && <p className="text-xs text-gray-500">{req._dp.phone}</p>}
+                      <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">Your delivery partner</p>
+                    </div>
+                    <Bike size={18} className="shrink-0 text-primary-600 dark:text-primary-400" />
                   </div>
                 )}
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-white">{req.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
-                      <p className="mt-0.5 line-clamp-1 text-sm text-white/50">{req.delivery_address}</p>
-                    </div>
-                    <StatusBadge status={req.status} />
-                  </div>
 
-                  <div className="mt-2 flex items-center gap-4 text-xs text-white/40">
-                    <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(req.created_at)}</span>
-                    <span className="flex items-center gap-1"><MapPin size={12} /> {req.delivery_address}</span>
-                  </div>
+                {req.status === 'pending' && (
+                  <button
+                    onClick={() => cancelRequest(req)}
+                    disabled={updating === req.id}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-error-200 bg-error-50 py-2.5 text-sm font-semibold text-error-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-error-900/40 dark:bg-error-950/30 dark:text-error-300"
+                  >
+                    <XCircle size={16} />
+                    {updating === req.id ? 'Cancelling...' : 'Cancel Request'}
+                  </button>
+                )}
 
-                  {/* DP info card — shown once DP accepts */}
-                  {req.accepted_dp_id && req._dp && req.status !== 'cancelled' && (
-                    <div className="mt-3 flex items-center gap-3 rounded-xl bg-primary-50 px-3 py-2.5 dark:bg-primary-900/20">
-                      <Avatar url={req._dp.photo_url} name={req._dp.full_name || 'DP'} size={40} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white">{req._dp.full_name}</p>
-                        {req._dp.phone && <p className="text-xs text-gray-500">{req._dp.phone}</p>}
-                        <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">Your delivery partner</p>
+                <div className="mt-3 flex gap-2">
+                  {req.accepted_dp_id && req.status !== 'cancelled' && (
+                    chatClosed ? (
+                      <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-gray-100 px-3 py-2.5 text-xs font-medium text-white/40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600">
+                        <Lock size={13} /> Chat Closed
                       </div>
-                      <Bike size={18} className="shrink-0 text-primary-600 dark:text-primary-400" />
-                    </div>
-                  )}
-
-                  {showTracker && (
-                    <div className="mt-3 rounded-xl bg-gray-50 px-3 py-2 dark:bg-gray-800/50">
-                      <div className="flex items-center">
-                        {ORDER_FLOW.map((s, i) => (
-                          <div key={s} className="flex flex-1 items-center">
-                            <div className={`h-2.5 w-2.5 shrink-0 rounded-full border-2 transition-all ${i < statusIdx ? 'border-primary-500 bg-primary-500' : i === statusIdx ? 'border-primary-500 bg-white dark:bg-gray-800' : 'border-gray-300 bg-gray-200 dark:border-gray-600 dark:bg-gray-700'}`} />
-                            {i < ORDER_FLOW.length - 1 && <div className={`h-0.5 flex-1 transition-all ${i < statusIdx ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'}`} />}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-1.5 flex">
-                        {ORDER_FLOW.map((s, i) => (
-                          <span key={s} className={`flex-1 text-center text-[9px] font-semibold ${i === statusIdx ? 'text-primary-600 dark:text-primary-400' : i < statusIdx ? 'text-primary-500' : 'text-white/40'}`}>
-                            {STATUS_LABELS[s]?.split(' ')[0]}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {req.status === 'on_the_way' && <p className="mt-2 text-center text-xs font-medium text-warning-600 dark:text-warning-400">Your delivery partner is on the way!</p>}
-                  {req.status === 'arrived' && <p className="mt-2 text-center text-xs font-medium text-warning-600 dark:text-warning-400">Your partner has arrived — please be ready!</p>}
-
-                  {isDelivered && !req.delivery_proof_url && (
-                    <button onClick={() => setProofReqId(req.id)}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary-300 bg-primary-50 py-2.5 text-sm font-semibold text-primary-700 transition-all active:scale-[0.98] dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
-                      <Camera size={16} /> Upload Delivery Proof
-                    </button>
-                  )}
-                  {isDelivered && req.delivery_proof_url && (
-                    <div className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-success-50 px-3 py-2.5 text-xs font-medium text-success-700 dark:bg-success-950/30 dark:text-success-300">
-                      <Camera size={14} /> Delivery proof uploaded
-                    </div>
-                  )}
-                  {isDelivered && (
-                    <button onClick={() => confirmDelivery(req)} disabled={isConfirming}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-success-600 py-3 text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-60">
-                      <PackageCheck size={18} />
-                      {isConfirming ? 'Confirming...' : 'Confirm & Accept Delivery'}
-                    </button>
-                  )}
-
-                  {req.status === 'pending' && (
-                    <button
-                      onClick={() => cancelRequest(req)}
-                      disabled={updating === req.id}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-error-200 bg-error-50 py-2.5 text-sm font-semibold text-error-700 transition-all active:scale-[0.98] disabled:opacity-60 dark:border-error-900/40 dark:bg-error-950/30 dark:text-error-300"
-                    >
-                      <XCircle size={16} />
-                      {updating === req.id ? 'Cancelling...' : 'Cancel Request'}
-                    </button>
-                  )}
-
-                  <div className="mt-3 flex gap-2">
-                    {req.accepted_dp_id && req.status !== 'cancelled' && (() => {
-                      const chatClosed = req.status === 'delivered' || req.status === 'cash_received' || req.status === 'completed'
-                      return chatClosed ? (
-                        <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-gray-100 px-3 py-2.5 text-xs font-medium text-white/40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-600">
-                          <Lock size={13} /> Chat Closed
-                        </div>
-                      ) : (
-                        <button onClick={() => goToChat(req)} className="btn-secondary flex-1 gap-1.5 text-xs">
-                          <MessageCircle size={14} /> Chat
-                        </button>
-                      )
-                    })()}
-                    {req.accepted_dp_id && req.status !== 'cancelled' && req.status !== 'delivered' && req.status !== 'cash_received' && req.status !== 'completed' && (
-                      <button onClick={() => navigate(`/app/track/${req.id}`)} className="btn-secondary flex-1 gap-1.5 text-xs">
-                        <Navigation size={14} /> Track
+                    ) : (
+                      <button onClick={() => goToChat(req)} className="btn-secondary flex-1 gap-1.5 text-xs">
+                        <MessageCircle size={14} /> Chat
                       </button>
-                    )}
-                    {tab !== 'active' && (
-                      <button onClick={() => repeatRequest(req)} className="btn-ghost flex-1 text-xs">
-                        <Repeat size={14} /> Repeat
-                      </button>
-                    )}
-                  </div>
+                    )
+                  )}
+                  {canTrack && (
+                    <button onClick={() => navigate(`/app/track/${req.id}`)} className="btn-secondary flex-1 gap-1.5 text-xs">
+                      <Navigation size={14} /> Track
+                    </button>
+                  )}
+                  {tab !== 'active' && (
+                    <button onClick={() => repeatRequest(req)} className="btn-ghost flex-1 text-xs">
+                      <Repeat size={14} /> Repeat
+                    </button>
+                  )}
                 </div>
               </div>
             )
           })}
         </div>
-      )}
-
-      {proofReqId && (
-        <DeliveryProofUploader
-          requestId={proofReqId}
-          userId={profile!.id}
-          onUploaded={() => fetchOrders()}
-          onClose={() => setProofReqId(null)}
-        />
       )}
     </div>
   )

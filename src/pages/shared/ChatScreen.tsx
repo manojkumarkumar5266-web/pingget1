@@ -7,15 +7,6 @@ import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
 import { ArrowLeft, Send, MapPin, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, Clock, CircleCheck as CheckCircle, ShoppingBag, Store, Wallet, CircleAlert as AlertCircle } from 'lucide-react'
 
 const ORDER_FLOW = ['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'completed']
-const DP_ACTION_STATUSES = ['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived']
-
-const DP_STATUS_NOTIFICATIONS: Record<string, { title: string; body: string }> = {
-  shopping: { title: 'Shopping Started', body: 'Your delivery partner is now shopping for your items.' },
-  purchased: { title: 'Items Purchased', body: 'Items have been purchased and delivery is on the way soon.' },
-  on_the_way: { title: 'On The Way!', body: 'Your delivery partner is heading to your location.' },
-  arrived: { title: 'Partner Arrived', body: 'Your delivery partner has arrived at your location. Please be ready.' },
-  delivered: { title: 'Order Delivered', body: 'Your order has been delivered. Please confirm receipt in the app.' },
-}
 
 export default function ChatScreen() {
   const { roomId } = useParams()
@@ -316,6 +307,8 @@ export default function ChatScreen() {
         body: 'The user accepted your quotation. Start shopping now.',
         type: 'order_confirmed', related_id: room.request_id,
       })
+      // Navigate user to tracking page after accepting quotation
+      navigate(`/app/track/${room.request_id}`)
     }
   }
 
@@ -328,32 +321,6 @@ export default function ChatScreen() {
       type: 'order_cancelled', related_id: room.request_id,
     })
     navigate(isUser ? '/app/orders' : '/dp')
-  }
-
-  const updateOrderStatus = async (newStatus: string) => {
-    if (!order) return
-    const updates: any = { status: newStatus }
-    if (newStatus === 'completed') updates.completed_at = new Date().toISOString()
-    const { data, error } = await supabase.from('orders').update(updates).eq('id', order.id).select().single()
-    if (!error && data) {
-      setOrder(data as Order)
-      await supabase.from('requests').update({ status: newStatus }).eq('id', room!.request_id)
-      const notifyUserId = isUser ? room!.dp_id : room!.user_id
-      if (isUser && newStatus === 'completed') {
-        await supabase.from('notifications').insert({
-          user_id: notifyUserId, title: 'Delivery Confirmed',
-          body: 'Customer confirmed receipt. The order is now complete.',
-          type: 'order_completed', related_id: room!.request_id,
-        })
-        setShowRating(true)
-      } else if (!isUser && DP_STATUS_NOTIFICATIONS[newStatus]) {
-        const notif = DP_STATUS_NOTIFICATIONS[newStatus]
-        await supabase.from('notifications').insert({
-          user_id: notifyUserId, title: notif.title, body: notif.body,
-          type: 'order_status', related_id: room!.request_id,
-        })
-      }
-    }
   }
 
   const submitRating = async (stars: number, review: string) => {
@@ -369,12 +336,7 @@ export default function ChatScreen() {
   if (loading) return <div className="flex h-screen items-center justify-center text-sm text-white/40">Loading chat...</div>
   if (error) return <div className="p-4"><ErrorBanner message={error} /></div>
 
-  const effectiveStatus = order?.status === 'cash_received' ? 'delivered' : order?.status
-  const currentStatusIdx = effectiveStatus ? ORDER_FLOW.indexOf(effectiveStatus) : -1
-  const isDpTurn = !isUser && order != null && DP_ACTION_STATUSES.includes(order.status)
-  const nextDpStatus = isDpTurn ? ORDER_FLOW[ORDER_FLOW.indexOf(order!.status) + 1] : null
-  const isUserDeliveryConfirm = isUser && (order?.status === 'delivered' || order?.status === 'cash_received')
-  const chatLocked = order?.status === 'completed' || order?.status === 'delivered' || order?.status === 'cash_received'
+  const chatLocked = order?.status === 'completed'
 
   return (
     <div className="flex h-screen flex-col ">
@@ -414,27 +376,6 @@ export default function ChatScreen() {
         </div>
         {order && <StatusBadge status={order.status} />}
       </header>
-
-      {order && (
-        <div className="border-b border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex items-center justify-between">
-            {ORDER_FLOW.map((s, i) => (
-              <div key={s} className="flex flex-1 flex-col items-center">
-                <div className={`h-2.5 w-2.5 rounded-full transition-all ${i <= currentStatusIdx ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-                <span className={`mt-1 text-[10px] font-medium ${i <= currentStatusIdx ? 'text-primary-600 dark:text-primary-400' : 'text-white/40'}`}>
-                  {STATUS_LABELS[s]?.split(' ')[0]}
-                </span>
-              </div>
-            ))}
-          </div>
-          {order.delivery_charge > 0 && (
-            <div className="mt-2 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-800">
-              <span className="text-xs text-gray-500">Delivery Charge</span>
-              <span className="text-sm font-bold text-white">{formatCurrency(order.delivery_charge)}</span>
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="mx-auto max-w-md space-y-2">
@@ -529,43 +470,6 @@ export default function ChatScreen() {
         </div>
       </div>
 
-      {isDpTurn && nextDpStatus && (
-        <div className="border-t border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
-          <button onClick={() => updateOrderStatus(nextDpStatus)} className="btn-primary w-full">
-            Mark as {STATUS_LABELS[nextDpStatus]}
-          </button>
-        </div>
-      )}
-
-      {!isUser && (order?.status === 'delivered' || order?.status === 'cash_received') && (
-        <div className="border-t border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex items-center justify-center gap-2 rounded-xl bg-warning-50 px-4 py-3 dark:bg-warning-950/30">
-            <Clock size={16} className="shrink-0 text-warning-600 dark:text-warning-400" />
-            <p className="text-sm font-medium text-warning-700 dark:text-warning-300">Waiting for customer to confirm delivery...</p>
-          </div>
-        </div>
-      )}
-
-      {isUser && order && DP_ACTION_STATUSES.includes(order.status) && (
-        <div className="border-t border-white/10 bg-white px-4 py-2 dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-center text-xs text-white/40">Tracking your order in real-time...</p>
-        </div>
-      )}
-
-      {isUserDeliveryConfirm && (
-        <div className="border-t border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
-          <div className="rounded-xl bg-success-50 p-4 dark:bg-success-950/30">
-            <div className="mb-3 flex items-center justify-center gap-2">
-              <PackageCheck size={20} className="text-success-600 dark:text-success-400" />
-              <p className="text-sm font-semibold text-success-700 dark:text-success-300">Your order has been delivered!</p>
-            </div>
-            <button onClick={() => updateOrderStatus('completed')} className="w-full rounded-xl bg-success-600 py-3 text-sm font-bold text-white transition-all active:scale-[0.98] hover:bg-success-700">
-              Confirm &amp; Accept Delivery
-            </button>
-          </div>
-        </div>
-      )}
-
       {order?.status === 'completed' && isUser && !hasRated && (
         <div className="border-t border-white/10 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
           <button onClick={() => setShowRating(true)} className="btn-accent w-full"><Star size={18} /> Rate Delivery Partner</button>
@@ -603,7 +507,7 @@ export default function ChatScreen() {
                   <Mic size={14} /> Voice Note
                 </button>
               )}
-              {order && DP_ACTION_STATUSES.includes(order.status) && (
+              {!isUser && order && ['confirmed','shopping','purchased','on_the_way','arrived'].includes(order.status) && (
                 <button onClick={() => { setShowPickupPhoto(true); setShowAttachMenu(false) }} className="flex items-center gap-1.5 rounded-xl border border-accent-200 bg-accent-50 px-3 py-2 text-xs font-medium text-accent-700 dark:border-accent-800 dark:bg-accent-900/30 dark:text-accent-300">
                   <PackageCheck size={14} /> Pickup Proof
                 </button>

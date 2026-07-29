@@ -7,7 +7,7 @@ import { createVehicleIcon, createUserLocationIcon, type VehicleType } from '../
 import { formatDistance } from '../../lib/utils'
 import L from 'leaflet'
 import { supabase } from '../../lib/supabase'
-import { X, Bike, MapPin, CheckCircle2, ChevronRight, Clock, Package, Search } from 'lucide-react'
+import { X, Bike, CheckCircle2, ChevronRight, Clock, Package, Search, MapPin } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 const SCAN_RADIUS_KM = 5
@@ -108,181 +108,125 @@ export default function SearchingMapPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white">
-      {/* Top half: Map */}
-      <div className="relative" style={{ height: '50vh', minHeight: '280px' }}>
-        <div id="searching-map" className="absolute inset-0" />
+    <div className="fixed inset-0 z-50 bg-white">
+      {/* Full screen map */}
+      <div id="searching-map" className="absolute inset-0" />
 
-        {/* Top overlay */}
-        <div className="absolute left-0 right-0 top-0 z-[1000] px-4 pt-12">
-          <div className="map-glass-panel p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-widest text-white/50">
-                  {phase === 'scanning' ? 'Scanning...' : phase === 'found' ? 'Partners Found' : 'Search Complete'}
-                </p>
-                <h2 className="text-base font-bold text-white mt-0.5">
-                  {phase === 'scanning'
-                    ? 'Finding nearby partners'
-                    : phase === 'found'
-                    ? `${dps.length} partner${dps.length === 1 ? '' : 's'} nearby`
-                    : 'No partners in range'}
-                </h2>
-              </div>
-              {phase === 'scanning' && (
-                <button onClick={cancelRequest} className="map-control-btn map-control-dark">
-                  <X size={18} />
-                </button>
-              )}
-            </div>
-            <div className="mt-2.5 flex items-center gap-1.5">
-              {Array.from({ length: MAX_SCANS }).map((_, i) => (
-                <div key={i} className="h-1.5 rounded-full transition-all duration-500"
-                  style={{ width: i < scanCount ? 24 : 8, background: i < scanCount ? '#808000' : 'rgba(255,255,255,0.15)' }} />
-              ))}
-            </div>
-          </div>
+      {/* Ripple overlay while scanning */}
+      {phase === 'scanning' && userLocation && map && (
+        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[500] -translate-x-1/2 -translate-y-1/2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="searching-ripple absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{ width: 120, height: 120, animationDelay: `${i * 0.6}s` }} />
+          ))}
         </div>
+      )}
 
-        {/* Ripple overlay on map */}
-        {phase === 'scanning' && userLocation && map && (
-          <div className="pointer-events-none absolute left-1/2 top-1/2 z-[500] -translate-x-1/2 -translate-y-1/2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="searching-ripple absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                style={{ width: 100, height: 100, animationDelay: `${i * 0.6}s` }} />
+      {/* Top overlay bar */}
+      <div className="absolute left-0 right-0 top-0 z-[1000] px-4 pt-12">
+        <div className="map-glass-panel p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-widest text-white/50">
+                {phase === 'scanning' ? 'Scanning...' : phase === 'found' ? 'Partners Found' : 'Search Complete'}
+              </p>
+              <h2 className="text-base font-bold text-white mt-0.5">
+                {phase === 'scanning'
+                  ? 'Finding nearby partners'
+                  : phase === 'found'
+                  ? `${dps.length} partner${dps.length === 1 ? '' : 's'} nearby`
+                  : 'No partners in range'}
+              </h2>
+            </div>
+            {phase === 'scanning' && (
+              <button onClick={cancelRequest} className="map-control-btn map-control-dark">
+                <X size={18} />
+              </button>
+            )}
+          </div>
+          {/* Scan progress dots */}
+          <div className="mt-2.5 flex items-center gap-1.5">
+            {Array.from({ length: MAX_SCANS }).map((_, i) => (
+              <div key={i} className="h-1.5 rounded-full transition-all duration-500"
+                style={{ width: i < scanCount ? 24 : 8, background: i < scanCount ? '#808000' : 'rgba(255,255,255,0.15)' }} />
             ))}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Bottom half: Live updates panel */}
-      <div className="flex-1 overflow-y-auto bg-gray-50 px-4 py-4">
-        <div className="mx-auto max-w-md">
-          {/* Status header */}
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-              {phase === 'scanning' ? <Search size={20} className="text-white animate-pulse" /> : <CheckCircle2 size={20} className="text-white" />}
+      {/* Bottom overlay panel */}
+      <div className="absolute bottom-0 left-0 right-0 z-[1000] px-4 pb-8">
+        <div className="mx-auto max-w-md space-y-3">
+          {phase === 'scanning' && (
+            <div className="map-glass-panel p-4 animate-slide-up">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg,#808000,#606000)' }}>
+                  <Search size={20} className="text-white animate-pulse" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Searching for partners...</p>
+                  <p className="text-xs text-white/60">
+                    {dps.length > 0
+                      ? `${dps.length} partner${dps.length === 1 ? '' : 's'} found nearby`
+                      : `Scanning ${Math.min(scanCount + 1, MAX_SCANS)}/${MAX_SCANS} within ${SCAN_RADIUS_KM}km`}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
+                <Clock size={14} className="text-white/60 shrink-0" />
+                <p className="text-xs text-white/70">Chat opens automatically when a partner accepts</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-gray-900">
-                {phase === 'scanning' ? 'Searching for partners...' : phase === 'found' ? 'Partners found!' : 'No partners found'}
-              </p>
-              <p className="text-xs text-gray-500">
-                {phase === 'scanning' ? `Scan ${Math.min(scanCount, MAX_SCANS)}/${MAX_SCANS} complete` : 'Your request is live'}
-              </p>
-            </div>
-          </div>
+          )}
 
-          {/* Live update cards */}
-          <div className="space-y-3">
-            {phase === 'scanning' && (
-              <>
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 animate-slide-up">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100">
-                      <Search size={16} className="text-amber-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">Scanning nearby partners</p>
-                      <p className="text-xs text-gray-500">
-                        {dps.length > 0
-                          ? `${dps.length} partner${dps.length === 1 ? '' : 's'} found${dps[0]?.distance_meters ? ` · ${formatDistance(dps[0].distance_meters)} away` : ''}`
-                          : 'Looking for delivery partners within 5km...'}
-                      </p>
-                    </div>
+          {phase === 'found' && (
+            <div className="space-y-2 animate-slide-up">
+              <div className="map-glass-panel p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-500/80">
+                    <CheckCircle2 size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{dps.length} partner{dps.length !== 1 ? 's' : ''} available!</p>
+                    <p className="text-xs text-white/60">Waiting for a partner to accept your request</p>
                   </div>
                 </div>
-                <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100">
-                      <Package size={16} className="text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">Your request is live</p>
-                      <p className="text-xs text-gray-500">Partners can see and accept your request</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-100">
-                      <Clock size={16} className="text-purple-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">Waiting for acceptance</p>
-                      <p className="text-xs text-gray-500">Once a partner accepts, chat will open automatically</p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {phase === 'found' && (
-              <>
-                <div className="rounded-2xl border border-green-200 bg-green-50 p-4 animate-slide-up">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-100">
-                      <CheckCircle2 size={16} className="text-green-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">{dps.length} partners available!</p>
-                      <p className="text-xs text-gray-500">Ready to accept your request</p>
-                    </div>
-                  </div>
-                </div>
-                {dps.slice(0, 3).map((dp, i) => (
-                  <div key={dp.dp_user_id} className="rounded-2xl border border-gray-200 bg-white p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(128,128,0,0.15)' }}>
-                        <Bike size={16} style={{ color: '#808000' }} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900">Partner {i + 1}</p>
-                        <p className="text-xs text-gray-500">
-                          {dp.distance_meters ? `${formatDistance(dp.distance_meters)} away` : 'Nearby'}
-                          {dp.vehicle_type ? ` · ${dp.vehicle_type}` : ''}
-                        </p>
-                      </div>
-                    </div>
+                {dps.slice(0, 2).map((dp, i) => (
+                  <div key={dp.dp_user_id} className="mt-2 flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
+                    <Bike size={14} style={{ color: '#808000' }} />
+                    <span className="text-xs text-white/80">Partner {i + 1}{dp.distance_meters ? ` · ${formatDistance(dp.distance_meters)} away` : ''}</span>
                   </div>
                 ))}
-                <button onClick={() => navigate('/app/orders')}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-white active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                  Track My Request <ChevronRight size={16} />
+              </div>
+              <button onClick={() => navigate('/app/orders')}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-white active:scale-95"
+                style={{ background: 'linear-gradient(135deg,#808000,#606000)' }}>
+                Track My Request <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+
+          {phase === 'none' && (
+            <div className="space-y-2 animate-slide-up">
+              <div className="map-glass-panel p-4 text-center">
+                <MapPin size={24} className="mx-auto mb-2 text-white/50" />
+                <p className="font-semibold text-white">No partners online nearby</p>
+                <p className="mt-1 text-xs text-white/60">Your request stays live — a partner may accept it soon</p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={cancelRequest}
+                  className="flex-1 rounded-2xl py-3 text-sm font-semibold text-white/80 active:scale-95"
+                  style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                  Cancel
                 </button>
-              </>
-            )}
-
-            {phase === 'none' && (
-              <>
-                <div className="rounded-2xl border border-gray-200 bg-white p-4 text-center">
-                  <p className="font-semibold text-gray-900">No partners online nearby right now</p>
-                  <p className="mt-1 text-xs text-gray-500">Your request is still live — a partner may accept it shortly</p>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={cancelRequest}
-                    className="flex-1 rounded-2xl py-3 text-sm font-semibold text-gray-600 active:scale-95"
-                    style={{ background: '#f3f4f6', border: '1px solid #e5e7eb' }}>
-                    Cancel
-                  </button>
-                  <button onClick={() => navigate('/app/orders')}
-                    className="flex-1 rounded-2xl py-3 text-sm font-bold text-white active:scale-95"
-                    style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                    Track Order
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Info note */}
-          <div className="mt-4 rounded-xl bg-gray-100 p-3">
-            <p className="text-xs text-gray-500 text-center">
-              <MapPin size={12} className="inline mr-1" />
-              Once a delivery partner accepts, chat will open automatically to discuss the quotation.
-            </p>
-          </div>
+                <button onClick={() => navigate('/app/orders')}
+                  className="flex-1 rounded-2xl py-3 text-sm font-bold text-white active:scale-95"
+                  style={{ background: 'linear-gradient(135deg,#808000,#606000)' }}>
+                  Track Order
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
