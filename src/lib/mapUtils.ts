@@ -71,7 +71,7 @@ export function createVehicleIcon(vehicle: VehicleType, heading: number, isOnlin
     <div class="dp-marker-wrapper">
       ${pulse}
       <div class="dp-marker-body" style="transform:rotate(${heading}deg);background:${color}">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
           ${svgPaths[vehicle]}
         </svg>
       </div>
@@ -81,9 +81,40 @@ export function createVehicleIcon(vehicle: VehicleType, heading: number, isOnlin
   return L.divIcon({
     html,
     className: 'dp-vehicle-marker',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
+    iconSize: [52, 52],
+    iconAnchor: [26, 26],
   })
+}
+
+export const ROUTE_COLOR = '#a8c020'
+export const ROUTE_CASING_COLOR = '#1a1a2e'
+
+export function createRoutePolyline(map: L.Map, coordinates: [number, number][]): L.Polyline {
+  const casing = L.polyline(coordinates, {
+    color: ROUTE_CASING_COLOR,
+    weight: 12,
+    opacity: 0.9,
+    lineCap: 'round',
+    lineJoin: 'round',
+  }).addTo(map)
+  const line = L.polyline(coordinates, {
+    color: ROUTE_COLOR,
+    weight: 7,
+    opacity: 1,
+    lineCap: 'round',
+    lineJoin: 'round',
+    className: 'route-line-animated',
+  }).addTo(map)
+  // Stash casing on the line so callers can remove both together.
+  ;(line as any)._casing = casing
+  return line
+}
+
+export function removeRoutePolyline(map: L.Map, line: L.Polyline | null) {
+  if (!line) return
+  const casing = (line as any)._casing as L.Polyline | undefined
+  if (casing) map.removeLayer(casing)
+  map.removeLayer(line)
 }
 
 export function createUserLocationIcon(): L.DivIcon {

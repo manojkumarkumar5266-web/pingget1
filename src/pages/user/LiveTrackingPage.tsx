@@ -3,7 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } from '../../lib/supabase'
 import { useAuth } from '../../context'
 import { useLeafletMap } from '../../hooks/useLeafletMap'
-import { createVehicleIcon, createUserLocationIcon, createPickupIcon, createDestinationIcon, fetchRoute, formatETA, vehicleLabel, normalizeVehicle, type LatLng } from '../../lib/mapUtils'
+import {
+  createVehicleIcon, createUserLocationIcon, createPickupIcon, createDestinationIcon,
+  fetchRoute, formatETA, vehicleLabel, normalizeVehicle,
+  createRoutePolyline, removeRoutePolyline,
+  type LatLng,
+} from '../../lib/mapUtils'
 import { formatDistance as fmtDist, STATUS_LABELS } from '../../lib/utils'
 import L from 'leaflet'
 import { ArrowLeft, Phone, MessageCircle, Star, MapPin, Clock, Bike, CheckCircle2, Package, PackageCheck } from 'lucide-react'
@@ -17,6 +22,15 @@ const TRACKING_STEPS = [
   { key: 'arrived', label: 'Partner Arrived', icon: MapPin },
   { key: 'delivered', label: 'Delivered', icon: CheckCircle2 },
 ]
+
+function fitBoundsToMarkers(map: L.Map, points: L.LatLngExpression[]) {
+  if (points.length < 2) {
+    map.setView(points[0], 15, { animate: true })
+    return
+  }
+  const bounds = L.latLngBounds(points)
+  map.fitBounds(bounds, { paddingTopLeft: [40, 120], paddingBottomRight: [40, 40], animate: true })
+}
 
 export default function LiveTrackingPage() {
   const { requestId } = useParams<{ requestId: string }>()
@@ -39,6 +53,7 @@ export default function LiveTrackingPage() {
   const routeLineRef = useRef<L.Polyline | null>(null)
   const prevPosRef = useRef<LatLng | null>(null)
   const animFrameRef = useRef<number | null>(null)
+  const fitScheduledRef = useRef(false)
 
   // Fetch request + DP data
   useEffect(() => {
@@ -108,18 +123,24 @@ export default function LiveTrackingPage() {
 
   // User marker
   useEffect(() => {
-    if (!map || !profile?.gps_lat || !profile?.gps_lng) return
+    if (!map || !ready || !profile?.gps_lat || !profile?.gps_lng) return
     const pos: L.LatLngExpression = [profile.gps_lat, profile.gps_lng]
     if (!userMarkerRef.current) {
       userMarkerRef.current = L.marker(pos, { icon: createUserLocationIcon(), zIndexOffset: 1000 }).addTo(map)
     } else {
       userMarkerRef.current.setLatLng(pos)
     }
-  }, [map, profile])
+    if (!fitScheduledRef.current) {
+      fitScheduledRef.current = true
+      const pts: L.LatLngExpression[] = [pos]
+      if (dpMarkerRef.current) pts.push(dpMarkerRef.current.getLatLng())
+      fitBoundsToMarkers(map, pts)
+    }
+  }, [map, ready, profile])
 
   // Pickup & destination markers
   useEffect(() => {
-    if (!map || !request) return
+    if (!map || !ready || !request) return
     if (request.pickup_lat && request.pickup_lng) {
       if (!pickupMarkerRef.current) {
         pickupMarkerRef.current = L.marker([request.pickup_lat, request.pickup_lng], { icon: createPickupIcon() }).addTo(map)
@@ -134,13 +155,14 @@ export default function LiveTrackingPage() {
         destMarkerRef.current.setLatLng([request.delivery_lat, request.delivery_lng])
       }
     }
-  }, [map, request])
+  }, [map, ready, request])
 
   // DP marker with smooth animation + route line
   useEffect(() => {
-    if (!map || !dpPosition) return
+    if (!map || !ready || !dpPosition) return
     const vehicle = normalizeVehicle(dpData?.vehicle_type ?? null)
     const prev = prevPosRef.current
+    const isDelivered = request?.status === 'delivered' || request?.status === 'cash_received' || request?.status === 'completed'
 
     if (!dpMarkerRef.current) {
       dpMarkerRef.current = L.marker([dpPosition.lat, dpPosition.lng], {
@@ -148,7 +170,6 @@ export default function LiveTrackingPage() {
         zIndexOffset: 500,
       }).addTo(map)
       prevPosRef.current = dpPosition
-      map.setView([dpPosition.lat, dpPosition.lng], 15)
     } else if (prev) {
       const from = prev
       const to = dpPosition
@@ -170,8 +191,6 @@ export default function LiveTrackingPage() {
         const heading = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360
         dpMarkerRef.current?.setIcon(createVehicleIcon(vehicle, heading, true))
 
-        map.panTo([lat, lng], { animate: false })
-
         if (fraction < 1) {
           animFrameRef.current = requestAnimationFrame(animate)
         } else {
@@ -182,22 +201,34 @@ export default function LiveTrackingPage() {
       animFrameRef.current = requestAnimationFrame(animate)
     }
 
-    // Fetch route from DP to user's delivery location — olive green path
-    if (request?.delivery_lat && request?.delivery_lng) {
+    // Fit bounds to keep both user and DP visible
+    const pts: L.LatLngExpression[] = []
+    if (userMarkerRef.current) pts.push(userMarkerRef.current.getLatLng())
+    pts.push([dpPosition.lat, dpPosition.lng])
+    if (destMarkerRef.current) pts.push(destMarkerRef.current.getLatLng())
+    fitBoundsToMarkers(map, pts)
+
+    // Fetch route from DP to user's delivery location — keep until delivered
+    if (!isDelivered && request?.delivery_lat && request?.delivery_lng) {
       fetchRoute(dpPosition, { lat: request.delivery_lat, lng: request.delivery_lng }).then(route => {
         if (!route || !map) return
-        if (routeLineRef.current) map.removeLayer(routeLineRef.current)
-        routeLineRef.current = L.polyline(route.coordinates, {
-          color: '#808000',
-          weight: 5,
-          opacity: 0.8,
-          className: 'route-line-animated',
-        }).addTo(map)
+        removeRoutePolyline(map, routeLineRef.current)
+        routeLineRef.current = createRoutePolyline(map, route.coordinates)
         setEta(formatETA(route.duration_seconds))
         setDist(route.distance_meters)
       })
+    } else if (isDelivered && routeLineRef.current) {
+      removeRoutePolyline(map, routeLineRef.current)
+      routeLineRef.current = null
     }
-  }, [map, dpPosition, dpData, request])
+  }, [map, ready, dpPosition, dpData, request])
+
+  // Cleanup route on unmount
+  useEffect(() => {
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+    }
+  }, [])
 
   if (loading) {
     return (
@@ -274,7 +305,7 @@ export default function LiveTrackingPage() {
         {dpPosition && !isPending && (
           <div className="absolute bottom-3 left-1/2 z-[1000] -translate-x-1/2">
             <div className="map-glass-panel flex items-center gap-3 px-4 py-2">
-              <Clock size={16} className="text-[#808000]" />
+              <Clock size={16} className="text-[#a8c020]" />
               <span className="text-sm font-bold text-white">{eta}</span>
               <span className="text-xs text-white/50">{dist > 0 ? fmtDist(dist) : ''} away</span>
             </div>

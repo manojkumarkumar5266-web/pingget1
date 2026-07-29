@@ -3,10 +3,23 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, type DeliveryRequest } from '../../lib/supabase'
 import { useAuth } from '../../context'
 import { useLeafletMap } from '../../hooks/useLeafletMap'
-import { createVehicleIcon, createPickupIcon, createDestinationIcon, fetchRoute, formatETA, formatSpeed, normalizeVehicle, type LatLng } from '../../lib/mapUtils'
-import { formatDistance as fmtDist, STATUS_LABELS } from '../../lib/utils'
+import {
+  createVehicleIcon, createPickupIcon, createDestinationIcon, fetchRoute,
+  formatETA, formatSpeed, formatDistance, normalizeVehicle,
+  createRoutePolyline, removeRoutePolyline, type LatLng,
+} from '../../lib/mapUtils'
+import { STATUS_LABELS } from '../../lib/utils'
 import L from 'leaflet'
 import { ArrowLeft, Navigation, MapPin, Clock, Gauge, Route as RouteIcon, CheckCircle2, MessageCircle, Package } from 'lucide-react'
+
+function fitBoundsToMarkers(map: L.Map, points: L.LatLngExpression[]) {
+  if (points.length < 2) {
+    map.setView(points[0], 15, { animate: true })
+    return
+  }
+  const bounds = L.latLngBounds(points)
+  map.fitBounds(bounds, { paddingTopLeft: [40, 120], paddingBottomRight: [40, 40], animate: true })
+}
 
 export default function DpNavigationPage() {
   const { requestId } = useParams<{ requestId: string }>()
@@ -68,9 +81,24 @@ export default function DpNavigationPage() {
     return () => navigator.geolocation.clearWatch(watchId)
   }, [profile])
 
-  // Markers + route
+  // Pickup & destination markers
   useEffect(() => {
-    if (!map || !dpPosition) return
+    if (!map || !ready || !request) return
+    if (request.pickup_lat && request.pickup_lng) {
+      if (!pickupMarkerRef.current) {
+        pickupMarkerRef.current = L.marker([request.pickup_lat, request.pickup_lng], { icon: createPickupIcon() }).addTo(map)
+      }
+    }
+    if (request.delivery_lat && request.delivery_lng) {
+      if (!destMarkerRef.current) {
+        destMarkerRef.current = L.marker([request.delivery_lat, request.delivery_lng], { icon: createDestinationIcon() }).addTo(map)
+      }
+    }
+  }, [map, ready, request])
+
+  // DP marker with smooth animation + route line
+  useEffect(() => {
+    if (!map || !ready || !dpPosition) return
     const vehicle = normalizeVehicle(null)
 
     // DP marker
@@ -80,7 +108,6 @@ export default function DpNavigationPage() {
         zIndexOffset: 500,
       }).addTo(map)
       prevPosRef.current = dpPosition
-      map.setView([dpPosition.lat, dpPosition.lng], 15)
     } else if (prevPosRef.current) {
       const from = prevPosRef.current
       const to = dpPosition
@@ -92,7 +119,15 @@ export default function DpNavigationPage() {
         const lat = from.lat + (to.lat - from.lat) * fraction
         const lng = from.lng + (to.lng - from.lng) * fraction
         dpMarkerRef.current?.setLatLng([lat, lng])
-        map.panTo([lat, lng], { animate: false })
+
+        const dLng = (to.lng - from.lng) * Math.PI / 180
+        const lat1 = from.lat * Math.PI / 180
+        const lat2 = to.lat * Math.PI / 180
+        const y = Math.sin(dLng) * Math.cos(lat2)
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
+        const heading = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360
+        dpMarkerRef.current?.setIcon(createVehicleIcon(vehicle, heading, true))
+
         if (fraction < 1) {
           animFrameRef.current = requestAnimationFrame(animate)
         } else {
@@ -103,30 +138,28 @@ export default function DpNavigationPage() {
       animFrameRef.current = requestAnimationFrame(animate)
     }
 
-    // Pickup & destination markers
-    if (request?.pickup_lat && request?.pickup_lng) {
-      if (!pickupMarkerRef.current) {
-        pickupMarkerRef.current = L.marker([request.pickup_lat, request.pickup_lng], { icon: createPickupIcon() }).addTo(map)
-      }
-    }
-    if (request?.delivery_lat && request?.delivery_lng) {
-      if (!destMarkerRef.current) {
-        destMarkerRef.current = L.marker([request.delivery_lat, request.delivery_lng], { icon: createDestinationIcon() }).addTo(map)
-      }
-    }
+    // Fit bounds to keep DP and destination visible
+    const pts: L.LatLngExpression[] = [[dpPosition.lat, dpPosition.lng]]
+    if (destMarkerRef.current) pts.push(destMarkerRef.current.getLatLng())
+    fitBoundsToMarkers(map, pts)
 
-    // Route from DP to destination — olive green path
+    // Route from DP to destination — olive green path with casing
     if (request?.delivery_lat && request?.delivery_lng) {
       fetchRoute(dpPosition, { lat: request.delivery_lat, lng: request.delivery_lng }).then(r => {
         if (!r || !map) return
-        if (routeLineRef.current) map.removeLayer(routeLineRef.current)
-        routeLineRef.current = L.polyline(r.coordinates, {
-          color: '#808000', weight: 5, opacity: 0.8, className: 'route-line-animated',
-        }).addTo(map)
+        removeRoutePolyline(map, routeLineRef.current)
+        routeLineRef.current = createRoutePolyline(map, r.coordinates)
         setRoute({ distance: r.distance_meters, duration: r.duration_seconds, coords: r.coordinates })
       })
     }
-  }, [map, dpPosition, request])
+  }, [map, ready, dpPosition, request])
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+    }
+  }, [])
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center text-gray-400">Loading...</div>
@@ -190,7 +223,7 @@ export default function DpNavigationPage() {
               <div className="mx-auto mb-1.5 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
                 <RouteIcon size={18} className="text-blue-600" />
               </div>
-              <p className="text-base font-bold text-gray-900">{route ? fmtDist(route.distance) : '--'}</p>
+              <p className="text-base font-bold text-gray-900">{route ? formatDistance(route.distance) : '--'}</p>
               <p className="text-[10px] text-gray-500">Remaining</p>
             </div>
             <div className="rounded-2xl border border-gray-200 bg-white p-3 text-center">

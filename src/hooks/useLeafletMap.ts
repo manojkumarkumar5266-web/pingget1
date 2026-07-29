@@ -34,7 +34,13 @@ export function useLeafletMap(
       preferCanvas: true,
     })
     mapRef.current = map
-    setReady(true)
+
+    // Leaflet frequently mis-measures the container when it is mounted inside
+    // a flex/absolute layout. Force a reflow so tiles fill the element.
+    requestAnimationFrame(() => {
+      map.invalidateSize()
+      setReady(true)
+    })
 
     return () => {
       map.remove()
@@ -46,7 +52,7 @@ export function useLeafletMap(
 
   // Swap tile layer when theme changes
   useEffect(() => {
-    if (!mapRef.current) return
+    if (!mapRef.current || !ready) return
     if (tileRef.current) {
       mapRef.current.removeLayer(tileRef.current)
     }

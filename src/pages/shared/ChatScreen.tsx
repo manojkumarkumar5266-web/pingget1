@@ -195,7 +195,9 @@ export default function ChatScreen() {
               : m
           ))
         })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' },
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders', filter: `dp_id=eq.${profile?.id}` },
+        (payload) => { setOrder(payload.new as Order) })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `dp_id=eq.${profile?.id}` },
         (payload) => { setOrder(payload.new as Order) })
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {

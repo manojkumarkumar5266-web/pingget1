@@ -27,6 +27,7 @@ export default function SearchingMapPage() {
   const { map, ready } = useLeafletMap('searching-map', userLocation ? [userLocation.lat, userLocation.lng] : undefined, 15)
   const dpMarkerRefs = useRef<Map<string, L.Marker>>(new Map())
   const userMarkerRef = useRef<L.Marker | null>(null)
+  const radiusCircleRef = useRef<L.Circle | null>(null)
   const [phase, setPhase] = useState<'scanning' | 'found' | 'none'>('scanning')
 
   useEffect(() => {
@@ -35,20 +36,31 @@ export default function SearchingMapPage() {
     }
   }, [scanning, scanCount, dps.length])
 
-  // User marker
+  // User marker + search radius circle
   useEffect(() => {
-    if (!map || !userLocation) return
+    if (!map || !ready || !userLocation) return
     if (!userMarkerRef.current) {
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
         icon: createUserLocationIcon(),
         zIndexOffset: 1000,
       }).addTo(map)
     }
-  }, [map, userLocation])
+    if (!radiusCircleRef.current) {
+      radiusCircleRef.current = L.circle([userLocation.lat, userLocation.lng], {
+        radius: SCAN_RADIUS_KM * 1000,
+        color: '#808000',
+        weight: 2,
+        opacity: 0.6,
+        fillColor: '#808000',
+        fillOpacity: 0.06,
+        dashArray: '8 6',
+      }).addTo(map)
+    }
+  }, [map, ready, userLocation])
 
   // DP markers
   useEffect(() => {
-    if (!map) return
+    if (!map || !ready) return
     const refs = dpMarkerRefs.current
     const currentIds = new Set(dps.map(d => d.dp_user_id))
 
@@ -72,7 +84,7 @@ export default function SearchingMapPage() {
         existing.setLatLng(pos)
       }
     })
-  }, [map, dps])
+  }, [map, ready, dps])
 
   // Listen for acceptance — auto navigate to chat
   useEffect(() => {
@@ -137,6 +149,7 @@ export default function SearchingMapPage() {
                   ? `${dps.length} partner${dps.length === 1 ? '' : 's'} nearby`
                   : 'No partners in range'}
               </h2>
+              <p className="text-[10px] text-white/40 mt-0.5">Search radius: {SCAN_RADIUS_KM} km</p>
             </div>
             {phase === 'scanning' && (
               <button onClick={cancelRequest} className="map-control-btn map-control-dark">
