@@ -338,7 +338,7 @@ if (error) {
         {profile?.gps_lat ? (
           <div className="mt-3 flex items-center gap-1.5 text-xs text-success-600 dark:text-success-400">
             <MapPin size={12} className="shrink-0" />
-            <span>Location: {profile.gps_lat.toFixed(4)}, {profile.gps_lng!.toFixed(4)}</span>
+            <span>Location detected — ready to receive nearby requests</span>
           </div>
         ) : (
           <div className="mt-3 flex items-center gap-1.5 text-xs text-warning-600 dark:text-warning-400">

@@ -44,6 +44,7 @@ export default function UserLayout() {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', profile!.id)
         .eq('is_read', false)
+        .is('deleted_at', null)
       setUnreadCount(count || 0)
     }
     fetchUnread()
@@ -120,17 +121,6 @@ export default function UserLayout() {
       <main className="flex-1 overflow-y-auto pb-20">
         <Outlet />
       </main>
-
-      {/* FAB */}
-      {location.pathname === '/app' && (
-        <button
-          onClick={() => navigate('/app/create')}
-          className="fixed bottom-20 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-transform active:scale-90 hover:scale-105"
-          style={{ background: 'linear-gradient(135deg, #808000, #606000)', boxShadow: '0 4px 14px rgba(128,128,0,0.4)' }}
-        >
-          <Plus size={26} />
-        </button>
-      )}
 
       {/* Bottom Nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-10 glass">

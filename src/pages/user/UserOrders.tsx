@@ -20,9 +20,9 @@ export default function UserOrders() {
   const fetchOrders = useCallback(async () => {
     let query = supabase.from('requests').select('*').eq('user_id', profile!.id)
     if (tab === 'active') {
-      query = query.in('status', ['pending', 'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received'])
+      query = query.in('status', ['pending', 'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived'])
     } else if (tab === 'completed') {
-      query = query.eq('status', 'completed')
+      query = query.in('status', ['completed', 'delivered', 'cash_received'])
     } else {
       query = query.eq('status', 'cancelled')
     }
