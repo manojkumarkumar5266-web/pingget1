@@ -63,6 +63,18 @@ export default function UserLayout() {
           showToast({ requestId: notif.related_id, body: notif.body || 'A delivery partner accepted your request.' })
         }
       })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${profile!.id}`,
+      }, () => fetchUnread())
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${profile!.id}`,
+      }, () => fetchUnread())
       .subscribe()
 
     return () => {

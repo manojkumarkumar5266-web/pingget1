@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { formatDistance } from '../../lib/utils'
-import { CheckCircle2, ChevronRight, X, Bike, Car, Truck } from 'lucide-react'
+import { CheckCircle2, ChevronRight, X, Bike, Car, Truck, MapPin, Clock, Search } from 'lucide-react'
 
 type DpSpot = {
   id: string
@@ -11,6 +11,7 @@ type DpSpot = {
   radius: number
   dist: number
   vehicle_type: string | null
+  full_name: string
 }
 
 const SCAN_RADIUS_KM = 5
@@ -19,8 +20,7 @@ const MAX_SCANS = 6
 
 function vehicleIcon(vehicleType: string | null) {
   const v = (vehicleType || '').toLowerCase()
-  if (v === 'bicycle') return Bike
-  if (v === 'motorbike' || v === 'scooter' || v === 'auto') return Bike
+  if (v === 'bicycle' || v === 'motorbike' || v === 'scooter' || v === 'auto') return Bike
   if (v === 'car') return Car
   return Truck
 }
@@ -71,12 +71,10 @@ export default function ScanningPage() {
         scanCountRef.current += 1
         setScanCount(scanCountRef.current)
 
-        // Map actual DPs to radar spots with deterministic-ish positions
         if (count > 0) {
           const newSpots: DpSpot[] = dps.slice(0, 8).map((d, i) => {
             const dist = Number(d.distance_meters || 0)
             const maxDist = SCAN_RADIUS_KM * 1000
-            // scale distance to radar radius (35%–90% of r)
             const radiusPct = maxDist > 0
               ? 35 + Math.min(55, (dist / maxDist) * 55)
               : 50
@@ -86,6 +84,7 @@ export default function ScanningPage() {
               radius: radiusPct,
               dist,
               vehicle_type: d.vehicle_type || null,
+              full_name: d.full_name || 'Partner',
             }
           })
           setSpots(newSpots)
@@ -108,6 +107,33 @@ export default function ScanningPage() {
     return () => { if (scanRef.current) clearInterval(scanRef.current) }
   }, [profile, requestId])
 
+  // Listen for acceptance — auto navigate to chat
+  useEffect(() => {
+    if (!requestId) return
+    const channel = supabase
+      .channel(`scanning-accept-${requestId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'requests',
+        filter: `id=eq.${requestId}`,
+      }, (payload: any) => {
+        const next = payload.new as any
+        if (next?.status === 'accepted' && next?.accepted_dp_id) {
+          supabase
+            .from('chat_rooms')
+            .select('id')
+            .eq('request_id', requestId)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (data) navigate(`/app/chat/${data.id}`)
+            })
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [requestId, navigate])
+
   const cancelRequest = async () => {
     if (!requestId) return
     setRequestCancelled(true)
@@ -117,7 +143,7 @@ export default function ScanningPage() {
 
   const viewOrder = () => navigate('/app/orders')
 
-  const size = 280
+  const size = 240
   const cx = size / 2
   const cy = size / 2
   const r = size / 2 - 10
@@ -127,35 +153,12 @@ export default function ScanningPage() {
   const sweepY = cy + r * Math.sin(sweepRad)
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden"
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden"
       style={{ background: 'linear-gradient(180deg, #0f1a0d 0%, #1a2a0e 100%)' }}>
 
-      {/* Top bar */}
-      <div className="flex w-full max-w-md items-center justify-between px-5 pt-12">
-        <div>
-          <p className="text-xs font-medium text-white/40 uppercase tracking-widest">
-            {phase === 'scanning' ? 'Scanning...' : phase === 'found' ? 'Partners Found' : 'Search Complete'}
-          </p>
-          <h2 className="text-xl font-bold text-white mt-0.5">
-            {phase === 'scanning'
-              ? 'Finding nearby partners'
-              : phase === 'found'
-              ? `${dpCount} partner${dpCount === 1 ? '' : 's'} nearby`
-              : 'No partners in range'}
-          </h2>
-        </div>
-        {phase === 'scanning' && (
-          <button onClick={cancelRequest} disabled={requestCancelled}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white/80 transition-colors"
-            style={{ background: 'rgba(255,255,255,0.07)' }}>
-            <X size={18} />
-          </button>
-        )}
-      </div>
-
-      {/* Radar */}
-      <div className="relative flex items-center justify-center">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {/* Radar scanner — 1/4 of page at top */}
+      <div className="relative flex h-[25vh] min-h-[200px] w-full items-center justify-center overflow-hidden">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="max-h-full">
           {/* Background rings */}
           {[0.25, 0.5, 0.75, 1].map((pct, i) => (
             <circle key={i} cx={cx} cy={cy} r={r * pct}
@@ -200,12 +203,9 @@ export default function ScanningPage() {
             const Icon = vehicleIcon(spot.vehicle_type)
             return (
               <g key={spot.id}>
-                {/* Glow ring */}
                 <circle cx={dx} cy={dy} r={13} fill="none"
                   stroke="#809000" strokeWidth={1.5} opacity={0.4} />
-                {/* Background circle for the icon */}
                 <circle cx={dx} cy={dy} r={10} fill="#809000" opacity={0.9} />
-                {/* Vehicle icon */}
                 <g transform={`translate(${dx - 8}, ${dy - 8}) scale(0.66)`}>
                   <Icon size={24} className="text-white" strokeWidth={2.5} />
                 </g>
@@ -231,6 +231,42 @@ export default function ScanningPage() {
               }} />
           ))}
         </div>
+
+        {/* Cancel button overlay */}
+        {phase === 'scanning' && (
+          <button onClick={cancelRequest} disabled={requestCancelled}
+            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white/80 transition-colors"
+            style={{ background: 'rgba(255,255,255,0.07)' }}>
+            <X size={18} />
+          </button>
+        )}
+      </div>
+
+      {/* Status text below radar */}
+      <div className="px-5 pt-3 text-center">
+        <p className="text-xs font-medium text-white/40 uppercase tracking-widest">
+          {phase === 'scanning' ? 'Scanning...' : phase === 'found' ? 'Partners Found' : 'Search Complete'}
+        </p>
+        <h2 className="text-lg font-bold text-white mt-0.5">
+          {phase === 'scanning'
+            ? 'Finding nearby partners'
+            : phase === 'found'
+            ? `${dpCount} partner${dpCount === 1 ? '' : 's'} nearby`
+            : 'No partners in range'}
+        </h2>
+        <p className="text-[10px] text-white/40 mt-0.5">Search radius: {SCAN_RADIUS_KM} km</p>
+      </div>
+
+      {/* Scan progress dots */}
+      <div className="flex items-center justify-center gap-1.5 py-3">
+        {Array.from({ length: MAX_SCANS }).map((_, i) => (
+          <div key={i}
+            className="h-1.5 rounded-full transition-all duration-500"
+            style={{
+              width: i < scanCount ? 20 : 8,
+              background: i < scanCount ? '#808000' : 'rgba(255,255,255,0.15)',
+            }} />
+        ))}
       </div>
 
       {/* Vehicle legend */}
@@ -247,29 +283,26 @@ export default function ScanningPage() {
         </div>
       )}
 
-      {/* Bottom status panel */}
-      <div className="w-full max-w-md px-5 pb-10">
-
-        {/* Scan count indicator */}
-        <div className="mb-4 flex items-center justify-center gap-1.5">
-          {Array.from({ length: MAX_SCANS }).map((_, i) => (
-            <div key={i}
-              className="h-1.5 rounded-full transition-all duration-500"
-              style={{
-                width: i < scanCount ? 20 : 8,
-                background: i < scanCount ? '#808000' : 'rgba(255,255,255,0.15)',
-              }} />
-          ))}
-        </div>
-
+      {/* Bottom status panel — fills remaining space */}
+      <div className="flex flex-1 flex-col justify-end px-5 pb-10">
         {phase === 'scanning' && (
           <div className="rounded-2xl p-5 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="mb-3 flex items-center justify-center gap-2">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+                style={{ background: 'linear-gradient(135deg,#808000,#606000)' }}>
+                <Search size={20} className="text-white animate-pulse" />
+              </div>
+            </div>
             <p className="text-sm font-medium text-white/60">
               {dpCount > 0
                 ? `${dpCount} partner${dpCount === 1 ? '' : 's'} found so far${avgDist > 0 ? ` · avg ${formatDistance(avgDist)} away` : ''}`
                 : 'Scanning for delivery partners...'}
             </p>
             <p className="mt-1 text-xs text-white/30">Your request is live — partners can see it now</p>
+            <div className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-white/5 px-3 py-2">
+              <Clock size={14} className="text-white/60 shrink-0" />
+              <p className="text-xs text-white/70">Chat opens automatically when a partner accepts</p>
+            </div>
           </div>
         )}
 
@@ -291,6 +324,15 @@ export default function ScanningPage() {
                 </div>
                 <CheckCircle2 size={22} className="text-green-400 shrink-0" />
               </div>
+              {spots.slice(0, 2).map((spot, i) => {
+                const Icon = vehicleIcon(spot.vehicle_type)
+                return (
+                  <div key={spot.id} className="mt-2 flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
+                    <Icon size={14} style={{ color: '#808000' }} />
+                    <span className="text-xs text-white/80">Partner {i + 1}{spot.dist ? ` · ${formatDistance(spot.dist)} away` : ''}</span>
+                  </div>
+                )
+              })}
             </div>
             <button onClick={viewOrder}
               className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold text-white transition-all active:scale-95"
@@ -303,6 +345,7 @@ export default function ScanningPage() {
         {phase === 'none' && (
           <div className="space-y-3">
             <div className="rounded-2xl p-5 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <MapPin size={24} className="mx-auto mb-2 text-white/50" />
               <p className="font-semibold text-white">No partners online nearby right now</p>
               <p className="mt-1 text-xs text-white/40">
                 Your request is still live — a partner may accept it shortly

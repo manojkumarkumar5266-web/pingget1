@@ -124,6 +124,11 @@ export default function AdminDashboard() {
           setNotifications(prev => [payload.new as AdminNotification, ...prev])
           setUnreadCount(c => c + 1)
         })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'admin_notifications' },
+        () => {
+          supabase.from('admin_notifications').select('id', { count: 'exact', head: true }).eq('is_read', false)
+            .then(({ count }) => setUnreadCount(count || 0))
+        })
       .subscribe()
 
     const dataChannel = supabase.channel('admin-realtime-data')

@@ -218,6 +218,26 @@ export default function ChatScreen() {
     }
   }, [order?.status, isUser, room?.request_id, navigate])
 
+  // Detect request cancellation by the other party — close chat and redirect home
+  useEffect(() => {
+    if (!room?.request_id) return
+    const channel = supabase
+      .channel(`chat-cancel-${room.request_id}-${profile?.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'requests',
+        filter: `id=eq.${room.request_id}`,
+      }, (payload: any) => {
+        const next = payload.new as any
+        if (next?.status === 'cancelled') {
+          navigate(isUser ? '/app' : '/dp')
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [room?.request_id, isUser, profile?.id, navigate])
+
   // Typing indicator: broadcast via realtime channel (ephemeral, no DB writes)
   useEffect(() => {
     if (!roomId || !profile?.id) return

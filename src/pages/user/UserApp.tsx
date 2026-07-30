@@ -3,7 +3,6 @@ import UserLayout from './UserLayout'
 import UserHome from './UserHome'
 import CreateRequest from './CreateRequest'
 import ScanningPage from './ScanningPage'
-import SearchingMapPage from './SearchingMapPage'
 import LiveTrackingPage from './LiveTrackingPage'
 import UserOrders from './UserOrders'
 import ChatScreen from '../shared/ChatScreen'
@@ -17,7 +16,6 @@ export default function UserApp() {
         <Route path="/" element={<UserHome />} />
         <Route path="/create" element={<CreateRequest />} />
         <Route path="/scanning/:requestId" element={<ScanningPage />} />
-        <Route path="/searching/:requestId" element={<SearchingMapPage />} />
         <Route path="/track/:requestId" element={<LiveTrackingPage />} />
         <Route path="/orders" element={<UserOrders />} />
         <Route path="/notifications" element={<UserNotifications />} />

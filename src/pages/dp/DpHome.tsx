@@ -5,7 +5,14 @@ import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../.
 import { useGps } from '../../hooks/useGps'
 import { EmptyState, ServiceStatusBanner, SkeletonCard, StatCard, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency } from '../../lib/utils'
-import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Zap, Bike, Activity, Navigation, Wallet } from 'lucide-react'
+import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Zap, Bike, Car, Truck, Activity, Navigation, Wallet } from 'lucide-react'
+
+function vehicleIcon(vehicleType: string | null) {
+  const v = (vehicleType || '').toLowerCase()
+  if (v === 'bicycle' || v === 'motorbike' || v === 'scooter' || v === 'auto') return Bike
+  if (v === 'car') return Car
+  return Truck
+}
 
 type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
 
@@ -256,6 +263,9 @@ if (error) {
         </button>
       )}
 
+      {/* Radar scanner — 1/4 page top showing nearby requests */}
+      <DpRadar requests={filtered} dpLocation={gps.lat && gps.lng ? { lat: gps.lat, lng: gps.lng } : null} rangeKm={rangeKm} />
+
       {/* Earnings Dashboard */}
       <div className="mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 to-primary-800 p-5 text-white shadow-lg animate-slide-up" style={{ boxShadow: 'var(--shadow-lg)' }}>
         <div className="flex items-center justify-between">
@@ -436,6 +446,98 @@ if (error) {
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+function DpRadar({ requests, dpLocation, rangeKm }: { requests: DeliveryRequest[]; dpLocation: { lat: number; lng: number } | null; rangeKm: number }) {
+  const [scanAngle, setScanAngle] = useState(0)
+  const sweepRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    sweepRef.current = setInterval(() => setScanAngle(a => (a + 3) % 360), 30)
+    return () => { if (sweepRef.current) clearInterval(sweepRef.current) }
+  }, [])
+
+  const size = 160
+  const cx = size / 2
+  const cy = size / 2
+  const r = size / 2 - 8
+  const sweepRad = (scanAngle * Math.PI) / 180
+  const sweepX = cx + r * Math.cos(sweepRad)
+  const sweepY = cy + r * Math.sin(sweepRad)
+
+  const spots = requests.slice(0, 6).map((req, i) => {
+    const dist = req.pickup_lat && req.pickup_lng && dpLocation
+      ? haversineDistance(dpLocation.lat, dpLocation.lng, req.pickup_lat, req.pickup_lng) * 1000
+      : 0
+    const maxDist = rangeKm * 1000
+    const radiusPct = maxDist > 0 && dist > 0 ? 30 + Math.min(55, (dist / maxDist) * 55) : 40 + (i % 3) * 15
+    return {
+      id: req.id,
+      angle: (i * 60 + (dist % 30)) % 360,
+      radius: radiusPct,
+      dist,
+      vehicle_type: null as string | null,
+    }
+  })
+
+  return (
+    <div className="mb-4 flex flex-col items-center">
+      <div className="relative flex items-center justify-center" style={{ height: size }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {[0.25, 0.5, 0.75, 1].map((pct, i) => (
+            <circle key={i} cx={cx} cy={cy} r={r * pct}
+              fill="none" stroke="rgba(128,160,0,0.15)" strokeWidth={1} />
+          ))}
+          <defs>
+            <radialGradient id="dpSweepGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#809000" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#809000" stopOpacity={0} />
+            </radialGradient>
+          </defs>
+          {(() => {
+            const sweepEndRad = ((scanAngle - 60) * Math.PI) / 180
+            const x1 = cx + r * Math.cos(sweepRad)
+            const y1 = cy + r * Math.sin(sweepRad)
+            const x2 = cx + r * Math.cos(sweepEndRad)
+            const y2 = cy + r * Math.sin(sweepEndRad)
+            return <path d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 0 ${x2} ${y2} Z`} fill="url(#dpSweepGrad)" />
+          })()}
+          <line x1={cx} y1={cy} x2={sweepX} y2={sweepY} stroke="#a0b800" strokeWidth={2} opacity={0.8} />
+          {spots.map(spot => {
+            const rad = (spot.angle * Math.PI) / 180
+            const dr = (spot.radius / 100) * r
+            const dx = cx + dr * Math.cos(rad)
+            const dy = cy + dr * Math.sin(rad)
+            const Icon = vehicleIcon(spot.vehicle_type)
+            return (
+              <g key={spot.id}>
+                <circle cx={dx} cy={dy} r={9} fill="#809000" opacity={0.9} />
+                <g transform={`translate(${dx - 6}, ${dy - 6}) scale(0.5)`}>
+                  <Icon size={24} className="text-white" strokeWidth={2.5} />
+                </g>
+              </g>
+            )
+          })}
+          <circle cx={cx} cy={cy} r={6} fill="#ff4444" />
+          <circle cx={cx} cy={cy} r={10} fill="none" stroke="#ff4444" strokeWidth={1.5} opacity={0.5} />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {[1, 2].map(i => (
+            <div key={i} className="absolute rounded-full border border-yellow-700/20"
+              style={{
+                width: size * (0.3 + i * 0.3),
+                height: size * (0.3 + i * 0.3),
+                animation: `ping ${1.8 + i * 0.4}s cubic-bezier(0,0,0.2,1) infinite`,
+                animationDelay: `${i * 0.5}s`,
+              }} />
+          ))}
+        </div>
+      </div>
+      <p className="text-xs text-white/40 mt-1">
+        {requests.length > 0 ? `${requests.length} request${requests.length === 1 ? '' : 's'} nearby` : 'Scanning for requests...'}
+      </p>
     </div>
   )
 }

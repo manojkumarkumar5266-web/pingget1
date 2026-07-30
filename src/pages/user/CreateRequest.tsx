@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { ErrorBanner } from '../../components/ui'
-import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Image as ImageIcon, Package, ShoppingCart, Pill, Package2, Utensils, BookOpen, Wrench, Gift, Dumbbell, Heart } from 'lucide-react'
+import CategorySelectionModal, { type CategorySelection } from '../../components/CategorySelectionModal'
+import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Package, ShoppingCart, Pill, Package2, Utensils, BookOpen, Wrench, Gift, Heart, ChevronRight, Trash2 } from 'lucide-react'
 
 export default function CreateRequest() {
   const { profile } = useAuth()
@@ -12,6 +13,8 @@ export default function CreateRequest() {
   const [description, setDescription] = useState('')
   const [preferredShop, setPreferredShop] = useState('')
   const [pickupAddress, setPickupAddress] = useState('')
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [selections, setSelections] = useState<CategorySelection[]>([])
 
   // Auto-detect GPS silently — not shown to user, but sent to DP
   const [gpsLat, setGpsLat] = useState<number | null>(profile?.gps_lat || null)
@@ -125,7 +128,16 @@ export default function CreateRequest() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null)
-    if (!description.trim()) { setError('Please describe what you need'); return }
+    // Build full description from category selections + extra notes
+    const selectionLines: string[] = []
+    selections.forEach(sel => {
+      selectionLines.push(`[${sel.category}]`)
+      sel.items.forEach(item => {
+        selectionLines.push(`  ${item.name} ×${item.quantity} = ₹${item.quantity * item.price}`)
+      })
+    })
+    const fullDescription = [...selectionLines, description.trim()].filter(Boolean).join('\n')
+    if (!fullDescription.trim()) { setError('Please select items or describe what you need'); return }
     setLoading(true)
     try {
       if (recording) stopRecording()
@@ -142,7 +154,7 @@ export default function CreateRequest() {
 
       const { data: inserted, error } = await supabase.from('requests').insert({
         user_id: profile!.id,
-        description: description.trim(),
+        description: fullDescription,
         photo_urls: photoUrls.length > 0 ? photoUrls : null,
         voice_note_url: voiceUrl,
         preferred_shop: preferredShop.trim() || null,
@@ -155,7 +167,7 @@ export default function CreateRequest() {
         radius_meters: 0, status: 'pending',
       }).select('id').single()
       if (error) throw error
-      navigate(`/app/searching/${inserted.id}`)
+      navigate(`/app/scanning/${inserted.id}`)
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
   }
 
@@ -191,29 +203,55 @@ export default function CreateRequest() {
               { icon: Wrench, label: 'Hardware' },
               { icon: Gift, label: 'Gifts' },
               { icon: Heart, label: 'Personal Care' },
-            ].map(({ icon: Icon, label }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => setDescription(prev => {
-                  const prefix = `[${label}] `
-                  if (prev.startsWith(prefix)) return prev
-                  return prefix + (prev.startsWith('[') ? prev.replace(/^\[[^\]]+\]\s*/, '') : prev)
-                })}
-                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition-all active:scale-95 hover:border-olive hover:text-white"
-                style={{ borderColor: 'rgba(128,128,0,0.2)' }}
-              >
-                <Icon size={14} style={{ color: '#a8c020' }} />
-                {label}
-              </button>
-            ))}
+            ].map(({ icon: Icon, label }) => {
+              const sel = selections.find(s => s.category === label)
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setActiveCategory(label)}
+                  className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all active:scale-95"
+                  style={sel
+                    ? { borderColor: '#808000', background: 'rgba(128,128,0,0.15)', color: '#c8d850' }
+                    : { borderColor: 'rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)' }}
+                >
+                  <Icon size={14} style={{ color: sel ? '#c8d850' : '#a8c020' }} />
+                  {label}
+                  {sel && <span className="ml-0.5 rounded-full bg-[#808000] px-1.5 text-[10px] text-white">{sel.items.length}</span>}
+                </button>
+              )
+            })}
           </div>
+
+          {/* Selected items summary */}
+          {selections.length > 0 && (
+            <div className="mb-3 space-y-2">
+              {selections.map(sel => (
+                <div key={sel.category} className="rounded-xl border p-3" style={{ borderColor: 'rgba(128,128,0,0.25)', background: 'rgba(128,128,0,0.05)' }}>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <p className="text-xs font-bold text-white">{sel.category} ({sel.items.length} item{sel.items.length === 1 ? '' : 's'})</p>
+                    <button type="button" onClick={() => setSelections(prev => prev.filter(s => s.category !== sel.category))}
+                      className="text-white/30 hover:text-red-400">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sel.items.map((item, i) => (
+                      <span key={i} className="rounded-md bg-white/5 px-2 py-1 text-[11px] text-white/70">
+                        {item.name} ×{item.quantity} ₹{item.quantity * item.price}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <textarea
             className="input min-h-24 resize-none"
             value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder={"Describe what you need delivered...\ne.g. 2kg rice, 1 litre milk, medicines from Apollo Pharmacy"}
-            autoFocus
+            placeholder={"Add any extra notes or instructions...\ne.g. specific brand preference, delivery instructions"}
           />
         </div>
 
@@ -302,10 +340,24 @@ export default function CreateRequest() {
         </div>
 
         {error && <ErrorBanner message={error} />}
-        <button type="submit" disabled={loading} className="btn-primary w-full">
+        <button type="submit" disabled={loading || (selections.length === 0 && !description.trim())} className="btn-primary w-full disabled:opacity-40">
           {loading ? 'Submitting...' : 'Submit Request'}
         </button>
       </form>
+
+      {activeCategory && (
+        <CategorySelectionModal
+          category={activeCategory}
+          onClose={() => setActiveCategory(null)}
+          onSave={(selection) => {
+            setSelections(prev => {
+              const filtered = prev.filter(s => s.category !== selection.category)
+              return [...filtered, selection]
+            })
+            setActiveCategory(null)
+          }}
+        />
+      )}
     </div>
   )
 }
