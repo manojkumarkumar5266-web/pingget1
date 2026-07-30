@@ -385,7 +385,7 @@ export default function ChatScreen() {
               ) : (
                 (() => {
                   const lastOwnMsg = [...messages].reverse().find(m => m.sender_id === profile?.id)
-                  if (lastOwnMsg?.read_at) return <p className="text-xs text-success-500 flex items-center gap-0.5"><CheckCheck size={11} /> Seen</p>
+                  if (lastOwnMsg?.read_at) return <p className="text-xs text-yellow-400 flex items-center gap-0.5"><CheckCheck size={11} /> Seen</p>
                   if (lastOwnMsg) return <p className="text-xs text-white/40 flex items-center gap-0.5"><Check size={11} /> Delivered</p>
                   return <p className="text-xs text-white/40">Online</p>
                 })()
@@ -426,7 +426,7 @@ export default function ChatScreen() {
             const isOwn = msg.sender_id === profile!.id
             return (
               <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-slide-up`}>
-                <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${isOwn ? 'bg-primary-600 text-white' : 'bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100'}`}>
+                <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${isOwn ? (msg.read_at ? 'bg-yellow-600 text-white' : 'bg-primary-600 text-white') : 'bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100'}`}>
                   {msg.message_type === 'text' && <p className="text-sm">{msg.content}</p>}
                   {msg.message_type === 'image' && msg.attachment_url && (
                     <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
@@ -488,7 +488,7 @@ export default function ChatScreen() {
                   <div className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${isOwn ? 'text-primary-200' : 'text-white/40'}`}>
                     {timeOfDay(msg.created_at)}
                     {isOwn && (
-                      <span className={msg.read_at ? 'text-success-400' : ''}>
+                      <span className={msg.read_at ? 'text-yellow-400' : 'text-white/30'}>
                         {msg.read_at ? <CheckCheck size={13} /> : <Check size={13} />}
                       </span>
                     )}
@@ -601,35 +601,73 @@ export default function ChatScreen() {
 }
 
 function OrderSummaryMessage({ data, isOwn }: { data: any; isOwn: boolean }) {
+  const [showFull, setShowFull] = useState(false)
   const textColor = isOwn ? 'text-white' : 'text-gray-900 dark:text-gray-100'
   const mutedColor = isOwn ? 'text-primary-100' : 'text-white/50'
   const borderColor = isOwn ? 'border-primary-400/40' : 'border-white/15'
-  const tagBg = isOwn ? 'bg-primary-500/40' : 'bg-gray-100 dark:bg-gray-700'
+  const lines = data.description ? String(data.description).split('\n').filter((l: string) => l.trim()) : []
   return (
-    <div className="space-y-2.5 min-w-[200px]">
-      <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${mutedColor}`}><ShoppingBag size={11} /> Order Request</div>
-      <p className={`text-sm font-semibold leading-snug ${textColor}`}>{data.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
-      {data.description && (
-        <ul className="space-y-0.5">
-          {String(data.description).split('\n').map((line: string, i: number) => line.trim() ? (
-            <li key={i} className={`flex items-start gap-1.5 text-xs ${mutedColor}`}>
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-60" />
-              {line.trim()}
-            </li>
-          ) : null)}
-        </ul>
-      )}
-      {data.photo_url && (
-        <a href={data.photo_url} target="_blank" rel="noopener noreferrer">
-          <img src={data.photo_url} alt="Order" className="w-full max-w-[200px] rounded-xl object-cover" />
-        </a>
-      )}
-      {data.voice_note_url && <VoiceMessagePlayer url={data.voice_note_url} isOwn={isOwn} />}
-      <div className={`space-y-1.5 border-t pt-2 ${borderColor}`}>
-        {data.preferred_shop && <div className={`flex items-center gap-1.5 text-xs ${mutedColor}`}><Store size={12} className="shrink-0" /><span>Shop: <span className={`font-medium ${textColor}`}>{data.preferred_shop}</span></span></div>}
-        {data.delivery_address && <div className={`flex items-start gap-1.5 text-xs ${mutedColor}`}><MapPin size={12} className="mt-0.5 shrink-0" /><span className="line-clamp-2">{data.delivery_address}</span></div>}
+    <>
+      <div className="space-y-2.5 min-w-[200px]">
+        <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${mutedColor}`}><ShoppingBag size={11} /> Order Request</div>
+        <p className={`text-sm font-semibold leading-snug ${textColor}`}>{lines[0]?.trim() || 'Delivery Request'}</p>
+        {lines.length > 1 && (
+          <p className={`text-xs ${mutedColor}`}>{lines.length - 1} more item{lines.length - 1 === 1 ? '' : 's'}...</p>
+        )}
+        <button onClick={() => setShowFull(true)} className="flex items-center gap-1 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition-all active:scale-95">
+          <FileText size={12} /> View Full Order
+        </button>
       </div>
-    </div>
+      {showFull && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-black" onClick={() => setShowFull(false)}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <h2 className="text-lg font-bold text-white">Order Details</h2>
+            <button onClick={() => setShowFull(false)} className="flex h-9 w-9 items-center justify-center rounded-full active:scale-90 transition-transform" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <X size={20} className="text-white/70" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-4" onClick={e => e.stopPropagation()}>
+            <div className="mx-auto max-w-md space-y-4">
+              <div className="card p-4">
+                <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-white/50"><ShoppingBag size={12} /> Items Requested</div>
+                <ul className="space-y-1.5">
+                  {lines.map((line: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-white/80">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400" />
+                      {line.trim()}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {data.photo_url && (
+                <div className="card p-4">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/50">Photo</p>
+                  <a href={data.photo_url} target="_blank" rel="noopener noreferrer">
+                    <img src={data.photo_url} alt="Order" className="w-full rounded-xl object-cover" />
+                  </a>
+                </div>
+              )}
+              {data.voice_note_url && (
+                <div className="card p-4">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/50">Voice Note</p>
+                  <VoiceMessagePlayer url={data.voice_note_url} isOwn={isOwn} />
+                </div>
+              )}
+              <div className="card p-4 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-white/50">Delivery Details</p>
+                {data.preferred_shop && <div className="flex items-center gap-2 text-sm text-white/80"><Store size={14} className="shrink-0 text-yellow-400" /> Shop: {data.preferred_shop}</div>}
+                {data.pickup_address && <div className="flex items-start gap-2 text-sm text-white/80"><MapPin size={14} className="mt-0.5 shrink-0 text-yellow-400" /> Pickup: {data.pickup_address}</div>}
+                {data.delivery_address && <div className="flex items-start gap-2 text-sm text-white/80"><MapPin size={14} className="mt-0.5 shrink-0 text-red-400" /> Delivery: {data.delivery_address}</div>}
+                {data.expected_time && <div className="flex items-center gap-2 text-sm text-white/80"><Clock size={14} className="shrink-0 text-yellow-400" /> Expected: {data.expected_time}</div>}
+              </div>
+            </div>
+          </div>
+          <div className="px-4 py-3 pb-6" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowFull(false)} className="btn-primary w-full">Close</button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

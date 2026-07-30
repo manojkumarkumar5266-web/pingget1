@@ -15,7 +15,7 @@ export default function AdminOrders() {
     const fetchOrders = async () => {
       const { data } = await supabase
         .from('orders')
-        .select('*, _request:requests(title, description, delivery_address, pickup_address, preferred_shop, user_id, accepted_dp_id)')
+        .select('*, _request:requests(description, delivery_address, pickup_address, preferred_shop, user_id, accepted_dp_id, photo_urls, delivery_proof_photos)')
         .order('created_at', { ascending: false })
         .limit(200)
       setOrders(data || [])
@@ -197,6 +197,20 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
               <span className="text-white/60">Deliver to: <span className="font-medium text-white">{req.delivery_address}</span></span>
             </div>
           </div>
+
+          {/* Delivery Proof Photos */}
+          {req.delivery_proof_photos && req.delivery_proof_photos.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">Delivery Proof Photos</p>
+              <div className="flex flex-wrap gap-2">
+                {(req.delivery_proof_photos as string[]).map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                    <img src={url} alt={`Proof ${i + 1}`} className="h-24 w-24 rounded-xl object-cover border border-white/10" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Financials */}
           <div className="rounded-2xl border border-white/10 p-4">

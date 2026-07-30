@@ -244,44 +244,7 @@ export default function LiveTrackingPage() {
             </div>
           )}
 
-          {/* Timeline / live updates */}
-          {!isCancelled && !isPending && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Live Updates</div>
-              <div className="space-y-0">
-                {TRACKING_STEPS.map((step, idx) => {
-                  const Icon = step.icon
-                  const isCompleted = idx < currentStepIndex
-                  const isActive = idx === currentStepIndex
-                  const isLast = idx === TRACKING_STEPS.length - 1
-                  return (
-                    <div key={step.key} className="flex items-start gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${
-                          isCompleted ? 'bg-green-500/15' : isActive ? 'bg-amber-500/15' : 'bg-white/5'
-                        }`}>
-                          <Icon size={14} className={
-                            isCompleted ? 'text-green-400' : isActive ? 'text-amber-400 animate-pulse' : 'text-white/30'
-                          } />
-                        </div>
-                        {!isLast && <div className={`w-0.5 ${isCompleted ? 'bg-green-500/30' : 'bg-white/10'}`} style={{ minHeight: 28 }} />}
-                      </div>
-                      <div className="pb-4 pt-1.5">
-                        <p className={`text-sm font-medium ${
-                          isActive ? 'text-white' : isCompleted ? 'text-white/70' : 'text-white/40'
-                        }`}>
-                          {step.label}
-                        </p>
-                        {isActive && (
-                          <p className="text-xs text-amber-400/80 mt-0.5">In progress...</p>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+          {/* Timeline removed — status shown at top */}
 
           {/* Cancelled state */}
           {isCancelled && (

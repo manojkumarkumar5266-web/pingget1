@@ -4,7 +4,13 @@ import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { ErrorBanner } from '../../components/ui'
 import CategorySelectionModal, { type CategorySelection } from '../../components/CategorySelectionModal'
-import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Package, ShoppingCart, Pill, Package2, Utensils, BookOpen, Wrench, Gift, Heart, ChevronRight, Trash2 } from 'lucide-react'
+import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Package, Trash2 } from 'lucide-react'
+
+type DbCategory = {
+  id: string
+  name: string
+  icon: string
+}
 
 export default function CreateRequest() {
   const { profile } = useAuth()
@@ -13,19 +19,17 @@ export default function CreateRequest() {
   const [description, setDescription] = useState('')
   const [preferredShop, setPreferredShop] = useState('')
   const [pickupAddress, setPickupAddress] = useState('')
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState<{ name: string; id: string } | null>(null)
   const [selections, setSelections] = useState<CategorySelection[]>([])
+  const [categories, setCategories] = useState<DbCategory[]>([])
 
-  // Auto-detect GPS silently — not shown to user, but sent to DP
   const [gpsLat, setGpsLat] = useState<number | null>(profile?.gps_lat || null)
   const [gpsLng, setGpsLng] = useState<number | null>(profile?.gps_lng || null)
 
-  // Multiple photos
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const photoInputRef = useRef<HTMLInputElement>(null)
 
-  // Voice note
   const [recording, setRecording] = useState(false)
   const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null)
   const [voiceDuration, setVoiceDuration] = useState(0)
@@ -38,6 +42,19 @@ export default function CreateRequest() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Fetch categories from database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('id, name, icon')
+        .eq('is_active', true)
+        .order('sort_order')
+      setCategories((data as DbCategory[]) || [])
+    }
+    fetchCategories()
+  }, [])
 
   // Silent GPS detection
   useEffect(() => {
@@ -133,7 +150,8 @@ export default function CreateRequest() {
     selections.forEach(sel => {
       selectionLines.push(`[${sel.category}]`)
       sel.items.forEach(item => {
-        selectionLines.push(`  ${item.name} ×${item.quantity} = ₹${item.quantity * item.price}`)
+        const priceStr = item.price > 0 ? ` ₹${item.price}` : ''
+        selectionLines.push(`  ${item.name} ×${item.quantity}${priceStr}`)
       })
     })
     const fullDescription = [...selectionLines, description.trim()].filter(Boolean).join('\n')
@@ -143,7 +161,6 @@ export default function CreateRequest() {
       if (recording) stopRecording()
       const ts = Date.now()
 
-      // Upload all photos
       const photoUrls: string[] = []
       for (let i = 0; i < photoFiles.length; i++) {
         const url = await uploadToStorage(photoFiles[i], `requests/${profile!.id}/${ts}-photo-${i}`)
@@ -160,7 +177,6 @@ export default function CreateRequest() {
         preferred_shop: preferredShop.trim() || null,
         pickup_address: pickupAddress.trim() || null,
         delivery_address: profile?.address || null,
-        // Save user GPS as BOTH pickup and delivery coords so DPs can compute distance
         pickup_lat: gpsLat, pickup_lng: gpsLng,
         delivery_lat: gpsLat, delivery_lng: gpsLng,
         expected_time: null, max_budget: null, special_instructions: null,
@@ -174,11 +190,11 @@ export default function CreateRequest() {
   const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-black">
       {/* Header */}
-      <div className="sticky top-0 z-10 glass px-4 py-3 flex items-center gap-3">
-        <button type="button" onClick={() => navigate('/app')} className="btn-ghost p-2">
-          <ArrowLeft size={20} />
+      <div className="sticky top-0 z-10 px-4 py-3 flex items-center gap-3" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <button type="button" onClick={() => navigate('/app')} className="flex h-9 w-9 items-center justify-center rounded-full active:scale-90 transition-transform" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <ArrowLeft size={20} className="text-white/70" />
         </button>
         <h1 className="text-lg font-bold text-white">New Request</h1>
       </div>
@@ -187,37 +203,28 @@ export default function CreateRequest() {
         {/* What do you need? */}
         <div className="card p-5">
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(128,128,0,0.3), rgba(96,96,0,0.3))' }}>
-              <Package size={16} style={{ color: '#808000' }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <Package size={16} className="text-white/70" />
             </div>
             <h2 className="text-sm font-bold text-white">What do you need?</h2>
           </div>
-          {/* Category chips */}
+          {/* Category chips from database */}
           <div className="mb-3 flex flex-wrap gap-2">
-            {[
-              { icon: ShoppingCart, label: 'Groceries' },
-              { icon: Pill, label: 'Medicine' },
-              { icon: Utensils, label: 'Food' },
-              { icon: Package2, label: 'Parcel' },
-              { icon: BookOpen, label: 'Stationery' },
-              { icon: Wrench, label: 'Hardware' },
-              { icon: Gift, label: 'Gifts' },
-              { icon: Heart, label: 'Personal Care' },
-            ].map(({ icon: Icon, label }) => {
-              const sel = selections.find(s => s.category === label)
+            {categories.map((cat) => {
+              const sel = selections.find(s => s.category === cat.name)
               return (
                 <button
-                  key={label}
+                  key={cat.id}
                   type="button"
-                  onClick={() => setActiveCategory(label)}
+                  onClick={() => setActiveCategory({ name: cat.name, id: cat.id })}
                   className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all active:scale-95"
                   style={sel
-                    ? { borderColor: '#808000', background: 'rgba(128,128,0,0.15)', color: '#c8d850' }
+                    ? { borderColor: '#facc15', background: 'rgba(250,204,21,0.12)', color: '#facc15' }
                     : { borderColor: 'rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)' }}
                 >
-                  <Icon size={14} style={{ color: sel ? '#c8d850' : '#a8c020' }} />
-                  {label}
-                  {sel && <span className="ml-0.5 rounded-full bg-[#808000] px-1.5 text-[10px] text-white">{sel.items.length}</span>}
+                  <span className="text-sm">{cat.icon}</span>
+                  {cat.name}
+                  {sel && <span className="ml-0.5 rounded-full px-1.5 text-[10px] text-black" style={{ background: '#facc15' }}>{sel.items.length}</span>}
                 </button>
               )
             })}
@@ -227,7 +234,7 @@ export default function CreateRequest() {
           {selections.length > 0 && (
             <div className="mb-3 space-y-2">
               {selections.map(sel => (
-                <div key={sel.category} className="rounded-xl border p-3" style={{ borderColor: 'rgba(128,128,0,0.25)', background: 'rgba(128,128,0,0.05)' }}>
+                <div key={sel.category} className="rounded-xl border p-3" style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}>
                   <div className="mb-1.5 flex items-center justify-between">
                     <p className="text-xs font-bold text-white">{sel.category} ({sel.items.length} item{sel.items.length === 1 ? '' : 's'})</p>
                     <button type="button" onClick={() => setSelections(prev => prev.filter(s => s.category !== sel.category))}
@@ -238,7 +245,7 @@ export default function CreateRequest() {
                   <div className="flex flex-wrap gap-1.5">
                     {sel.items.map((item, i) => (
                       <span key={i} className="rounded-md bg-white/5 px-2 py-1 text-[11px] text-white/70">
-                        {item.name} ×{item.quantity} ₹{item.quantity * item.price}
+                        {item.name} ×{item.quantity}{item.price > 0 ? ` ₹${item.quantity * item.price}` : ''}
                       </span>
                     ))}
                   </div>
@@ -258,11 +265,11 @@ export default function CreateRequest() {
         {/* Photos */}
         <div className="card p-5">
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(128,128,0,0.3), rgba(96,96,0,0.3))' }}>
-              <Camera size={16} style={{ color: '#808000' }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <Camera size={16} className="text-white/70" />
             </div>
             <h2 className="text-sm font-bold text-white">Add Photos</h2>
-            <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>for DP reference</span>
+            <span className="text-xs text-white/40">for DP reference</span>
           </div>
 
           <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
@@ -284,7 +291,7 @@ export default function CreateRequest() {
           <button type="button" onClick={() => photoInputRef.current?.click()}
             className="w-full rounded-xl border-2 border-dashed py-4 text-sm font-medium transition-all"
             style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)' }}>
-            <Camera size={18} className="mx-auto mb-1" style={{ color: '#808000' }} />
+            <Camera size={18} className="mx-auto mb-1 text-white/60" />
             {photoPreviews.length > 0 ? 'Add More Photos' : 'Add Photos'}
           </button>
         </div>
@@ -292,24 +299,24 @@ export default function CreateRequest() {
         {/* Voice Note */}
         <div className="card p-5">
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(128,128,0,0.3), rgba(96,96,0,0.3))' }}>
-              <Mic size={16} style={{ color: '#808000' }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'rgba(255,255,255,0.08)' }}>
+              <Mic size={16} className="text-white/70" />
             </div>
             <h2 className="text-sm font-bold text-white">Voice Note</h2>
           </div>
 
           {voiceBlob ? (
-            <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: 'rgba(128,128,0,0.15)', border: '1px solid rgba(128,128,0,0.25)' }}>
+            <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
               <button type="button" onClick={playVoice}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
-                style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
+                style={{ background: 'rgba(255,255,255,0.15)' }}>
                 {playingVoice ? <Pause size={14} /> : <Play size={14} />}
               </button>
               <div className="flex-1">
                 <p className="text-sm font-medium text-white">Voice Note ({fmtDur(voiceDuration)})</p>
-                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Tap to play</p>
+                <p className="text-xs text-white/45">Tap to play</p>
               </div>
-              <button type="button" onClick={clearVoice} style={{ color: 'rgba(255,255,255,0.4)' }}><X size={16} /></button>
+              <button type="button" onClick={clearVoice} className="text-white/40"><X size={16} /></button>
             </div>
           ) : recording ? (
             <button type="button" onClick={stopRecording}
@@ -321,7 +328,7 @@ export default function CreateRequest() {
             <button type="button" onClick={startRecording}
               className="w-full rounded-xl border-2 border-dashed py-4 text-sm font-medium transition-all"
               style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)' }}>
-              <Mic size={18} className="mx-auto mb-1" style={{ color: '#808000' }} />
+              <Mic size={18} className="mx-auto mb-1 text-white/60" />
               Add Voice Note
             </button>
           )}
@@ -347,7 +354,8 @@ export default function CreateRequest() {
 
       {activeCategory && (
         <CategorySelectionModal
-          category={activeCategory}
+          category={activeCategory.name}
+          categoryId={activeCategory.id}
           onClose={() => setActiveCategory(null)}
           onSave={(selection) => {
             setSelections(prev => {

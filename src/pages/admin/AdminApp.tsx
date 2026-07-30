@@ -8,6 +8,7 @@ import AdminPayments from './AdminPayments'
 import AdminUsers from './AdminUsers'
 import AdminNotifications from './AdminNotifications'
 import AdminOperationsMap from './AdminOperationsMap'
+import AdminCategories from './AdminCategories'
 
 export default function AdminApp() {
   return (
@@ -20,6 +21,7 @@ export default function AdminApp() {
         <Route path="/orders" element={<AdminOrders />} />
         <Route path="/payments" element={<AdminPayments />} />
         <Route path="/notifications" element={<AdminNotifications />} />
+        <Route path="/categories" element={<AdminCategories />} />
       </Route>
       <Route path="/operations" element={<AdminOperationsMap />} />
       <Route path="*" element={<Navigate to="/admin" replace />} />

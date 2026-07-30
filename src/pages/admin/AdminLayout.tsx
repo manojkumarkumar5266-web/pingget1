@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
-import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity } from 'lucide-react'
+import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity, Package } from 'lucide-react'
 import Watermark from '../../components/Watermark'
 import Brand from '../../components/Brand'
 import { useEffect, useState } from 'react'
@@ -39,6 +39,30 @@ export default function AdminLayout() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
+  // Mark admin notifications as read when visiting the dashboard
+  useEffect(() => {
+    if (location.pathname === '/admin' && unreadCount > 0) {
+      supabase.from('admin_notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('is_read', false)
+        .then(() => setUnreadCount(0))
+    }
+  }, [location.pathname])
+
+  // Clear pending DP badge when visiting the DPs page
+  useEffect(() => {
+    if (location.pathname === '/admin/dps') {
+      setPendingDps(0)
+    }
+  }, [location.pathname])
+
+  // Clear pending receipts badge when visiting the payments page
+  useEffect(() => {
+    if (location.pathname === '/admin/payments') {
+      setPendingReceipts(0)
+    }
+  }, [location.pathname])
+
   const navItems = [
     { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, badge: unreadCount },
     { path: '/admin/dps', label: 'Partners', icon: Users, badge: pendingDps },
@@ -47,6 +71,7 @@ export default function AdminLayout() {
     { path: '/admin/orders', label: 'Orders', icon: ClipboardList, badge: 0 },
     { path: '/admin/payments', label: 'Payments', icon: CreditCard, badge: pendingReceipts },
     { path: '/admin/notifications', label: 'Notify', icon: Bell, badge: 0 },
+    { path: '/admin/categories', label: 'Categories', icon: Package, badge: 0 },
     { path: '/admin/operations', label: 'Live Ops', icon: Activity, badge: 0 },
   ]
 

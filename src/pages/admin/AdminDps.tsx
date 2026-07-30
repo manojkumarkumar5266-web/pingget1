@@ -193,6 +193,16 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
             </div>
           </div>
 
+          {/* Profile Photo */}
+          {dp.profile?.photo_url && (
+            <div className="mb-4 rounded-2xl border border-white/10 p-4 dark:border-gray-800">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-white/60"><FileText size={16} /> Profile Photo</div>
+              <a href={dp.profile.photo_url} target="_blank" rel="noopener noreferrer">
+                <img src={dp.profile.photo_url} alt="Profile" className="h-32 w-32 rounded-xl object-cover" />
+              </a>
+            </div>
+          )}
+
           <div className="space-y-4">
             <Section title="Contact" icon={<Phone size={16} />}>
               <Row label="Phone" value={dp.profile?.phone || 'Not provided'} />
