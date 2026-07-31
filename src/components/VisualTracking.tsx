@@ -56,6 +56,28 @@ export default function VisualTracking({
   const isArrived = status === 'arrived'
   const isDelivered = status === 'delivered' || status === 'completed' || status === 'cash_received'
 
+  // Generate a wave-style SVG path
+  const waveWidth = 280
+  const waveHeight = 60
+  const amplitude = 12
+  const segments = 40
+  const points: string[] = []
+  for (let i = 0; i <= segments; i++) {
+    const x = (i / segments) * waveWidth
+    const y = waveHeight / 2 + Math.sin((i / segments) * Math.PI * 3) * amplitude
+    points.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`)
+  }
+  const wavePath = points.join(' ')
+
+  // Milestone positions along the wave
+  const milestonePos = (pct: number) => ({
+    x: (pct / 100) * waveWidth,
+    y: waveHeight / 2 + Math.sin((pct / 100) * Math.PI * 3) * amplitude,
+  })
+
+  // Vehicle position
+  const vehiclePos = milestonePos(Math.max(4, Math.min(progress, 96)))
+
   return (
     <div className="relative flex h-full flex-col justify-center overflow-hidden bg-black px-6 py-8">
       {/* Subtle grid background */}
@@ -73,144 +95,106 @@ export default function VisualTracking({
         style={{ background: 'radial-gradient(circle, #808000, transparent 70%)' }}
       />
 
-      {/* Title */}
+      {/* Title + ETA */}
       <div className="relative mb-6 text-center">
         <p className="text-xs font-medium uppercase tracking-widest text-white/40">Live Tracking</p>
         <p className="mt-1 text-lg font-bold text-white">{eta || STATUS_ETA[status] || 'In Progress'}</p>
+        {eta && eta !== STATUS_ETA[status] && (
+          <p className="mt-0.5 text-xs font-medium" style={{ color: '#A6B300' }}>ETA: {eta}</p>
+        )}
       </div>
 
-      {/* Visual track */}
+      {/* Wave Timeline */}
       <div className="relative mx-auto w-full max-w-sm">
-        {/* Endpoints */}
-        <div className="flex items-start justify-between">
-          {/* Point B - DP / Store */}
-          <div className="flex flex-col items-center" style={{ width: '64px' }}>
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl border transition-all"
-              style={{
-                background: isShopping ? 'rgba(128,128,0,0.15)' : 'rgba(255,255,255,0.04)',
-                borderColor: isShopping ? 'rgba(128,128,0,0.4)' : 'rgba(255,255,255,0.08)',
-              }}
-            >
-              {isShopping ? (
-                <ShoppingBag size={24} className="text-[#a8c020]" />
-              ) : (
-                <Store size={24} className="text-white/60" />
-              )}
-            </div>
-            <p className="mt-2 max-w-[80px] text-center text-[10px] font-medium leading-tight text-white/50">
-              {pickupLabel || 'Store'}
-            </p>
-          </div>
-
-          {/* Point A - User / Home */}
-          <div className="flex flex-col items-center" style={{ width: '64px' }}>
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-2xl border transition-all"
-              style={{
-                background: isArrived || isDelivered ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
-                borderColor: isArrived || isDelivered ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.08)',
-              }}
-            >
-              <Home size={24} className={isArrived || isDelivered ? 'text-green-400' : 'text-white/60'} />
-            </div>
-            <p className="mt-2 max-w-[80px] text-center text-[10px] font-medium leading-tight text-white/50">
-              {deliveryLabel || 'You'}
-            </p>
-          </div>
-        </div>
-
-        {/* Track line */}
-        <div className="relative mt-[-46px] h-1 w-full" style={{ marginLeft: 32, marginRight: 32, width: 'calc(100% - 64px)' }}>
-          {/* Base track */}
-          <div className="absolute left-0 top-0 h-1 w-full rounded-full bg-white/8" />
-          {/* Progress track */}
-          <div
-            className="absolute left-0 top-0 h-1 rounded-full transition-all duration-1000 ease-out"
-            style={{
-              width: `${progress}%`,
-              background: isDelivered
-                ? 'linear-gradient(90deg, #808000, #22c55e)'
-                : 'linear-gradient(90deg, #808000, #a8c020)',
-              boxShadow: '0 0 12px rgba(128,128,0,0.4)',
-            }}
-          />
+        <svg viewBox={`0 0 ${waveWidth} ${waveHeight + 30}`} className="w-full" style={{ overflow: 'visible' }}>
+          {/* Base wave track */}
+          <path d={wavePath} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={3} strokeLinecap="round" />
+          {/* Progress wave track — clipped to progress */}
+          <defs>
+            <clipPath id="progressClip">
+              <rect x={0} y={0} width={(progress / 100) * waveWidth} height={waveHeight + 30} />
+            </clipPath>
+          </defs>
+          <path d={wavePath} fill="none" stroke="url(#waveGrad)" strokeWidth={3} strokeLinecap="round" clipPath="url(#progressClip)" />
+          <defs>
+            <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={isDelivered ? '#22c55e' : '#808000'} />
+              <stop offset="100%" stopColor={isDelivered ? '#16a34a' : '#a8c020'} />
+            </linearGradient>
+          </defs>
 
           {/* Milestone dots */}
           {MILESTONES.map((m) => {
-            const Icon = m.icon
+            const pos = milestonePos(m.pct)
             const reached = progress >= m.pct
             return (
-              <div
-                key={m.label}
-                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
-                style={{ left: `${m.pct}%` }}
-              >
-                <div
-                  className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all duration-500 ${
-                    reached ? 'scale-100' : 'scale-75'
-                  }`}
-                  style={{
-                    background: reached ? '#808000' : '#0a0a0a',
-                    borderColor: reached ? '#a8c020' : 'rgba(255,255,255,0.15)',
-                  }}
-                >
-                  <Icon size={12} className={reached ? 'text-black' : 'text-white/30'} />
-                </div>
-              </div>
+              <g key={m.label}>
+                <circle cx={pos.x} cy={pos.y} r={reached ? 7 : 5}
+                  fill={reached ? '#808000' : '#0a0a0a'}
+                  stroke={reached ? '#a8c020' : 'rgba(255,255,255,0.15)'}
+                  strokeWidth={2}
+                  style={{ filter: reached ? 'drop-shadow(0 0 4px rgba(128,128,0,0.5))' : 'none' }} />
+                <text x={pos.x} y={waveHeight + 22} textAnchor="middle"
+                  fill={reached ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)'}
+                  fontSize={7} fontWeight={600} fontFamily="system-ui">
+                  {m.label}
+                </text>
+              </g>
             )
           })}
 
-          {/* Vehicle icon */}
-          <div
-            className="absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ease-out"
-            style={{ left: `${Math.max(4, Math.min(progress, 96))}%` }}
-          >
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-full"
-              style={{
-                background: isDelivered ? '#16a34a' : '#808000',
-                boxShadow: isOnTheWay
-                  ? '0 0 20px rgba(128,128,0,0.6), 0 0 40px rgba(128,128,0,0.3)'
-                  : '0 4px 12px rgba(0,0,0,0.4)',
-              }}
-            >
-              {isDelivered ? (
-                <CheckCircle2 size={20} className="text-white" />
-              ) : isShopping ? (
-                <ShoppingBag size={18} className="text-black" />
-              ) : (
-                <Bike size={20} className="text-black" />
-              )}
-            </div>
-            {/* Motion trail */}
-            {isOnTheWay && (
-              <div
-                className="absolute right-full top-1/2 h-0.5 w-8 -translate-y-1/2 rounded-full"
-                style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(168,192,32,0.6))',
-                  animation: 'trail 1.5s ease-out infinite',
-                }}
-              />
-            )}
-          </div>
-        </div>
+          {/* Vehicle icon on the wave */}
+          <g style={{ transition: 'all 1s ease-out' }}>
+            <circle cx={vehiclePos.x} cy={vehiclePos.y} r={11}
+              fill={isDelivered ? '#16a34a' : '#808000'}
+              style={{ filter: isOnTheWay ? 'drop-shadow(0 0 8px rgba(128,128,0,0.6))' : 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }} />
+            <foreignObject x={vehiclePos.x - 8} y={vehiclePos.y - 8} width={16} height={16}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 }}>
+                {isDelivered ? (
+                  <CheckCircle2 size={11} className="text-white" />
+                ) : isShopping ? (
+                  <ShoppingBag size={10} className="text-black" />
+                ) : (
+                  <Bike size={11} className="text-black" />
+                )}
+              </div>
+            </foreignObject>
+          </g>
+        </svg>
 
-        {/* Status labels under track */}
-        <div className="mt-8 flex justify-between">
-          <div className="text-left">
-            <p className="text-[10px] uppercase tracking-wider text-white/30">From</p>
-            <p className="text-xs font-semibold text-white/70">{dpName || 'Delivery Partner'}</p>
+        {/* Endpoints */}
+        <div className="mt-3 flex items-start justify-between">
+          {/* Store / Pickup */}
+          <div className="flex flex-col items-center" style={{ width: '64px' }}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border transition-all"
+              style={{
+                background: isShopping ? 'rgba(128,128,0,0.15)' : 'rgba(255,255,255,0.04)',
+                borderColor: isShopping ? 'rgba(128,128,0,0.4)' : 'rgba(255,255,255,0.08)',
+              }}>
+              {isShopping ? <ShoppingBag size={20} className="text-[#a8c020]" /> : <Store size={20} className="text-white/60" />}
+            </div>
+            <p className="mt-1.5 max-w-[72px] text-center text-[10px] font-medium leading-tight text-white/50">
+              {pickupLabel || 'Store'}
+            </p>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] uppercase tracking-wider text-white/30">To</p>
-            <p className="text-xs font-semibold text-white/70">{deliveryLabel || 'Your Location'}</p>
+          {/* Home / Delivery */}
+          <div className="flex flex-col items-center" style={{ width: '64px' }}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border transition-all"
+              style={{
+                background: isArrived || isDelivered ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+                borderColor: isArrived || isDelivered ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.08)',
+              }}>
+              <Home size={20} className={isArrived || isDelivered ? 'text-green-400' : 'text-white/60'} />
+            </div>
+            <p className="mt-1.5 max-w-[72px] text-center text-[10px] font-medium leading-tight text-white/50">
+              {deliveryLabel || 'You'}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="relative mx-auto mt-8 w-full max-w-sm">
+      <div className="relative mx-auto mt-6 w-full max-w-sm">
         <div className="mb-1.5 flex items-center justify-between text-[10px] text-white/40">
           <span>Progress</span>
           <span>{progress}%</span>
@@ -226,14 +210,6 @@ export default function VisualTracking({
           />
         </div>
       </div>
-
-      <style>{`
-        @keyframes trail {
-          0% { opacity: 0; transform: translateY(-50%) translateX(0); }
-          50% { opacity: 1; }
-          100% { opacity: 0; transform: translateY(-50%) translateX(-12px); }
-        }
-      `}</style>
     </div>
   )
 }

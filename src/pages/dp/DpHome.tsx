@@ -1,3 +1,11 @@
+
+function getDpGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'morning'
+  if (h < 17) return 'afternoon'
+  return 'evening'
+}
+
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
@@ -190,10 +198,19 @@ export default function DpHome() {
 
   if (dpLoading) return <div className="p-4 space-y-3"><SkeletonList count={3} lines={3} /></div>
 
+  const dpFirstName = profile?.full_name?.split(' ')[0] || 'Partner'
+  const dpGreetWord = getDpGreeting()
+
   if (!dp?.is_online) {
     return (
       <div className="mx-auto max-w-md px-4 py-4">
         <ServiceStatusBanner cityName={profile?.city} />
+
+        {/* Greeting */}
+        <div className="mb-5 animate-fade-in-up">
+          <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Good {dpGreetWord},</p>
+          <h1 className="text-2xl font-bold text-white leading-tight">{dpFirstName} 👋</h1>
+        </div>
 
         {/* Offline earnings card */}
         <div className="mb-5 animate-slide-up">
@@ -244,6 +261,12 @@ export default function DpHome() {
   return (
     <div className="mx-auto max-w-md px-4 py-4">
       <ServiceStatusBanner cityName={profile?.city} />
+
+      {/* Greeting */}
+      <div className="mb-5 animate-fade-in-up">
+        <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Good {dpGreetWord},</p>
+        <h1 className="text-2xl font-bold text-white leading-tight">{dpFirstName} 👋</h1>
+      </div>
 
       {/* Commission due banner */}
       {pendingCommission > 0 && (

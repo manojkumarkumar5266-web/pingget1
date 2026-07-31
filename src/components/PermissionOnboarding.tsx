@@ -14,31 +14,45 @@ export default function PermissionOnboarding({ onComplete }: { onComplete: () =>
   const [granted, setGranted] = useState<Record<string, boolean>>({})
   const current = STEPS[stepIdx]
 
+  const [requesting, setRequesting] = useState(false)
+
   const requestPermission = async () => {
-    if (current.key === 'gps') {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          () => setGranted(prev => ({ ...prev, gps: true })),
-          () => setGranted(prev => ({ ...prev, gps: false })),
-          { timeout: 10000 }
-        )
-      } else { setGranted(prev => ({ ...prev, gps: false })) }
-    } else if (current.key === 'camera') {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-        stream.getTracks().forEach(t => t.stop())
-        setGranted(prev => ({ ...prev, camera: true }))
-      } catch { setGranted(prev => ({ ...prev, camera: false })) }
-    } else if (current.key === 'notifications') {
-      if ('Notification' in window) {
-        const result = await Notification.requestPermission()
-        setGranted(prev => ({ ...prev, notifications: result === 'granted' }))
-      } else { setGranted(prev => ({ ...prev, notifications: false })) }
+    setRequesting(true)
+    try {
+      if (current.key === 'gps') {
+        if (navigator.geolocation) {
+          await new Promise<void>((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              () => { setGranted(prev => ({ ...prev, gps: true })); resolve() },
+              () => { setGranted(prev => ({ ...prev, gps: false })); resolve() },
+              { timeout: 10000 }
+            )
+          })
+        } else { setGranted(prev => ({ ...prev, gps: false })) }
+      } else if (current.key === 'camera') {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+          stream.getTracks().forEach(t => t.stop())
+          setGranted(prev => ({ ...prev, camera: true }))
+        } catch { setGranted(prev => ({ ...prev, camera: false })) }
+      } else if (current.key === 'notifications') {
+        if ('Notification' in window && Notification.permission !== 'granted') {
+          const result = await Notification.requestPermission()
+          setGranted(prev => ({ ...prev, notifications: result === 'granted' }))
+        } else if (Notification.permission === 'granted') {
+          setGranted(prev => ({ ...prev, notifications: true }))
+        } else { setGranted(prev => ({ ...prev, notifications: false })) }
+      }
+    } finally {
+      setRequesting(false)
     }
   }
 
   const handleNext = async () => {
-    if (!granted[current.key]) await requestPermission()
+    if (!granted[current.key]) {
+      await requestPermission()
+      return
+    }
     if (stepIdx < STEPS.length - 1) setStepIdx(stepIdx + 1)
     else onComplete()
   }
@@ -93,8 +107,8 @@ export default function PermissionOnboarding({ onComplete }: { onComplete: () =>
           </div>
           <div className="flex gap-2">
             <button onClick={handleSkip} className="btn-secondary flex-1">Skip</button>
-            <button onClick={handleNext} className="flex-1 btn font-bold" style={{ background: '#A6B300', color: '#0B0B0B' }}>
-              {isGranted ? 'Continue' : 'Allow'}
+            <button onClick={handleNext} disabled={requesting} className="flex-1 btn font-bold disabled:opacity-50" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+              {requesting ? 'Requesting...' : isGranted ? 'Continue' : 'Allow'}
             </button>
           </div>
         </div>

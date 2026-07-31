@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { ErrorBanner } from '../../components/ui'
 import CategorySelectionModal, { type CategorySelection } from '../../components/CategorySelectionModal'
-import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Package, Trash2, Plus, ChevronRight, FileText } from 'lucide-react'
+import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Package, Trash2, Plus, ChevronRight, FileText, MapPin, Navigation, Home } from 'lucide-react'
 
 type DbCategory = { id: string; name: string; icon: string }
 
@@ -12,6 +12,22 @@ const ICON_MAP: Record<string, string> = {
   Food: '🍱', Medicine: '💊', Grocery: '🛒', Parcel: '📦',
   Courier: '🚀', Gift: '🎁', Laundry: '👔', Documents: '📄',
   Flowers: '🌸', Electronics: '📱',
+  Vegetables: '🥕', Fruits: '🍎', Stationery: '✏️', Sports: '⚽',
+}
+
+type SavedAddress = {
+  id: string
+  label: string
+  house_no: string | null
+  flat_no: string | null
+  building_name: string | null
+  landmark: string | null
+  street: string | null
+  area: string | null
+  city: string | null
+  pincode: string | null
+  lat: number | null
+  lng: number | null
 }
 
 export default function CreateRequest() {
@@ -43,6 +59,22 @@ export default function CreateRequest() {
   const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const voiceUrlRef = useRef<string | null>(null)
 
+  // Delivery address state
+  const [addresses, setAddresses] = useState<SavedAddress[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  const [showAddressForm, setShowAddressForm] = useState(false)
+  const [addrHouse, setAddrHouse] = useState('')
+  const [addrFlat, setAddrFlat] = useState('')
+  const [addrBuilding, setAddrBuilding] = useState('')
+  const [addrLandmark, setAddrLandmark] = useState('')
+  const [addrStreet, setAddrStreet] = useState('')
+  const [addrArea, setAddrArea] = useState('')
+  const [addrCity, setAddrCity] = useState('')
+  const [addrPincode, setAddrPincode] = useState('')
+  const [addrLat, setAddrLat] = useState<number | null>(null)
+  const [addrLng, setAddrLng] = useState<number | null>(null)
+  const [savingAddress, setSavingAddress] = useState(false)
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -51,6 +83,14 @@ export default function CreateRequest() {
       .then(({ data }) => setCategories((data as DbCategory[]) || []))
   }, [])
 
+  const fetchAddresses = async () => {
+    if (!profile?.id) return
+    const { data } = await supabase.from('addresses').select('*').eq('user_id', profile.id).order('created_at', { ascending: false })
+    setAddresses((data as SavedAddress[]) || [])
+    if (data && data.length > 0 && !selectedAddressId) setSelectedAddressId(data[0].id)
+  }
+  useEffect(() => { fetchAddresses() }, [profile?.id])
+
   useEffect(() => {
     if (gpsLat) return
     navigator.geolocation?.getCurrentPosition(
@@ -58,6 +98,56 @@ export default function CreateRequest() {
       () => {}, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
     )
   }, [])
+
+  const selectedAddress = addresses.find(a => a.id === selectedAddressId)
+  const deliveryAddressText = selectedAddress
+    ? [selectedAddress.house_no, selectedAddress.flat_no, selectedAddress.building_name, selectedAddress.street, selectedAddress.area, selectedAddress.city, selectedAddress.pincode].filter(Boolean).join(', ')
+    : null
+
+  const pickLocationOnMap = () => {
+    if (!navigator.geolocation) { setError('Location not supported'); return }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setAddrLat(pos.coords.latitude)
+        setAddrLng(pos.coords.longitude)
+        setError(null)
+      },
+      () => setError('Could not get your location'),
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
+  const saveAddress = async () => {
+    if (!profile?.id) return
+    if (!addrHouse.trim() && !addrFlat.trim() && !addrBuilding.trim()) { setError('Please enter at least a house/flat/building'); return }
+    if (!addrPincode || addrPincode.length !== 6) { setError('Please enter a 6-digit pincode'); return }
+    setSavingAddress(true)
+    const label = addrHouse || addrFlat || addrBuilding || 'Address'
+    const { data, error: insErr } = await supabase.from('addresses').insert({
+      user_id: profile.id,
+      label,
+      house_no: addrHouse.trim() || null,
+      flat_no: addrFlat.trim() || null,
+      building_name: addrBuilding.trim() || null,
+      landmark: addrLandmark.trim() || null,
+      street: addrStreet.trim() || null,
+      area: addrArea.trim() || null,
+      city: addrCity.trim() || null,
+      pincode: addrPincode,
+      lat: addrLat,
+      lng: addrLng,
+    }).select().single()
+    setSavingAddress(false)
+    if (insErr) { setError(insErr.message); return }
+    if (data) {
+      await fetchAddresses()
+      setSelectedAddressId(data.id)
+      setShowAddressForm(false)
+      setAddrHouse(''); setAddrFlat(''); setAddrBuilding(''); setAddrLandmark('')
+      setAddrStreet(''); setAddrArea(''); setAddrCity(''); setAddrPincode('')
+      setAddrLat(null); setAddrLng(null)
+    }
+  }
 
   const handlePhotosSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -114,6 +204,7 @@ export default function CreateRequest() {
 
   const handleSubmit = async () => {
     setError(null)
+    if (!deliveryAddressText) { setError('Please select or add a delivery address'); return }
     const selectionLines: string[] = []
     selections.forEach(sel => {
       selectionLines.push(`[${sel.category}]`)
@@ -138,8 +229,9 @@ export default function CreateRequest() {
         user_id: profile!.id, description: fullDescription,
         photo_urls: photoUrls.length > 0 ? photoUrls : null, voice_note_url: voiceUrl,
         preferred_shop: preferredShop.trim() || null, pickup_address: pickupAddress.trim() || null,
-        delivery_address: profile?.address || null,
-        pickup_lat: gpsLat, pickup_lng: gpsLng, delivery_lat: gpsLat, delivery_lng: gpsLng,
+        delivery_address: deliveryAddressText,
+        delivery_lat: selectedAddress?.lat || null, delivery_lng: selectedAddress?.lng || null,
+        pickup_lat: gpsLat, pickup_lng: gpsLng,
         expected_time: null, max_budget: null, special_instructions: null, radius_meters: 0, status: 'pending',
       }).select('id').single()
       if (error) throw error
@@ -149,7 +241,7 @@ export default function CreateRequest() {
 
   const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   const totalItems = selections.reduce((s, sel) => s + sel.items.length, 0)
-  const canSubmit = (selections.length > 0 || description.trim().length > 0) && !loading
+  const canSubmit = (selections.length > 0 || description.trim().length > 0) && !loading && !!deliveryAddressText
 
   return (
     <div className="flex flex-col bg-[#0B0B0B] min-h-screen">
@@ -166,15 +258,78 @@ export default function CreateRequest() {
 
       <div className="flex-1 overflow-y-auto pb-32 px-4 pt-5 space-y-5">
         {/* Delivery Address Card */}
-        <div className="card p-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(239,68,68,0.15)' }}>
-            <span className="text-lg">📍</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Deliver To</p>
-            <p className="text-sm font-medium text-white truncate">{profile?.address || 'Your registered address'}</p>
-          </div>
-          <ChevronRight size={16} style={{ color: 'rgba(255,255,255,0.3)' }} />
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Delivery Address</p>
+          {deliveryAddressText && !showAddressForm ? (
+            <div>
+              {addresses.length > 1 && (
+                <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
+                  {addresses.map(addr => (
+                    <button key={addr.id} onClick={() => setSelectedAddressId(addr.id)}
+                      className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${selectedAddressId === addr.id ? 'text-[#0B0B0B]' : 'text-white/50'}`}
+                      style={selectedAddressId === addr.id ? { background: '#A6B300' } : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      {addr.label || 'Address'}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="card p-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(239,68,68,0.15)' }}>
+                  <Home size={18} className="text-red-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Deliver To</p>
+                  <p className="text-sm font-medium text-white">{deliveryAddressText}</p>
+                </div>
+                <button onClick={() => setShowAddressForm(true)}
+                  className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold"
+                  style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
+                  <Plus size={12} /> Add
+                </button>
+              </div>
+            </div>
+          ) : addresses.length === 0 && !showAddressForm ? (
+            <div className="card p-6 text-center">
+              <MapPin size={28} className="mx-auto mb-2 text-white/30" />
+              <p className="text-sm font-medium text-white/60 mb-1">No delivery address yet</p>
+              <p className="text-xs text-white/40 mb-4">Add an address so your partner knows where to deliver</p>
+              <button onClick={() => setShowAddressForm(true)}
+                className="btn-primary mx-auto" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                <Plus size={16} /> Add Address
+              </button>
+            </div>
+          ) : showAddressForm ? (
+            <div className="card p-4 space-y-3 animate-slide-up">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white">New Address</h3>
+                <button onClick={() => setShowAddressForm(false)} className="btn-icon"><X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} /></button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><label className="label">House No.</label><input className="input" value={addrHouse} onChange={e => setAddrHouse(e.target.value)} placeholder="H.No" /></div>
+                <div><label className="label">Flat No.</label><input className="input" value={addrFlat} onChange={e => setAddrFlat(e.target.value)} placeholder="Flat" /></div>
+              </div>
+              <div><label className="label">Building Name</label><input className="input" value={addrBuilding} onChange={e => setAddrBuilding(e.target.value)} placeholder="Building / Apartment" /></div>
+              <div><label className="label">Landmark</label><input className="input" value={addrLandmark} onChange={e => setAddrLandmark(e.target.value)} placeholder="Near..." /></div>
+              <div><label className="label">Street</label><input className="input" value={addrStreet} onChange={e => setAddrStreet(e.target.value)} placeholder="Street name" /></div>
+              <div><label className="label">Area</label><input className="input" value={addrArea} onChange={e => setAddrArea(e.target.value)} placeholder="Area / Locality" /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><label className="label">City</label><input className="input" value={addrCity} onChange={e => setAddrCity(e.target.value)} placeholder="City" /></div>
+                <div><label className="label">PIN Code</label><input className="input" value={addrPincode} onChange={e => setAddrPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit" maxLength={6} /></div>
+              </div>
+              {/* Map location picker */}
+              <button onClick={pickLocationOnMap}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-medium transition-all active:scale-95"
+                style={{ background: addrLat ? 'rgba(166,179,0,0.1)' : 'rgba(255,255,255,0.04)', border: `1.5px dashed ${addrLat ? 'rgba(166,179,0,0.3)' : 'rgba(255,255,255,0.15)'}`, color: addrLat ? '#A6B300' : 'rgba(255,255,255,0.5)' }}>
+                <Navigation size={15} />
+                {addrLat ? `Location set (${addrLat.toFixed(4)}, ${addrLng?.toFixed(4)})` : 'Select exact location on map'}
+              </button>
+              {error && <ErrorBanner message={error} />}
+              <button onClick={saveAddress} disabled={savingAddress}
+                className="btn-primary w-full" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                {savingAddress ? 'Saving...' : 'Save Address'}
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {/* Category Grid */}
@@ -243,107 +398,96 @@ export default function CreateRequest() {
           </div>
         )}
 
-        {/* Notes */}
-        <div>
-          <label className="label flex items-center gap-1.5">
-            <FileText size={12} /> Extra Notes
+        {/* Extra Notes — expanded section with voice + photos inside */}
+        <div className="card p-4">
+          <label className="label flex items-center gap-1.5 mb-2">
+            <FileText size={14} /> Extra Notes
             <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
           </label>
-          <textarea className="input min-h-[90px] resize-none" value={description}
+          <textarea className="input min-h-[140px] resize-none text-sm leading-relaxed" value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder="Brand preferences, specific instructions, or anything else..." />
-        </div>
+            placeholder="Brand preferences, specific instructions, quantities, or anything else your delivery partner should know..." />
 
-        {/* Photos */}
-        <div>
-          <label className="label flex items-center gap-1.5"><Camera size={12} /> Add Photos</label>
-          <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
-          {photoPreviews.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-2">
-              {photoPreviews.map((preview, idx) => (
-                <div key={idx} className="relative">
-                  <img src={preview} alt={`Photo ${idx + 1}`} className="h-20 w-20 rounded-2xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
-                  <button type="button" onClick={() => removePhoto(idx)}
-                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-lg">
-                    <X size={10} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          <button type="button" onClick={() => photoInputRef.current?.click()}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-medium transition-all active:scale-95"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px dashed rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)' }}>
-            <Camera size={16} />
-            {photoPreviews.length > 0 ? 'Add More Photos' : 'Add Reference Photos'}
-          </button>
-        </div>
-
-        {/* Voice Note */}
-        <div>
-          <label className="label flex items-center gap-1.5"><Mic size={12} /> Voice Note</label>
-          {voiceBlob ? (
-            <div className="flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
-              <button type="button" onClick={playVoice}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all active:scale-90"
-                style={{ background: '#A6B300' }}>
-                {playingVoice ? <Pause size={16} className="text-[#0B0B0B]" /> : <Play size={16} className="text-[#0B0B0B]" />}
-              </button>
-              <div className="flex-1">
-                <div className="flex items-center gap-1 mb-1.5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className={`voice-wave-bar ${playingVoice ? '' : ''}`}
-                      style={{ height: `${12 + Math.random() * 16}px`, opacity: playingVoice ? 1 : 0.4 }} />
-                  ))}
-                </div>
-                <p className="text-xs font-semibold" style={{ color: '#A6B300' }}>Voice Note · {fmtDur(voiceDuration)}</p>
-              </div>
-              <button type="button" onClick={clearVoice} className="p-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                <X size={16} />
-              </button>
-            </div>
-          ) : recording ? (
-            <button type="button" onClick={stopRecording}
-              className="flex w-full items-center justify-center gap-3 rounded-2xl py-4 text-sm font-semibold"
-              style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="voice-wave-bar" style={{ height: `${12 + Math.random() * 16}px`, background: '#ef4444' }} />
+          {/* Photos inside notes section */}
+          <div className="mt-3">
+            <p className="mb-2 text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>Add Photos (items, shopping list, prescription)</p>
+            <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
+            {photoPreviews.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {photoPreviews.map((preview, idx) => (
+                  <div key={idx} className="relative">
+                    <img src={preview} alt={`Photo ${idx + 1}`} className="h-20 w-20 rounded-2xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+                    <button type="button" onClick={() => removePhoto(idx)}
+                      className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-lg">
+                      <X size={10} />
+                    </button>
+                  </div>
                 ))}
               </div>
-              <MicOff size={18} /> Stop · {fmtDur(voiceDuration)}
-            </button>
-          ) : (
-            <button type="button" onClick={startRecording}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-medium transition-all active:scale-95"
+            )}
+            <button type="button" onClick={() => photoInputRef.current?.click()}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-medium transition-all active:scale-95"
               style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px dashed rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)' }}>
-              <Mic size={16} /> Record Voice Note
+              <Camera size={16} />
+              {photoPreviews.length > 0 ? 'Add More Photos' : 'Add Item Photos / Shopping List / Prescription'}
             </button>
-          )}
+          </div>
+
+          {/* Voice note inside notes section */}
+          <div className="mt-3">
+            <p className="mb-2 text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>Voice Note</p>
+            {voiceBlob ? (
+              <div className="flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
+                <button type="button" onClick={playVoice}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all active:scale-90"
+                  style={{ background: '#A6B300' }}>
+                  {playingVoice ? <Pause size={16} className="text-[#0B0B0B]" /> : <Play size={16} className="text-[#0B0B0B]" />}
+                </button>
+                <div className="flex-1">
+                  <div className="flex items-center gap-1 mb-1.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="voice-wave-bar"
+                        style={{ height: `${12 + Math.random() * 16}px`, opacity: playingVoice ? 1 : 0.4 }} />
+                    ))}
+                  </div>
+                  <p className="text-xs font-semibold" style={{ color: '#A6B300' }}>Voice Note · {fmtDur(voiceDuration)}</p>
+                </div>
+                <button type="button" onClick={clearVoice} className="p-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  <X size={16} />
+                </button>
+              </div>
+            ) : recording ? (
+              <button type="button" onClick={stopRecording}
+                className="flex w-full items-center justify-center gap-3 rounded-2xl py-4 text-sm font-semibold"
+                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="voice-wave-bar" style={{ height: `${12 + Math.random() * 16}px`, background: '#ef4444' }} />
+                  ))}
+                </div>
+                <MicOff size={18} /> Stop · {fmtDur(voiceDuration)}
+              </button>
+            ) : (
+              <button type="button" onClick={startRecording}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-medium transition-all active:scale-95"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px dashed rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)' }}>
+                <Mic size={16} /> Record Voice Note
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Optional Details Toggle */}
-        <button type="button" onClick={() => setShowDetails(!showDetails)}
-          className="flex w-full items-center justify-between rounded-2xl px-4 py-3.5 transition-colors active:scale-95"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
-          <span className="flex items-center gap-2 text-sm font-medium">
-            <Store size={15} /> Additional Details
-          </span>
-          <ChevronRight size={16} className={`transition-transform ${showDetails ? 'rotate-90' : ''}`} />
-        </button>
-
-        {showDetails && (
-          <div className="space-y-3 animate-slide-up">
-            <div>
-              <label className="label">Preferred Shop <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
-              <input className="input" value={preferredShop} onChange={e => setPreferredShop(e.target.value)} placeholder="e.g. Reliance Fresh, Main Road" />
-            </div>
-            <div>
-              <label className="label">Pickup Location <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
-              <input className="input" value={pickupAddress} onChange={e => setPickupAddress(e.target.value)} placeholder="Where the partner should pick up items" />
-            </div>
+        {/* Preferred Shop + Pickup Location — always visible */}
+        <div className="space-y-3">
+          <div>
+            <label className="label flex items-center gap-1.5"><Store size={13} /> Preferred Shop <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+            <input className="input" value={preferredShop} onChange={e => setPreferredShop(e.target.value)} placeholder="e.g. Reliance Fresh, D-Mart, More, Medical Shop" />
           </div>
-        )}
+          <div>
+            <label className="label flex items-center gap-1.5"><MapPin size={13} /> Pickup Location <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+            <input className="input" value={pickupAddress} onChange={e => setPickupAddress(e.target.value)} placeholder="Where the partner should collect items" />
+          </div>
+        </div>
 
         {error && <ErrorBanner message={error} />}
       </div>

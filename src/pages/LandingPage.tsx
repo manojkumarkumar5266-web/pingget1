@@ -29,8 +29,8 @@ export default function LandingPage() {
       <Watermark />
 
       {FLOATING_ICONS.map((item, i) => (
-        <div key={i} className="pointer-events-none absolute opacity-25"
-          style={{ left: item.x, top: item.y, color: '#a0b060', animation: `floatIcon ${item.dur} ease-in-out infinite`, animationDelay: item.delay }}>
+        <div key={i} className="pointer-events-none absolute opacity-60"
+          style={{ left: item.x, top: item.y, color: '#C8D600', filter: 'drop-shadow(0 0 6px rgba(166,179,0,0.5))', animation: `floatIcon ${item.dur} ease-in-out infinite`, animationDelay: item.delay }}>
           {item.icon}
         </div>
       ))}

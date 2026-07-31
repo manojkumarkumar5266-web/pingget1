@@ -13,12 +13,31 @@ export default function AdminOrders() {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      const { data } = await supabase
-        .from('orders')
-        .select('*, _request:requests(description, delivery_address, pickup_address, preferred_shop, user_id, accepted_dp_id, photo_urls, delivery_proof_photos)')
+      // Fetch from requests table to show ALL orders at every stage
+      const { data: reqData } = await supabase
+        .from('requests')
+        .select('*, _order:orders(delivery_charge, commission_amount, commission_pct, dp_earnings, item_cost, items_summary, completed_at)')
         .order('created_at', { ascending: false })
-        .limit(200)
-      setOrders(data || [])
+        .limit(300)
+      setOrders((reqData || []).map((r: any) => ({
+        ...r,
+        delivery_charge: r._order?.delivery_charge ?? null,
+        commission_amount: r._order?.commission_amount ?? null,
+        commission_pct: r._order?.commission_pct ?? null,
+        dp_earnings: r._order?.dp_earnings ?? null,
+        item_cost: r._order?.item_cost ?? null,
+        items_summary: r._order?.items_summary ?? r.description,
+        _request: {
+          description: r.description,
+          delivery_address: r.delivery_address,
+          pickup_address: r.pickup_address,
+          preferred_shop: r.preferred_shop,
+          user_id: r.user_id,
+          accepted_dp_id: r.accepted_dp_id,
+          photo_urls: r.photo_urls,
+          delivery_proof_photos: r.delivery_proof_photos,
+        },
+      })))
       setLoading(false)
     }
     fetchOrders()
@@ -33,8 +52,9 @@ export default function AdminOrders() {
 
   const filtered = orders.filter(o =>
     !search ||
-    o._request?.description?.toLowerCase().includes(search.toLowerCase()) ||
-    o.items_summary?.toLowerCase().includes(search.toLowerCase()) ||
+    (o.description || '').toLowerCase().includes(search.toLowerCase()) ||
+    (o.items_summary || '').toLowerCase().includes(search.toLowerCase()) ||
+    (o.delivery_address || '').toLowerCase().includes(search.toLowerCase()) ||
     o.id.toLowerCase().includes(search.toLowerCase())
   )
 

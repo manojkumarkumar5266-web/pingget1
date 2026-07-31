@@ -199,7 +199,7 @@ export default function UserOrders() {
 
               {/* Action row */}
               {tab === 'active' && (
-                <div className="flex gap-2 px-4 pb-4">
+                <div className="flex flex-wrap gap-2 px-4 pb-4">
                   {req.accepted_dp_id && (
                     <button onClick={() => openChat(req)}
                       className="flex items-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-semibold transition-all active:scale-95"
@@ -215,10 +215,21 @@ export default function UserOrders() {
                       {updating === req.id ? 'Confirming...' : 'Confirm Delivery'}
                     </button>
                   )}
-                  <button onClick={() => navigate('/app/orders')}
-                    className="ml-auto flex items-center gap-0.5 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                    Details <ChevronRight size={12} />
-                  </button>
+                  {['pending', 'accepted', 'confirmed', 'shopping'].includes(req.status) && (
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm('Cancel this order?')) return
+                        setUpdating(req.id)
+                        await supabase.from('requests').update({ status: 'cancelled' }).eq('id', req.id)
+                        await fetchOrders()
+                        setUpdating(null)
+                      }}
+                      disabled={updating === req.id}
+                      className="ml-auto flex items-center gap-1 rounded-2xl px-3 py-2 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
+                      style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+                      Cancel Order
+                    </button>
+                  )}
                 </div>
               )}
             </div>

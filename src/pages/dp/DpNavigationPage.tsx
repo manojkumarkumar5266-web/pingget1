@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase, type DeliveryRequest, type Profile } from '../../lib/supabase'
+import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } from '../../lib/supabase'
 import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
-import { ArrowLeft, Navigation, MapPin, MessageCircle, Package, CheckCircle2, ShoppingBag, Bike, Phone, Camera, X, Clock } from 'lucide-react'
+import { ArrowLeft, Navigation, MapPin, MessageCircle, Package, CheckCircle2, ShoppingBag, Bike, Phone, Camera, X, Clock, Star } from 'lucide-react'
 
 export default function DpNavigationPage() {
   const { requestId } = useParams<{ requestId: string }>()
@@ -12,32 +12,28 @@ export default function DpNavigationPage() {
 
   const [request, setRequest] = useState<DeliveryRequest | null>(null)
   const [userProfile, setUserProfile] = useState<Profile | null>(null)
+  const [dpData, setDpData] = useState<DeliveryPartner | null>(null)
   const [loading, setLoading] = useState(true)
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [etaMinutes, setEtaMinutes] = useState<number | null>(null)
+  const [updatingEta, setUpdatingEta] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any>(null)
 
   useEffect(() => {
     if (!requestId) return
     const fetchData = async () => {
-      const { data: req } = await supabase
-        .from('requests')
-        .select('*')
-        .eq('id', requestId)
-        .maybeSingle()
+      const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
       if (!req) { setLoading(false); return }
       setRequest(req as DeliveryRequest)
-
       if (req.user_id) {
-        const { data: userProf } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', req.user_id)
-          .maybeSingle()
+        const { data: userProf } = await supabase.from('profiles').select('*').eq('id', req.user_id).maybeSingle()
         setUserProfile(userProf as Profile | null)
+      }
+      if (profile?.id) {
+        const { data: dp } = await supabase.from('delivery_partners').select('*').eq('user_id', profile.id).maybeSingle()
+        setDpData(dp as DeliveryPartner | null)
       }
       setLoading(false)
     }
@@ -45,60 +41,25 @@ export default function DpNavigationPage() {
 
     const channel = supabase
       .channel(`dp-nav-${requestId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'requests',
-        filter: `id=eq.${requestId}`,
-      }, (payload: any) => {
-        setRequest(payload.new as DeliveryRequest)
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `id=eq.${requestId}` },
+        (payload: any) => setRequest(payload.new as DeliveryRequest))
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
-  }, [requestId])
+  }, [requestId, profile?.id])
 
-  // Initialize Leaflet map showing user delivery location
-  useEffect(() => {
-    if (!request?.delivery_lat || !request?.delivery_lng || !mapRef.current || mapInstanceRef.current) return
-    import('leaflet').then((L: any) => {
-      const map = L.map(mapRef.current!, {
-        zoomControl: true,
-        attributionControl: false,
-      }).setView([request.delivery_lat!, request.delivery_lng!], 15)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png').addTo(map)
-      const destIcon = L.divIcon({
-        html: `<div style="width:32px;height:32px;background:#ef4444;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">D</div>`,
-        className: '', iconSize: [32, 32], iconAnchor: [16, 32],
-      })
-      L.marker([request.delivery_lat!, request.delivery_lng!], { icon: destIcon }).addTo(map)
-      mapInstanceRef.current = map
-    })
-    return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null } }
-  }, [request?.delivery_lat, request?.delivery_lng])
-
-  if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-black text-white/40">Loading...</div>
-  }
-
-  if (!request) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black">
-        <p className="text-white/50">Order not found</p>
-        <button onClick={() => navigate('/dp')} className="btn-primary">Back</button>
-      </div>
-    )
-  }
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-black text-white/40">Loading...</div>
+  if (!request) return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black">
+      <p className="text-white/50">Order not found</p>
+      <button onClick={() => navigate('/dp')} className="btn-primary">Back</button>
+    </div>
+  )
 
   const updateStatus = async (newStatus: string, notifTitle: string, notifBody: string) => {
     await supabase.from('requests').update({ status: newStatus }).eq('id', requestId)
     await supabase.from('orders').update({ status: newStatus }).eq('request_id', requestId)
     await supabase.from('notifications').insert({
-      user_id: request.user_id,
-      title: notifTitle,
-      body: notifBody,
-      type: 'order_status',
-      related_id: requestId,
+      user_id: request.user_id, title: notifTitle, body: notifBody, type: 'order_status', related_id: requestId,
     })
   }
 
@@ -111,10 +72,7 @@ export default function DpNavigationPage() {
   }
 
   const removePhoto = (idx: number) => {
-    setPhotoPreviews(prev => {
-      URL.revokeObjectURL(prev[idx])
-      return prev.filter((_, i) => i !== idx)
-    })
+    setPhotoPreviews(prev => { URL.revokeObjectURL(prev[idx]); return prev.filter((_, i) => i !== idx) })
     setPhotoFiles(prev => prev.filter((_, i) => i !== idx))
   }
 
@@ -126,20 +84,37 @@ export default function DpNavigationPage() {
     for (let i = 0; i < photoFiles.length; i++) {
       const path = `delivery-proof/${requestId}/${ts}-proof-${i}`
       const { error } = await supabase.storage.from('media').upload(path, photoFiles[i], { upsert: true })
-      if (!error) {
-        const url = supabase.storage.from('media').getPublicUrl(path).data.publicUrl
-        urls.push(url)
-      }
+      if (!error) urls.push(supabase.storage.from('media').getPublicUrl(path).data.publicUrl)
     }
     if (urls.length > 0) {
       await supabase.from('requests').update({
-        delivery_proof_photos: urls,
-        delivery_proof_url: urls[0],
-        delivery_proof_by: profile!.id,
-        delivery_proof_at: new Date().toISOString(),
+        delivery_proof_photos: urls, delivery_proof_url: urls[0],
+        delivery_proof_by: profile!.id, delivery_proof_at: new Date().toISOString(),
       }).eq('id', requestId)
     }
     setUploading(false)
+  }
+
+  const updateEta = async () => {
+    if (!etaMinutes || etaMinutes < 1) return
+    setUpdatingEta(true)
+    await supabase.from('requests').update({ eta_minutes: etaMinutes }).eq('id', requestId)
+    await supabase.from('notifications').insert({
+      user_id: request.user_id, title: 'ETA Updated',
+      body: `Your delivery partner updated the ETA to ${etaMinutes} minutes.`,
+      type: 'order_status', related_id: requestId,
+    })
+    setUpdatingEta(false)
+  }
+
+  const openGoogleMaps = () => {
+    const lat = request.delivery_lat
+    const lng = request.delivery_lng
+    if (lat && lng) {
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank')
+    } else if (request.delivery_address) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.delivery_address)}`, '_blank')
+    }
   }
 
   const isDelivered = request.status === 'delivered'
@@ -158,8 +133,7 @@ export default function DpNavigationPage() {
             <p className="text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
           </div>
           {userProfile && (
-            <button onClick={() => window.location.href = `tel:${userProfile.phone || ''}`}
-              className="map-control-btn map-control-dark">
+            <button onClick={() => window.location.href = `tel:${userProfile.phone || ''}`} className="map-control-btn map-control-dark">
               <Phone size={18} />
             </button>
           )}
@@ -169,44 +143,55 @@ export default function DpNavigationPage() {
           }} className="map-control-btn map-control-dark">
             <MessageCircle size={18} />
           </button>
-          <button onClick={() => {
-            if (request.delivery_lat && request.delivery_lng) {
-              window.open(`https://www.openstreetmap.org/directions?to=${request.delivery_lat},${request.delivery_lng}`, '_blank')
-            }
-          }} className="map-control-btn map-control-active">
-            <Navigation size={18} />
-          </button>
         </div>
       </div>
 
-      {/* Top half: Live map showing delivery location */}
-      <div className="relative flex-shrink-0" style={{ height: '45vh', minHeight: '280px' }}>
-        <div ref={mapRef} className="absolute inset-0" />
-        {!request.delivery_lat && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black">
-            <div className="text-center">
-              <MapPin size={32} className="mx-auto mb-2 text-white/30" />
-              <p className="text-sm text-white/40">No delivery location set</p>
+      {/* Top section: Delivery location summary (no map) */}
+      <div className="flex-shrink-0 pt-20 px-4 pb-4" style={{ background: 'linear-gradient(180deg, #0B0B0B, #111)' }}>
+        <div className="mx-auto max-w-md">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <MapPin size={16} className="text-red-400" />
+              <p className="text-sm font-bold text-white">Delivery Location</p>
             </div>
+            <p className="text-sm text-white/70 mb-3">{request.delivery_address || 'Not specified'}</p>
+            <button onClick={openGoogleMaps}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold text-white transition-all active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 4px 16px rgba(59,130,246,0.3)' }}>
+              <Navigation size={18} /> Navigate with Google Maps
+            </button>
           </div>
-        )}
+
+          {/* ETA update */}
+          {['confirmed', 'shopping', 'purchased', 'on_the_way'].includes(request.status) && (
+            <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Update ETA</p>
+              <div className="flex gap-2">
+                <input type="number" min={1} max={120} value={etaMinutes ?? ''} onChange={e => setEtaMinutes(e.target.value ? parseInt(e.target.value) : null)}
+                  placeholder="Minutes" className="input flex-1" />
+                <button onClick={updateEta} disabled={!etaMinutes || updatingEta}
+                  className="btn-primary disabled:opacity-40" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                  {updatingEta ? '...' : 'Update'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Bottom half: User details + status controls */}
+      {/* Bottom section: Customer + delivery details + status controls */}
       <div className="flex-1 overflow-y-auto bg-black px-4 py-4">
-        <div className="mx-auto max-w-md">
+        <div className="mx-auto max-w-md space-y-4">
           {/* Customer info */}
           {userProfile && (
-            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Customer Details</div>
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 overflow-hidden rounded-2xl bg-white/5">
                   {userProfile.photo_url ? (
                     <img src={userProfile.photo_url} alt={userProfile.full_name} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-white/30">
-                      <MapPin size={20} />
-                    </div>
+                    <div className="flex h-full w-full items-center justify-center text-white/30"><MapPin size={20} /></div>
                   )}
                 </div>
                 <div className="flex-1">
@@ -218,7 +203,7 @@ export default function DpNavigationPage() {
           )}
 
           {/* Delivery Details */}
-          <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Delivery Details</div>
             <div className="space-y-3">
               {request.pickup_address && (
@@ -293,9 +278,9 @@ export default function DpNavigationPage() {
             </div>
           </div>
 
-          {/* Delivery Photo Upload — available after delivered */}
+          {/* Delivery Photo Upload */}
           {isDelivered && (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Delivery Proof Photos</div>
               <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
               {photoPreviews.length > 0 && (
@@ -303,8 +288,7 @@ export default function DpNavigationPage() {
                   {photoPreviews.map((preview, idx) => (
                     <div key={idx} className="relative">
                       <img src={preview} alt={`Proof ${idx + 1}`} className="h-20 w-20 rounded-xl object-cover" />
-                      <button onClick={() => removePhoto(idx)}
-                        className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1 text-white shadow">
+                      <button onClick={() => removePhoto(idx)} className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1 text-white shadow">
                         <X size={10} />
                       </button>
                     </div>
@@ -318,27 +302,24 @@ export default function DpNavigationPage() {
                 {photoPreviews.length > 0 ? 'Add More Photos' : 'Take Delivery Photos'}
               </button>
               {photoFiles.length > 0 && (
-                <button onClick={uploadDeliveryPhotos} disabled={uploading}
-                  className="btn-primary mt-2 w-full disabled:opacity-40">
+                <button onClick={uploadDeliveryPhotos} disabled={uploading} className="btn-primary mt-2 w-full disabled:opacity-40">
                   {uploading ? 'Uploading...' : `Save ${photoFiles.length} Photo${photoFiles.length === 1 ? '' : 's'}`}
                 </button>
               )}
             </div>
           )}
 
-          {/* Waiting for user acceptance — DP cannot go home until user accepts */}
           {isDelivered && (
-            <div className="mt-4 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-center">
+            <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-center">
               <Clock size={24} className="mx-auto mb-2 text-yellow-400 animate-pulse" />
               <p className="font-bold text-white">Waiting for customer to accept delivery</p>
               <p className="mt-1 text-xs text-white/40">You'll be able to go home once the customer confirms receipt</p>
             </div>
           )}
 
-          {/* Go Home — only enabled after user completes the order */}
           {isCompleted && (
             <button onClick={() => navigate('/dp')}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
               style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
               <CheckCircle2 size={18} /> Delivery Confirmed — Go Home
             </button>

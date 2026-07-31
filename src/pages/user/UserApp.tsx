@@ -6,6 +6,7 @@ import ScanningPage from './ScanningPage'
 import LiveTrackingPage from './LiveTrackingPage'
 import UserOrders from './UserOrders'
 import ChatScreen from '../shared/ChatScreen'
+import FullOrderDetails from '../shared/FullOrderDetails'
 import UserProfile from './UserProfile'
 import UserNotifications from './UserNotifications'
 
@@ -22,6 +23,7 @@ export default function UserApp() {
         <Route path="/profile" element={<UserProfile />} />
       </Route>
       <Route path="/chat/:roomId" element={<ChatScreen />} />
+      <Route path="/chat/:roomId/order" element={<FullOrderDetails />} />
       <Route path="*" element={<Navigate to="/app" replace />} />
     </Routes>
   )

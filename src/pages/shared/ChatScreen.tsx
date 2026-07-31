@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, Message, ChatRoom, Order, Profile, DeliveryPartner } from '../../lib/supabase'
 import { Avatar, StatusBadge, ErrorBanner, FullScreenLoader } from '../../components/ui'
 import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
-import { ArrowLeft, Send, MapPin, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, Clock, CheckCircle, ShoppingBag, Store, Wallet, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Send, MapPin, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, Clock, CheckCircle, ShoppingBag, Store, Wallet, AlertCircle, Navigation, ClipboardList } from 'lucide-react'
 
 const ORDER_FLOW = ['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'completed']
 
@@ -24,6 +24,10 @@ export default function ChatScreen() {
   const [requestDescription, setRequestDescription] = useState('')
   const [showRating, setShowRating] = useState(false)
   const [hasRated, setHasRated] = useState(false)
+  const [fullOrderData, setFullOrderData] = useState<any>(null)
+  const [greetingSent, setGreetingSent] = useState(false)
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null)
+  const [sendingLocation, setSendingLocation] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [showPickupPhoto, setShowPickupPhoto] = useState(false)
@@ -48,7 +52,22 @@ export default function ChatScreen() {
   const sendImage = async (file: File) => {
     const path = `chat/${roomId}/${Date.now()}-${file.name}`
     const url = await uploadToStorage(file, path)
-    if (url) await sendMessage(url, 'image', { attachment_url: url })
+    if (url) await sendMessage('Image', 'image', { attachment_url: url })
+  }
+
+  const sendLocation = async () => {
+    if (!navigator.geolocation) { setError('Location not supported'); return }
+    setSendingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        await sendMessage('My current location', 'location', { location_lat: lat, location_lng: lng })
+        setSendingLocation(false)
+      },
+      () => { setError('Could not get location'); setSendingLocation(false) },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
   }
 
   const startVoiceRecord = async () => {
@@ -101,8 +120,9 @@ export default function ChatScreen() {
         supabase.from('messages').update({ read_at: new Date().toISOString(), is_read: true })
           .eq('chat_room_id', roomId).eq('sender_id', otherUserId).is('read_at', null).then(() => {})
       }
-      const { data: reqData } = await supabase.from('requests').select('description').eq('id', roomData.request_id).maybeSingle()
+      const { data: reqData } = await supabase.from('requests').select('*').eq('id', roomData.request_id).maybeSingle()
       setRequestDescription((reqData as any)?.description || '')
+      setFullOrderData(reqData as any)
       const { data: orderData } = await supabase.from('orders').select('*').eq('request_id', roomData.request_id).maybeSingle()
       setOrder(orderData as Order | null)
       if (orderData?.status === 'completed') {
@@ -113,6 +133,19 @@ export default function ChatScreen() {
     }
     init()
   }, [roomId, isUser, profile])
+
+  // Send greeting message when chat first opens
+  useEffect(() => {
+    if (!room || !profile || greetingSent || messages.length > 0) return
+    setGreetingSent(true)
+    const otherName = otherUser?.full_name?.split(' ')[0] || 'there'
+    const myName = profile.full_name?.split(' ')[0] || 'there'
+    if (isUser) {
+      sendMessage(`Hi ${otherName}. Thank you for accepting my request.`)
+    } else {
+      sendMessage(`Hi ${otherName}, I'm ${myName}. I'll be delivering your order today.`)
+    }
+  }, [room, profile, greetingSent, messages.length, isUser, otherUser])
 
   useEffect(() => {
     if (!roomId) return
@@ -367,9 +400,9 @@ export default function ChatScreen() {
                   )}
 
                   {msg.message_type === 'image' && msg.attachment_url && (
-                    <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
+                    <button type="button" onClick={() => setLightboxImage(msg.attachment_url)}>
                       <img src={msg.attachment_url} alt="Shared" className="max-w-[200px] rounded-xl object-cover" />
-                    </a>
+                    </button>
                   )}
 
                   {msg.message_type === 'voice' && msg.attachment_url && (
@@ -399,9 +432,9 @@ export default function ChatScreen() {
                         <p className="text-xs font-bold uppercase tracking-wide" style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }}>Quotation</p>
                       </div>
                       {msg.quotation_data.photo_url && (
-                        <a href={msg.quotation_data.photo_url} target="_blank" rel="noopener noreferrer">
+                        <button type="button" onClick={() => setLightboxImage(msg.quotation_data.photo_url)}>
                           <img src={msg.quotation_data.photo_url} alt="Proof" className="h-28 w-full rounded-xl object-cover" />
-                        </a>
+                        </button>
                       )}
                       <ul className="space-y-1">
                         {String(msg.quotation_data.items_summary || '').split('\n').map((line: string, i: number) =>
@@ -505,6 +538,11 @@ export default function ChatScreen() {
                 style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
                 <Camera size={14} /> Photo
               </button>
+              <button onClick={sendLocation} disabled={sendingLocation}
+                className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium disabled:opacity-50"
+                style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', color: '#60a5fa' }}>
+                <Navigation size={14} /> {sendingLocation ? 'Locating...' : 'Location'}
+              </button>
               {recording ? (
                 <button onClick={stopVoiceRecord} className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium"
                   style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
@@ -575,6 +613,25 @@ export default function ChatScreen() {
         }} />
       )}
       {showRating && <RatingModal onClose={() => setShowRating(false)} onSubmit={submitRating} targetName={otherUser?.full_name || 'Delivery Partner'} />}
+
+      {/* View Full Order button — opens full-screen page */}
+      {fullOrderData && (
+        <button onClick={() => navigate(isUser ? `/app/chat/${roomId}/order` : `/dp/chat/${roomId}/order`)}
+          className="fixed bottom-20 right-4 z-20 flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95"
+          style={{ background: '#A6B300', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.4)' }}>
+          <ClipboardList size={14} /> View Full Order
+        </button>
+      )}
+
+      {/* Image lightbox */}
+      {lightboxImage && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 animate-fade-in" onClick={() => setLightboxImage(null)}>
+          <button className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10" onClick={() => setLightboxImage(null)}>
+            <X size={20} className="text-white" />
+          </button>
+          <img src={lightboxImage} alt="Full size" className="max-h-full max-w-full object-contain" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,4 @@
 import { ReactNode } from 'react'
-import Logo from './Logo'
 import Brand from './Brand'
 
 type Props = { children: ReactNode; title?: string; subtitle?: string; showBrand?: boolean }
@@ -19,15 +18,9 @@ export default function AuthLayout({ children, title, subtitle }: Props) {
       </div>
 
       <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-start px-5 py-10">
-        {/* Brand header */}
-        <div className="mb-8 flex flex-col items-center gap-3 animate-fade-in-up">
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl shadow-glow animate-glow-pulse"
-            style={{ background: 'linear-gradient(135deg,rgba(166,179,0,0.2),rgba(166,179,0,0.08))', border: '1px solid rgba(166,179,0,0.3)' }}>
-            <Logo size="md" />
-          </div>
-          <div className="text-center">
-            <Brand size="md" showTagline />
-          </div>
+        {/* Brand header — name only, no logo */}
+        <div className="mb-8 flex flex-col items-center animate-fade-in-up">
+          <Brand size="lg" showTagline />
         </div>
 
         {/* Card */}

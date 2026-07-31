@@ -82,6 +82,7 @@ export default function AuthScreen() {
   const [pincode, setPincode] = useState('')
   const [pincodeStatus, setPincodeStatus] = useState<PincodeStatus>(null)
   const [pincodeChecking, setPincodeChecking] = useState(false)
+  const [detectedRole, setDetectedRole] = useState<Role | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -125,13 +126,7 @@ export default function AuthScreen() {
     return () => { if (pinDebounceRef.current) clearTimeout(pinDebounceRef.current) }
   }, [pincode])
 
-  // ── Auto-detect pincode in background on mount (for signup forms) ──
-  const [autoDetecting, setAutoDetecting] = useState(false)
-  useEffect(() => {
-    if (mode !== 'signup' || pincode) return
-    setAutoDetecting(true)
-    autoDetectPincode((v) => { setPincode(v); setAutoDetecting(false) }, () => setAutoDetecting(false))
-  }, [mode, pincode])
+  // Auto-detect is disabled — users must enter their pincode manually
 
   // ── Helpers ──
   const resetDpFields = () => {
@@ -185,6 +180,18 @@ export default function AuthScreen() {
     else if (type === 'aadhaar') { setAadhaarFile(file); setAadhaarPreview(url) }
     else { setLicenseFile(file); setLicensePreview(url) }
   }
+
+  // Detect role from email as user types on sign-in
+  useEffect(() => {
+    if (mode !== 'signin' || signInEmail.length < 5 || !signInEmail.includes('@')) return
+    const timer = setTimeout(async () => {
+      const { data } = await supabase.from('profiles').select('role').ilike('email', signInEmail.trim()).maybeSingle()
+      if (data?.role === 'dp') { setDetectedRole('dp'); setRole('dp') }
+      else if (data?.role === 'user') { setDetectedRole('user'); setRole('user') }
+      else { setDetectedRole(null) }
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [signInEmail, mode])
 
   // ── Sign In ──
   const handleSignIn = async (e: React.FormEvent) => {
@@ -588,11 +595,9 @@ export default function AuthScreen() {
               <div>
                 <label className="label flex items-center gap-1.5"><MapPin size={13} /> Area Pincode *</label>
                 <div className="relative">
-                  <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder={autoDetecting ? 'Detecting your location...' : '6-digit pincode'} maxLength={6} required />
-                  {autoDetecting && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Loader2 size={16} className="animate-spin" style={{ color: '#808000' }} /></div>}
+                  <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Enter your 6-digit area pincode" maxLength={6} required />
                 </div>
                 <PincodeBadge />
-                {autoDetecting && <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Detecting pincode from your location...</p>}
               </div>
               <div><label className="label flex items-center gap-1.5"><Mail size={13} /> Email *</label><input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required /></div>
               <div>
@@ -635,11 +640,9 @@ export default function AuthScreen() {
                   <div>
                     <label className="label flex items-center gap-1.5"><MapPin size={13} /> Area Pincode *</label>
                     <div className="relative">
-                      <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder={autoDetecting ? 'Detecting your location...' : '6-digit pincode'} maxLength={6} required />
-                      {autoDetecting && <div className="absolute right-3 top-1/2 -translate-y-1/2"><Loader2 size={16} className="animate-spin" style={{ color: '#808000' }} /></div>}
+                      <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Enter your 6-digit area pincode" maxLength={6} required />
                     </div>
                     <PincodeBadge />
-                    {autoDetecting && <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Detecting pincode from your location...</p>}
                   </div>
                   <div><label className="label flex items-center gap-1.5"><Mail size={13} /> Email *</label><input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required /></div>
                   <div>
@@ -762,10 +765,6 @@ export default function AuthScreen() {
         <form onSubmit={handleSignIn} className="space-y-4">
           {/* Role dropdown */}
           <div>
-            <label className="label flex items-center gap-1.5"><Shield size={13} /> I am a...</label>
-            <RoleDropdown />
-          </div>
-          <div>
             <label className="label flex items-center gap-1.5"><Mail size={13} /> Email</label>
             <input type="email" className="input" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required />
           </div>
@@ -779,6 +778,12 @@ export default function AuthScreen() {
               <button type="button" onClick={() => { setMode('forgot'); setError(null) }} className="text-xs hover:underline" style={{ color: '#808000' }}>Forgot password?</button>
             </div>
           </div>
+          {detectedRole && (
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium" style={{ background: 'rgba(166,179,0,0.1)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
+              {detectedRole === 'dp' ? <Bike size={13} /> : <User size={13} />}
+              Signing in as <strong>{detectedRole === 'dp' ? 'Delivery Partner' : 'User'}</strong>
+            </div>
+          )}
           {error && <ErrorBanner message={error} />}
           <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Signing in...' : 'Sign In'} <ArrowRight size={16} /></button>
         </form>

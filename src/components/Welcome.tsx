@@ -39,10 +39,6 @@ export default function Welcome({ onDone }: { onDone: () => void }) {
       ))}
 
       <div className={`relative z-10 flex flex-col items-center gap-3 transition-all duration-700 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="flex h-20 w-20 items-center justify-center rounded-[28px] animate-glow-pulse"
-          style={{ background: 'linear-gradient(135deg,rgba(166,179,0,0.2),rgba(166,179,0,0.06))', border: '1px solid rgba(166,179,0,0.3)' }}>
-          <Brand size="xl" showTagline={false} />
-        </div>
         <Brand size="xl" showTagline />
         <p className="text-xs tracking-widest font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>
           Fast · Reliable · Local

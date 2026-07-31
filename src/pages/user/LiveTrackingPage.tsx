@@ -4,17 +4,7 @@ import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } fr
 import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
 import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/VisualTracking'
-import { ArrowLeft, Phone, MessageCircle, Star, MapPin, Clock, Bike, CheckCircle2, Package, PackageCheck, ShoppingBag, Store, Home } from 'lucide-react'
-
-const TRACKING_STEPS = [
-  { key: 'accepted', label: 'Order Accepted', icon: CheckCircle2 },
-  { key: 'confirmed', label: 'Quotation Confirmed', icon: CheckCircle2 },
-  { key: 'shopping', label: 'Partner Shopping', icon: ShoppingBag },
-  { key: 'purchased', label: 'Items Purchased', icon: Package },
-  { key: 'on_the_way', label: 'Partner On The Way', icon: Bike },
-  { key: 'arrived', label: 'Partner Arrived', icon: MapPin },
-  { key: 'delivered', label: 'Delivered', icon: CheckCircle2 },
-]
+import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck } from 'lucide-react'
 
 export default function LiveTrackingPage() {
   const { requestId } = useParams<{ requestId: string }>()
@@ -25,35 +15,24 @@ export default function LiveTrackingPage() {
   const [dpProfile, setDpProfile] = useState<Profile | null>(null)
   const [dpData, setDpData] = useState<DeliveryPartner | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showRating, setShowRating] = useState(false)
+  const [ratingStars, setRatingStars] = useState(0)
+  const [ratingFeedback, setRatingFeedback] = useState('')
+  const [ratingSubmitting, setRatingSubmitting] = useState(false)
 
   useEffect(() => {
     if (!requestId) return
-    let dpId: string | null = null
-
     const fetchData = async () => {
-      const { data: req } = await supabase
-        .from('requests')
-        .select('*')
-        .eq('id', requestId)
-        .maybeSingle()
+      const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
       if (!req) { setLoading(false); return }
       setRequest(req as DeliveryRequest)
-      dpId = req.accepted_dp_id
-
       if (req.accepted_dp_id) {
-        const { data: dpProf } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', req.accepted_dp_id)
-          .maybeSingle()
-        setDpProfile(dpProf as Profile | null)
-
-        const { data: dp } = await supabase
-          .from('delivery_partners')
-          .select('*')
-          .eq('user_id', req.accepted_dp_id)
-          .maybeSingle()
-        setDpData(dp as DeliveryPartner | null)
+        const [dpProf, dp] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', req.accepted_dp_id).maybeSingle(),
+          supabase.from('delivery_partners').select('*').eq('user_id', req.accepted_dp_id).maybeSingle(),
+        ])
+        setDpProfile(dpProf.data as Profile | null)
+        setDpData(dp.data as DeliveryPartner | null)
       }
       setLoading(false)
     }
@@ -61,18 +40,52 @@ export default function LiveTrackingPage() {
 
     const channel = supabase
       .channel(`tracking-${requestId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'requests',
-        filter: `id=eq.${requestId}`,
-      }, (payload: any) => {
-        setRequest(payload.new as DeliveryRequest)
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `id=eq.${requestId}` },
+        (payload: any) => setRequest(payload.new as DeliveryRequest))
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
   }, [requestId])
+
+  const confirmDelivery = async () => {
+    await supabase.from('requests').update({ status: 'completed' }).eq('id', requestId)
+    await supabase.from('orders').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('request_id', requestId)
+    await supabase.from('notifications').insert({
+      user_id: request?.accepted_dp_id,
+      title: 'Delivery Confirmed',
+      body: 'Customer confirmed receipt. The order is now complete.',
+      type: 'order_completed',
+      related_id: requestId,
+    })
+    setShowRating(true)
+  }
+
+  const submitRating = async () => {
+    if (ratingStars === 0) return
+    setRatingSubmitting(true)
+    try {
+      if (request?.accepted_dp_id) {
+        const { error: ratingError } = await supabase.from('dp_ratings').insert({
+          dp_user_id: request.accepted_dp_id,
+          user_id: profile?.id,
+          request_id: requestId,
+          rating: ratingStars,
+          feedback: ratingFeedback.trim() || null,
+        })
+        if (!ratingError) {
+          const { data: ratings } = await supabase.from('dp_ratings').select('rating').eq('dp_user_id', request.accepted_dp_id)
+          if (ratings && ratings.length > 0) {
+            const avg = ratings.reduce((s: number, r: any) => s + r.rating, 0) / ratings.length
+            await supabase.from('delivery_partners').update({ rating_avg: parseFloat(avg.toFixed(1)), rating_count: ratings.length }).eq('user_id', request.accepted_dp_id)
+          }
+        }
+      }
+    } catch {
+      // Rating table may not exist yet — don't block the user
+    } finally {
+      setRatingSubmitting(false)
+      navigate('/app/create')
+    }
+  }
 
   if (loading) {
     return (
@@ -91,27 +104,57 @@ export default function LiveTrackingPage() {
     )
   }
 
-  const currentStepIndex = TRACKING_STEPS.findIndex(s => s.key === request.status)
   const isCancelled = request.status === 'cancelled'
   const isPending = request.status === 'pending'
   const isDelivered = request.status === 'delivered' || request.status === 'cash_received'
   const progress = STATUS_PROGRESS[request.status] ?? 0
   const eta = STATUS_ETA[request.status] ?? '--'
 
-  const confirmDelivery = async () => {
-    await supabase.from('requests').update({ status: 'completed' }).eq('id', requestId)
-    await supabase.from('orders').update({
-      status: 'completed',
-      completed_at: new Date().toISOString(),
-    }).eq('request_id', requestId)
-    await supabase.from('notifications').insert({
-      user_id: request.accepted_dp_id,
-      title: 'Delivery Confirmed',
-      body: 'Customer confirmed receipt. The order is now complete.',
-      type: 'order_completed',
-      related_id: requestId,
-    })
-    navigate('/app')
+  // Mandatory rating overlay
+  if (showRating) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6">
+        <div className="w-full max-w-sm animate-slide-up">
+          <div className="rounded-3xl p-7 text-center" style={{ background: '#181818', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl" style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)' }}>
+              <Star size={30} style={{ color: '#A6B300' }} />
+            </div>
+            <h2 className="mb-1 text-xl font-bold text-white">Rate Your Delivery</h2>
+            <p className="mb-6 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              How was {dpProfile?.full_name?.split(' ')[0] || 'your partner'}'s service?
+            </p>
+
+            {/* Stars */}
+            <div className="mb-5 flex items-center justify-center gap-3">
+              {[1, 2, 3, 4, 5].map(n => (
+                <button key={n} onClick={() => setRatingStars(n)} className="transition-transform active:scale-90">
+                  <Star size={36} fill={n <= ratingStars ? '#FBBF24' : 'none'}
+                    className={n <= ratingStars ? 'text-yellow-400' : 'text-white/20'} />
+                </button>
+              ))}
+            </div>
+
+            {/* Feedback */}
+            <textarea
+              value={ratingFeedback}
+              onChange={e => setRatingFeedback(e.target.value)}
+              placeholder="Write a comment (optional)..."
+              rows={3}
+              className="input mb-5 w-full resize-none text-sm"
+            />
+
+            <button
+              onClick={submitRating}
+              disabled={ratingStars === 0 || ratingSubmitting}
+              className="btn-primary w-full disabled:opacity-40"
+            >
+              {ratingSubmitting ? 'Submitting...' : 'Submit Rating'}
+            </button>
+            <p className="mt-3 text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>Rating is mandatory — feedback is optional</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -127,18 +170,10 @@ export default function LiveTrackingPage() {
             <p className="text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
           </div>
           {dpProfile && (
-            <div className="flex items-center gap-2">
-              <button onClick={() => window.location.href = `tel:${dpProfile.phone || ''}`}
-                className="map-control-btn map-control-dark">
-                <Phone size={18} />
-              </button>
-              <button onClick={async () => {
-                const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
-                if (data) navigate(`/app/chat/${data.id}`)
-              }} className="map-control-btn map-control-dark">
-                <MessageCircle size={18} />
-              </button>
-            </div>
+            <button onClick={() => window.location.href = `tel:${dpProfile.phone || ''}`}
+              className="map-control-btn map-control-dark">
+              <Phone size={18} />
+            </button>
           )}
         </div>
       </div>
@@ -151,7 +186,7 @@ export default function LiveTrackingPage() {
               <Clock size={28} className="animate-pulse text-amber-400" />
             </div>
             <p className="text-lg font-bold text-white">Waiting for partner</p>
-            <p className="mt-1 text-center text-sm text-white/40">Your request is live. Chat will open automatically when a partner accepts.</p>
+            <p className="mt-1 text-center text-sm text-white/40">Your request is live. A partner will accept shortly.</p>
           </div>
         ) : isCancelled ? (
           <div className="flex h-full flex-col items-center justify-center bg-black px-6">
@@ -173,10 +208,9 @@ export default function LiveTrackingPage() {
         )}
       </div>
 
-      {/* Bottom half: Status updates panel */}
+      {/* Bottom half */}
       <div className="flex-1 overflow-y-auto bg-black px-4 py-4">
         <div className="mx-auto max-w-md">
-          {/* Pending state */}
           {isPending && (
             <button onClick={async () => {
               await supabase.from('requests').update({ status: 'cancelled' }).eq('id', requestId)
@@ -187,13 +221,12 @@ export default function LiveTrackingPage() {
             </button>
           )}
 
-          {/* DP info card */}
           {dpProfile && !isCancelled && !isPending && (
             <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
               <div className="flex items-center gap-3">
                 <div className="h-14 w-14 overflow-hidden rounded-2xl bg-white/5">
                   {dpProfile.photo_url ? (
-                    <img src={dpProfile.photo_url} alt={dpProfile.full_name} className="h-full w-full object-cover" />
+                    <img src={dpProfile.photo_url} alt={dpProfile.full_name || ''} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-white/30">
                       <Bike size={24} />
@@ -208,9 +241,16 @@ export default function LiveTrackingPage() {
                       {dpData?.rating_avg?.toFixed(1) || '0.0'}
                     </span>
                     <span>·</span>
+                    <span>{dpData?.rating_count || 0} review{(dpData?.rating_count || 0) !== 1 ? 's' : ''}</span>
+                    <span>·</span>
                     <span className="capitalize">{dpData?.vehicle_type || 'Bike'}</span>
                   </div>
                 </div>
+                <button onClick={() => window.location.href = `tel:${dpProfile.phone || ''}`}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform"
+                  style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}>
+                  <Phone size={16} />
+                </button>
                 <button onClick={async () => {
                   const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
                   if (data) navigate(`/app/chat/${data.id}`)
@@ -222,7 +262,6 @@ export default function LiveTrackingPage() {
             </div>
           )}
 
-          {/* Accept Delivery button */}
           {isDelivered && (
             <div className="mb-4 rounded-2xl border border-green-500/20 bg-green-500/5 p-4 animate-slide-up">
               <div className="mb-3 flex items-center gap-2">
@@ -234,19 +273,14 @@ export default function LiveTrackingPage() {
                   <p className="text-xs text-white/40">Confirm receipt to complete the order</p>
                 </div>
               </div>
-              <button
-                onClick={confirmDelivery}
+              <button onClick={confirmDelivery}
                 className="w-full rounded-2xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
-                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}
-              >
+                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
                 Accept Delivery
               </button>
             </div>
           )}
 
-          {/* Timeline removed — status shown at top */}
-
-          {/* Cancelled state */}
           {isCancelled && (
             <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-center">
               <p className="font-semibold text-red-400">Order Cancelled</p>
