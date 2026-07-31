@@ -3,16 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { formatDistance } from '../../lib/utils'
-import { CheckCircle2, ChevronRight, X, Bike, Car, Truck, MapPin, Clock, Search, RefreshCw, Navigation } from 'lucide-react'
+import { CheckCircle2, X, Bike, Car, Truck, MapPin, Clock, RefreshCw, Navigation, ChevronRight, Search } from 'lucide-react'
 
-type DpSpot = {
-  id: string
-  angle: number
-  radius: number
-  dist: number
-  vehicle_type: string | null
-  full_name: string
-}
+type DpSpot = { id: string; angle: number; radius: number; dist: number; vehicle_type: string | null; full_name: string }
 
 const MIN_RADIUS_M = 100
 const MAX_RADIUS_KM = 10
@@ -39,101 +32,67 @@ export default function ScanningPage() {
   const [requestCancelled, setRequestCancelled] = useState(false)
   const [radiusMeters, setRadiusMeters] = useState(MAX_RADIUS_M)
   const [ringScale, setRingScale] = useState(0.1)
+  const [partnerFound, setPartnerFound] = useState(false)
 
   const scanRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const scanCountRef = useRef(0)
   const ringRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Expanding ring animation — center to edge, repeating
   useEffect(() => {
     if (phase !== 'scanning') return
     setRingScale(0.1)
     ringRef.current = setInterval(() => {
-      setRingScale(s => {
-        if (s >= 1) return 0.1
-        return s + 0.015
-      })
+      setRingScale(s => { if (s >= 1) return 0.1; return s + 0.015 })
     }, 30)
     return () => { if (ringRef.current) clearInterval(ringRef.current) }
   }, [phase])
 
-  // Scan for nearby DPs — repeat until DP accepts
   useEffect(() => {
     const doScan = async () => {
       if (!profile?.gps_lat || !profile?.gps_lng) return
       try {
         const { data } = await supabase.rpc('scan_nearby_dps', {
-          p_user_lat: profile.gps_lat,
-          p_user_lng: profile.gps_lng,
-          p_radius_meters: radiusMeters,
-          p_request_id: requestId,
+          p_user_lat: profile.gps_lat, p_user_lng: profile.gps_lng,
+          p_radius_meters: radiusMeters, p_request_id: requestId,
         })
         const dps = (data as any[]) || []
         const count = dps.length
-        const avg = count > 0
-          ? dps.reduce((s, d) => s + Number(d.distance_meters || 0), 0) / count
-          : 0
-        setDpCount(count)
-        setAvgDist(avg)
-        scanCountRef.current += 1
-        setScanCount(scanCountRef.current)
-
+        const avg = count > 0 ? dps.reduce((s, d) => s + Number(d.distance_meters || 0), 0) / count : 0
+        setDpCount(count); setAvgDist(avg)
+        scanCountRef.current += 1; setScanCount(scanCountRef.current)
         if (count > 0) {
-          const newSpots: DpSpot[] = dps.slice(0, 8).map((d, i) => {
+          setSpots(dps.slice(0, 8).map((d, i) => {
             const dist = Number(d.distance_meters || 0)
-            const radiusPct = radiusMeters > 0
-              ? 35 + Math.min(55, (dist / radiusMeters) * 55)
-              : 50
+            const radiusPct = radiusMeters > 0 ? 35 + Math.min(55, (dist / radiusMeters) * 55) : 50
             return {
-              id: d.dp_user_id || `dp-${i}`,
-              angle: (i * (360 / Math.min(count, 8)) + (dist % 30)) % 360,
-              radius: radiusPct,
-              dist,
-              vehicle_type: d.vehicle_type || null,
-              full_name: d.full_name || 'Partner',
+              id: d.dp_user_id || `dp-${i}`, angle: (i * (360 / Math.min(count, 8)) + (dist % 30)) % 360,
+              radius: radiusPct, dist, vehicle_type: d.vehicle_type || null, full_name: d.full_name || 'Partner',
             }
-          })
-          setSpots(newSpots)
-        } else {
-          setSpots([])
-        }
-
-        // Keep scanning — no max scan limit, repeat until DP accepts
-      } catch (error) {
-        console.error("scan_nearby_dps failed", error)
-      }
+          }))
+        } else { setSpots([]) }
+      } catch (e) { console.error('scan_nearby_dps failed', e) }
     }
-
     doScan()
     scanRef.current = setInterval(doScan, SCAN_INTERVAL_MS)
     return () => { if (scanRef.current) clearInterval(scanRef.current) }
   }, [profile, requestId, radiusMeters])
 
-  // Listen for acceptance — auto navigate to chat
   useEffect(() => {
     if (!requestId) return
-    const channel = supabase
-      .channel(`scanning-accept-${requestId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'requests',
-        filter: `id=eq.${requestId}`,
-      }, (payload: any) => {
-        const next = payload.new as any
-        if (next?.status === 'accepted' && next?.accepted_dp_id) {
-          if (scanRef.current) clearInterval(scanRef.current)
-          if (ringRef.current) clearInterval(ringRef.current)
-          supabase
-            .from('chat_rooms')
-            .select('id')
-            .eq('request_id', requestId)
-            .maybeSingle()
-            .then(({ data }) => {
-              if (data) navigate(`/app/chat/${data.id}`)
-            })
-        }
-      })
+    const channel = supabase.channel(`scanning-accept-${requestId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `id=eq.${requestId}` },
+        (payload: any) => {
+          const next = payload.new as any
+          if (next?.status === 'accepted' && next?.accepted_dp_id) {
+            if (scanRef.current) clearInterval(scanRef.current)
+            if (ringRef.current) clearInterval(ringRef.current)
+            setPartnerFound(true)
+            setTimeout(() => {
+              supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
+                .then(({ data }) => { if (data) navigate(`/app/chat/${data.id}`) })
+            }, 1800)
+          }
+        })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [requestId, navigate])
@@ -144,226 +103,222 @@ export default function ScanningPage() {
     await supabase.from('requests').update({ status: 'cancelled' }).eq('id', requestId)
     navigate('/app')
   }
-
-  const viewOrder = () => navigate('/app/orders')
-
   const scanAgain = () => {
-    scanCountRef.current = 0
-    setScanCount(0)
-    setSpots([])
-    setDpCount(0)
-    setPhase('scanning')
+    scanCountRef.current = 0; setScanCount(0); setSpots([]); setDpCount(0); setPhase('scanning')
   }
 
-  const size = 240
-  const cx = size / 2
-  const cy = size / 2
-  const r = size / 2 - 10
-
+  const SIZE = 260; const CX = SIZE / 2; const CY = SIZE / 2; const R = SIZE / 2 - 12
   const radiusKm = (radiusMeters / 1000).toFixed(radiusMeters < 1000 ? 1 : 0)
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-black">
+  if (partnerFound) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-[#0B0B0B] animate-fade-in">
+        <div className="relative flex items-center justify-center">
+          {[1,2,3].map(i => (
+            <div key={i} className="absolute rounded-full border-2 animate-ping"
+              style={{ width: 60 + i * 50, height: 60 + i * 50, borderColor: 'rgba(166,179,0,0.3)', animationDelay: `${i * 0.2}s`, animationDuration: '1.5s' }} />
+          ))}
+          <div className="relative flex h-24 w-24 items-center justify-center rounded-full animate-success-pop"
+            style={{ background: 'linear-gradient(135deg, #A6B300, #BFD400)', boxShadow: '0 0 40px rgba(166,179,0,0.6)' }}>
+            <CheckCircle2 size={44} className="text-[#0B0B0B]" strokeWidth={2.5} />
+          </div>
+        </div>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white">Partner Found!</h2>
+          <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Opening chat...</p>
+        </div>
+      </div>
+    )
+  }
 
-      {/* Scanner — expanding circle from center to edge */}
-      <div className="relative flex h-[30vh] min-h-[220px] w-full items-center justify-center overflow-hidden">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="max-h-full">
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#0B0B0B]">
+      {/* Cancel Button */}
+      {phase === 'scanning' && (
+        <div className="flex items-center justify-between px-5 pt-12 pb-2">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>Scanning</p>
+            <h1 className="text-xl font-bold text-white">Finding Partners</h1>
+          </div>
+          <button onClick={cancelRequest} disabled={requestCancelled}
+            className="flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-90"
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <X size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
+          </button>
+        </div>
+      )}
+
+      {/* Radar */}
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ maxHeight: '52vh' }}>
+        {/* Ambient glow behind scanner */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="h-64 w-64 rounded-full blur-3xl" style={{ background: dpCount > 0 ? 'rgba(166,179,0,0.06)' : 'transparent', transition: 'background 0.8s' }} />
+        </div>
+
+        {/* Pulsing background rings */}
+        {phase === 'scanning' && [1,2,3].map(i => (
+          <div key={i} className="absolute rounded-full"
+            style={{
+              width: SIZE * (0.3 + i * 0.25), height: SIZE * (0.3 + i * 0.25),
+              border: '1px solid rgba(166,179,0,0.06)',
+              animation: `radarPing ${1.8 + i * 0.4}s ease-out infinite`,
+              animationDelay: `${i * 0.5}s`,
+            }} />
+        ))}
+
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'relative', zIndex: 1 }}>
           {/* Background rings */}
           {[0.25, 0.5, 0.75, 1].map((pct, i) => (
-            <circle key={i} cx={cx} cy={cy} r={r * pct}
-              fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+            <circle key={i} cx={CX} cy={CY} r={R * pct} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
           ))}
 
-          {/* Expanding scan circle — center to edge, repeating */}
+          {/* Accent ring at 50% */}
+          <circle cx={CX} cy={CY} r={R * 0.5} fill="none" stroke="rgba(166,179,0,0.12)" strokeWidth={1.5} />
+
+          {/* Expanding scan circle */}
           {phase === 'scanning' && (
-            <circle cx={cx} cy={cy} r={r * ringScale}
-              fill="none" stroke="#facc15" strokeWidth={2.5}
-              opacity={1 - ringScale * 0.8} />
-          )}
-          {phase === 'scanning' && ringScale < 0.5 && (
-            <circle cx={cx} cy={cy} r={r * ringScale * 0.6}
-              fill="rgba(250,204,21,0.05)" stroke="none" />
+            <>
+              <circle cx={CX} cy={CY} r={R * ringScale}
+                fill="none" stroke="#A6B300" strokeWidth={2}
+                opacity={1.2 - ringScale * 1.2} />
+              <circle cx={CX} cy={CY} r={R * ringScale * 0.75}
+                fill={`rgba(166,179,0,${0.03 * (1 - ringScale)})`} stroke="none" />
+            </>
           )}
 
-          {/* DP vehicle markers — yellow */}
+          {/* DP markers */}
           {spots.map(spot => {
             const rad = (spot.angle * Math.PI) / 180
-            const dr = (spot.radius / 100) * r
-            const dx = cx + dr * Math.cos(rad)
-            const dy = cy + dr * Math.sin(rad)
+            const dr = (spot.radius / 100) * R
+            const dx = CX + dr * Math.cos(rad)
+            const dy = CY + dr * Math.sin(rad)
             const Icon = vehicleIcon(spot.vehicle_type)
             return (
               <g key={spot.id}>
-                <circle cx={dx} cy={dy} r={14} fill="none"
-                  stroke="#facc15" strokeWidth={1.5} opacity={0.5} />
-                <circle cx={dx} cy={dy} r={11} fill="#facc15" opacity={0.9} />
-                <g transform={`translate(${dx - 8}, ${dy - 8}) scale(0.66)`}>
-                  <Icon size={24} className="text-black" strokeWidth={2.5} />
+                <circle cx={dx} cy={dy} r={18} fill="rgba(166,179,0,0.08)" stroke="rgba(166,179,0,0.3)" strokeWidth={1.5} />
+                <circle cx={dx} cy={dy} r={13} fill="#A6B300" />
+                <g transform={`translate(${dx - 9}, ${dy - 9}) scale(0.75)`}>
+                  <Icon size={24} style={{ color: '#0B0B0B' }} strokeWidth={2.5} />
                 </g>
               </g>
             )
           })}
 
-          {/* Center user dot — red */}
-          <circle cx={cx} cy={cy} r={8} fill="#ef4444" />
-          <circle cx={cx} cy={cy} r={14} fill="none" stroke="#ef4444" strokeWidth={2} opacity={0.5} />
-          <circle cx={cx} cy={cy} r={20} fill="none" stroke="#ef4444" strokeWidth={1} opacity={0.25} />
+          {/* User dot — center */}
+          <circle cx={CX} cy={CY} r={22} fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.2)" strokeWidth={1.5} />
+          <circle cx={CX} cy={CY} r={10} fill="#3b82f6" />
+          <circle cx={CX} cy={CY} r={16} fill="none" stroke="#3b82f6" strokeWidth={1.5} opacity={0.5} />
         </svg>
 
-        {/* Pulsing rings behind scanner */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="absolute rounded-full border border-yellow-800/20"
-              style={{
-                width: size * (0.3 + i * 0.25),
-                height: size * (0.3 + i * 0.25),
-                animation: `ping ${1.8 + i * 0.4}s cubic-bezier(0,0,0.2,1) infinite`,
-                animationDelay: `${i * 0.5}s`,
-              }} />
-          ))}
+        {/* Center label */}
+        <div className="absolute flex flex-col items-center" style={{ top: '50%', transform: 'translateY(30px)', pointerEvents: 'none' }}>
+          <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>You</p>
         </div>
-
-        {/* Cancel button overlay */}
-        {phase === 'scanning' && (
-          <button onClick={cancelRequest} disabled={requestCancelled}
-            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-white/40 hover:text-white/80 transition-colors"
-            style={{ background: 'rgba(255,255,255,0.07)' }}>
-            <X size={18} />
-          </button>
-        )}
       </div>
 
-      {/* Status text below scanner */}
-      <div className="px-5 pt-3 text-center">
-        <p className="text-xs font-medium text-white/40 uppercase tracking-widest">
-          {phase === 'scanning' ? 'Scanning...' : phase === 'found' ? 'Partners Found' : 'Search Complete'}
-        </p>
-        <h2 className="text-lg font-bold text-white mt-0.5">
-          {phase === 'scanning'
-            ? 'Finding nearby partners'
-            : phase === 'found'
-            ? `${dpCount} partner${dpCount === 1 ? '' : 's'} nearby`
-            : 'No partners in range'}
+      {/* Status */}
+      <div className="px-5 py-3 text-center">
+        <h2 className="text-xl font-bold text-white">
+          {dpCount > 0 ? `${dpCount} Partner${dpCount > 1 ? 's' : ''} Nearby` : 'Scanning for Partners...'}
         </h2>
-        <p className="text-[10px] text-white/40 mt-0.5">Search radius: {radiusKm} km</p>
+        <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          Radius: {radiusKm} km · Scan #{scanCount}
+        </p>
       </div>
 
-      {/* Radius slider */}
-      <div className="px-8 py-3">
-        <div className="flex items-center justify-between text-[10px] text-white/40 mb-1">
-          <span>100m</span>
-          <span>10km</span>
+      {/* Radius Slider */}
+      <div className="px-6 py-2">
+        <div className="mb-1.5 flex items-center justify-between text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          <span>100m</span><span>10km</span>
         </div>
-        <input
-          type="range"
-          min={MIN_RADIUS_M}
-          max={MAX_RADIUS_M}
-          step={100}
-          value={radiusMeters}
-          onChange={e => setRadiusMeters(Number(e.target.value))}
+        <input type="range" min={MIN_RADIUS_M} max={MAX_RADIUS_M} step={100}
+          value={radiusMeters} onChange={e => setRadiusMeters(Number(e.target.value))}
           className="dp-range-slider w-full"
-          style={{
-            background: `linear-gradient(to right, #facc15 ${(radiusMeters - MIN_RADIUS_M) / (MAX_RADIUS_M - MIN_RADIUS_M) * 100}%, rgba(255,255,255,0.1) ${(radiusMeters - MIN_RADIUS_M) / (MAX_RADIUS_M - MIN_RADIUS_M) * 100}%)`,
-          }}
-        />
+          style={{ background: `linear-gradient(to right, #A6B300 ${(radiusMeters - MIN_RADIUS_M) / (MAX_RADIUS_M - MIN_RADIUS_M) * 100}%, rgba(255,255,255,0.1) ${(radiusMeters - MIN_RADIUS_M) / (MAX_RADIUS_M - MIN_RADIUS_M) * 100}%)` }} />
       </div>
 
-      {/* Scan count */}
-      <div className="flex items-center justify-center gap-1.5 py-2">
-        <p className="text-xs text-white/30">Scan #{scanCount} · repeats until a partner accepts</p>
-      </div>
-
-      {/* Legend — user (red) and DP (yellow) */}
-      <div className="flex items-center justify-center gap-4 px-5">
-        <div className="flex items-center gap-1.5 text-xs text-white/50">
-          <div className="h-3 w-3 rounded-full bg-red-500" /> You
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-5 pb-2">
+        <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
+          <div className="h-2.5 w-2.5 rounded-full bg-blue-500" /> You
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-white/50">
-          <div className="h-3 w-3 rounded-full bg-yellow-400" /> Delivery Partner
+        <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
+          <div className="h-2.5 w-2.5 rounded-full" style={{ background: '#A6B300' }} /> Partner
         </div>
       </div>
 
-      {/* Bottom status panel */}
-      <div className="flex flex-1 flex-col justify-end px-5 pb-10">
+      {/* Bottom Panel */}
+      <div className="px-4 pb-10">
         {phase === 'scanning' && (
-          <div className="rounded-2xl p-5 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="mb-3 flex items-center justify-center gap-2">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10">
-                <Search size={20} className="text-white animate-pulse" />
+          <div className="rounded-3xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
+                <Search size={18} style={{ color: '#A6B300' }} className="animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-white">
+                  {dpCount > 0 ? `${dpCount} partner${dpCount > 1 ? 's' : ''} online` : 'Searching...'}
+                </p>
+                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  {dpCount > 0 && avgDist > 0 ? `Avg ${formatDistance(avgDist)} away` : 'Your request is live — partners can see it'}
+                </p>
               </div>
             </div>
-            <p className="text-sm font-medium text-white/60">
-              {dpCount > 0
-                ? `${dpCount} partner${dpCount === 1 ? '' : 's'} found so far${avgDist > 0 ? ` · avg ${formatDistance(avgDist)} away` : ''}`
-                : 'Scanning for delivery partners...'}
-            </p>
-            <p className="mt-1 text-xs text-white/30">Your request is live — partners can see it now</p>
-            <div className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-white/5 px-3 py-2">
-              <Clock size={14} className="text-white/60 shrink-0" />
-              <p className="text-xs text-white/70">Chat opens automatically when a partner accepts</p>
+            <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <Clock size={13} style={{ color: 'rgba(255,255,255,0.5)' }} />
+              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Chat opens automatically when a partner accepts</p>
             </div>
           </div>
         )}
 
         {phase === 'found' && (
-          <div className="space-y-3">
-            <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
-                  <Navigation size={24} className="text-yellow-400" />
+          <div className="space-y-2">
+            <div className="rounded-3xl p-4" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: '#A6B300' }}>
+                  <Navigation size={20} className="text-[#0B0B0B]" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold text-white">
-                    {dpCount} partner{dpCount === 1 ? '' : 's'} available!
-                  </p>
-                  <p className="text-xs text-white/50">
-                    {avgDist > 0 ? `Average ${formatDistance(avgDist)} away` : 'Ready to accept your request'}
+                  <p className="font-bold text-white">{dpCount} partner{dpCount > 1 ? 's' : ''} available!</p>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                    {avgDist > 0 ? `Avg ${formatDistance(avgDist)} away` : 'Ready to accept'}
                   </p>
                 </div>
-                <CheckCircle2 size={22} className="text-yellow-400 shrink-0" />
+                <CheckCircle2 size={22} style={{ color: '#A6B300' }} />
               </div>
               {spots.slice(0, 2).map((spot, i) => {
                 const Icon = vehicleIcon(spot.vehicle_type)
                 return (
-                  <div key={spot.id} className="mt-2 flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
-                    <Icon size={14} className="text-yellow-400" />
-                    <span className="text-xs text-white/80">Partner {i + 1}{spot.dist ? ` · ${formatDistance(spot.dist)} away` : ''}</span>
+                  <div key={spot.id} className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                    <Icon size={13} style={{ color: '#A6B300' }} />
+                    <span className="text-xs font-medium text-white">Partner {i + 1}</span>
+                    {spot.dist > 0 && <span className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>{formatDistance(spot.dist)}</span>}
                   </div>
                 )
               })}
             </div>
-            <div className="flex gap-3">
-              <button onClick={scanAgain}
-                className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-white/80 transition-all active:scale-95"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                <RefreshCw size={16} /> Scan Again
-              </button>
-              <button onClick={viewOrder}
-                className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-white transition-all active:scale-95 bg-white/10">
-                Track Request <ChevronRight size={18} />
+            <div className="flex gap-2">
+              <button onClick={scanAgain} className="btn-secondary flex-1 gap-2"><RefreshCw size={15} /> Scan Again</button>
+              <button onClick={() => navigate('/app/orders')} className="flex-1 btn flex items-center justify-center gap-1"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}>
+                Track <ChevronRight size={15} />
               </button>
             </div>
           </div>
         )}
 
         {phase === 'none' && (
-          <div className="space-y-3">
-            <div className="rounded-2xl p-5 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <MapPin size={24} className="mx-auto mb-2 text-white/50" />
-              <p className="font-semibold text-white">No partners online nearby right now</p>
-              <p className="mt-1 text-xs text-white/40">
-                Your request is still live — a partner may accept it shortly
-              </p>
+          <div className="space-y-2">
+            <div className="rounded-3xl p-4 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <MapPin size={24} className="mx-auto mb-2" style={{ color: 'rgba(255,255,255,0.4)' }} />
+              <p className="font-bold text-white">No Partners Online Nearby</p>
+              <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Your request is live — a partner may accept shortly.</p>
             </div>
-            <div className="flex gap-3">
-              <button onClick={cancelRequest} disabled={requestCancelled}
-                className="flex-1 rounded-2xl py-3.5 text-sm font-semibold text-white/60 transition-all active:scale-95"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                Cancel Request
-              </button>
-              <button onClick={scanAgain}
-                className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-white transition-all active:scale-95 bg-white/10">
-                <RefreshCw size={16} /> Scan Again
+            <div className="flex gap-2">
+              <button onClick={cancelRequest} disabled={requestCancelled} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={scanAgain} className="flex-1 btn flex items-center justify-center gap-2"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'white' }}>
+                <RefreshCw size={15} /> Scan Again
               </button>
             </div>
           </div>

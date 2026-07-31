@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
-import { EmptyState, StatusBadge, ServiceStatusBanner } from '../../components/ui'
-import { formatTime, formatCurrency } from '../../lib/utils'
-import { Package, Plus, Clock, MapPin, CheckCircle2, Bike, ChevronRight } from 'lucide-react'
+import { EmptyState, StatusBadge, ServiceStatusBanner, SkeletonList, SectionHeader } from '../../components/ui'
+import { formatTime } from '../../lib/utils'
+import { Package, Plus, Clock, MapPin, CheckCircle2, Bike, ChevronRight, Zap, ShoppingBag } from 'lucide-react'
+
+const STATUS_STEPS: Record<string, number> = {
+  pending: 0, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
+  on_the_way: 5, arrived: 6, delivered: 7, cash_received: 8, completed: 8,
+}
 
 export default function UserHome() {
   const { profile } = useAuth()
@@ -16,160 +21,130 @@ export default function UserHome() {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      const { data: active } = await supabase
-        .from('requests')
-        .select('*')
-        .eq('user_id', profile!.id)
-        .in('status', ['pending', 'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received'])
-        .order('created_at', { ascending: false })
-      setActiveOrders((active as DeliveryRequest[]) || [])
+      const [activeRes, completedRes] = await Promise.all([
+        supabase.from('requests').select('*').eq('user_id', profile!.id)
+          .in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received'])
+          .order('created_at', { ascending: false }),
+        supabase.from('requests').select('*').eq('user_id', profile!.id)
+          .eq('status','completed').order('created_at', { ascending: false }).limit(3),
+      ])
+      setActiveOrders((activeRes.data as DeliveryRequest[]) || [])
+      setRecentCompleted((completedRes.data as DeliveryRequest[]) || [])
 
-      const { data: completed } = await supabase
-        .from('requests')
-        .select('*')
-        .eq('user_id', profile!.id)
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(3)
-      setRecentCompleted((completed as DeliveryRequest[]) || [])
-
-      const { count: total } = await supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile!.id)
-      const { count: completedCount } = await supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile!.id).eq('status', 'completed')
-      const { count: activeCount } = await supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile!.id).in('status', ['pending', 'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received'])
-      setStats({ total: total || 0, completed: completedCount || 0, active: activeCount || 0 })
-
+      const [total, completedCount, activeCount] = await Promise.all([
+        supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile!.id),
+        supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile!.id).eq('status','completed'),
+        supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile!.id)
+          .in('status',['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received']),
+      ])
+      setStats({ total: total.count || 0, completed: completedCount.count || 0, active: activeCount.count || 0 })
       setLoading(false)
     }
     fetchOrders()
-
-    const channel = supabase
-      .channel('user-home-requests')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'requests',
-        filter: `user_id=eq.${profile!.id}`,
-      }, () => fetchOrders()
-      )
+    const channel = supabase.channel('user-home-requests')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `user_id=eq.${profile!.id}` }, fetchOrders)
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
   }, [profile])
 
-  const statusSteps: Record<string, number> = {
-    pending: 0, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
-    on_the_way: 5, arrived: 6, delivered: 7, cash_received: 8, completed: 8,
-  }
+  const firstName = profile?.full_name?.split(' ')[0] || 'there'
 
   return (
-    <div className="mx-auto max-w-md px-4 py-4">
+    <div className="mx-auto max-w-md px-4 pt-5 pb-4">
       <ServiceStatusBanner cityName={profile?.city} />
 
+      {/* Greeting */}
+      <div className="mb-5 animate-fade-in-up">
+        <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Good {getGreeting()},</p>
+        <h1 className="text-2xl font-bold text-white leading-tight">{firstName} 👋</h1>
+      </div>
+
       {/* Stats Row */}
-      <div className="mb-5 grid grid-cols-3 gap-3" style={{ animation: 'fade-in-up 0.4s ease-out both' }}>
-        <div className="card p-3 text-center">
-          <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/30">
-            <Package size={18} className="text-primary-600 dark:text-primary-400" />
+      <div className="mb-5 grid grid-cols-3 gap-2.5 animate-slide-up">
+        {[
+          { label: 'Total', value: stats.total, icon: <Package size={16} />, color: 'rgba(166,179,0,0.2)', tColor: '#A6B300' },
+          { label: 'Active', value: stats.active, icon: <Bike size={16} />, color: 'rgba(251,191,36,0.2)', tColor: '#fbbf24' },
+          { label: 'Done', value: stats.completed, icon: <CheckCircle2 size={16} />, color: 'rgba(16,185,129,0.2)', tColor: '#10b981' },
+        ].map((s, i) => (
+          <div key={s.label} className="card p-3 text-center animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
+            <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: s.color }}>
+              <span style={{ color: s.tColor }}>{s.icon}</span>
+            </div>
+            <p className="text-xl font-bold text-white">{s.value}</p>
+            <p className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</p>
           </div>
-          <p className="text-xl font-bold text-white">{stats.total}</p>
-          <p className="text-[10px] text-white/50">Total Orders</p>
-        </div>
-        <div className="card p-3 text-center">
-          <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl bg-warning-100 dark:bg-warning-900/30">
-            <Bike size={18} className="text-warning-600 dark:text-warning-400" />
-          </div>
-          <p className="text-xl font-bold text-white">{stats.active}</p>
-          <p className="text-[10px] text-white/50">Active</p>
-        </div>
-        <div className="card p-3 text-center">
-          <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl bg-success-100 dark:bg-success-900/30">
-            <CheckCircle2 size={18} className="text-success-600 dark:text-success-400" />
-          </div>
-          <p className="text-xl font-bold text-white">{stats.completed}</p>
-          <p className="text-[10px] text-white/50">Completed</p>
-        </div>
+        ))}
       </div>
 
       {/* Hero CTA */}
-      <div
-        className="mb-6 overflow-hidden rounded-3xl p-5 text-white shadow-lg animate-slide-up relative"
-        style={{ background: 'linear-gradient(135deg, #808000 0%, #484800 100%)', boxShadow: '0 8px 24px rgba(128,128,0,0.2)' }}
-      >
-        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-10 blur-2xl" style={{ background: '#808000' }} />
+      <div className="mb-6 overflow-hidden rounded-3xl p-5 animate-slide-up relative"
+        style={{ background: 'linear-gradient(135deg, #2a2e00 0%, #1a1d00 100%)', border: '1px solid rgba(166,179,0,0.18)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animationDelay: '100ms' }}>
+        <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full blur-3xl" style={{ background: 'rgba(166,179,0,0.15)' }} />
+        <div className="pointer-events-none absolute -left-6 bottom-0 h-24 w-24 rounded-full blur-2xl" style={{ background: 'rgba(166,179,0,0.08)' }} />
         <div className="relative z-10">
-          <p className="text-sm font-medium text-white/70">Need something?</p>
-          <h2 className="mt-1 text-xl font-bold leading-tight">Get it delivered by a local partner</h2>
-          <p className="mt-1.5 text-sm text-white/60">From groceries to parcels, we've got you covered.</p>
-          <button
-            onClick={() => navigate('/app/create')}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary-700 transition-all active:scale-95 hover:scale-105 shadow-md"
-          >
-            <Plus size={18} /> New Delivery Request
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: 'rgba(166,179,0,0.2)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.3)' }}>
+              <Zap size={10} /> Fast Delivery
+            </span>
+          </div>
+          <h2 className="text-xl font-bold text-white leading-tight">Need anything<br />delivered fast?</h2>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>From groceries to parcels — local partners deliver in minutes.</p>
+          <button onClick={() => navigate('/app/create')}
+            className="btn-primary mt-4 gap-2 px-5 py-3"
+            style={{ background: '#A6B300', color: '#0B0B0B' }}>
+            <Plus size={18} strokeWidth={2.5} />
+            <span className="font-bold">New Request</span>
           </button>
         </div>
       </div>
 
       {/* Active Orders */}
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-bold text-white">Active Orders</h3>
-        <button onClick={() => navigate('/app/orders')} className="text-sm font-medium text-primary-600 dark:text-primary-400 flex items-center gap-0.5">
-          View All <ChevronRight size={14} />
-        </button>
-      </div>
+      <SectionHeader
+        title="Active Orders"
+        action={
+          <button onClick={() => navigate('/app/orders')} className="flex items-center gap-0.5 text-sm font-medium" style={{ color: '#A6B300' }}>
+            See All <ChevronRight size={14} />
+          </button>
+        }
+      />
 
       {loading ? (
-        <div className="space-y-3">
-          {[1, 2].map(i => <div key={i} className="h-28 animate-pulse rounded-2xl glass" />)}
-        </div>
+        <SkeletonList count={2} lines={3} />
       ) : activeOrders.length === 0 ? (
         <EmptyState
-          icon={<Package size={48} />}
+          icon={<ShoppingBag size={40} />}
           title="No active orders"
-          description="Tap 'New Delivery Request' above to get started."
+          description="Tap 'New Request' above to get started."
         />
       ) : (
         <div className="space-y-3">
           {activeOrders.map((req, idx) => {
-            const step = statusSteps[req.status] ?? 0
-            const totalSteps = 8
-            const progress = (step / totalSteps) * 100
+            const step = STATUS_STEPS[req.status] ?? 0
+            const progress = (step / 8) * 100
             return (
-              <button
-                key={req.id}
-                onClick={() => {
-                  if (req.accepted_dp_id) {
-                    navigateToChat(navigate, req.id)
-                  } else {
-                    navigate(`/app/orders`)
-                  }
-                }}
-                className="card w-full p-4 text-left transition-all hover:shadow-md active:scale-[0.98] animate-slide-up overflow-hidden"
-                style={{ animationDelay: `${idx * 50}ms` }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-white">{req.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
-                    <p className="mt-0.5 line-clamp-1 text-sm text-white/50">{req.delivery_address}</p>
-                  </div>
+              <button key={req.id} onClick={() => navigateToOrder(navigate, req)}
+                className="card w-full overflow-hidden p-4 text-left transition-all active:scale-[0.98] animate-slide-up"
+                style={{ animationDelay: `${idx * 50}ms` }}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-semibold text-white text-sm line-clamp-1 flex-1">
+                    {req.description?.split('\n')[0]?.trim() || 'Delivery Request'}
+                  </p>
                   <StatusBadge status={req.status} />
                 </div>
-
-                {/* Progress bar */}
-                {req.status !== 'pending' && (
-                  <div className="mt-3 w-full">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full glass">
-                      <div
-                        className="h-full rounded-full transition-all duration-700 ease-out"
-                        style={{ width: `${progress}%`, backgroundColor: '#808000' }}
-                      />
-                    </div>
+                {req.delivery_address && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                    <MapPin size={12} /> <span className="line-clamp-1">{req.delivery_address}</span>
                   </div>
                 )}
-
-                <div className="mt-3 flex items-center gap-4 text-xs text-white/40">
-                  <span className="flex items-center gap-1"><Clock size={14} /> {formatTime(req.created_at)}</span>
-                  {req.max_budget && <span className="flex items-center gap-1">{formatCurrency(req.max_budget)}</span>}
-                  <span className="flex items-center gap-1"><MapPin size={14} /> {req.radius_meters}m</span>
+                {req.status !== 'pending' && (
+                  <div className="mt-3 w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                    <div className="h-full rounded-full transition-all duration-700 ease-out"
+                      style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#A6B300,#BFD400)' }} />
+                  </div>
+                )}
+                <div className="mt-2.5 flex items-center gap-3 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                  <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(req.created_at)}</span>
+                  {req.max_budget && <span>₹{req.max_budget}</span>}
                 </div>
               </button>
             )
@@ -180,49 +155,42 @@ export default function UserHome() {
       {/* Recent Completed */}
       {!loading && recentCompleted.length > 0 && (
         <div className="mt-8">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-base font-bold text-white">Recent Completed</h3>
-            <button onClick={() => navigate('/app/orders')} className="text-sm font-medium text-primary-600 dark:text-primary-400">
-              View All
-            </button>
-          </div>
+          <SectionHeader title="Recently Completed" action={
+            <button onClick={() => navigate('/app/orders')} className="text-sm font-medium" style={{ color: '#A6B300' }}>View All</button>
+          } />
           <div className="space-y-2">
             {recentCompleted.map((req, idx) => (
-              <button
-                key={req.id}
-                onClick={() => navigate('/app/orders')}
-                className="card flex w-full items-center gap-3 p-3 text-left transition-all hover:shadow-md active:scale-[0.98] animate-slide-up"
-                style={{ animationDelay: `${idx * 50}ms` }}
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success-100 dark:bg-success-900/30">
-                  <CheckCircle2 size={18} className="text-success-600 dark:text-success-400" />
+              <button key={req.id} onClick={() => navigate('/app/orders')}
+                className="card flex w-full items-center gap-3 p-3 text-left active:scale-[0.98] animate-slide-up"
+                style={{ animationDelay: `${idx * 40}ms` }}>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(16,185,129,0.15)' }}>
+                  <CheckCircle2 size={18} className="text-green-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white text-sm truncate">{req.description?.split('\n')[0]?.trim() || 'Delivery Request'}</p>
-                  <p className="text-xs text-white/40">{formatTime(req.created_at)}</p>
+                  <p className="font-medium text-white text-sm truncate">{req.description?.split('\n')[0]?.trim() || 'Delivery'}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{formatTime(req.created_at)}</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
+                <ChevronRight size={16} style={{ color: 'rgba(255,255,255,0.25)' }} />
               </button>
             ))}
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes fade-in-up {
-          0% { opacity: 0; transform: translateY(10px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   )
 }
 
-async function navigateToChat(navigate: any, requestId: string) {
-  const { data } = await supabase
-    .from('chat_rooms')
-    .select('id')
-    .eq('request_id', requestId)
-    .maybeSingle()
-  if (data) navigate(`/app/chat/${data.id}`)
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'morning'
+  if (h < 17) return 'afternoon'
+  return 'evening'
+}
+
+async function navigateToOrder(navigate: (path: string) => void, req: DeliveryRequest) {
+  if (req.accepted_dp_id) {
+    const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
+    if (data) { navigate(`/app/chat/${data.id}`); return }
+  }
+  navigate('/app/orders')
 }

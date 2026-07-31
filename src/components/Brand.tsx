@@ -15,7 +15,7 @@ const sizeMap: Record<BrandSize, { text: string; tagline: string }> = {
   xl: { text: 'text-5xl', tagline: 'text-sm' },
 }
 
-export const OLIVE_GREEN = '#808000'
+export const OLIVE_GREEN = '#A6B300'
 
 /**
  * Brand: "pinGGet"

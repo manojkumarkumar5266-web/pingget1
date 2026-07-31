@@ -1,28 +1,23 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
-import { Chrome as Home, Plus, ClipboardList, Bell, User, LogOut, X, MessageCircle } from 'lucide-react'
+import { Home, ClipboardList, Bell, User, Plus, X, MessageCircle } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import Brand from '../../components/Brand'
 import Watermark from '../../components/Watermark'
 import { useGps } from '../../hooks/useGps'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
-import { NotificationBadge } from '../../components/NotificationBadge'
 
 type AcceptedToast = { requestId: string; body: string }
 
 export default function UserLayout() {
-  const { profile, signOut } = useAuth()
+  const { profile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [unreadCount, setUnreadCount] = useState(0)
   const [acceptedToast, setAcceptedToast] = useState<AcceptedToast | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Auto-detect GPS in the background whenever the user opens the app
   useGps(profile?.id, !!profile)
-
-  // FCM push notifications: register device, listen for taps, track unread count
   usePushNotifications()
 
   const showToast = (toast: AcceptedToast) => {
@@ -39,125 +34,127 @@ export default function UserLayout() {
 
   useEffect(() => {
     const fetchUnread = async () => {
-      const { count } = await supabase
-        .from('notifications')
+      const { count } = await supabase.from('notifications')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', profile!.id)
-        .eq('is_read', false)
-        .is('deleted_at', null)
+        .eq('user_id', profile!.id).eq('is_read', false).is('deleted_at', null)
       setUnreadCount(count || 0)
     }
     fetchUnread()
-
-    const channel = supabase
-      .channel('user-notifications')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${profile!.id}`,
-      }, (payload) => {
-        fetchUnread()
-        const notif = payload.new as any
-        if (notif.type === 'request_accepted' && notif.related_id) {
-          showToast({ requestId: notif.related_id, body: notif.body || 'A delivery partner accepted your request.' })
-        }
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${profile!.id}`,
-      }, () => fetchUnread())
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${profile!.id}`,
-      }, () => fetchUnread())
+    const channel = supabase.channel('user-notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile!.id}` },
+        (payload) => {
+          fetchUnread()
+          const notif = payload.new as any
+          if (notif.type === 'request_accepted' && notif.related_id) {
+            showToast({ requestId: notif.related_id, body: notif.body || 'A delivery partner accepted your request.' })
+          }
+        })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile!.id}` }, fetchUnread)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile!.id}` }, fetchUnread)
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    }
+    return () => { supabase.removeChannel(channel); if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }
   }, [profile])
 
   const navItems = [
-    { path: '/app', label: 'Home', icon: Home },
-    { path: '/app/orders', label: 'Orders', icon: ClipboardList },
-    { path: '/app/notifications', label: 'Alerts', icon: Bell, badge: unreadCount },
-    { path: '/app/profile', label: 'Profile', icon: User },
+    { path: '/app',               label: 'Home',    icon: Home },
+    { path: '/app/orders',        label: 'Orders',  icon: ClipboardList },
+    { path: '/app/notifications', label: 'Alerts',  icon: Bell, badge: unreadCount },
+    { path: '/app/profile',       label: 'Profile', icon: User },
   ]
 
-  const isActive = (path: string) => location.pathname === path
+  const isActive = (path: string) => {
+    if (path === '/app') return location.pathname === '/app'
+    return location.pathname.startsWith(path)
+  }
+
+  const isOnChat = location.pathname.startsWith('/app/chat')
+  const isOnCreate = location.pathname.startsWith('/app/create')
+  const isOnScanning = location.pathname.startsWith('/app/scanning')
+  const hideNav = isOnChat || isOnCreate || isOnScanning
 
   return (
-    <div className="relative flex h-screen flex-col">
+    <div className="relative flex h-screen flex-col bg-[#0B0B0B]">
       <Watermark />
-      {/* Header */}
-      <header className="glass z-10 flex items-center justify-between px-4 py-3">
-        <Brand size="sm" showTagline={false} />
-        <button onClick={() => signOut()} className="p-2 transition-colors" style={{ color: 'rgba(255,255,255,0.5)' }}>
-          <LogOut size={18} />
-        </button>
-      </header>
 
-      {/* Real-time accepted toast */}
+      {/* Accepted Toast */}
       {acceptedToast && (
-        <div className="fixed top-4 left-4 right-4 z-50 animate-fade-in">
-          <div className="mx-auto max-w-md rounded-2xl p-4 glass-dark shadow-2xl">
+        <div className="fixed top-4 left-4 right-4 z-50 animate-slide-down">
+          <div className="mx-auto max-w-md rounded-2xl p-4 shadow-float" style={{ background: 'rgba(20,20,20,0.97)', border: '1px solid rgba(166,179,0,0.25)', backdropFilter: 'blur(20px)' }}>
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500">
-                <MessageCircle size={20} className="text-white" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(16,185,129,0.2)' }}>
+                <MessageCircle size={18} className="text-green-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white text-sm">Request Accepted!</p>
-                <p className="mt-0.5 text-xs line-clamp-2" style={{ color: 'rgba(255,255,255,0.6)' }}>{acceptedToast.body}</p>
-                <button
-                  onClick={() => openChatFromToast(acceptedToast.requestId)}
-                  className="mt-2 rounded-lg bg-green-500 px-4 py-1.5 text-xs font-bold text-white active:scale-95 transition-transform"
-                >
+                <p className="font-bold text-white text-sm">Partner Accepted!</p>
+                <p className="mt-0.5 text-xs line-clamp-2" style={{ color: 'rgba(255,255,255,0.55)' }}>{acceptedToast.body}</p>
+                <button onClick={() => openChatFromToast(acceptedToast.requestId)}
+                  className="mt-2 rounded-xl px-4 py-1.5 text-xs font-bold text-white transition-transform active:scale-95"
+                  style={{ background: '#10b981' }}>
                   Open Chat
                 </button>
               </div>
-              <button onClick={() => setAcceptedToast(null)} className="shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                <X size={16} />
-              </button>
+              <button onClick={() => setAcceptedToast(null)} style={{ color: 'rgba(255,255,255,0.35)' }}><X size={16} /></button>
             </div>
           </div>
         </div>
       )}
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className={`flex-1 overflow-y-auto ${!hideNav ? 'pb-24' : ''}`}>
         <Outlet />
       </main>
 
-      {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-10 glass">
-        <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
-          {navItems.map(item => {
-            const Icon = item.icon
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-colors ${isActive(item.path) ? 'text-primary-300' : ''}`}
-                style={!isActive(item.path) ? { color: 'rgba(255,255,255,0.4)' } : undefined}
-              >
-                <Icon size={22} />
-                <span className="text-xs font-medium">{item.label}</span>
-                {item.badge ? (
-                  <span className="absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
-                    {item.badge}
-                  </span>
-                ) : null}
-              </button>
-            )
-          })}
-        </div>
-      </nav>
+      {/* Floating Bottom Navigation */}
+      {!hideNav && (
+        <nav className="fixed bottom-4 left-0 right-0 z-20 flex justify-center px-4">
+          <div className="flex w-full max-w-xs items-center justify-between rounded-[28px] px-2 py-2 nav-island relative">
+
+            {/* Left 2 items */}
+            {navItems.slice(0, 2).map(item => {
+              const Icon = item.icon
+              const active = isActive(item.path)
+              return (
+                <button key={item.path} onClick={() => navigate(item.path)}
+                  className="relative flex flex-col items-center gap-0.5 px-4 py-1.5 transition-all"
+                  style={{ minWidth: 56 }}>
+                  <Icon size={22} style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)', transition: 'color 0.2s' }} />
+                  <span className="text-[10px] font-semibold" style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.35)' }}>{item.label}</span>
+                  {active && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full" style={{ background: '#A6B300' }} />}
+                </button>
+              )
+            })}
+
+            {/* FAB center */}
+            <button onClick={() => navigate('/app/create')}
+              className="relative -mt-5 flex h-14 w-14 items-center justify-center rounded-2xl transition-all active:scale-90 shadow-glow-lg animate-glow-pulse"
+              style={{ background: 'linear-gradient(135deg,#A6B300,#BFD400)', boxShadow: '0 4px 20px rgba(166,179,0,0.5)' }}>
+              <Plus size={26} className="text-[#0B0B0B] font-bold" strokeWidth={3} />
+            </button>
+
+            {/* Right 2 items */}
+            {navItems.slice(2, 4).map(item => {
+              const Icon = item.icon
+              const active = isActive(item.path)
+              return (
+                <button key={item.path} onClick={() => navigate(item.path)}
+                  className="relative flex flex-col items-center gap-0.5 px-4 py-1.5 transition-all"
+                  style={{ minWidth: 56 }}>
+                  <div className="relative">
+                    <Icon size={22} style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)', transition: 'color 0.2s' }} />
+                    {item.badge && item.badge > 0 && (
+                      <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                        {item.badge > 9 ? '9+' : item.badge}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-semibold" style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.35)' }}>{item.label}</span>
+                  {active && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full" style={{ background: '#A6B300' }} />}
+                </button>
+              )
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   )
 }
