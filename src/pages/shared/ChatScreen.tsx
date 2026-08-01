@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, Message, ChatRoom, Order, Profile, DeliveryPartner } from '../../lib/supabase'
 import { Avatar, StatusBadge, ErrorBanner, FullScreenLoader } from '../../components/ui'
 import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
-import { ArrowLeft, Send, MapPin, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, Clock, CheckCircle, ShoppingBag, Store, Wallet, AlertCircle, Navigation, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Send, MapPin, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, Clock, CheckCircle, Wallet, AlertCircle, Navigation, ClipboardList } from 'lucide-react'
 
 const ORDER_FLOW = ['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'completed']
 
@@ -470,10 +470,6 @@ export default function ChatScreen() {
                     </div>
                   )}
 
-                  {msg.message_type === 'order_summary' && msg.quotation_data && (
-                    <OrderSummaryMessage data={msg.quotation_data} isOwn={isOwn} />
-                  )}
-
                   {/* Timestamp + ticks */}
                   <div className={`mt-1 flex items-center justify-end gap-1 text-[10px]`}
                     style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.3)' }}>
@@ -633,55 +629,6 @@ export default function ChatScreen() {
         </div>
       )}
     </div>
-  )
-}
-
-function OrderSummaryMessage({ data, isOwn }: { data: any; isOwn: boolean }) {
-  const [showFull, setShowFull] = useState(false)
-  const lines = data.description ? String(data.description).split('\n').filter((l: string) => l.trim()) : []
-  return (
-    <>
-      <div className="min-w-[200px] space-y-2.5">
-        <div className="flex items-center gap-1.5">
-          <ShoppingBag size={12} style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }} />
-          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : '#A6B300' }}>Order Request</p>
-        </div>
-        <p className="text-sm font-semibold leading-snug" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{lines[0]?.trim() || 'Delivery'}</p>
-        {lines.length > 1 && <p className="text-xs" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.45)' }}>+{lines.length - 1} more items</p>}
-        <button onClick={() => setShowFull(true)} className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold"
-          style={{ background: isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)', color: isOwn ? '#0B0B0B' : '#fff' }}>
-          <FileText size={11} /> View Full Order
-        </button>
-      </div>
-      {showFull && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-[#0B0B0B] animate-fade-in" onClick={() => setShowFull(false)}>
-          <div className="flex items-center justify-between px-4 py-3.5 shrink-0" style={{ background: 'rgba(11,11,11,0.96)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-            <h2 className="text-lg font-bold text-white">Order Details</h2>
-            <button onClick={() => setShowFull(false)} className="btn-icon"><X size={18} style={{ color: 'rgba(255,255,255,0.6)' }} /></button>
-          </div>
-          <div className="flex-1 overflow-y-auto px-4 py-4" onClick={e => e.stopPropagation()}>
-            <div className="mx-auto max-w-md space-y-3">
-              <div className="card p-4">
-                <p className="mb-2.5 text-xs font-bold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.35)' }}>Items Requested</p>
-                <ul className="space-y-2">
-                  {lines.map((line: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: '#A6B300' }} />
-                      {line.trim()}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              {data.preferred_shop && <div className="card p-4 flex items-center gap-2 text-sm text-white"><Store size={14} style={{ color: '#A6B300' }} /> {data.preferred_shop}</div>}
-              {data.delivery_address && <div className="card p-4 flex items-start gap-2 text-sm text-white"><MapPin size={14} style={{ color: '#ef4444', flexShrink: 0 }} className="mt-0.5" /> {data.delivery_address}</div>}
-              <div className="px-4 pb-4" onClick={e => e.stopPropagation()}>
-                <button onClick={() => setShowFull(false)} className="btn-primary w-full mt-2" style={{ background: '#A6B300', color: '#0B0B0B' }}>Close</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
   )
 }
 

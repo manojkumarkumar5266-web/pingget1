@@ -139,8 +139,8 @@ export default function DpNavigationPage() {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      {/* Top bar with phone + chat on right */}
-      <div className="absolute left-0 right-0 top-0 z-[1000] px-4 pt-12">
+      {/* Top bar with phone + chat — in normal flow so it doesn't cover content */}
+      <div className="flex-shrink-0 px-4 pt-12 pb-2" style={{ background: 'linear-gradient(180deg, #0B0B0B, transparent)' }}>
         <div className="map-glass-panel flex items-center gap-3 p-3">
           <button onClick={() => navigate('/dp')} className="map-control-btn map-control-dark">
             <ArrowLeft size={18} />
@@ -164,7 +164,7 @@ export default function DpNavigationPage() {
       </div>
 
       {/* Top section: Progress milestones */}
-      <div className="flex-shrink-0 pt-20 px-4 pb-3" style={{ background: 'linear-gradient(180deg, #0B0B0B, #111)' }}>
+      <div className="flex-shrink-0 px-4 pb-3" style={{ background: 'linear-gradient(180deg, #0B0B0B, #111)' }}>
         <div className="mx-auto max-w-md">
           {/* Horizontal progress steps */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">

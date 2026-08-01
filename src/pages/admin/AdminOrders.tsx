@@ -14,31 +14,46 @@ export default function AdminOrders() {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      // Fetch from requests table to show ALL orders at every stage
-      const { data: reqData } = await supabase
+      const { data: reqData, error: reqError } = await supabase
         .from('requests')
-        .select('*, _order:orders(delivery_charge, commission_amount, commission_pct, dp_earnings, item_cost, items_summary, completed_at)')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(300)
-      setOrders((reqData || []).map((r: any) => ({
-        ...r,
-        delivery_charge: r._order?.delivery_charge ?? null,
-        commission_amount: r._order?.commission_amount ?? null,
-        commission_pct: r._order?.commission_pct ?? null,
-        dp_earnings: r._order?.dp_earnings ?? null,
-        item_cost: r._order?.item_cost ?? null,
-        items_summary: r._order?.items_summary ?? r.description,
-        _request: {
-          description: r.description,
-          delivery_address: r.delivery_address,
-          pickup_address: r.pickup_address,
-          preferred_shop: r.preferred_shop,
-          user_id: r.user_id,
-          accepted_dp_id: r.accepted_dp_id,
-          photo_urls: r.photo_urls,
-          delivery_proof_photos: r.delivery_proof_photos,
-        },
-      })))
+      if (reqError) { console.error('AdminOrders fetch error:', reqError); setLoading(false); return }
+      const reqRows = reqData || []
+      const orderReqs = reqRows.filter((r: any) => r.status !== 'pending' && r.status !== 'cancelled')
+      let orderMap: Record<string, any> = {}
+      if (orderReqs.length > 0) {
+        const { data: orderData } = await supabase
+          .from('orders')
+          .select('request_id, delivery_charge, commission_amount, commission_pct, dp_earnings, item_cost, items_summary, completed_at')
+          .in('request_id', orderReqs.map((r: any) => r.id))
+        if (orderData) {
+          for (const o of orderData as any[]) { orderMap[o.request_id] = o }
+        }
+      }
+      setOrders(reqRows.map((r: any) => {
+        const o = orderMap[r.id] || {}
+        return {
+          ...r,
+          delivery_charge: o.delivery_charge ?? null,
+          commission_amount: o.commission_amount ?? null,
+          commission_pct: o.commission_pct ?? null,
+          dp_earnings: o.dp_earnings ?? null,
+          item_cost: o.item_cost ?? null,
+          items_summary: o.items_summary ?? r.description,
+          _request: {
+            description: r.description,
+            delivery_address: r.delivery_address,
+            pickup_address: r.pickup_address,
+            preferred_shop: r.preferred_shop,
+            user_id: r.user_id,
+            accepted_dp_id: r.accepted_dp_id,
+            photo_urls: r.photo_urls,
+            delivery_proof_photos: r.delivery_proof_photos,
+          },
+        }
+      }))
       setLoading(false)
     }
     fetchOrders()

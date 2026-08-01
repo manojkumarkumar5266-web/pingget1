@@ -74,7 +74,7 @@ export default function ScanningPage() {
               radius: radiusPct, dist, vehicle_type: d.vehicle_type || null, full_name: d.full_name || 'Partner',
             }
           }))
-        } else { setSpots([]); if (scanCountRef.current >= 3) setPhase('none') }
+        } else { setSpots([]) }
       } catch (e) { console.error('scan_nearby_dps failed', e) }
     }
     doScan()

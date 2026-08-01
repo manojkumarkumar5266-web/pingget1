@@ -219,16 +219,8 @@ export default function AuthScreen() {
       setError(`Your account is ${userProfile.status}. Please contact support.`)
       setSignInEmail(''); setSignInPassword(''); setLoading(false); return
     }
-    if (role === 'dp' && userProfile.role !== 'dp') {
-      await supabase.auth.signOut()
-      setError("This email is registered as a User, not a Delivery Partner. Please select \"User\" to sign in, or sign up as a Delivery Partner with a different email.")
-      setSignInEmail(''); setSignInPassword(''); setLoading(false); return
-    }
-    if (role === 'user' && userProfile.role === 'dp') {
-      await supabase.auth.signOut()
-      setError('This email is registered as a Delivery Partner, not a User. Please select "Delivery Partner" to sign in, or sign up as a User with a different email.')
-      setSignInEmail(''); setSignInPassword(''); setLoading(false); return
-    }
+    // Route based on actual profile role — the local `role` dropdown is just
+    // a hint for UI. The database is the source of truth.
     if (userProfile.role === 'admin') {
       await refreshProfile()
       setLoading(false)
@@ -237,16 +229,19 @@ export default function AuthScreen() {
     if (userProfile.role === 'dp') {
       const { data: dp } = await supabase.from('delivery_partners').select('status').eq('user_id', session.user.id).maybeSingle()
       if (dp?.status === 'pending') {
-        console.log('[AuthScreen] DP pending — letting App.tsx show pending screen')
         await refreshProfile()
         setLoading(false)
         return
       }
       if (dp?.status === 'rejected' || dp?.status === 'suspended' || dp?.status === 'deleted') {
-        console.log('[AuthScreen] DP rejected — letting App.tsx show rejected screen')
         await refreshProfile()
         setLoading(false)
         return
+      }
+      if (dp?.status !== 'approved') {
+        await supabase.auth.signOut()
+        setError('Your delivery partner account is not yet approved. Please wait for admin approval.')
+        setSignInEmail(''); setSignInPassword(''); setLoading(false); return
       }
     }
     await refreshProfile()
