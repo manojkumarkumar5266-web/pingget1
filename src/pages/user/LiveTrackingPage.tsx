@@ -81,23 +81,19 @@ export default function LiveTrackingPage() {
     setRatingSubmitting(true)
     try {
       if (request?.accepted_dp_id) {
-        const { error: ratingError } = await supabase.from('dp_ratings').insert({
-          dp_user_id: request.accepted_dp_id,
-          user_id: profile?.id,
-          request_id: requestId,
-          rating: ratingStars,
-          feedback: ratingFeedback.trim() || null,
-        })
-        if (!ratingError) {
-          const { data: ratings } = await supabase.from('dp_ratings').select('rating').eq('dp_user_id', request.accepted_dp_id)
-          if (ratings && ratings.length > 0) {
-            const avg = ratings.reduce((s: number, r: any) => s + r.rating, 0) / ratings.length
-            await supabase.from('delivery_partners').update({ rating_avg: parseFloat(avg.toFixed(1)), rating_count: ratings.length }).eq('user_id', request.accepted_dp_id)
-          }
+        const { data: orderData } = await supabase.from('orders').select('id').eq('request_id', requestId).maybeSingle()
+        if (orderData) {
+          await supabase.from('ratings').insert({
+            order_id: orderData.id,
+            rater_id: profile!.id,
+            rated_id: request.accepted_dp_id,
+            stars: ratingStars,
+            review: ratingFeedback.trim() || null,
+          })
         }
       }
     } catch {
-      // Rating table may not exist yet
+      // ignore
     } finally {
       setRatingSubmitting(false)
       navigate('/app')
@@ -148,7 +144,7 @@ export default function LiveTrackingPage() {
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} onClick={() => setRatingStars(n)} className="transition-transform active:scale-90">
                   <Star size={36} fill={n <= ratingStars ? '#FBBF24' : 'none'}
-                    className={n <= ratingStars ? 'text-yellow-400' : 'text-white/20'} />
+                    className={n <= ratingStars ? 'text-[#A6B300]' : 'text-white/20'} />
                 </button>
               ))}
             </div>
@@ -208,8 +204,8 @@ export default function LiveTrackingPage() {
       <div className="relative flex-shrink-0" style={{ height: '48vh', minHeight: '300px' }}>
         {isPending ? (
           <div className="flex h-full flex-col items-center justify-center bg-black px-6">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/10">
-              <Clock size={28} className="animate-pulse text-amber-400" />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+              <Clock size={28} className="animate-pulse" style={{ color: '#A6B300' }} />
             </div>
             <p className="text-lg font-bold text-white">Waiting for partner</p>
             <p className="mt-1 text-center text-sm text-white/40">Your request is live. A partner will accept shortly.</p>
@@ -244,7 +240,7 @@ export default function LiveTrackingPage() {
               <div className="mb-3 grid grid-cols-3 gap-2.5 animate-slide-up">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(251,191,36,0.15)' }}>
-                    <Star size={16} className="text-yellow-400" fill="#FBBF24" />
+                    <Star size={16} style={{ color: '#A6B300' }} fill="#A6B300" />
                   </div>
                   <p className="text-base font-bold text-white">{dpData?.rating_avg?.toFixed(1) || '0.0'}</p>
                   <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{dpData?.rating_count || 0} reviews</p>
@@ -258,7 +254,7 @@ export default function LiveTrackingPage() {
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(59,130,246,0.15)' }}>
-                    <Clock size={16} className="text-blue-400" />
+                    <Clock size={16} style={{ color: '#A6B300' }} />
                   </div>
                   <p className="text-base font-bold text-white">{etaMinutes ? `${etaMinutes}m` : etaLabel}</p>
                   <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>ETA</p>
@@ -285,7 +281,7 @@ export default function LiveTrackingPage() {
                   {!isCompleted && (
                     <button onClick={() => window.location.href = `tel:${dpProfile.phone || ''}`}
                       className="flex h-11 w-11 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0"
-                      style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}>
+                      style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
                       <Phone size={18} />
                     </button>
                   )}
@@ -323,9 +319,21 @@ export default function LiveTrackingPage() {
             </button>
           )}
 
-          {/* Delivered: accept delivery */}
+          {/* Delivered: delivery proof photos + accept delivery */}
           {isDelivered && (
             <div className="mb-4 rounded-2xl border border-green-500/20 bg-green-500/5 p-4 animate-slide-up">
+              {(request as any)?.delivery_proof_photos && (request as any).delivery_proof_photos.length > 0 && (
+                <div className="mb-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Delivery Proof Photos</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(request as any).delivery_proof_photos.map((url: string, i: number) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                        <img src={url} alt={`Proof ${i + 1}`} className="h-20 w-20 rounded-xl object-cover border border-white/10" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="mb-3 flex items-center gap-2">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/15">
                   <PackageCheck size={20} className="text-green-400" />

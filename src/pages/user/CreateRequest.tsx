@@ -16,10 +16,10 @@ const ICON_MAP: Record<string, string> = {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Food: '#f97316', Medicine: '#ef4444', Grocery: '#22c55e', Parcel: '#3b82f6',
-  Courier: '#8b5cf6', Gift: '#ec4899', Laundry: '#06b6d4', Documents: '#f59e0b',
-  Flowers: '#f43f5e', Electronics: '#6366f1',
-  Vegetables: '#84cc16', Fruits: '#eab308', Stationery: '#14b8a6', Sports: '#f97316',
+  Food: '#A6B300', Medicine: '#A6B300', Grocery: '#A6B300', Parcel: '#A6B300',
+  Courier: '#A6B300', Gift: '#A6B300', Laundry: '#A6B300', Documents: '#A6B300',
+  Flowers: '#A6B300', Electronics: '#A6B300',
+  Vegetables: '#A6B300', Fruits: '#A6B300', Stationery: '#A6B300', Sports: '#A6B300',
 }
 
 type SavedAddress = {
@@ -286,21 +286,21 @@ export default function CreateRequest() {
   const canSubmit = (selections.length > 0 || description.trim().length > 0) && !loading && !!deliveryAddressText
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' }}>
-      {/* Colorful Header */}
+    <div className="flex flex-col min-h-screen" style={{ background: '#0B0B0B' }}>
+      {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-4"
-        style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 50%, #1e3a5f 100%)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        style={{ background: '#0B0B0B', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <button type="button" onClick={() => navigate('/app')}
-          className="flex h-10 w-10 items-center justify-center rounded-2xl transition-all active:scale-90"
-          style={{ background: 'rgba(255,255,255,0.1)' }}>
-          <ArrowLeft size={20} style={{ color: 'rgba(255,255,255,0.8)' }} />
+          className="flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-90"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <ArrowLeft size={20} style={{ color: '#fff' }} />
         </button>
         <div className="flex-1">
           <h1 className="text-lg font-bold text-white">New Request</h1>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Tell us what you need delivered</p>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Tell us what you need delivered</p>
         </div>
         {totalItems > 0 && (
-          <div className="flex items-center gap-1.5 rounded-2xl px-3 py-1.5" style={{ background: 'linear-gradient(135deg, #A6B300, #808000)' }}>
+          <div className="flex items-center gap-1.5 rounded-xl px-3 py-1.5" style={{ background: '#A6B300' }}>
             <ShoppingBag size={14} className="text-[#0B0B0B]" />
             <span className="text-xs font-bold text-[#0B0B0B]">{totalItems}</span>
           </div>
@@ -325,10 +325,10 @@ export default function CreateRequest() {
                 </div>
               )}
               <div className="rounded-2xl p-4 flex items-center gap-3 transition-all active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(168,85,247,0.08))', border: '1px solid rgba(59,130,246,0.2)' }}>
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-                  style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' }}>
-                  <Home size={18} className="text-white" />
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                  style={{ background: 'rgba(166,179,0,0.12)' }}>
+                  <Home size={18} style={{ color: '#A6B300' }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Deliver To</p>
@@ -336,7 +336,7 @@ export default function CreateRequest() {
                 </div>
                 <button onClick={() => setShowAddressList(true)}
                   className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>
+                  style={{ background: '#A6B300', color: '#0B0B0B' }}>
                   <MapPin size={12} /> Select
                 </button>
               </div>
@@ -511,7 +511,7 @@ export default function CreateRequest() {
         )}
 
         {/* Items List & Notes — colorful card */}
-        <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <label className="label flex items-center gap-1.5 mb-2">
             <ListChecks size={14} /> Items List & Notes
             <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
@@ -539,7 +539,7 @@ export default function CreateRequest() {
             )}
             <button type="button" onClick={() => photoInputRef.current?.click()}
               className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-medium transition-all active:scale-95"
-              style={{ background: 'rgba(59,130,246,0.08)', border: '1.5px dashed rgba(59,130,246,0.25)', color: 'rgba(96,165,250,0.8)' }}>
+              style={{ background: 'rgba(166,179,0,0.08)', border: '1.5px dashed rgba(166,179,0,0.25)', color: '#A6B300' }}>
               <Camera size={16} />
               {photoPreviews.length > 0 ? 'Add More Photos' : 'Add Item Photos / Shopping List / Prescription'}
             </button>
@@ -582,7 +582,7 @@ export default function CreateRequest() {
             ) : (
               <button type="button" onClick={startRecording}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-medium transition-all active:scale-95"
-                style={{ background: 'rgba(168,85,247,0.08)', border: '1.5px dashed rgba(168,85,247,0.25)', color: 'rgba(192,132,252,0.8)' }}>
+                style={{ background: 'rgba(166,179,0,0.08)', border: '1.5px dashed rgba(166,179,0,0.25)', color: '#A6B300' }}>
                 <Mic size={16} /> Record Voice Note
               </button>
             )}
@@ -591,12 +591,12 @@ export default function CreateRequest() {
 
         {/* Preferred Shop + Pickup Location — colorful cards */}
         <div className="space-y-3">
-          <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(255,255,255,0.03))', border: '1px solid rgba(34,197,94,0.15)' }}>
-            <label className="label flex items-center gap-1.5"><Store size={13} className="text-green-400" /> Preferred Shop <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+          <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <label className="label flex items-center gap-1.5"><Store size={13} style={{ color: '#A6B300' }} /> Preferred Shop <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
             <input className="input" value={preferredShop} onChange={e => setPreferredShop(e.target.value)} placeholder="e.g. Reliance Fresh, D-Mart, More, Medical Shop" />
           </div>
-          <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(255,255,255,0.03))', border: '1px solid rgba(245,158,11,0.15)' }}>
-            <label className="label flex items-center gap-1.5"><MapPin size={13} className="text-amber-400" /> Pickup Location <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+          <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <label className="label flex items-center gap-1.5"><MapPin size={13} style={{ color: '#A6B300' }} /> Pickup Location <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
             <input className="input" value={pickupAddress} onChange={e => setPickupAddress(e.target.value)} placeholder="Where the partner should collect items" />
           </div>
         </div>
@@ -606,7 +606,7 @@ export default function CreateRequest() {
 
       {/* Sticky Submit Bar - Colorful */}
       <div className="fixed bottom-0 left-0 right-0 z-10 px-4 py-4"
-        style={{ background: 'linear-gradient(180deg, transparent, rgba(15,23,42,0.95) 30%)', backdropFilter: 'blur(20px)' }}>
+        style={{ background: 'linear-gradient(180deg, transparent, #0B0B0B 30%)' }}>
         <div className="mx-auto max-w-md">
           {totalItems > 0 && (
             <div className="mb-3 flex items-center justify-between text-sm">
@@ -615,8 +615,8 @@ export default function CreateRequest() {
             </div>
           )}
           <button type="button" onClick={handleSubmit} disabled={!canSubmit}
-            className="w-full rounded-2xl py-4 text-base font-bold transition-all active:scale-95 disabled:opacity-40"
-            style={{ background: canSubmit ? 'linear-gradient(135deg, #A6B300, #808000)' : 'rgba(255,255,255,0.08)', color: canSubmit ? '#0B0B0B' : 'rgba(255,255,255,0.3)', boxShadow: canSubmit ? '0 4px 20px rgba(166,179,0,0.4)' : 'none' }}>
+            className="w-full rounded-xl py-4 text-base font-bold transition-all active:scale-95 disabled:opacity-40"
+            style={{ background: canSubmit ? '#A6B300' : 'rgba(255,255,255,0.08)', color: canSubmit ? '#0B0B0B' : 'rgba(255,255,255,0.3)' }}>
             {loading ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0B0B0B]/30" style={{ borderTopColor: '#0B0B0B' }} />

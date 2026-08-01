@@ -303,12 +303,12 @@ export default function ChatScreen() {
   const isCompleted = order?.status === 'completed'
 
   return (
-    <div className="flex h-screen flex-col" style={{ background: 'linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%)' }}>
-      {/* Colorful Header */}
+    <div className="flex h-screen flex-col" style={{ background: '#0B0B0B' }}>
+      {/* Header */}
       <header className="flex shrink-0 items-center gap-3 px-4 py-3 z-10"
-        style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 50%, #1e3a5f 100%)', borderBottom: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}>
+        style={{ background: '#0B0B0B', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <button onClick={() => navigate(isUser ? '/app' : '/dp')} className="btn-icon shrink-0">
-          <ArrowLeft size={18} style={{ color: 'rgba(255,255,255,0.8)' }} />
+          <ArrowLeft size={18} style={{ color: '#fff' }} />
         </button>
         <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={42} />
         <div className="flex-1 min-w-0">
@@ -323,12 +323,12 @@ export default function ChatScreen() {
               </div>
             </div>
           ) : dpInfo ? (
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
               {dpInfo.vehicle_type} {dpInfo.rating_avg > 0 ? `· ${dpInfo.rating_avg.toFixed(1)}★` : ''} · {dpInfo.is_online ? 'Online' : 'Offline'}
             </p>
           ) : (
-            <p className="flex items-center gap-1 text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              {lastOwnMsg?.read_at ? <><CheckCheck size={11} className="text-cyan-300" /> Seen</> : lastOwnMsg ? <><Check size={11} /> Delivered</> : 'Chat'}
+            <p className="flex items-center gap-1 text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              {lastOwnMsg?.read_at ? <><CheckCheck size={11} style={{ color: '#A6B300' }} /> Seen</> : lastOwnMsg ? <><Check size={11} /> Delivered</> : 'Chat'}
             </p>
           )}
         </div>
@@ -350,20 +350,20 @@ export default function ChatScreen() {
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4" style={{ background: 'linear-gradient(180deg, rgba(15,20,25,0.5) 0%, rgba(26,31,46,0.5) 100%)' }}>
+      <div className="flex-1 overflow-y-auto px-4 py-4" style={{ background: '#0B0B0B' }}>
         <div className="mx-auto max-w-md space-y-2.5">
           {/* Context banners */}
           {!order && isUser && (
             <div className="mb-4 rounded-2xl px-4 py-3 text-center text-xs font-medium animate-fade-in"
-              style={{ background: 'linear-gradient(135deg, rgba(166,179,0,0.12), rgba(59,130,246,0.08))', border: '1px solid rgba(166,179,0,0.2)', color: 'rgba(255,255,255,0.7)' }}>
+              style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)', color: 'rgba(255,255,255,0.6)' }}>
               Discuss items and delivery charge. Your partner will send a quotation.
             </div>
           )}
           {!order && !isUser && (
             <div className="mb-4">
               <button onClick={() => setShowQuotation(true)}
-                className="w-full gap-2 rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.3)' }}>
+                className="w-full gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-95"
+                style={{ background: '#A6B300', color: '#0B0B0B' }}>
                 <FileText size={16} /> Send Quotation
               </button>
             </div>
@@ -381,8 +381,8 @@ export default function ChatScreen() {
                 )}
                 <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 ${isOwn ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
                   style={isOwn
-                    ? { background: msg.read_at ? 'linear-gradient(135deg, #A6B300, #808000)' : 'linear-gradient(135deg, #8a9c00, #6b7c00)', boxShadow: '0 2px 8px rgba(166,179,0,0.2)' }
-                    : { background: 'linear-gradient(135deg, #1e293b, #334155)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    ? { background: '#A6B300' }
+                    : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
 
                   {msg.message_type === 'text' && (
                     <p className="text-sm leading-relaxed" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.content}</p>
@@ -402,7 +402,7 @@ export default function ChatScreen() {
                     <div className="min-w-[220px] space-y-3">
                       <div className="flex items-center gap-2">
                         <FileText size={14} style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }} />
-                        <p className="text-xs font-bold uppercase tracking-wide" style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }}>Quotation</p>
+                        <p className="text-xs font-bold uppercase tracking-wide" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : '#A6B300' }}>Quotation</p>
                       </div>
                       {msg.quotation_data.photo_url && (
                         <button type="button" onClick={() => setLightboxImage(msg.quotation_data.photo_url)}>
@@ -439,7 +439,7 @@ export default function ChatScreen() {
                           </button>
                         </div>
                       )}
-                      {order && <p className="text-xs font-bold" style={{ color: isOwn ? '#0B0B0B' : '#34d399' }}>✓ Accepted</p>}
+                      {order && <p className="text-xs font-bold" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : '#A6B300' }}>✓ Accepted</p>}
                     </div>
                   )}
 
@@ -448,7 +448,7 @@ export default function ChatScreen() {
                     style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.3)' }}>
                     {timeOfDay(msg.created_at)}
                     {isOwn && (
-                      <span style={{ color: msg.read_at ? '#fbbf24' : 'rgba(0,0,0,0.4)' }}>
+                      <span style={{ color: msg.read_at ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)' }}>
                         {msg.read_at ? <CheckCheck size={12} /> : <Check size={12} />}
                       </span>
                     )}
@@ -462,7 +462,7 @@ export default function ChatScreen() {
           {otherTyping && (
             <div className="flex items-end gap-2 justify-start animate-fade-in">
               <div style={{ width: 28 }}><Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={28} /></div>
-              <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm px-4 py-3" style={{ background: 'linear-gradient(135deg, #1e293b, #334155)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm px-4 py-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 {[0, 150, 300].map(delay => (
                   <span key={delay} className="h-2 w-2 rounded-full animate-bounce" style={{ background: '#A6B300', animationDelay: `${delay}ms` }} />
                 ))}
@@ -476,53 +476,53 @@ export default function ChatScreen() {
 
       {/* Rating bar */}
       {isCompleted && isUser && !hasRated && (
-        <div className="shrink-0 px-4 py-3" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2d5a8e)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <button onClick={() => setShowRating(true)} className="w-full gap-2 rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95"
-            style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.3)' }}>
+        <div className="shrink-0 px-4 py-3" style={{ background: '#0B0B0B', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <button onClick={() => setShowRating(true)} className="w-full gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-95"
+            style={{ background: '#A6B300', color: '#0B0B0B' }}>
             <Star size={16} /> Rate Your Partner
           </button>
         </div>
       )}
       {isCompleted && hasRated && (
-        <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-3" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2d5a8e)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <CheckCircle size={15} className="text-green-400" />
-          <p className="text-sm font-medium text-green-400">Order completed & rated</p>
+        <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-3" style={{ background: '#0B0B0B', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <CheckCircle size={15} style={{ color: '#A6B300' }} />
+          <p className="text-sm font-medium" style={{ color: '#A6B300' }}>Order completed & rated</p>
         </div>
       )}
 
       {/* Input area */}
       {chatLocked ? (
-        <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-4" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2d5a8e)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-4" style={{ background: '#0B0B0B', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>
             Conversation ended — order completed.
           </p>
         </div>
       ) : (
-        <div className="shrink-0 px-4 py-3" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2d5a8e)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <div className="shrink-0 px-4 py-3" style={{ background: '#0B0B0B', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <input ref={imageInputRef} type="file" className="hidden" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) sendImage(f); e.target.value = '' }} />
 
           {showAttachMenu && (
             <div className="mb-3 flex flex-wrap gap-2 animate-slide-up">
               <button onClick={() => { imageInputRef.current?.click(); setShowAttachMenu(false) }}
-                className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium"
-                style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
+                className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
                 <Camera size={14} /> Photo
               </button>
               {recording ? (
-                <button onClick={stopVoiceRecord} className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium"
+                <button onClick={stopVoiceRecord} className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium"
                   style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
                   <MicOff size={14} /> Stop ({fmtDur(voiceDuration)})
                 </button>
               ) : (
-                <button onClick={startVoiceRecord} className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium"
-                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
+                <button onClick={startVoiceRecord} className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
                   <Mic size={14} /> Voice
                 </button>
               )}
               {!isUser && order && ['confirmed','shopping','purchased','on_the_way','arrived'].includes(order.status) && (
                 <button onClick={() => { setShowPickupPhoto(true); setShowAttachMenu(false) }}
-                  className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium"
-                  style={{ background: 'rgba(166,179,0,0.15)', border: '1px solid rgba(166,179,0,0.3)', color: '#A6B300' }}>
+                  className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium"
+                  style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
                   <PackageCheck size={14} /> Pickup Proof
                 </button>
               )}
@@ -532,11 +532,11 @@ export default function ChatScreen() {
 
           <div className="mx-auto flex max-w-md items-center gap-2">
             <button onClick={() => setShowAttachMenu(!showAttachMenu)}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all active:scale-90"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all active:scale-90"
               style={showAttachMenu
-                ? { background: 'linear-gradient(135deg, #A6B300, #808000)' }
-                : { background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}>
-              <Paperclip size={18} style={{ color: showAttachMenu ? '#0B0B0B' : 'rgba(255,255,255,0.6)' }} />
+                ? { background: '#A6B300' }
+                : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <Paperclip size={18} style={{ color: showAttachMenu ? '#0B0B0B' : 'rgba(255,255,255,0.5)' }} />
             </button>
 
             {recording ? (
@@ -549,17 +549,17 @@ export default function ChatScreen() {
               <input value={input} onChange={handleInputChange}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
                 placeholder="Type a message..."
-                className="flex-1 rounded-2xl py-3 px-4 text-sm text-white outline-none"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+                className="flex-1 rounded-xl py-3 px-4 text-sm text-white outline-none"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
               />
             )}
 
             {!recording && (
               <button onClick={handleSend}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all active:scale-90"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all active:scale-90"
                 style={input.trim()
-                  ? { background: 'linear-gradient(135deg, #A6B300, #808000)', boxShadow: '0 4px 16px rgba(166,179,0,0.4)' }
-                  : { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  ? { background: '#A6B300' }
+                  : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <Send size={18} style={{ color: input.trim() ? '#0B0B0B' : 'rgba(255,255,255,0.4)' }} />
               </button>
             )}
@@ -583,8 +583,8 @@ export default function ChatScreen() {
       {/* View Full Order button */}
       {fullOrderData && !isCompleted && (
         <button onClick={() => navigate(isUser ? `/app/chat/${roomId}/order` : `/dp/chat/${roomId}/order`)}
-          className="fixed bottom-20 right-4 z-20 flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95"
-          style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.4)' }}>
+          className="fixed bottom-20 right-4 z-20 flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95"
+          style={{ background: '#A6B300', color: '#0B0B0B' }}>
           <ClipboardList size={14} /> View Full Order
         </button>
       )}
@@ -648,7 +648,7 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
   const handleSubmit = async () => { if (!file) return; setUploading(true); await onSubmit(file); setUploading(false) }
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 animate-fade-in" onClick={onClose}>
-      <div className="w-full max-w-md rounded-3xl p-6 animate-slide-in-bottom" style={{ background: 'linear-gradient(135deg, #1e293b, #334155)', border: '1px solid rgba(255,255,255,0.1)' }} onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
         <h3 className="mb-1 text-lg font-bold text-white">Pickup Proof</h3>
         <p className="mb-4 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Photo of items as pickup confirmation.</p>
@@ -669,8 +669,8 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
         )}
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-          <button onClick={handleSubmit} disabled={!file || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-2xl py-3"
-            style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>
+          <button onClick={handleSubmit} disabled={!file || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-xl py-3"
+            style={{ background: '#A6B300', color: '#0B0B0B' }}>
             {uploading ? 'Sending...' : 'Send Proof'}
           </button>
         </div>
@@ -704,7 +704,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
   }
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 animate-fade-in" onClick={onClose}>
-      <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom" style={{ background: 'linear-gradient(135deg, #1e293b, #334155)', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
         <div className="px-5 pt-4 pb-2">
           <div className="bottom-sheet-handle" />
           <h3 className="text-lg font-bold text-white mb-4">Send Quotation</h3>
@@ -744,8 +744,8 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-            <button onClick={handleSend} disabled={!items || !deliveryCharge || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-2xl py-3"
-              style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>
+            <button onClick={handleSend} disabled={!items || !deliveryCharge || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-xl py-3"
+              style={{ background: '#A6B300', color: '#0B0B0B' }}>
               {uploading ? 'Uploading...' : 'Send'}
             </button>
           </div>
@@ -761,25 +761,25 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
   const labels = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent']
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 animate-fade-in" onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl p-6 animate-slide-in-bottom" style={{ background: 'linear-gradient(135deg, #1e293b, #334155)', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-t-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
         <h3 className="text-lg font-bold text-white text-center">Rate {targetName}</h3>
         <p className="mt-1 mb-6 text-sm text-center" style={{ color: 'rgba(255,255,255,0.4)' }}>How was your experience?</p>
         <div className="mb-2 flex justify-center gap-3">
           {[1, 2, 3, 4, 5].map(i => (
             <button key={i} onClick={() => setStars(i)} className="transition-transform active:scale-90">
-              <svg width={40} height={40} viewBox="0 0 24 24" fill={i <= stars ? '#fbbf24' : 'none'} stroke={i <= stars ? '#fbbf24' : 'rgba(255,255,255,0.2)'} strokeWidth={1.5}>
+              <svg width={40} height={40} viewBox="0 0 24 24" fill={i <= stars ? '#A6B300' : 'none'} stroke={i <= stars ? '#A6B300' : 'rgba(255,255,255,0.2)'} strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
               </svg>
             </button>
           ))}
         </div>
-        <p className="mb-4 text-center font-semibold" style={{ color: '#fbbf24' }}>{labels[stars]}</p>
+        <p className="mb-4 text-center font-semibold" style={{ color: '#A6B300' }}>{labels[stars]}</p>
         <textarea className="input min-h-20 resize-none mb-4" value={review} onChange={e => setReview(e.target.value)} placeholder="Leave a review (optional)" />
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Skip</button>
-          <button onClick={() => onSubmit(stars, review)} className="flex-1 btn font-bold rounded-2xl py-3"
-            style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>Submit</button>
+          <button onClick={() => onSubmit(stars, review)} className="flex-1 btn font-bold rounded-xl py-3"
+            style={{ background: '#A6B300', color: '#0B0B0B' }}>Submit</button>
         </div>
       </div>
     </div>

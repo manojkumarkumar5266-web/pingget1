@@ -50,6 +50,11 @@ export default function DpNavigationPage() {
       }
       const currentEta = (req as any).eta_minutes
       if (currentEta) setEtaMinutes(currentEta)
+      const existingPhotos = (req as any)?.delivery_proof_photos as string[] | null
+      if (existingPhotos && existingPhotos.length > 0) {
+        setPhotoPreviews(existingPhotos)
+        setPhotoFiles([])
+      }
       setLoading(false)
     }
     fetchData()
@@ -240,7 +245,7 @@ export default function DpNavigationPage() {
                 </div>
                 <button onClick={() => window.location.href = `tel:${userProfile.phone || ''}`}
                   className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0 disabled:opacity-30"
-                  style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}
+                  style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}
                   disabled={isCompleted}>
                   <Phone size={16} />
                 </button>
@@ -248,7 +253,7 @@ export default function DpNavigationPage() {
                   const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
                   if (data) navigate(`/dp/chat/${data.id}`)
                 }} className="flex h-10 w-10 items-center justify-center rounded-xl text-black active:scale-95 transition-transform shrink-0 disabled:opacity-30"
-                  style={{ background: 'linear-gradient(135deg, #a8c020, #808000)' }}
+                  style={{ background: '#A6B300' }}
                   disabled={isCompleted}>
                   <MessageCircle size={16} />
                 </button>
@@ -264,8 +269,8 @@ export default function DpNavigationPage() {
             </div>
             <p className="text-sm text-white/80 mb-3 leading-relaxed">{request.delivery_address || 'Not specified'}</p>
             <button onClick={openGoogleMaps}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold text-white transition-all active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 4px 16px rgba(59,130,246,0.3)' }}>
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95"
+              style={{ background: '#A6B300', color: '#0B0B0B' }}>
               <Navigation size={18} /> Navigate to Customer
             </button>
           </div>
@@ -274,7 +279,7 @@ export default function DpNavigationPage() {
           {request.pickup_address && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
               <div className="mb-2 flex items-center gap-2">
-                <Store size={16} style={{ color: '#a8c020' }} />
+                <Store size={16} style={{ color: '#A6B300' }} />
                 <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Pickup Location</p>
               </div>
               <p className="text-sm text-white/80">{request.pickup_address}</p>
@@ -288,10 +293,8 @@ export default function DpNavigationPage() {
               <button onClick={() => updateStatus(currentStep.to, currentStep.notifTitle, currentStep.notifBody)}
                 className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
                 style={{
-                  background: currentStep.to === 'delivered'
-                    ? 'linear-gradient(135deg, #16a34a, #15803d)'
-                    : 'linear-gradient(135deg, #808000, #606000)',
-                  boxShadow: currentStep.to === 'delivered' ? '0 4px 16px rgba(22,163,74,0.3)' : '0 4px 16px rgba(128,128,0,0.2)',
+                  background: currentStep.to === 'delivered' ? '#A6B300' : '#808000',
+                  color: currentStep.to === 'delivered' ? '#0B0B0B' : '#fff',
                 }}>
                 <currentStep.icon size={18} /> {currentStep.label}
               </button>
@@ -302,7 +305,7 @@ export default function DpNavigationPage() {
           {isDelivered && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
               <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Delivery Proof Photos</div>
-              <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple capture="environment" onChange={handlePhotosSelect} />
+              <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
               {photoPreviews.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
                   {photoPreviews.map((preview, idx) => (
@@ -330,8 +333,8 @@ export default function DpNavigationPage() {
           )}
 
           {isDelivered && !isCompleted && (
-            <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-center animate-slide-up">
-              <Clock size={24} className="mx-auto mb-2 text-yellow-400 animate-pulse" />
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center animate-slide-up">
+              <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: '#A6B300' }} />
               <p className="font-bold text-white">Waiting for customer to accept delivery</p>
               <p className="mt-1 text-xs text-white/40">You'll be able to go home once the customer confirms receipt</p>
             </div>
@@ -339,8 +342,8 @@ export default function DpNavigationPage() {
 
           {isCompleted && (
             <button onClick={() => navigate('/dp')}
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
-              style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold active:scale-95 transition-transform"
+              style={{ background: '#A6B300', color: '#0B0B0B' }}>
               <CheckCircle2 size={18} /> Delivery Confirmed — Go Home
             </button>
           )}
