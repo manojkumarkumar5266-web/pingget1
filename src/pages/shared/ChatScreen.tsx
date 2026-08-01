@@ -399,27 +399,27 @@ export default function ChatScreen() {
                   )}
 
                   {msg.message_type === 'quotation' && msg.quotation_data && (
-                    <div className="min-w-[220px] space-y-3">
-                      <div className="flex items-center gap-2">
-                        <FileText size={14} style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }} />
-                        <p className="text-xs font-bold uppercase tracking-wide" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : '#A6B300' }}>Quotation</p>
+                    <div className="min-w-[240px] space-y-3">
+                      <div className="flex items-center justify-center gap-2 pb-2 border-b" style={{ borderColor: isOwn ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.1)' }}>
+                        <FileText size={15} style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }} />
+                        <p className="text-sm font-bold tracking-wide" style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }}>Quotation</p>
                       </div>
                       {msg.quotation_data.photo_url && (
                         <button type="button" onClick={() => setLightboxImage(msg.quotation_data.photo_url)}>
                           <img src={msg.quotation_data.photo_url} alt="Proof" className="h-28 w-full rounded-xl object-cover" />
                         </button>
                       )}
-                      <ul className="space-y-1">
+                      <ul className="space-y-1.5">
                         {String(msg.quotation_data.items_summary || '').split('\n').map((line: string, i: number) =>
                           line.trim() ? (
-                            <li key={i} className="flex items-start gap-1.5 text-xs" style={{ color: isOwn ? '#0B0B0B' : 'rgba(255,255,255,0.8)' }}>
-                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: isOwn ? '#0B0B0B' : '#A6B300' }} />
+                            <li key={i} className="flex items-start gap-2 text-sm" style={{ color: isOwn ? '#0B0B0B' : 'rgba(255,255,255,0.85)' }}>
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: isOwn ? '#0B0B0B' : '#A6B300' }} />
                               {line.trim()}
                             </li>
                           ) : null
                         )}
                       </ul>
-                      <div className="space-y-1 border-t pt-2 text-xs" style={{ borderColor: isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)' }}>
+                      <div className="space-y-1.5 border-t pt-2.5 text-sm" style={{ borderColor: isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)' }}>
                         <div className="flex justify-between" style={{ color: isOwn ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.55)' }}>
                           <span>Item Cost</span><span>{formatCurrency(msg.quotation_data.item_cost)}</span>
                         </div>
@@ -428,18 +428,18 @@ export default function ChatScreen() {
                         </div>
                       </div>
                       {!order && isUser && (
-                        <div className="flex gap-2">
-                          <button onClick={rejectQuotation} className="flex-1 rounded-xl py-2 text-xs font-bold text-white"
+                        <div className="flex gap-2 pt-1">
+                          <button onClick={rejectQuotation} className="flex-1 rounded-xl py-2.5 text-sm font-bold text-white transition-all active:scale-95"
                             style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)' }}>
                             Decline
                           </button>
-                          <button onClick={() => acceptQuotation(msg)} className="flex-1 rounded-xl py-2 text-xs font-bold"
+                          <button onClick={() => acceptQuotation(msg)} className="flex-1 rounded-xl py-2.5 text-sm font-bold transition-all active:scale-95"
                             style={{ background: '#fff', color: '#0B0B0B' }}>
                             Accept
                           </button>
                         </div>
                       )}
-                      {order && <p className="text-xs font-bold" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : '#A6B300' }}>✓ Accepted</p>}
+                      {order && <p className="text-center text-sm font-bold" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : '#A6B300' }}>✓ Accepted</p>}
                     </div>
                   )}
 

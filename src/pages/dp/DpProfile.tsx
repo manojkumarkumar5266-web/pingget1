@@ -37,13 +37,18 @@ export default function DpProfile() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadingPhoto(true)
-    const path = `${profile!.id}/avatar-${Date.now()}`
-    const { error } = await supabase.storage.from('media').upload(path, file, { upsert: true })
-    if (!error) {
-      const url = supabase.storage.from('media').getPublicUrl(path).data.publicUrl
-      await supabase.from('profiles').update({ photo_url: url }).eq('id', profile!.id)
+    try {
+      const path = `${profile!.id}/avatar-${Date.now()}`
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type })
+      if (upErr) throw upErr
+      const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
+      const { error: dbErr } = await supabase.from('profiles').update({ photo_url: url }).eq('id', profile!.id)
+      if (dbErr) throw dbErr
       await refreshProfile()
       setPhotoRequired(false)
+    } catch (err: any) {
+      console.error('Photo upload failed:', err)
+      alert('Failed to update photo. Please try again.')
     }
     setUploadingPhoto(false)
     e.target.value = ''

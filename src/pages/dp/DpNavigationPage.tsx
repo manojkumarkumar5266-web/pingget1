@@ -143,8 +143,8 @@ export default function DpNavigationPage() {
   const stepIndex = STATUS_FLOW.findIndex(s => s.from === request.status)
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      {/* Top bar with phone + chat — in normal flow so it doesn't cover content */}
+    <div className="min-h-screen flex flex-col bg-black">
+      {/* Top bar with phone + chat */}
       <div className="flex-shrink-0 px-4 pt-12 pb-2" style={{ background: 'linear-gradient(180deg, #0B0B0B, transparent)' }}>
         <div className="map-glass-panel flex items-center gap-3 p-3">
           <button onClick={() => navigate('/dp')} className="map-control-btn map-control-dark">
@@ -154,19 +154,7 @@ export default function DpNavigationPage() {
             <p className="text-xs text-white/50">Order Tracking</p>
             <p className="truncate text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
           </div>
-          {userProfile && !isCompleted && (
-            <button onClick={() => window.location.href = `tel:${userProfile.phone || ''}`} className="map-control-btn map-control-dark">
-              <Phone size={18} />
-            </button>
-          )}
-          {!isCompleted && (
-            <button onClick={async () => {
-              const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
-              if (data) navigate(`/dp/chat/${data.id}`)
-            }} className="map-control-btn map-control-dark">
-              <MessageCircle size={18} />
-            </button>
-          )}
+
         </div>
       </div>
 
@@ -225,7 +213,7 @@ export default function DpNavigationPage() {
       </div>
 
       {/* Bottom section: scrollable - customer + address + status */}
-      <div className="flex-1 overflow-y-auto bg-black px-4 py-4">
+      <div className="flex-1 overflow-y-auto bg-black px-4 py-4 pb-24">
         <div className="mx-auto max-w-md space-y-4">
           {/* Customer info card */}
           {userProfile && (

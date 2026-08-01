@@ -615,8 +615,8 @@ export default function CreateRequest() {
             </div>
           )}
           <button type="button" onClick={handleSubmit} disabled={!canSubmit}
-            className="w-full rounded-xl py-4 text-base font-bold transition-all active:scale-95 disabled:opacity-40"
-            style={{ background: canSubmit ? '#A6B300' : 'rgba(255,255,255,0.08)', color: canSubmit ? '#0B0B0B' : 'rgba(255,255,255,0.3)' }}>
+            className="w-full flex items-center justify-center rounded-2xl py-4 text-base font-bold tracking-wide transition-all active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100"
+            style={{ background: canSubmit ? 'linear-gradient(135deg, #A6B300, #808000)' : 'rgba(255,255,255,0.08)', color: canSubmit ? '#0B0B0B' : 'rgba(255,255,255,0.3)', boxShadow: canSubmit ? '0 8px 24px rgba(166,179,0,0.35)' : 'none' }}>
             {loading ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0B0B0B]/30" style={{ borderTopColor: '#0B0B0B' }} />
