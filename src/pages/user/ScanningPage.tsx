@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
+import { useGps } from '../../hooks/useGps'
 import { formatDistance } from '../../lib/utils'
-import { CheckCircle2, X, Bike, Car, Truck, MapPin, Clock, RefreshCw, Navigation, ChevronRight, Search } from 'lucide-react'
+import { CheckCircle2, X, Bike, Car, Truck, MapPin, Clock, RefreshCw, Navigation, ChevronRight, Search, MapPinOff } from 'lucide-react'
 
 type DpSpot = { id: string; angle: number; radius: number; dist: number; vehicle_type: string | null; full_name: string }
 
@@ -23,6 +24,7 @@ export default function ScanningPage() {
   const { requestId } = useParams<{ requestId: string }>()
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const gps = useGps(profile?.id, !!profile)
 
   const [phase, setPhase] = useState<'scanning' | 'found' | 'none'>('scanning')
   const [dpCount, setDpCount] = useState(0)
@@ -49,10 +51,12 @@ export default function ScanningPage() {
 
   useEffect(() => {
     const doScan = async () => {
-      if (!profile?.gps_lat || !profile?.gps_lng) return
+      const lat = gps.lat ?? profile?.gps_lat
+      const lng = gps.lng ?? profile?.gps_lng
+      if (!lat || !lng) return
       try {
         const { data } = await supabase.rpc('scan_nearby_dps', {
-          p_user_lat: profile.gps_lat, p_user_lng: profile.gps_lng,
+          p_user_lat: lat, p_user_lng: lng,
           p_radius_meters: radiusMeters, p_request_id: requestId,
         })
         const dps = (data as any[]) || []
@@ -61,6 +65,7 @@ export default function ScanningPage() {
         setDpCount(count); setAvgDist(avg)
         scanCountRef.current += 1; setScanCount(scanCountRef.current)
         if (count > 0) {
+          setPhase('found')
           setSpots(dps.slice(0, 8).map((d, i) => {
             const dist = Number(d.distance_meters || 0)
             const radiusPct = radiusMeters > 0 ? 35 + Math.min(55, (dist / radiusMeters) * 55) : 50
@@ -69,13 +74,13 @@ export default function ScanningPage() {
               radius: radiusPct, dist, vehicle_type: d.vehicle_type || null, full_name: d.full_name || 'Partner',
             }
           }))
-        } else { setSpots([]) }
+        } else { setSpots([]); if (scanCountRef.current >= 3) setPhase('none') }
       } catch (e) { console.error('scan_nearby_dps failed', e) }
     }
     doScan()
     scanRef.current = setInterval(doScan, SCAN_INTERVAL_MS)
     return () => { if (scanRef.current) clearInterval(scanRef.current) }
-  }, [profile, requestId, radiusMeters])
+  }, [gps.lat, gps.lng, profile, requestId, radiusMeters])
 
   useEffect(() => {
     if (!requestId) return
@@ -127,6 +132,22 @@ export default function ScanningPage() {
           <h2 className="text-2xl font-bold text-white">Partner Found!</h2>
           <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Opening chat...</p>
         </div>
+      </div>
+    )
+  }
+
+  if (gps.permissionDenied) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-[#0B0B0B] px-8 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-3xl" style={{ background: 'rgba(239,68,68,0.1)' }}>
+          <MapPinOff size={40} className="text-red-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-white">Location Access Required</h2>
+          <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Please allow location access so we can find delivery partners near you.</p>
+        </div>
+        <button onClick={() => gps.requestPermission()} className="btn px-6 py-3 text-sm font-bold" style={{ background: '#A6B300', color: '#0B0B0B' }}>Allow Location</button>
+        <button onClick={cancelRequest} className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Cancel</button>
       </div>
     )
   }

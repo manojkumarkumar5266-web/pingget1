@@ -44,6 +44,7 @@ export default function CreateRequest() {
 
   const [gpsLat, setGpsLat] = useState<number | null>(profile?.gps_lat || null)
   const [gpsLng, setGpsLng] = useState<number | null>(profile?.gps_lng || null)
+  const [gpsSaved, setGpsSaved] = useState(false)
 
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
@@ -95,9 +96,13 @@ export default function CreateRequest() {
   useEffect(() => { fetchAddresses() }, [profile?.id])
 
   useEffect(() => {
-    if (gpsLat) return
+    const getGps = async (lat: number, lng: number) => {
+      setGpsLat(lat); setGpsLng(lng)
+      try { await supabase.rpc('update_location', { p_lat: lat, p_lng: lng }); setGpsSaved(true) } catch {}
+    }
+    if (gpsLat && gpsLng) { if (!gpsSaved) getGps(gpsLat, gpsLng); return }
     navigator.geolocation?.getCurrentPosition(
-      pos => { setGpsLat(pos.coords.latitude); setGpsLng(pos.coords.longitude) },
+      pos => getGps(pos.coords.latitude, pos.coords.longitude),
       () => {}, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
     )
   }, [])
@@ -273,7 +278,7 @@ export default function CreateRequest() {
         delivery_address: deliveryAddressText,
         delivery_lat: selectedAddress?.lat || null, delivery_lng: selectedAddress?.lng || null,
         pickup_lat: gpsLat, pickup_lng: gpsLng,
-        expected_time: null, max_budget: null, special_instructions: null, radius_meters: 0, status: 'pending',
+        expected_time: null, max_budget: null, special_instructions: null, radius_meters: 10000, status: 'pending',
       }).select('id').single()
       if (error) throw error
       navigate(`/app/scanning/${inserted.id}`)
