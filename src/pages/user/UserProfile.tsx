@@ -1,7 +1,7 @@
 import { useAuth } from '../../context'
 import { Avatar } from '../../components/ui'
-import { Mail, Phone, MapPin, Globe, LogOut, Headphones, Edit2, X, Check } from 'lucide-react'
-import { useState } from 'react'
+import { Mail, Phone, MapPin, Globe, LogOut, Headphones, Edit2, X, Check, Camera } from 'lucide-react'
+import { useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 
 export default function UserProfile() {
@@ -10,6 +10,23 @@ export default function UserProfile() {
   const [addressValue, setAddressValue] = useState('')
   const [cityValue, setCityValue] = useState('')
   const [savingAddress, setSavingAddress] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const cameraRef = useRef<HTMLInputElement>(null)
+
+  const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingPhoto(true)
+    const path = `${profile!.id}/avatar-${Date.now()}`
+    const { error } = await supabase.storage.from('media').upload(path, file, { upsert: true })
+    if (!error) {
+      const url = supabase.storage.from('media').getPublicUrl(path).data.publicUrl
+      await supabase.from('profiles').update({ photo_url: url }).eq('id', profile!.id)
+      await refreshProfile()
+    }
+    setUploadingPhoto(false)
+    e.target.value = ''
+  }
 
   const saveAddress = async () => {
     if (!profile?.id) return
@@ -23,9 +40,18 @@ export default function UserProfile() {
   return (
     <div className="mx-auto max-w-md px-4 py-6">
       <div className="card mb-4 p-6 text-center animate-slide-up">
-        <div className="mx-auto mb-3 w-fit">
+        <div className="relative mx-auto mb-3 w-fit">
           <Avatar url={profile?.photo_url} name={profile?.full_name || 'User'} size={80} />
+          <button
+            onClick={() => cameraRef.current?.click()}
+            disabled={uploadingPhoto}
+            className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-white shadow-md active:scale-90 transition-transform"
+          >
+            <Camera size={14} />
+          </button>
+          <input ref={cameraRef} type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoCapture} />
         </div>
+        {uploadingPhoto && <p className="text-xs text-white/50 mb-1">Updating photo...</p>}
         <h2 className="text-xl font-bold text-white">{profile?.full_name}</h2>
         <p className="text-sm text-white/50 capitalize">{profile?.role} Account</p>
       </div>

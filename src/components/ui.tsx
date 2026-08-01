@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState, useCallback, createContext, useContext } from 'react'
+import { ReactNode, useEffect, useState, useCallback, createContext, useContext, useMemo } from 'react'
 import { Loader as Loader2, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, CirclePause as PauseCircle, X, Info, AlertCircle, TrendingUp } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
@@ -56,8 +56,12 @@ export function ErrorBanner({ message }: { message: string }) {
 // ── Avatar ───────────────────────────────────────
 export function Avatar({ url, name, size = 40 }: { url?: string | null; name: string; size?: number }) {
   const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
-  if (url) {
-    return <img src={url} alt={name} style={{ width: size, height: size }} className="rounded-full object-cover ring-2 ring-white/15" />
+  const cacheBustUrl = useMemo(() => {
+    if (!url) return null
+    return url.includes('?') ? `${url}&cb=${Date.now()}` : `${url}?cb=${Date.now()}`
+  }, [url])
+  if (cacheBustUrl) {
+    return <img src={cacheBustUrl} alt={name} style={{ width: size, height: size }} className="rounded-full object-cover ring-2 ring-white/15" />
   }
   return (
     <div className="flex items-center justify-center rounded-full font-bold ring-2 ring-white/10"

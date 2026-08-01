@@ -95,10 +95,9 @@ export default function VisualTracking({
         style={{ background: 'radial-gradient(circle, #808000, transparent 70%)' }}
       />
 
-      {/* Title + ETA */}
+      {/* ETA */}
       <div className="relative mb-6 text-center">
-        <p className="text-xs font-medium uppercase tracking-widest text-white/40">Live Tracking</p>
-        <p className="mt-1 text-lg font-bold text-white">{eta || STATUS_ETA[status] || 'In Progress'}</p>
+        <p className="text-lg font-bold text-white">{eta || STATUS_ETA[status] || 'In Progress'}</p>
         {eta && eta !== STATUS_ETA[status] && (
           <p className="mt-0.5 text-xs font-medium" style={{ color: '#A6B300' }}>ETA: {eta}</p>
         )}

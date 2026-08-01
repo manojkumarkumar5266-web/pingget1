@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { useGps } from '../../hooks/useGps'
 import { formatDistance } from '../../lib/utils'
-import { CheckCircle2, X, Bike, Car, Truck, MapPin, Clock, RefreshCw, Navigation, ChevronRight, Search, MapPinOff } from 'lucide-react'
+import { CheckCircle2, X, Bike, Car, Truck, MapPin, Clock, RefreshCw, Navigation, ChevronRight, Search, MapPinOff, Loader2 } from 'lucide-react'
 
 type DpSpot = { id: string; angle: number; radius: number; dist: number; vehicle_type: string | null; full_name: string }
 
@@ -35,6 +35,7 @@ export default function ScanningPage() {
   const [radiusMeters, setRadiusMeters] = useState(MAX_RADIUS_M)
   const [ringScale, setRingScale] = useState(0.1)
   const [partnerFound, setPartnerFound] = useState(false)
+  const [waitingForAccept, setWaitingForAccept] = useState(false)
 
   const scanRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const scanCountRef = useRef(0)
@@ -65,7 +66,7 @@ export default function ScanningPage() {
         setDpCount(count); setAvgDist(avg)
         scanCountRef.current += 1; setScanCount(scanCountRef.current)
         if (count > 0) {
-          setPhase('found')
+          setWaitingForAccept(true)
           setSpots(dps.slice(0, 8).map((d, i) => {
             const dist = Number(d.distance_meters || 0)
             const radiusPct = radiusMeters > 0 ? 35 + Math.min(55, (dist / radiusMeters) * 55) : 50
@@ -155,19 +156,21 @@ export default function ScanningPage() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#0B0B0B]">
       {/* Cancel Button */}
-      {phase === 'scanning' && (
-        <div className="flex items-center justify-between px-5 pt-12 pb-2">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>Scanning</p>
-            <h1 className="text-xl font-bold text-white">Finding Partners</h1>
-          </div>
-          <button onClick={cancelRequest} disabled={requestCancelled}
-            className="flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-90"
-            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
-            <X size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
-          </button>
+      <div className="flex items-center justify-between px-5 pt-12 pb-2">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            {waitingForAccept ? 'Waiting' : 'Scanning'}
+          </p>
+          <h1 className="text-xl font-bold text-white">
+            {waitingForAccept ? 'Partner Found' : 'Finding Partners'}
+          </h1>
         </div>
-      )}
+        <button onClick={cancelRequest} disabled={requestCancelled}
+          className="flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-90"
+          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+          <X size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
+        </button>
+      </div>
 
       {/* Radar */}
       <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ maxHeight: '52vh' }}>
@@ -240,10 +243,10 @@ export default function ScanningPage() {
       {/* Status */}
       <div className="px-5 py-3 text-center">
         <h2 className="text-xl font-bold text-white">
-          {dpCount > 0 ? `${dpCount} Partner${dpCount > 1 ? 's' : ''} Nearby` : 'Scanning for Partners...'}
+          {waitingForAccept ? `Waiting for Partner to Accept...` : dpCount > 0 ? `${dpCount} Partner${dpCount > 1 ? 's' : ''} Nearby` : 'Scanning for Partners...'}
         </h2>
         <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-          Radius: {radiusKm} km · Scan #{scanCount}
+          {waitingForAccept ? 'Your request has been sent — chat will open automatically' : `Radius: ${radiusKm} km · Scan #${scanCount}`}
         </p>
       </div>
 
@@ -270,7 +273,27 @@ export default function ScanningPage() {
 
       {/* Bottom Panel */}
       <div className="px-4 pb-10">
-        {phase === 'scanning' && (
+        {waitingForAccept ? (
+          <div className="rounded-3xl p-4" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
+                <Loader2 size={18} style={{ color: '#A6B300' }} className="animate-spin" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-white">
+                  {dpCount > 0 ? `${dpCount} partner${dpCount > 1 ? 's' : ''} notified` : 'Searching...'}
+                </p>
+                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  {dpCount > 0 && avgDist > 0 ? `Avg ${formatDistance(avgDist)} away` : 'Your request is live — partners can see it'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <Clock size={13} style={{ color: 'rgba(255,255,255,0.5)' }} />
+              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Chat opens automatically when a partner accepts</p>
+            </div>
+          </div>
+        ) : phase === 'scanning' ? (
           <div className="rounded-3xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="flex items-center gap-3 mb-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
@@ -290,45 +313,7 @@ export default function ScanningPage() {
               <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Chat opens automatically when a partner accepts</p>
             </div>
           </div>
-        )}
-
-        {phase === 'found' && (
-          <div className="space-y-2">
-            <div className="rounded-3xl p-4" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: '#A6B300' }}>
-                  <Navigation size={20} className="text-[#0B0B0B]" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-white">{dpCount} partner{dpCount > 1 ? 's' : ''} available!</p>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                    {avgDist > 0 ? `Avg ${formatDistance(avgDist)} away` : 'Ready to accept'}
-                  </p>
-                </div>
-                <CheckCircle2 size={22} style={{ color: '#A6B300' }} />
-              </div>
-              {spots.slice(0, 2).map((spot, i) => {
-                const Icon = vehicleIcon(spot.vehicle_type)
-                return (
-                  <div key={spot.id} className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(0,0,0,0.2)' }}>
-                    <Icon size={13} style={{ color: '#A6B300' }} />
-                    <span className="text-xs font-medium text-white">Partner {i + 1}</span>
-                    {spot.dist > 0 && <span className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>{formatDistance(spot.dist)}</span>}
-                  </div>
-                )
-              })}
-            </div>
-            <div className="flex gap-2">
-              <button onClick={scanAgain} className="btn-secondary flex-1 gap-2"><RefreshCw size={15} /> Scan Again</button>
-              <button onClick={() => navigate('/app/orders')} className="flex-1 btn flex items-center justify-center gap-1"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}>
-                Track <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {phase === 'none' && (
+        ) : (
           <div className="space-y-2">
             <div className="rounded-3xl p-4 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <MapPin size={24} className="mx-auto mb-2" style={{ color: 'rgba(255,255,255,0.4)' }} />

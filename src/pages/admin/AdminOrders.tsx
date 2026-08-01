@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatCurrency, formatTime } from '../../lib/utils'
-import { StatusBadge, EmptyState, SkeletonCard } from '../../components/ui'
-import { ClipboardList, Search, Download, X, User, Bike, MapPin, Package, IndianRupee, Filter } from 'lucide-react'
+import { StatusBadge, EmptyState, SkeletonCard, Avatar } from '../../components/ui'
+import { ClipboardList, Search, Download, X, User, Bike, MapPin, Package, IndianRupee, MessageCircle, Star, Phone, Clock } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 export default function AdminOrders() {
@@ -10,7 +10,7 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<any | null>(null)
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'cancelled' | 'pending'>('all')
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -18,30 +18,33 @@ export default function AdminOrders() {
         .from('requests')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(300)
+        .limit(500)
       if (reqError) { console.error('AdminOrders fetch error:', reqError); setLoading(false); return }
       const reqRows = reqData || []
-      const orderReqs = reqRows.filter((r: any) => r.status !== 'pending' && r.status !== 'cancelled')
+
       let orderMap: Record<string, any> = {}
-      if (orderReqs.length > 0) {
+      if (reqRows.length > 0) {
         const { data: orderData } = await supabase
           .from('orders')
-          .select('request_id, delivery_charge, commission_amount, commission_pct, dp_earnings, item_cost, items_summary, completed_at')
-          .in('request_id', orderReqs.map((r: any) => r.id))
+          .select('request_id, delivery_charge, commission_amount, commission_pct, dp_earnings, item_cost, items_summary, completed_at, status, id')
+          .in('request_id', reqRows.map((r: any) => r.id))
         if (orderData) {
           for (const o of orderData as any[]) { orderMap[o.request_id] = o }
         }
       }
+
       setOrders(reqRows.map((r: any) => {
         const o = orderMap[r.id] || {}
         return {
           ...r,
+          order_id: o.id || null,
           delivery_charge: o.delivery_charge ?? null,
           commission_amount: o.commission_amount ?? null,
           commission_pct: o.commission_pct ?? null,
           dp_earnings: o.dp_earnings ?? null,
           item_cost: o.item_cost ?? null,
           items_summary: o.items_summary ?? r.description,
+          completed_at: o.completed_at ?? null,
           _request: {
             description: r.description,
             delivery_address: r.delivery_address,
@@ -50,7 +53,7 @@ export default function AdminOrders() {
             user_id: r.user_id,
             accepted_dp_id: r.accepted_dp_id,
             photo_urls: r.photo_urls,
-            delivery_proof_photos: r.delivery_proof_photos,
+            delivery_proof_url: r.delivery_proof_url,
           },
         }
       }))
@@ -58,7 +61,6 @@ export default function AdminOrders() {
     }
     fetchOrders()
 
-    // Realtime: listen for new/updated orders
     const channel = supabase.channel('admin-orders-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => fetchOrders())
@@ -67,9 +69,10 @@ export default function AdminOrders() {
   }, [])
 
   const filtered = orders.filter(o => {
-    if (statusFilter === 'active' && ['pending', 'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered'].includes(o.status)) return true
+    if (statusFilter === 'active' && ['accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered'].includes(o.status)) return true
     if (statusFilter === 'completed' && o.status === 'completed') return true
     if (statusFilter === 'cancelled' && o.status === 'cancelled') return true
+    if (statusFilter === 'pending' && o.status === 'pending') return true
     if (statusFilter === 'all') return true
     return false
   }).filter(o =>
@@ -82,7 +85,8 @@ export default function AdminOrders() {
 
   const exportOrders = () => {
     const rows = filtered.map(o => ({
-      'Order ID': o.id,
+      'Request ID': o.id,
+      'Order ID': o.order_id || '',
       Description: o._request?.description || 'Delivery',
       Summary: o.items_summary || '',
       Status: o.status,
@@ -122,9 +126,8 @@ export default function AdminOrders() {
         </button>
       </div>
 
-      {/* Status filter tabs */}
       <div className="mb-4 flex gap-2 overflow-x-auto">
-        {(['all', 'active', 'completed', 'cancelled'] as const).map(f => (
+        {(['all', 'active', 'pending', 'completed', 'cancelled'] as const).map(f => (
           <button key={f} onClick={() => setStatusFilter(f)}
             className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition-all ${statusFilter === f ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-white/40'}`}>
             {f === 'all' ? 'All Orders' : f}
@@ -152,15 +155,15 @@ export default function AdminOrders() {
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                 <div>
                   <p className="text-white/40">Delivery Charge</p>
-                  <p className="font-semibold text-white">{formatCurrency(o.delivery_charge)}</p>
+                  <p className="font-semibold text-white">{o.delivery_charge != null ? formatCurrency(o.delivery_charge) : '—'}</p>
                 </div>
                 <div>
                   <p className="text-white/40">Commission</p>
-                  <p className="font-semibold text-success-600 dark:text-success-400">{formatCurrency(o.commission_amount)}</p>
+                  <p className="font-semibold text-success-600 dark:text-success-400">{o.commission_amount != null ? formatCurrency(o.commission_amount) : '—'}</p>
                 </div>
                 <div>
                   <p className="text-white/40">DP Earnings</p>
-                  <p className="font-semibold text-white">{formatCurrency(o.dp_earnings)}</p>
+                  <p className="font-semibold text-white">{o.dp_earnings != null ? formatCurrency(o.dp_earnings) : '—'}</p>
                 </div>
               </div>
               <p className="mt-2 text-xs text-white/40">{formatTime(o.created_at)}</p>
@@ -177,20 +180,25 @@ export default function AdminOrders() {
 function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void }) {
   const [userProfile, setUserProfile] = useState<any>(null)
   const [dpProfile, setDpProfile] = useState<any>(null)
+  const [dpData, setDpData] = useState<any>(null)
   const [messages, setMessages] = useState<any[]>([])
 
   useEffect(() => {
     const uid = order._request?.user_id
     const dpId = order._request?.accepted_dp_id || order.dp_id
-    if (uid) supabase.from('profiles').select('full_name, phone').eq('id', uid).maybeSingle()
+    if (uid) supabase.from('profiles').select('full_name, phone, photo_url').eq('id', uid).maybeSingle()
       .then(({ data }) => setUserProfile(data))
-    if (dpId) supabase.from('profiles').select('full_name, phone').eq('id', dpId).maybeSingle()
-      .then(({ data }) => setDpProfile(data))
-    supabase.from('chat_rooms').select('id').eq('request_id', order.request_id).maybeSingle()
+    if (dpId) {
+      supabase.from('profiles').select('full_name, phone, photo_url').eq('id', dpId).maybeSingle()
+        .then(({ data }) => setDpProfile(data))
+      supabase.from('delivery_partners').select('rating_avg, rating_count, vehicle_type').eq('user_id', dpId).maybeSingle()
+        .then(({ data }) => setDpData(data))
+    }
+    supabase.from('chat_rooms').select('id').eq('request_id', order.id).maybeSingle()
       .then(({ data: room }) => {
         if (room?.id) {
-          supabase.from('messages').select('content, sender_id, message_type, created_at')
-            .eq('chat_room_id', room.id).order('created_at', { ascending: false }).limit(20)
+          supabase.from('messages').select('content, sender_id, message_type, created_at, attachment_url, quotation_data')
+            .eq('chat_room_id', room.id).order('created_at', { ascending: false }).limit(50)
             .then(({ data }) => setMessages(data || []))
         }
       })
@@ -251,13 +259,13 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
           </div>
 
           {/* Delivery Proof Photos */}
-          {req.delivery_proof_photos && req.delivery_proof_photos.length > 0 && (
+          {req.photo_urls && req.photo_urls.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">Delivery Proof Photos</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">Request Photos</p>
               <div className="flex flex-wrap gap-2">
-                {(req.delivery_proof_photos as string[]).map((url, i) => (
+                {(req.photo_urls as string[]).map((url, i) => (
                   <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt={`Proof ${i + 1}`} className="h-24 w-24 rounded-xl object-cover border border-white/10" />
+                    <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-24 rounded-xl object-cover border border-white/10" />
                   </a>
                 ))}
               </div>
@@ -276,15 +284,15 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
               )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Delivery Charge</span>
-                <span className="font-semibold">{formatCurrency(order.delivery_charge)}</span>
+                <span className="font-semibold">{order.delivery_charge != null ? formatCurrency(order.delivery_charge) : '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Commission ({order.commission_pct}%)</span>
-                <span className="font-semibold text-success-600">{formatCurrency(order.commission_amount)}</span>
+                <span className="text-gray-500">Commission ({order.commission_pct || 0}%)</span>
+                <span className="font-semibold text-success-600">{order.commission_amount != null ? formatCurrency(order.commission_amount) : '—'}</span>
               </div>
               <div className="flex justify-between border-t border-white/10 pt-2 dark:border-gray-800">
                 <span className="text-gray-500">DP Earnings</span>
-                <span className="font-bold text-primary-600">{formatCurrency(order.dp_earnings)}</span>
+                <span className="font-bold text-primary-600">{order.dp_earnings != null ? formatCurrency(order.dp_earnings) : '—'}</span>
               </div>
             </div>
           </div>
@@ -292,34 +300,66 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
           {/* People */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
-              <div className="flex items-center gap-1.5 mb-1 text-xs text-white/40"><User size={12} /> Customer</div>
-              <p className="text-sm font-semibold text-white">{userProfile?.full_name || '...'}</p>
-              <p className="text-xs text-gray-500">{userProfile?.phone || ''}</p>
+              <div className="flex items-center gap-1.5 mb-2 text-xs text-white/40"><User size={12} /> Customer</div>
+              <div className="flex items-center gap-2">
+                <Avatar url={userProfile?.photo_url} name={userProfile?.full_name || 'User'} size={32} />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{userProfile?.full_name || '...'}</p>
+                  <p className="text-xs text-gray-500">{userProfile?.phone || ''}</p>
+                </div>
+              </div>
             </div>
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
-              <div className="flex items-center gap-1.5 mb-1 text-xs text-white/40"><Bike size={12} /> Delivery Partner</div>
-              <p className="text-sm font-semibold text-white">{dpProfile?.full_name || '...'}</p>
-              <p className="text-xs text-gray-500">{dpProfile?.phone || ''}</p>
+              <div className="flex items-center gap-1.5 mb-2 text-xs text-white/40"><Bike size={12} /> Delivery Partner</div>
+              {dpProfile ? (
+                <div className="flex items-center gap-2">
+                  <Avatar url={dpProfile?.photo_url} name={dpProfile?.full_name || 'DP'} size={32} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{dpProfile?.full_name || '...'}</p>
+                    <p className="text-xs text-gray-500">{dpProfile?.phone || ''}</p>
+                    {dpData?.rating_count > 0 && (
+                      <p className="text-xs text-yellow-500 flex items-center gap-0.5">
+                        <Star size={10} fill="#fbbf24" className="text-yellow-400" /> {dpData.rating_avg.toFixed(1)} ({dpData.rating_count})
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-white/40">Not assigned</p>
+              )}
             </div>
           </div>
 
           {/* Chat messages */}
-          {messages.length > 0 && (
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">Chat (last 20 messages)</p>
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40 flex items-center gap-1.5">
+              <MessageCircle size={14} /> Chat History ({messages.length} messages)
+            </p>
+            {messages.length === 0 ? (
+              <p className="text-sm text-white/40 rounded-2xl border border-white/10 p-4 text-center">No chat messages for this order</p>
+            ) : (
               <div className="space-y-1.5 max-h-64 overflow-y-auto rounded-2xl border border-white/10 p-3 dark:border-gray-800">
                 {[...messages].reverse().map((m, i) => (
-                  <div key={i} className="text-xs">
-                    <span className="font-semibold text-gray-500">{m.sender_id === req.user_id ? 'User' : 'DP'}: </span>
-                    <span className="text-white/80">
-                      {m.message_type === 'text' ? m.content : `[${m.message_type}]`}
+                  <div key={i} className="text-xs flex items-start gap-1.5">
+                    <span className={`font-semibold shrink-0 ${m.sender_id === req.user_id ? 'text-blue-400' : 'text-yellow-400'}`}>
+                      {m.sender_id === req.user_id ? 'User' : 'DP'}:
                     </span>
-                    <span className="ml-1 text-white/40">{formatTime(m.created_at)}</span>
+                    <span className="text-white/80 flex-1">
+                      {m.message_type === 'text' ? m.content :
+                       m.message_type === 'image' ? '[Photo]' :
+                       m.message_type === 'voice' ? '[Voice]' :
+                       m.message_type === 'location' ? '[Location]' :
+                       m.message_type === 'quotation' ? '[Quotation]' :
+                       `[${m.message_type}]`}
+                    </span>
+                    <span className="text-white/40 shrink-0 flex items-center gap-0.5">
+                      <Clock size={9} />{formatTime(m.created_at)}
+                    </span>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <p className="text-center text-xs text-white/40">Created {formatTime(order.created_at)}</p>
         </div>

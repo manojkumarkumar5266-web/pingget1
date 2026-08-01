@@ -4,9 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, Message, ChatRoom, Order, Profile, DeliveryPartner } from '../../lib/supabase'
 import { Avatar, StatusBadge, ErrorBanner, FullScreenLoader } from '../../components/ui'
 import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
-import { ArrowLeft, Send, MapPin, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, Clock, CheckCircle, Wallet, AlertCircle, Navigation, ClipboardList } from 'lucide-react'
-
-const ORDER_FLOW = ['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'completed']
+import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, CheckCircle, ClipboardList } from 'lucide-react'
 
 export default function ChatScreen() {
   const { roomId } = useParams()
@@ -27,8 +25,6 @@ export default function ChatScreen() {
   const [fullOrderData, setFullOrderData] = useState<any>(null)
   const [greetingSent, setGreetingSent] = useState(false)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
-  const [sendingLocation, setSendingLocation] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [showPickupPhoto, setShowPickupPhoto] = useState(false)
   const [recording, setRecording] = useState(false)
@@ -41,6 +37,7 @@ export default function ChatScreen() {
   const typingChannelRef = useRef<any>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isTypingRef = useRef(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const isUser = profile?.role === 'user'
 
   const uploadToStorage = async (file: File | Blob, path: string): Promise<string | null> => {
@@ -53,21 +50,6 @@ export default function ChatScreen() {
     const path = `chat/${roomId}/${Date.now()}-${file.name}`
     const url = await uploadToStorage(file, path)
     if (url) await sendMessage('Image', 'image', { attachment_url: url })
-  }
-
-  const sendLocation = async () => {
-    if (!navigator.geolocation) { setError('Location not supported'); return }
-    setSendingLocation(true)
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude
-        const lng = pos.coords.longitude
-        await sendMessage('My current location', 'location', { location_lat: lat, location_lng: lng })
-        setSendingLocation(false)
-      },
-      () => { setError('Could not get location'); setSendingLocation(false) },
-      { enableHighAccuracy: true, timeout: 10000 }
-    )
   }
 
   const startVoiceRecord = async () => {
@@ -134,7 +116,6 @@ export default function ChatScreen() {
     init()
   }, [roomId, isUser, profile])
 
-  // Send greeting message when chat first opens
   useEffect(() => {
     if (!room || !profile || greetingSent || messages.length > 0) return
     setGreetingSent(true)
@@ -163,10 +144,8 @@ export default function ChatScreen() {
         })
     }
     onFocus()
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) onFocus() })
     const pollInterval = setInterval(onFocus, 5000)
-    return () => { window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onFocus); clearInterval(pollInterval) }
+    return () => { clearInterval(pollInterval) }
   }, [roomId, isUser, room])
 
   useEffect(() => {
@@ -184,12 +163,7 @@ export default function ChatScreen() {
         (payload) => { setMessages(prev => prev.map(m => m.id === (payload.new as Message).id ? { ...m, is_read: (payload.new as any).is_read, read_at: (payload.new as any).read_at } : m)) })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders', filter: `dp_id=eq.${profile?.id}` }, (payload) => { setOrder(payload.new as Order) })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `dp_id=eq.${profile?.id}` }, (payload) => { setOrder(payload.new as Order) })
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          supabase.from('messages').select('*').eq('chat_room_id', roomId).order('created_at', { ascending: true })
-            .then(({ data }) => { if (data) setMessages(data as Message[]) })
-        }
-      })
+      .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [roomId, profile?.id])
 
@@ -306,7 +280,19 @@ export default function ChatScreen() {
     const { error } = await supabase.from('ratings').insert({
       order_id: order.id, rater_id: profile!.id, rated_id: otherUserId, stars, review: review || null,
     })
-    if (!error) { setHasRated(true); setShowRating(false) }
+    if (!error) {
+      setHasRated(true); setShowRating(false)
+      if (isUser) {
+        const { data: ratings } = await supabase.from('ratings').select('stars').eq('rated_id', otherUserId)
+        if (ratings && ratings.length > 0) {
+          const avg = ratings.reduce((s, r) => s + r.stars, 0) / ratings.length
+          await supabase.from('delivery_partners').update({
+            rating_avg: parseFloat(avg.toFixed(2)),
+            rating_count: ratings.length,
+          }).eq('user_id', otherUserId)
+        }
+      }
+    }
   }
 
   if (loading) return <FullScreenLoader />
@@ -314,16 +300,17 @@ export default function ChatScreen() {
 
   const chatLocked = order?.status === 'completed'
   const lastOwnMsg = [...messages].reverse().find(m => m.sender_id === profile?.id)
+  const isCompleted = order?.status === 'completed'
 
   return (
-    <div className="flex h-screen flex-col bg-[#0B0B0B]">
-      {/* Premium Header */}
+    <div className="flex h-screen flex-col" style={{ background: 'linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%)' }}>
+      {/* Colorful Header */}
       <header className="flex shrink-0 items-center gap-3 px-4 py-3 z-10"
-        style={{ background: 'rgba(11,11,11,0.96)', borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)' }}>
+        style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 50%, #1e3a5f 100%)', borderBottom: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}>
         <button onClick={() => navigate(isUser ? '/app' : '/dp')} className="btn-icon shrink-0">
-          <ArrowLeft size={18} style={{ color: 'rgba(255,255,255,0.7)' }} />
+          <ArrowLeft size={18} style={{ color: 'rgba(255,255,255,0.8)' }} />
         </button>
-        <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={40} />
+        <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={42} />
         <div className="flex-1 min-w-0">
           <p className="font-bold text-white leading-snug">{otherUser?.full_name || 'User'}</p>
           {otherTyping ? (
@@ -336,45 +323,47 @@ export default function ChatScreen() {
               </div>
             </div>
           ) : dpInfo ? (
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>
               {dpInfo.vehicle_type} {dpInfo.rating_avg > 0 ? `· ${dpInfo.rating_avg.toFixed(1)}★` : ''} · {dpInfo.is_online ? 'Online' : 'Offline'}
             </p>
           ) : (
-            <p className="flex items-center gap-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {lastOwnMsg?.read_at ? <><CheckCheck size={11} className="text-yellow-400" /> Seen</> : lastOwnMsg ? <><Check size={11} /> Delivered</> : 'Chat'}
+            <p className="flex items-center gap-1 text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              {lastOwnMsg?.read_at ? <><CheckCheck size={11} className="text-cyan-300" /> Seen</> : lastOwnMsg ? <><Check size={11} /> Delivered</> : 'Chat'}
             </p>
           )}
         </div>
         {order && <StatusBadge status={order.status} />}
-        <button
-          onClick={async () => {
-            if (!room) return
-            if (confirm('Cancel this request? Chat will close.')) {
-              await supabase.from('requests').update({ status: 'cancelled' }).eq('id', room.request_id)
-              navigate(isUser ? '/app' : '/dp')
-            }
-          }}
-          className="shrink-0 rounded-2xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
-          style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
-          Cancel
-        </button>
+        {!isCompleted && (
+          <button
+            onClick={async () => {
+              if (!room) return
+              if (confirm('Cancel this request? Chat will close.')) {
+                await supabase.from('requests').update({ status: 'cancelled' }).eq('id', room.request_id)
+                navigate(isUser ? '/app' : '/dp')
+              }
+            }}
+            className="shrink-0 rounded-2xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
+            Cancel
+          </button>
+        )}
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4" style={{ background: 'linear-gradient(180deg, rgba(15,20,25,0.5) 0%, rgba(26,31,46,0.5) 100%)' }}>
         <div className="mx-auto max-w-md space-y-2.5">
           {/* Context banners */}
           {!order && isUser && (
             <div className="mb-4 rounded-2xl px-4 py-3 text-center text-xs font-medium animate-fade-in"
-              style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.15)', color: 'rgba(255,255,255,0.55)' }}>
+              style={{ background: 'linear-gradient(135deg, rgba(166,179,0,0.12), rgba(59,130,246,0.08))', border: '1px solid rgba(166,179,0,0.2)', color: 'rgba(255,255,255,0.7)' }}>
               Discuss items and delivery charge. Your partner will send a quotation.
             </div>
           )}
           {!order && !isUser && (
             <div className="mb-4">
               <button onClick={() => setShowQuotation(true)}
-                className="btn-primary w-full gap-2"
-                style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                className="w-full gap-2 rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.3)' }}>
                 <FileText size={16} /> Send Quotation
               </button>
             </div>
@@ -392,8 +381,8 @@ export default function ChatScreen() {
                 )}
                 <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 ${isOwn ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
                   style={isOwn
-                    ? { background: msg.read_at ? 'rgba(166,179,0,0.85)' : 'rgba(130,140,0,0.75)' }
-                    : { background: '#1E1E1E', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    ? { background: msg.read_at ? 'linear-gradient(135deg, #A6B300, #808000)' : 'linear-gradient(135deg, #8a9c00, #6b7c00)', boxShadow: '0 2px 8px rgba(166,179,0,0.2)' }
+                    : { background: 'linear-gradient(135deg, #1e293b, #334155)', border: '1px solid rgba(255,255,255,0.08)' }}>
 
                   {msg.message_type === 'text' && (
                     <p className="text-sm leading-relaxed" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.content}</p>
@@ -407,22 +396,6 @@ export default function ChatScreen() {
 
                   {msg.message_type === 'voice' && msg.attachment_url && (
                     <VoiceMessagePlayer url={msg.attachment_url} isOwn={isOwn} />
-                  )}
-
-                  {msg.message_type === 'location' && (
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <MapPin size={14} style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }} />
-                        <p className="text-sm font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>Delivery Location</p>
-                      </div>
-                      {msg.content && <p className="text-xs" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.55)' }}>{msg.content}</p>}
-                      {msg.location_lat && msg.location_lng && (
-                        <a href={`https://maps.google.com/?q=${msg.location_lat},${msg.location_lng}`} target="_blank" rel="noopener noreferrer"
-                          className="inline-block text-xs underline font-medium" style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }}>
-                          Open in Maps
-                        </a>
-                      )}
-                    </div>
                   )}
 
                   {msg.message_type === 'quotation' && msg.quotation_data && (
@@ -440,7 +413,7 @@ export default function ChatScreen() {
                         {String(msg.quotation_data.items_summary || '').split('\n').map((line: string, i: number) =>
                           line.trim() ? (
                             <li key={i} className="flex items-start gap-1.5 text-xs" style={{ color: isOwn ? '#0B0B0B' : 'rgba(255,255,255,0.8)' }}>
-                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full flex-shrink-0" style={{ background: isOwn ? '#0B0B0B' : '#A6B300' }} />
+                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: isOwn ? '#0B0B0B' : '#A6B300' }} />
                               {line.trim()}
                             </li>
                           ) : null
@@ -489,7 +462,7 @@ export default function ChatScreen() {
           {otherTyping && (
             <div className="flex items-end gap-2 justify-start animate-fade-in">
               <div style={{ width: 28 }}><Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={28} /></div>
-              <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm px-4 py-3" style={{ background: '#1E1E1E', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm px-4 py-3" style={{ background: 'linear-gradient(135deg, #1e293b, #334155)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 {[0, 150, 300].map(delay => (
                   <span key={delay} className="h-2 w-2 rounded-full animate-bounce" style={{ background: '#A6B300', animationDelay: `${delay}ms` }} />
                 ))}
@@ -502,15 +475,16 @@ export default function ChatScreen() {
       </div>
 
       {/* Rating bar */}
-      {order?.status === 'completed' && isUser && !hasRated && (
-        <div className="shrink-0 px-4 py-3" style={{ background: '#181818', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-          <button onClick={() => setShowRating(true)} className="btn-primary w-full gap-2" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+      {isCompleted && isUser && !hasRated && (
+        <div className="shrink-0 px-4 py-3" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2d5a8e)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <button onClick={() => setShowRating(true)} className="w-full gap-2 rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95"
+            style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.3)' }}>
             <Star size={16} /> Rate Your Partner
           </button>
         </div>
       )}
-      {order?.status === 'completed' && hasRated && (
-        <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-3" style={{ background: '#181818', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+      {isCompleted && hasRated && (
+        <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-3" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2d5a8e)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <CheckCircle size={15} className="text-green-400" />
           <p className="text-sm font-medium text-green-400">Order completed & rated</p>
         </div>
@@ -518,26 +492,21 @@ export default function ChatScreen() {
 
       {/* Input area */}
       {chatLocked ? (
-        <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-4" style={{ background: '#181818', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
-            {order?.status === 'completed' ? 'Conversation ended.' : 'Waiting for delivery — chat is locked.'}
+        <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-4" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2d5a8e)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            Conversation ended — order completed.
           </p>
         </div>
       ) : (
-        <div className="shrink-0 px-4 py-3" style={{ background: '#181818', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="shrink-0 px-4 py-3" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2d5a8e)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <input ref={imageInputRef} type="file" className="hidden" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) sendImage(f); e.target.value = '' }} />
 
           {showAttachMenu && (
             <div className="mb-3 flex flex-wrap gap-2 animate-slide-up">
               <button onClick={() => { imageInputRef.current?.click(); setShowAttachMenu(false) }}
                 className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium"
-                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
+                style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
                 <Camera size={14} /> Photo
-              </button>
-              <button onClick={sendLocation} disabled={sendingLocation}
-                className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium disabled:opacity-50"
-                style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', color: '#60a5fa' }}>
-                <Navigation size={14} /> {sendingLocation ? 'Locating...' : 'Location'}
               </button>
               {recording ? (
                 <button onClick={stopVoiceRecord} className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium"
@@ -546,18 +515,18 @@ export default function ChatScreen() {
                 </button>
               ) : (
                 <button onClick={startVoiceRecord} className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium"
-                  style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
+                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
                   <Mic size={14} /> Voice
                 </button>
               )}
               {!isUser && order && ['confirmed','shopping','purchased','on_the_way','arrived'].includes(order.status) && (
                 <button onClick={() => { setShowPickupPhoto(true); setShowAttachMenu(false) }}
                   className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-medium"
-                  style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
+                  style={{ background: 'rgba(166,179,0,0.15)', border: '1px solid rgba(166,179,0,0.3)', color: '#A6B300' }}>
                   <PackageCheck size={14} /> Pickup Proof
                 </button>
               )}
-              <button onClick={() => setShowAttachMenu(false)} style={{ color: 'rgba(255,255,255,0.35)', marginLeft: 'auto' }}><X size={16} /></button>
+              <button onClick={() => setShowAttachMenu(false)} style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 'auto' }}><X size={16} /></button>
             </div>
           )}
 
@@ -565,9 +534,9 @@ export default function ChatScreen() {
             <button onClick={() => setShowAttachMenu(!showAttachMenu)}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all active:scale-90"
               style={showAttachMenu
-                ? { background: '#A6B300' }
-                : { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <Paperclip size={18} style={{ color: showAttachMenu ? '#0B0B0B' : 'rgba(255,255,255,0.5)' }} />
+                ? { background: 'linear-gradient(135deg, #A6B300, #808000)' }
+                : { background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}>
+              <Paperclip size={18} style={{ color: showAttachMenu ? '#0B0B0B' : 'rgba(255,255,255,0.6)' }} />
             </button>
 
             {recording ? (
@@ -579,8 +548,9 @@ export default function ChatScreen() {
             ) : (
               <input value={input} onChange={handleInputChange}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder="Message..."
-                className="input flex-1 py-3"
+                placeholder="Type a message..."
+                className="flex-1 rounded-2xl py-3 px-4 text-sm text-white outline-none"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
               />
             )}
 
@@ -588,9 +558,9 @@ export default function ChatScreen() {
               <button onClick={handleSend}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all active:scale-90"
                 style={input.trim()
-                  ? { background: '#A6B300', boxShadow: '0 4px 16px rgba(166,179,0,0.4)' }
-                  : { background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <Send size={18} style={{ color: input.trim() ? '#0B0B0B' : 'rgba(255,255,255,0.35)' }} />
+                  ? { background: 'linear-gradient(135deg, #A6B300, #808000)', boxShadow: '0 4px 16px rgba(166,179,0,0.4)' }
+                  : { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                <Send size={18} style={{ color: input.trim() ? '#0B0B0B' : 'rgba(255,255,255,0.4)' }} />
               </button>
             )}
           </div>
@@ -610,11 +580,11 @@ export default function ChatScreen() {
       )}
       {showRating && <RatingModal onClose={() => setShowRating(false)} onSubmit={submitRating} targetName={otherUser?.full_name || 'Delivery Partner'} />}
 
-      {/* View Full Order button — opens full-screen page */}
-      {fullOrderData && (
+      {/* View Full Order button */}
+      {fullOrderData && !isCompleted && (
         <button onClick={() => navigate(isUser ? `/app/chat/${roomId}/order` : `/dp/chat/${roomId}/order`)}
           className="fixed bottom-20 right-4 z-20 flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95"
-          style={{ background: '#A6B300', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.4)' }}>
+          style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.4)' }}>
           <ClipboardList size={14} /> View Full Order
         </button>
       )}
@@ -678,7 +648,7 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
   const handleSubmit = async () => { if (!file) return; setUploading(true); await onSubmit(file); setUploading(false) }
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 animate-fade-in" onClick={onClose}>
-      <div className="w-full max-w-md rounded-3xl p-6 animate-slide-in-bottom" style={{ background: '#1E1E1E', border: '1px solid rgba(255,255,255,0.1)' }} onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-3xl p-6 animate-slide-in-bottom" style={{ background: 'linear-gradient(135deg, #1e293b, #334155)', border: '1px solid rgba(255,255,255,0.1)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
         <h3 className="mb-1 text-lg font-bold text-white">Pickup Proof</h3>
         <p className="mb-4 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Photo of items as pickup confirmation.</p>
@@ -699,7 +669,8 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
         )}
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-          <button onClick={handleSubmit} disabled={!file || uploading} className="flex-1 btn font-bold disabled:opacity-40" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+          <button onClick={handleSubmit} disabled={!file || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-2xl py-3"
+            style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>
             {uploading ? 'Sending...' : 'Send Proof'}
           </button>
         </div>
@@ -733,7 +704,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
   }
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 animate-fade-in" onClick={onClose}>
-      <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom" style={{ background: '#1E1E1E', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom" style={{ background: 'linear-gradient(135deg, #1e293b, #334155)', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
         <div className="px-5 pt-4 pb-2">
           <div className="bottom-sheet-handle" />
           <h3 className="text-lg font-bold text-white mb-4">Send Quotation</h3>
@@ -773,7 +744,8 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-            <button onClick={handleSend} disabled={!items || !deliveryCharge || uploading} className="flex-1 btn font-bold disabled:opacity-40" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+            <button onClick={handleSend} disabled={!items || !deliveryCharge || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-2xl py-3"
+              style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>
               {uploading ? 'Uploading...' : 'Send'}
             </button>
           </div>
@@ -789,7 +761,7 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
   const labels = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent']
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 animate-fade-in" onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl p-6 animate-slide-in-bottom" style={{ background: '#1E1E1E', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-t-3xl p-6 animate-slide-in-bottom" style={{ background: 'linear-gradient(135deg, #1e293b, #334155)', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
         <h3 className="text-lg font-bold text-white text-center">Rate {targetName}</h3>
         <p className="mt-1 mb-6 text-sm text-center" style={{ color: 'rgba(255,255,255,0.4)' }}>How was your experience?</p>
@@ -806,7 +778,8 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
         <textarea className="input min-h-20 resize-none mb-4" value={review} onChange={e => setReview(e.target.value)} placeholder="Leave a review (optional)" />
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Skip</button>
-          <button onClick={() => onSubmit(stars, review)} className="flex-1 btn font-bold" style={{ background: '#A6B300', color: '#0B0B0B' }}>Submit</button>
+          <button onClick={() => onSubmit(stars, review)} className="flex-1 btn font-bold rounded-2xl py-3"
+            style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>Submit</button>
         </div>
       </div>
     </div>

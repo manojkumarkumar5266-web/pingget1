@@ -6,7 +6,7 @@ import { formatTime } from '../../lib/utils'
 import { Check, X, Shield, ChevronRight, ArrowLeft, FileText, Phone, Truck, CreditCard, AlertCircle, Download, MapPin } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
-type DpWithProfile = DeliveryPartner & { profile: Profile; aadhaar_url?: string | null }
+type DpWithProfile = DeliveryPartner & { profile: Profile }
 type Filter = 'pending' | 'approved' | 'rejected' | 'all'
 
 export default function AdminDps() {

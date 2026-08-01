@@ -149,17 +149,19 @@ export default function DpNavigationPage() {
             <p className="text-xs text-white/50">Order Tracking</p>
             <p className="truncate text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
           </div>
-          {userProfile && (
+          {userProfile && !isCompleted && (
             <button onClick={() => window.location.href = `tel:${userProfile.phone || ''}`} className="map-control-btn map-control-dark">
               <Phone size={18} />
             </button>
           )}
-          <button onClick={async () => {
-            const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
-            if (data) navigate(`/dp/chat/${data.id}`)
-          }} className="map-control-btn map-control-dark">
-            <MessageCircle size={18} />
-          </button>
+          {!isCompleted && (
+            <button onClick={async () => {
+              const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
+              if (data) navigate(`/dp/chat/${data.id}`)
+            }} className="map-control-btn map-control-dark">
+              <MessageCircle size={18} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -237,15 +239,17 @@ export default function DpNavigationPage() {
                   <p className="text-xs text-white/40">{userProfile.phone || 'No phone'}</p>
                 </div>
                 <button onClick={() => window.location.href = `tel:${userProfile.phone || ''}`}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0"
-                  style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}>
+                  className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0 disabled:opacity-30"
+                  style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}
+                  disabled={isCompleted}>
                   <Phone size={16} />
                 </button>
                 <button onClick={async () => {
                   const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
                   if (data) navigate(`/dp/chat/${data.id}`)
-                }} className="flex h-10 w-10 items-center justify-center rounded-xl text-black active:scale-95 transition-transform shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #a8c020, #808000)' }}>
+                }} className="flex h-10 w-10 items-center justify-center rounded-xl text-black active:scale-95 transition-transform shrink-0 disabled:opacity-30"
+                  style={{ background: 'linear-gradient(135deg, #a8c020, #808000)' }}
+                  disabled={isCompleted}>
                   <MessageCircle size={16} />
                 </button>
               </div>
