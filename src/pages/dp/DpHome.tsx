@@ -13,7 +13,7 @@ import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../.
 import { useGps } from '../../hooks/useGps'
 import { EmptyState, ServiceStatusBanner, SkeletonList, EarningsCard, CountUp, StatCard } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency } from '../../lib/utils'
-import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Bike, Car, Truck, Activity, Navigation, Wallet, ChevronRight } from 'lucide-react'
+import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Bike, Car, Truck, Activity, Navigation, Wallet, ChevronRight, MapPinOff, Loader2 } from 'lucide-react'
 
 function vehicleIcon(vehicleType: string | null) {
   const v = (vehicleType || '').toLowerCase()
@@ -201,10 +201,40 @@ export default function DpHome() {
   const dpFirstName = profile?.full_name?.split(' ')[0] || 'Partner'
   const dpGreetWord = getDpGreeting()
 
+  const GpsBanner = () => {
+    if (gps.permissionDenied) {
+      return (
+        <div className="mb-4 flex items-center gap-3 rounded-2xl px-4 py-3.5 animate-slide-down"
+          style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
+          <MapPinOff size={20} className="shrink-0 text-red-400" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-red-300">Location Access Required</p>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Please allow location access to receive delivery requests near you.</p>
+          </div>
+          <button onClick={() => gps.requestPermission()} className="shrink-0 rounded-xl px-3 py-2 text-xs font-bold text-white" style={{ background: '#ef4444' }}>
+            Allow
+          </button>
+        </div>
+      )
+    }
+    if (gps.loading) {
+      return (
+        <div className="mb-4 flex items-center gap-2.5 rounded-2xl px-4 py-3 animate-slide-down"
+          style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+          <Loader2 size={16} className="shrink-0 animate-spin text-blue-400" />
+          <p className="text-sm text-blue-300">Getting your location...</p>
+        </div>
+      )
+    }
+    return null
+  }
+
   if (!dp?.is_online) {
     return (
       <div className="mx-auto max-w-md px-4 py-4">
         <ServiceStatusBanner cityName={profile?.city} />
+
+        <GpsBanner />
 
         {/* Greeting */}
         <div className="mb-5 animate-fade-in-up">
@@ -261,6 +291,8 @@ export default function DpHome() {
   return (
     <div className="mx-auto max-w-md px-4 py-4">
       <ServiceStatusBanner cityName={profile?.city} />
+
+      <GpsBanner />
 
       {/* Greeting */}
       <div className="mb-5 animate-fade-in-up">
@@ -350,10 +382,16 @@ export default function DpHome() {
             </button>
           ))}
         </div>
-        {!profile?.gps_lat && (
-          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-yellow-400">
-            <Navigation size={11} className="shrink-0 animate-pulse" />
-            <span>Waiting for GPS... Allow location access.</span>
+        {gps.loading && !gps.lat && (
+          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-blue-400">
+            <Loader2 size={11} className="shrink-0 animate-spin" />
+            <span>Getting your location...</span>
+          </div>
+        )}
+        {gps.permissionDenied && (
+          <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+            <span className="flex items-center gap-1.5 text-red-300"><MapPinOff size={11} /> Location access denied</span>
+            <button onClick={() => gps.requestPermission()} className="font-bold text-red-400 hover:text-red-300">Allow</button>
           </div>
         )}
       </div>

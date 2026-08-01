@@ -3,7 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } from '../../lib/supabase'
 import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
-import { ArrowLeft, Navigation, MapPin, MessageCircle, Package, CheckCircle2, ShoppingBag, Bike, Phone, Camera, X, Clock, Star } from 'lucide-react'
+import {
+  ArrowLeft, Navigation, MapPin, MessageCircle, Package, CheckCircle2,
+  ShoppingBag, Bike, Phone, Camera, X, Clock, Star, User as UserIcon, Store,
+  TrendingUp, IndianRupee,
+} from 'lucide-react'
+
+const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string; notifBody: string; icon: any }[] = [
+  { from: 'accepted', to: 'confirmed', label: 'Confirm Order', notifTitle: 'Order Confirmed', notifBody: 'Your delivery partner confirmed. They will start shopping soon.', icon: CheckCircle2 },
+  { from: 'confirmed', to: 'shopping', label: 'Start Shopping', notifTitle: 'Shopping Started', notifBody: 'Your delivery partner is now shopping for your items.', icon: ShoppingBag },
+  { from: 'shopping', to: 'purchased', label: 'Items Purchased', notifTitle: 'Items Purchased', notifBody: 'Items purchased! Your delivery partner is heading your way soon.', icon: Package },
+  { from: 'purchased', to: 'on_the_way', label: 'On The Way', notifTitle: 'On The Way!', notifBody: 'Your delivery partner is heading to your location.', icon: Bike },
+  { from: 'on_the_way', to: 'arrived', label: 'Mark Arrived', notifTitle: 'Partner Arrived', notifBody: 'Your delivery partner has arrived. Please be ready to receive.', icon: MapPin },
+  { from: 'arrived', to: 'delivered', label: 'Mark Delivered', notifTitle: 'Order Delivered', notifBody: 'Your order has been delivered. Please confirm receipt in the app.', icon: CheckCircle2 },
+]
 
 export default function DpNavigationPage() {
   const { requestId } = useParams<{ requestId: string }>()
@@ -35,6 +48,8 @@ export default function DpNavigationPage() {
         const { data: dp } = await supabase.from('delivery_partners').select('*').eq('user_id', profile.id).maybeSingle()
         setDpData(dp as DeliveryPartner | null)
       }
+      const currentEta = (req as any).eta_minutes
+      if (currentEta) setEtaMinutes(currentEta)
       setLoading(false)
     }
     fetchData()
@@ -119,18 +134,20 @@ export default function DpNavigationPage() {
 
   const isDelivered = request.status === 'delivered'
   const isCompleted = request.status === 'completed'
+  const currentStep = STATUS_FLOW.find(s => s.from === request.status)
+  const stepIndex = STATUS_FLOW.findIndex(s => s.from === request.status)
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      {/* Top bar */}
+      {/* Top bar with phone + chat on right */}
       <div className="absolute left-0 right-0 top-0 z-[1000] px-4 pt-12">
         <div className="map-glass-panel flex items-center gap-3 p-3">
           <button onClick={() => navigate('/dp')} className="map-control-btn map-control-dark">
             <ArrowLeft size={18} />
           </button>
-          <div className="flex-1">
-            <p className="text-xs text-white/50">Navigation</p>
-            <p className="text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-white/50">Order Tracking</p>
+            <p className="truncate text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
           </div>
           {userProfile && (
             <button onClick={() => window.location.href = `tel:${userProfile.phone || ''}`} className="map-control-btn map-control-dark">
@@ -146,31 +163,52 @@ export default function DpNavigationPage() {
         </div>
       </div>
 
-      {/* Top section: Delivery location summary (no map) */}
-      <div className="flex-shrink-0 pt-20 px-4 pb-4" style={{ background: 'linear-gradient(180deg, #0B0B0B, #111)' }}>
+      {/* Top section: Progress milestones */}
+      <div className="flex-shrink-0 pt-20 px-4 pb-3" style={{ background: 'linear-gradient(180deg, #0B0B0B, #111)' }}>
         <div className="mx-auto max-w-md">
+          {/* Horizontal progress steps */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <MapPin size={16} className="text-red-400" />
-              <p className="text-sm font-bold text-white">Delivery Location</p>
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">Delivery Progress</p>
+            <div className="flex items-center justify-between">
+              {STATUS_FLOW.map((step, i) => {
+                const reached = stepIndex > i || isDelivered || isCompleted
+                const isCurrent = step.from === request.status
+                const Icon = step.icon
+                return (
+                  <div key={i} className="flex flex-1 flex-col items-center relative">
+                    {i > 0 && (
+                      <div className="absolute right-1/2 top-3 h-0.5 w-full" style={{
+                        background: reached ? '#A6B300' : 'rgba(255,255,255,0.1)',
+                        transition: 'background 0.5s ease',
+                      }} />
+                    )}
+                    <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full transition-all"
+                      style={{
+                        background: reached ? '#A6B300' : isCurrent ? 'rgba(166,179,0,0.2)' : 'rgba(255,255,255,0.05)',
+                        border: isCurrent ? '2px solid #A6B300' : '2px solid transparent',
+                        boxShadow: isCurrent ? '0 0 12px rgba(166,179,0,0.4)' : 'none',
+                      }}>
+                      {reached ? <Icon size={13} className="text-black" /> : <div className="h-2 w-2 rounded-full bg-white/20" />}
+                    </div>
+                    <span className="mt-1 text-[8px] font-medium text-center leading-tight"
+                      style={{ color: reached || isCurrent ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)' }}>
+                      {step.label.replace('Mark ', '').replace('Start ', '').replace('Items ', '')}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
-            <p className="text-sm text-white/70 mb-3">{request.delivery_address || 'Not specified'}</p>
-            <button onClick={openGoogleMaps}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold text-white transition-all active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 4px 16px rgba(59,130,246,0.3)' }}>
-              <Navigation size={18} /> Navigate with Google Maps
-            </button>
           </div>
 
           {/* ETA update */}
           {['confirmed', 'shopping', 'purchased', 'on_the_way'].includes(request.status) && (
             <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Update ETA</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Update ETA (minutes)</p>
               <div className="flex gap-2">
                 <input type="number" min={1} max={120} value={etaMinutes ?? ''} onChange={e => setEtaMinutes(e.target.value ? parseInt(e.target.value) : null)}
-                  placeholder="Minutes" className="input flex-1" />
+                  placeholder="Enter minutes" className="input flex-1" />
                 <button onClick={updateEta} disabled={!etaMinutes || updatingEta}
-                  className="btn-primary disabled:opacity-40" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                  className="btn-primary disabled:opacity-40 px-5" style={{ background: '#A6B300', color: '#0B0B0B' }}>
                   {updatingEta ? '...' : 'Update'}
                 </button>
               </div>
@@ -179,110 +217,88 @@ export default function DpNavigationPage() {
         </div>
       </div>
 
-      {/* Bottom section: Customer + delivery details + status controls */}
+      {/* Bottom section: scrollable - customer + address + status */}
       <div className="flex-1 overflow-y-auto bg-black px-4 py-4">
         <div className="mx-auto max-w-md space-y-4">
-          {/* Customer info */}
+          {/* Customer info card */}
           {userProfile && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Customer Details</div>
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Customer</div>
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 overflow-hidden rounded-2xl bg-white/5">
+                <div className="h-14 w-14 overflow-hidden rounded-2xl bg-white/5 shrink-0">
                   {userProfile.photo_url ? (
                     <img src={userProfile.photo_url} alt={userProfile.full_name} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-white/30"><MapPin size={20} /></div>
+                    <div className="flex h-full w-full items-center justify-center text-white/30"><UserIcon size={20} /></div>
                   )}
                 </div>
-                <div className="flex-1">
-                  <p className="font-bold text-white">{userProfile.full_name}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-white truncate">{userProfile.full_name}</p>
                   <p className="text-xs text-white/40">{userProfile.phone || 'No phone'}</p>
                 </div>
+                <button onClick={() => window.location.href = `tel:${userProfile.phone || ''}`}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0"
+                  style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}>
+                  <Phone size={16} />
+                </button>
+                <button onClick={async () => {
+                  const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
+                  if (data) navigate(`/dp/chat/${data.id}`)
+                }} className="flex h-10 w-10 items-center justify-center rounded-xl text-black active:scale-95 transition-transform shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #a8c020, #808000)' }}>
+                  <MessageCircle size={16} />
+                </button>
               </div>
             </div>
           )}
 
-          {/* Delivery Details */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Delivery Details</div>
-            <div className="space-y-3">
-              {request.pickup_address && (
-                <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: 'rgba(168,192,32,0.1)' }}>
-                    <ShoppingBag size={14} style={{ color: '#a8c020' }} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase text-white/40">Pickup</p>
-                    <p className="text-sm text-white/80">{request.pickup_address}</p>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: 'rgba(239,68,68,0.1)' }}>
-                  <MapPin size={14} className="text-red-400" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase text-white/40">Destination</p>
-                  <p className="text-sm text-white/80">{request.delivery_address || 'Not specified'}</p>
-                </div>
-              </div>
+          {/* Delivery address with map */}
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
+            <div className="mb-3 flex items-center gap-2">
+              <MapPin size={16} className="text-red-400" />
+              <p className="text-sm font-bold text-white">Delivery Address</p>
             </div>
+            <p className="text-sm text-white/80 mb-3 leading-relaxed">{request.delivery_address || 'Not specified'}</p>
+            <button onClick={openGoogleMaps}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold text-white transition-all active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 4px 16px rgba(59,130,246,0.3)' }}>
+              <Navigation size={18} /> Navigate to Customer
+            </button>
           </div>
 
-          {/* Status update buttons */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Update Delivery Status</div>
-            <div className="space-y-2">
-              {request.status === 'accepted' && (
-                <button onClick={() => updateStatus('confirmed', 'Order Confirmed', 'Your delivery partner confirmed. They will start shopping soon.')}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
-                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                  <Package size={18} /> Confirm Order
-                </button>
-              )}
-              {request.status === 'confirmed' && (
-                <button onClick={() => updateStatus('shopping', 'Shopping Started', 'Your delivery partner is now shopping for your items.')}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
-                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                  <ShoppingBag size={18} /> Start Shopping
-                </button>
-              )}
-              {request.status === 'shopping' && (
-                <button onClick={() => updateStatus('purchased', 'Items Purchased', 'Items purchased! Your delivery partner is heading your way soon.')}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
-                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                  <Package size={18} /> Items Purchased
-                </button>
-              )}
-              {request.status === 'purchased' && (
-                <button onClick={() => updateStatus('on_the_way', 'On The Way!', 'Your delivery partner is heading to your location.')}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
-                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                  <Bike size={18} /> On The Way
-                </button>
-              )}
-              {request.status === 'on_the_way' && (
-                <button onClick={() => updateStatus('arrived', 'Partner Arrived', 'Your delivery partner has arrived. Please be ready to receive.')}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
-                  style={{ background: 'linear-gradient(135deg, #808000, #606000)' }}>
-                  <MapPin size={18} /> Mark Arrived
-                </button>
-              )}
-              {request.status === 'arrived' && (
-                <button onClick={() => updateStatus('delivered', 'Order Delivered', 'Your order has been delivered. Please confirm receipt in the app.')}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
-                  style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
-                  <CheckCircle2 size={18} /> Mark Delivered
-                </button>
-              )}
+          {/* Pickup details */}
+          {request.pickup_address && (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
+              <div className="mb-2 flex items-center gap-2">
+                <Store size={16} style={{ color: '#a8c020' }} />
+                <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Pickup Location</p>
+              </div>
+              <p className="text-sm text-white/80">{request.pickup_address}</p>
             </div>
-          </div>
+          )}
+
+          {/* Current status action button */}
+          {currentStep && (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Update Status</p>
+              <button onClick={() => updateStatus(currentStep.to, currentStep.notifTitle, currentStep.notifBody)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
+                style={{
+                  background: currentStep.to === 'delivered'
+                    ? 'linear-gradient(135deg, #16a34a, #15803d)'
+                    : 'linear-gradient(135deg, #808000, #606000)',
+                  boxShadow: currentStep.to === 'delivered' ? '0 4px 16px rgba(22,163,74,0.3)' : '0 4px 16px rgba(128,128,0,0.2)',
+                }}>
+                <currentStep.icon size={18} /> {currentStep.label}
+              </button>
+            </div>
+          )}
 
           {/* Delivery Photo Upload */}
           {isDelivered && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
               <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Delivery Proof Photos</div>
-              <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
+              <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple capture="environment" onChange={handlePhotosSelect} />
               {photoPreviews.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
                   {photoPreviews.map((preview, idx) => (
@@ -309,8 +325,8 @@ export default function DpNavigationPage() {
             </div>
           )}
 
-          {isDelivered && (
-            <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-center">
+          {isDelivered && !isCompleted && (
+            <div className="rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-center animate-slide-up">
               <Clock size={24} className="mx-auto mb-2 text-yellow-400 animate-pulse" />
               <p className="font-bold text-white">Waiting for customer to accept delivery</p>
               <p className="mt-1 text-xs text-white/40">You'll be able to go home once the customer confirms receipt</p>

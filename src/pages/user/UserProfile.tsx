@@ -1,9 +1,24 @@
 import { useAuth } from '../../context'
 import { Avatar } from '../../components/ui'
-import { Mail, Phone, MapPin, Globe, LogOut, Headphones } from 'lucide-react'
+import { Mail, Phone, MapPin, Globe, LogOut, Headphones, Edit2, X, Check } from 'lucide-react'
+import { useState } from 'react'
+import { supabase } from '../../lib/supabase'
 
 export default function UserProfile() {
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, refreshProfile } = useAuth()
+  const [editingAddress, setEditingAddress] = useState(false)
+  const [addressValue, setAddressValue] = useState('')
+  const [cityValue, setCityValue] = useState('')
+  const [savingAddress, setSavingAddress] = useState(false)
+
+  const saveAddress = async () => {
+    if (!profile?.id) return
+    setSavingAddress(true)
+    await supabase.from('profiles').update({ address: addressValue.trim() || null, city: cityValue.trim() || null }).eq('id', profile.id)
+    await refreshProfile()
+    setSavingAddress(false)
+    setEditingAddress(false)
+  }
 
   return (
     <div className="mx-auto max-w-md px-4 py-6">
@@ -20,7 +35,7 @@ export default function UserProfile() {
           <Mail size={18} className="text-white/40" />
           <div>
             <p className="text-xs text-white/40">Email</p>
-            <p className="text-sm font-medium text-white">{profile?.id && 'Verified account'}</p>
+            <p className="text-sm font-medium text-white">{profile?.email || 'Verified account'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 p-4">
@@ -30,12 +45,33 @@ export default function UserProfile() {
             <p className="text-sm font-medium text-white">{profile?.phone || 'Not set'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 p-4">
-          <MapPin size={18} className="text-white/40" />
-          <div>
-            <p className="text-xs text-white/40">Address</p>
-            <p className="text-sm font-medium text-white">{profile?.address || 'Not set'}</p>
-            <p className="text-xs text-white/40">{profile?.city}</p>
+        <div className="flex items-start gap-3 p-4">
+          <MapPin size={18} className="text-white/40 mt-0.5" />
+          <div className="flex-1">
+            {editingAddress ? (
+              <div className="space-y-2">
+                <input className="input text-sm" value={addressValue} onChange={e => setAddressValue(e.target.value)} placeholder="Enter your address" />
+                <input className="input text-sm" value={cityValue} onChange={e => setCityValue(e.target.value)} placeholder="City" />
+                <div className="flex gap-2">
+                  <button onClick={saveAddress} disabled={savingAddress} className="btn-primary text-xs py-2" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                    <Check size={14} /> {savingAddress ? 'Saving...' : 'Save'}
+                  </button>
+                  <button onClick={() => setEditingAddress(false)} className="btn-secondary text-xs py-2">
+                    <X size={14} /> Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-white/40">Address</p>
+                <p className="text-sm font-medium text-white">{profile?.address || 'Not set'}</p>
+                <p className="text-xs text-white/40">{profile?.city}</p>
+                <button onClick={() => { setAddressValue(profile?.address || ''); setCityValue(profile?.city || ''); setEditingAddress(true) }}
+                  className="mt-1 flex items-center gap-1 text-xs font-semibold" style={{ color: '#A6B300' }}>
+                  <Edit2 size={11} /> {profile?.address ? 'Edit Address' : 'Add Address'}
+                </button>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3 p-4">

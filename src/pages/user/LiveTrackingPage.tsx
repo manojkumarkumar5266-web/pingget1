@@ -4,7 +4,14 @@ import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } fr
 import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
 import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/VisualTracking'
-import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck } from 'lucide-react'
+import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck, Navigation } from 'lucide-react'
+
+function vehicleIcon(v: string | null | undefined) {
+  const s = (v || '').toLowerCase()
+  if (s === 'bicycle' || s === 'motorbike' || s === 'scooter' || s === 'auto') return Bike
+  if (s === 'car') return Car
+  return Truck
+}
 
 export default function LiveTrackingPage() {
   const { requestId } = useParams<{ requestId: string }>()
@@ -41,7 +48,17 @@ export default function LiveTrackingPage() {
     const channel = supabase
       .channel(`tracking-${requestId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `id=eq.${requestId}` },
-        (payload: any) => setRequest(payload.new as DeliveryRequest))
+        async (payload: any) => {
+          setRequest(payload.new as DeliveryRequest)
+          if (payload.new.accepted_dp_id && !dpProfile) {
+            const [dpProf, dp] = await Promise.all([
+              supabase.from('profiles').select('*').eq('id', payload.new.accepted_dp_id).maybeSingle(),
+              supabase.from('delivery_partners').select('*').eq('user_id', payload.new.accepted_dp_id).maybeSingle(),
+            ])
+            setDpProfile(dpProf.data as Profile | null)
+            setDpData(dp.data as DeliveryPartner | null)
+          }
+        })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [requestId])
@@ -80,7 +97,7 @@ export default function LiveTrackingPage() {
         }
       }
     } catch {
-      // Rating table may not exist yet — don't block the user
+      // Rating table may not exist yet
     } finally {
       setRatingSubmitting(false)
       navigate('/app/create')
@@ -108,7 +125,9 @@ export default function LiveTrackingPage() {
   const isPending = request.status === 'pending'
   const isDelivered = request.status === 'delivered' || request.status === 'cash_received'
   const progress = STATUS_PROGRESS[request.status] ?? 0
-  const eta = STATUS_ETA[request.status] ?? '--'
+  const etaLabel = STATUS_ETA[request.status] ?? '--'
+  const etaMinutes = (request as any).eta_minutes
+  const VehicleIcon = vehicleIcon(dpData?.vehicle_type)
 
   // Mandatory rating overlay
   if (showRating) {
@@ -124,7 +143,6 @@ export default function LiveTrackingPage() {
               How was {dpProfile?.full_name?.split(' ')[0] || 'your partner'}'s service?
             </p>
 
-            {/* Stars */}
             <div className="mb-5 flex items-center justify-center gap-3">
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} onClick={() => setRatingStars(n)} className="transition-transform active:scale-90">
@@ -134,7 +152,6 @@ export default function LiveTrackingPage() {
               ))}
             </div>
 
-            {/* Feedback */}
             <textarea
               value={ratingFeedback}
               onChange={e => setRatingFeedback(e.target.value)}
@@ -159,15 +176,15 @@ export default function LiveTrackingPage() {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      {/* Top bar */}
+      {/* Top bar with phone + chat on right */}
       <div className="absolute left-0 right-0 top-0 z-[1000] px-4 pt-12">
         <div className="map-glass-panel flex items-center gap-3 p-3">
           <button onClick={() => navigate('/app')} className="map-control-btn map-control-dark">
             <ArrowLeft size={18} />
           </button>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <p className="text-xs text-white/50">Order Tracking</p>
-            <p className="text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
+            <p className="truncate text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
           </div>
           {dpProfile && (
             <button onClick={() => window.location.href = `tel:${dpProfile.phone || ''}`}
@@ -175,11 +192,19 @@ export default function LiveTrackingPage() {
               <Phone size={18} />
             </button>
           )}
+          {dpProfile && (
+            <button onClick={async () => {
+              const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
+              if (data) navigate(`/app/chat/${data.id}`)
+            }} className="map-control-btn map-control-dark">
+              <MessageCircle size={18} />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Top half: Visual tracking */}
-      <div className="relative flex-shrink-0" style={{ height: '52vh', minHeight: '320px' }}>
+      {/* Top section: Visual tracking wave */}
+      <div className="relative flex-shrink-0" style={{ height: '48vh', minHeight: '300px' }}>
         {isPending ? (
           <div className="flex h-full flex-col items-center justify-center bg-black px-6">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/10">
@@ -203,14 +228,86 @@ export default function LiveTrackingPage() {
             dpName={dpProfile?.full_name}
             pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
             deliveryLabel={request.delivery_address?.split(',')[0] || 'You'}
-            eta={eta}
+            eta={etaMinutes ? `${etaMinutes} min` : etaLabel}
           />
         )}
       </div>
 
-      {/* Bottom half */}
+      {/* Bottom section: DP info + delivery details */}
       <div className="flex-1 overflow-y-auto bg-black px-4 py-4">
         <div className="mx-auto max-w-md">
+          {/* DP rating, vehicle, ETA row */}
+          {dpProfile && !isCancelled && !isPending && (
+            <>
+              {/* Stats row: rating | vehicle | ETA */}
+              <div className="mb-3 grid grid-cols-3 gap-2.5 animate-slide-up">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
+                  <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(251,191,36,0.15)' }}>
+                    <Star size={16} className="text-yellow-400" fill="#FBBF24" />
+                  </div>
+                  <p className="text-base font-bold text-white">{dpData?.rating_avg?.toFixed(1) || '0.0'}</p>
+                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{dpData?.rating_count || 0} reviews</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
+                  <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
+                    <VehicleIcon size={16} style={{ color: '#A6B300' }} />
+                  </div>
+                  <p className="text-base font-bold text-white capitalize">{dpData?.vehicle_type || 'Bike'}</p>
+                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Vehicle</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
+                  <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(59,130,246,0.15)' }}>
+                    <Clock size={16} className="text-blue-400" />
+                  </div>
+                  <p className="text-base font-bold text-white">{etaMinutes ? `${etaMinutes}m` : etaLabel}</p>
+                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>ETA</p>
+                </div>
+              </div>
+
+              {/* DP photo + name + call/chat */}
+              <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-16 w-16 overflow-hidden rounded-2xl bg-white/5 shrink-0">
+                    {dpProfile.photo_url ? (
+                      <img src={dpProfile.photo_url} alt={dpProfile.full_name || ''} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-white/30">
+                        <Bike size={24} />
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-black" style={{ background: '#22c55e' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-white truncate">{dpProfile.full_name}</p>
+                    <p className="text-xs text-white/40 capitalize">{dpData?.vehicle_type || 'Bike'} Partner</p>
+                  </div>
+                  <button onClick={() => window.location.href = `tel:${dpProfile.phone || ''}`}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0"
+                    style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}>
+                    <Phone size={18} />
+                  </button>
+                  <button onClick={async () => {
+                    const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
+                    if (data) navigate(`/app/chat/${data.id}`)
+                  }} className="flex h-11 w-11 items-center justify-center rounded-xl text-black active:scale-95 transition-transform shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #a8c020, #808000)' }}>
+                    <MessageCircle size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Delivery address card */}
+              <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
+                <div className="mb-2 flex items-center gap-2">
+                  <MapPin size={16} className="text-red-400" />
+                  <p className="text-xs font-bold uppercase tracking-wider text-white/60">Delivery Address</p>
+                </div>
+                <p className="text-sm text-white/80 leading-relaxed">{request.delivery_address || 'Not specified'}</p>
+              </div>
+            </>
+          )}
+
+          {/* Pending: cancel button */}
           {isPending && (
             <button onClick={async () => {
               await supabase.from('requests').update({ status: 'cancelled' }).eq('id', requestId)
@@ -221,47 +318,7 @@ export default function LiveTrackingPage() {
             </button>
           )}
 
-          {dpProfile && !isCancelled && !isPending && (
-            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
-              <div className="flex items-center gap-3">
-                <div className="h-14 w-14 overflow-hidden rounded-2xl bg-white/5">
-                  {dpProfile.photo_url ? (
-                    <img src={dpProfile.photo_url} alt={dpProfile.full_name || ''} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-white/30">
-                      <Bike size={24} />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-white">{dpProfile.full_name}</p>
-                  <div className="flex items-center gap-2 text-xs text-white/40">
-                    <span className="flex items-center gap-0.5">
-                      <Star size={12} className="text-yellow-400" />
-                      {dpData?.rating_avg?.toFixed(1) || '0.0'}
-                    </span>
-                    <span>·</span>
-                    <span>{dpData?.rating_count || 0} review{(dpData?.rating_count || 0) !== 1 ? 's' : ''}</span>
-                    <span>·</span>
-                    <span className="capitalize">{dpData?.vehicle_type || 'Bike'}</span>
-                  </div>
-                </div>
-                <button onClick={() => window.location.href = `tel:${dpProfile.phone || ''}`}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform"
-                  style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}>
-                  <Phone size={16} />
-                </button>
-                <button onClick={async () => {
-                  const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
-                  if (data) navigate(`/app/chat/${data.id}`)
-                }} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-black active:scale-95"
-                  style={{ background: 'linear-gradient(135deg, #a8c020, #808000)' }}>
-                  <MessageCircle size={16} /> Chat
-                </button>
-              </div>
-            </div>
-          )}
-
+          {/* Delivered: accept delivery */}
           {isDelivered && (
             <div className="mb-4 rounded-2xl border border-green-500/20 bg-green-500/5 p-4 animate-slide-up">
               <div className="mb-3 flex items-center gap-2">

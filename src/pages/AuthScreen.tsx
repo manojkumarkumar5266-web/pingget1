@@ -700,7 +700,11 @@ export default function AuthScreen() {
                         <button type="button" onClick={() => photoInputRef.current?.click()} className="absolute bottom-1 right-1 rounded-full p-1.5 text-white shadow" style={{ backgroundColor: '#808000' }}><Camera size={14} /></button>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => photoInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 text-white/50"><Camera size={20} style={{ color: '#808000' }} /> Take Photo or Upload *</button>
+                      <button type="button" onClick={() => photoInputRef.current?.click()} className="flex w-full flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-white/15 py-6 text-white/50">
+                        <Camera size={28} style={{ color: '#808000' }} />
+                        <span className="text-sm font-medium">Take Live Photo *</span>
+                        <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Camera only — uploads not allowed</span>
+                      </button>
                     )}
                   </div>
                   <div>

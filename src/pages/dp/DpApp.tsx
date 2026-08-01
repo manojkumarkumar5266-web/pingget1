@@ -7,6 +7,7 @@ import FullOrderDetails from '../shared/FullOrderDetails'
 import DpWallet from './DpWallet'
 import DpProfile from './DpProfile'
 import DpNavigationPage from './DpNavigationPage'
+import DpNotifications from './DpNotifications'
 
 export default function DpApp() {
   return (
@@ -16,6 +17,7 @@ export default function DpApp() {
         <Route path="/orders" element={<DpOrders />} />
         <Route path="/wallet" element={<DpWallet />} />
         <Route path="/profile" element={<DpProfile />} />
+        <Route path="/notifications" element={<DpNotifications />} />
       </Route>
       <Route path="/chat/:roomId" element={<ChatScreen />} />
       <Route path="/chat/:roomId/order" element={<FullOrderDetails />} />

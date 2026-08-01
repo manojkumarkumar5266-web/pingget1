@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { ErrorBanner } from '../../components/ui'
 import CategorySelectionModal, { type CategorySelection } from '../../components/CategorySelectionModal'
-import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Package, Trash2, Plus, ChevronRight, FileText, MapPin, Navigation, Home } from 'lucide-react'
+import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Package, Trash2, Plus, ChevronRight, FileText, MapPin, Navigation, Home, Edit2, ListChecks } from 'lucide-react'
 
 type DbCategory = { id: string; name: string; icon: string }
 
@@ -74,6 +74,9 @@ export default function CreateRequest() {
   const [addrLat, setAddrLat] = useState<number | null>(null)
   const [addrLng, setAddrLng] = useState<number | null>(null)
   const [savingAddress, setSavingAddress] = useState(false)
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
+  const [showAddressList, setShowAddressList] = useState(false)
+  const MAX_ADDRESSES = 5
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -100,8 +103,12 @@ export default function CreateRequest() {
   }, [])
 
   const selectedAddress = addresses.find(a => a.id === selectedAddressId)
-  const deliveryAddressText = selectedAddress
+  const fullAddressText = selectedAddress
     ? [selectedAddress.house_no, selectedAddress.flat_no, selectedAddress.building_name, selectedAddress.street, selectedAddress.area, selectedAddress.city, selectedAddress.pincode].filter(Boolean).join(', ')
+    : null
+  const deliveryAddressText = fullAddressText
+  const shortAddressText = selectedAddress
+    ? [selectedAddress.house_no, selectedAddress.flat_no, selectedAddress.building_name, selectedAddress.area].filter(Boolean).join(', ')
     : null
 
   const pickLocationOnMap = () => {
@@ -117,13 +124,40 @@ export default function CreateRequest() {
     )
   }
 
+  const resetAddrForm = () => {
+    setAddrHouse(''); setAddrFlat(''); setAddrBuilding(''); setAddrLandmark('')
+    setAddrStreet(''); setAddrArea(''); setAddrCity(''); setAddrPincode('')
+    setAddrLat(null); setAddrLng(null); setEditingAddressId(null)
+  }
+
+  const startEditAddress = (addr: SavedAddress) => {
+    setEditingAddressId(addr.id)
+    setAddrHouse(addr.house_no || ''); setAddrFlat(addr.flat_no || '')
+    setAddrBuilding(addr.building_name || ''); setAddrLandmark(addr.landmark || '')
+    setAddrStreet(addr.street || ''); setAddrArea(addr.area || '')
+    setAddrCity(addr.city || ''); setAddrPincode(addr.pincode || '')
+    setAddrLat(addr.lat); setAddrLng(addr.lng)
+    setShowAddressList(false); setShowAddressForm(true)
+  }
+
+  const deleteAddress = async (addrId: string) => {
+    if (!profile?.id) return
+    await supabase.from('addresses').delete().eq('id', addrId).eq('user_id', profile.id)
+    if (selectedAddressId === addrId) setSelectedAddressId(null)
+    await fetchAddresses()
+  }
+
   const saveAddress = async () => {
     if (!profile?.id) return
     if (!addrHouse.trim() && !addrFlat.trim() && !addrBuilding.trim()) { setError('Please enter at least a house/flat/building'); return }
     if (!addrPincode || addrPincode.length !== 6) { setError('Please enter a 6-digit pincode'); return }
+    if (!editingAddressId && addresses.length >= MAX_ADDRESSES) {
+      setError(`You can save up to ${MAX_ADDRESSES} addresses. Please delete or edit an existing one to add a new address.`)
+      return
+    }
     setSavingAddress(true)
     const label = addrHouse || addrFlat || addrBuilding || 'Address'
-    const { data, error: insErr } = await supabase.from('addresses').insert({
+    const payload = {
       user_id: profile.id,
       label,
       house_no: addrHouse.trim() || null,
@@ -136,16 +170,23 @@ export default function CreateRequest() {
       pincode: addrPincode,
       lat: addrLat,
       lng: addrLng,
-    }).select().single()
+    }
+    let data: SavedAddress | null = null
+    if (editingAddressId) {
+      const { data: updated, error: updErr } = await supabase.from('addresses').update(payload).eq('id', editingAddressId).eq('user_id', profile.id).select().single()
+      if (updErr) { setSavingAddress(false); setError(updErr.message); return }
+      data = updated as SavedAddress
+    } else {
+      const { data: inserted, error: insErr } = await supabase.from('addresses').insert(payload).select().single()
+      if (insErr) { setSavingAddress(false); setError(insErr.message); return }
+      data = inserted as SavedAddress
+    }
     setSavingAddress(false)
-    if (insErr) { setError(insErr.message); return }
     if (data) {
       await fetchAddresses()
       setSelectedAddressId(data.id)
       setShowAddressForm(false)
-      setAddrHouse(''); setAddrFlat(''); setAddrBuilding(''); setAddrLandmark('')
-      setAddrStreet(''); setAddrArea(''); setAddrCity(''); setAddrPincode('')
-      setAddrLat(null); setAddrLng(null)
+      resetAddrForm()
     }
   }
 
@@ -260,7 +301,7 @@ export default function CreateRequest() {
         {/* Delivery Address Card */}
         <div>
           <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Delivery Address</p>
-          {deliveryAddressText && !showAddressForm ? (
+          {deliveryAddressText && !showAddressForm && !showAddressList ? (
             <div>
               {addresses.length > 1 && (
                 <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
@@ -279,19 +320,66 @@ export default function CreateRequest() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Deliver To</p>
-                  <p className="text-sm font-medium text-white">{deliveryAddressText}</p>
+                  <p className="text-sm font-medium text-white truncate">{shortAddressText || deliveryAddressText}</p>
                 </div>
-                <button onClick={() => setShowAddressForm(true)}
+                <button onClick={() => setShowAddressList(true)}
                   className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold"
                   style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
-                  <Plus size={12} /> Add
+                  <MapPin size={12} /> Select
                 </button>
               </div>
+            </div>
+          ) : showAddressList && !showAddressForm ? (
+            <div className="card p-4 space-y-3 animate-slide-up">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white">Your Addresses ({addresses.length}/{MAX_ADDRESSES})</h3>
+                <button onClick={() => { setShowAddressList(false); resetAddrForm() }} className="btn-icon"><X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} /></button>
+              </div>
+              {addresses.length === 0 ? (
+                <div className="py-6 text-center">
+                  <MapPin size={28} className="mx-auto mb-2 text-white/30" />
+                  <p className="text-sm font-medium text-white/60 mb-1">No address found</p>
+                  <p className="text-xs text-white/40 mb-4">Add an address so your partner knows where to deliver</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {addresses.map(addr => {
+                    const addrFull = [addr.house_no, addr.flat_no, addr.building_name, addr.landmark, addr.street, addr.area, addr.city, addr.pincode].filter(Boolean).join(', ')
+                    return (
+                      <div key={addr.id} className={`rounded-2xl p-3 transition-all ${selectedAddressId === addr.id ? 'border-2' : 'border'}`}
+                        style={selectedAddressId === addr.id ? { background: 'rgba(166,179,0,0.08)', borderColor: 'rgba(166,179,0,0.3)' } : { background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+                        <div className="flex items-start gap-3">
+                          <button onClick={() => { setSelectedAddressId(addr.id); setShowAddressList(false) }} className="flex-1 text-left min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <Home size={14} className="text-white/40 shrink-0" />
+                              <p className="text-sm font-semibold text-white truncate">{addr.label || 'Address'}</p>
+                              {selectedAddressId === addr.id && <span className="text-[10px] font-bold" style={{ color: '#A6B300' }}>SELECTED</span>}
+                            </div>
+                            <p className="text-xs text-white/50 truncate">{addrFull}</p>
+                          </button>
+                          <div className="flex gap-1 shrink-0">
+                            <button onClick={() => startEditAddress(addr)} className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: 'rgba(255,255,255,0.06)' }}><Edit2 size={12} className="text-white/60" /></button>
+                            <button onClick={() => deleteAddress(addr.id)} className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: 'rgba(239,68,68,0.1)' }}><Trash2 size={12} className="text-red-400" /></button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              {addresses.length < MAX_ADDRESSES ? (
+                <button onClick={() => { resetAddrForm(); setShowAddressForm(true) }}
+                  className="btn-primary w-full" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                  <Plus size={16} /> Add New Address
+                </button>
+              ) : (
+                <p className="text-center text-xs text-yellow-400/80 py-2">Maximum {MAX_ADDRESSES} addresses reached. Delete or edit one to add a new address.</p>
+              )}
             </div>
           ) : addresses.length === 0 && !showAddressForm ? (
             <div className="card p-6 text-center">
               <MapPin size={28} className="mx-auto mb-2 text-white/30" />
-              <p className="text-sm font-medium text-white/60 mb-1">No delivery address yet</p>
+              <p className="text-sm font-medium text-white/60 mb-1">No address found</p>
               <p className="text-xs text-white/40 mb-4">Add an address so your partner knows where to deliver</p>
               <button onClick={() => setShowAddressForm(true)}
                 className="btn-primary mx-auto" style={{ background: '#A6B300', color: '#0B0B0B' }}>
@@ -301,8 +389,8 @@ export default function CreateRequest() {
           ) : showAddressForm ? (
             <div className="card p-4 space-y-3 animate-slide-up">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white">New Address</h3>
-                <button onClick={() => setShowAddressForm(false)} className="btn-icon"><X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} /></button>
+                <h3 className="text-sm font-bold text-white">{editingAddressId ? 'Edit Address' : 'New Address'}</h3>
+                <button onClick={() => { setShowAddressForm(false); resetAddrForm() }} className="btn-icon"><X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} /></button>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div><label className="label">House No.</label><input className="input" value={addrHouse} onChange={e => setAddrHouse(e.target.value)} placeholder="H.No" /></div>
@@ -398,15 +486,15 @@ export default function CreateRequest() {
           </div>
         )}
 
-        {/* Extra Notes — expanded section with voice + photos inside */}
+        {/* Items List & Notes — expanded section with voice + photos inside */}
         <div className="card p-4">
           <label className="label flex items-center gap-1.5 mb-2">
-            <FileText size={14} /> Extra Notes
+            <ListChecks size={14} /> Items List & Notes
             <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
           </label>
           <textarea className="input min-h-[140px] resize-none text-sm leading-relaxed" value={description}
             onChange={e => setDescription(e.target.value)}
-            placeholder="Brand preferences, specific instructions, quantities, or anything else your delivery partner should know..." />
+            placeholder="List the items you need with quantities, e.g. 2kg onions, 1 litre milk, 1 packet bread. Add brand preferences or specific instructions..." />
 
           {/* Photos inside notes section */}
           <div className="mt-3">

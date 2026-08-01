@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatCurrency, formatTime } from '../../lib/utils'
 import { StatusBadge, EmptyState, SkeletonCard } from '../../components/ui'
-import { ClipboardList, Search, Download, X, User, Bike, MapPin, Package, IndianRupee } from 'lucide-react'
+import { ClipboardList, Search, Download, X, User, Bike, MapPin, Package, IndianRupee, Filter } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 export default function AdminOrders() {
@@ -10,6 +10,7 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<any | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all')
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -50,7 +51,13 @@ export default function AdminOrders() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  const filtered = orders.filter(o =>
+  const filtered = orders.filter(o => {
+    if (statusFilter === 'active' && ['pending', 'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered'].includes(o.status)) return true
+    if (statusFilter === 'completed' && o.status === 'completed') return true
+    if (statusFilter === 'cancelled' && o.status === 'cancelled') return true
+    if (statusFilter === 'all') return true
+    return false
+  }).filter(o =>
     !search ||
     (o.description || '').toLowerCase().includes(search.toLowerCase()) ||
     (o.items_summary || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -98,6 +105,16 @@ export default function AdminOrders() {
         <button onClick={exportOrders} className="btn-secondary shrink-0 text-sm flex items-center gap-1.5">
           <Download size={16} /> Export
         </button>
+      </div>
+
+      {/* Status filter tabs */}
+      <div className="mb-4 flex gap-2 overflow-x-auto">
+        {(['all', 'active', 'completed', 'cancelled'] as const).map(f => (
+          <button key={f} onClick={() => setStatusFilter(f)}
+            className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition-all ${statusFilter === f ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-white/40'}`}>
+            {f === 'all' ? 'All Orders' : f}
+          </button>
+        ))}
       </div>
 
       {filtered.length === 0 ? (

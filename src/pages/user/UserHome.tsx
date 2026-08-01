@@ -87,8 +87,8 @@ export default function UserHome() {
               <Zap size={10} /> Fast Delivery
             </span>
           </div>
-          <h2 className="text-xl font-bold text-white leading-tight">Need anything<br />delivered fast?</h2>
-          <p className="mt-1.5 text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>From groceries to parcels — local partners deliver in minutes.</p>
+          <h2 className="text-2xl font-extrabold text-white leading-tight">Get Anything</h2>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>Groceries, parcels, medicines — local partners deliver in minutes.</p>
           <button onClick={() => navigate('/app/create')}
             className="btn-primary mt-4 gap-2 px-5 py-3"
             style={{ background: '#A6B300', color: '#0B0B0B' }}>

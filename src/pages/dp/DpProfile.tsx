@@ -1,16 +1,21 @@
 import { useAuth } from '../../context'
 import { Avatar, StarRating } from '../../components/ui'
-import { Mail, Phone, MapPin, Bike, LogOut, Shield, Headphones, ChevronRight, Edit2, Camera } from 'lucide-react'
+import { Mail, Phone, MapPin, Bike, LogOut, Shield, Headphones, ChevronRight, Edit2, Camera, X, Check } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
 export default function DpProfile() {
-  const { profile, signOut } = useAuth()
+  const { profile, signOut, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const [dp, setDp] = useState<DeliveryPartner | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const [editingAddress, setEditingAddress] = useState(false)
+  const [addressValue, setAddressValue] = useState('')
+  const [cityValue, setCityValue] = useState('')
+  const [savingAddress, setSavingAddress] = useState(false)
+  const [photoRequired, setPhotoRequired] = useState(false)
 
   useEffect(() => {
     const fetch = async () => {
@@ -24,7 +29,11 @@ export default function DpProfile() {
     fetch()
   }, [profile])
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    setPhotoRequired(!profile?.photo_url)
+  }, [profile?.photo_url])
+
+  const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadingPhoto(true)
@@ -33,8 +42,20 @@ export default function DpProfile() {
     if (!error) {
       const url = supabase.storage.from('media').getPublicUrl(path).data.publicUrl
       await supabase.from('profiles').update({ photo_url: url }).eq('id', profile!.id)
+      await refreshProfile()
+      setPhotoRequired(false)
     }
     setUploadingPhoto(false)
+    e.target.value = ''
+  }
+
+  const saveAddress = async () => {
+    if (!profile?.id) return
+    setSavingAddress(true)
+    await supabase.from('profiles').update({ address: addressValue.trim() || null, city: cityValue.trim() || null }).eq('id', profile.id)
+    await refreshProfile()
+    setSavingAddress(false)
+    setEditingAddress(false)
   }
 
   return (
@@ -47,13 +68,13 @@ export default function DpProfile() {
             <div className="relative">
               <Avatar url={profile?.photo_url} name={profile?.full_name || 'DP'} size={80} />
               <button
-                onClick={() => fileRef.current?.click()}
+                onClick={() => cameraRef.current?.click()}
                 disabled={uploadingPhoto}
                 className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-white shadow-md active:scale-90 transition-transform"
               >
                 <Camera size={14} />
               </button>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+              <input ref={cameraRef} type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoCapture} />
             </div>
             <span className={`badge mb-2 ${dp?.status === 'approved' ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' : 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300'}`}>
               <Shield size={12} /> {dp?.status || 'pending'}
@@ -62,6 +83,10 @@ export default function DpProfile() {
           <div className="mt-3">
             <h2 className="text-lg font-bold text-white">{profile?.full_name}</h2>
             <p className="text-sm text-white/50">Delivery Partner</p>
+            {photoRequired && (
+              <p className="mt-1.5 text-xs font-medium text-yellow-400">Please take a live photo to complete your profile</p>
+            )}
+            {uploadingPhoto && <p className="mt-1.5 text-xs text-white/50">Uploading photo...</p>}
             {dp && dp.rating_count > 0 && (
               <div className="mt-2 flex items-center gap-2">
                 <StarRating value={dp.rating_avg} size={16} />
@@ -83,17 +108,38 @@ export default function DpProfile() {
             <p className="text-sm font-medium text-white">{profile?.phone || 'Not set'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 border-b border-gray-50 dark:border-gray-800 px-4 py-3.5">
+        <div className="flex items-center gap-3 px-4 py-3.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl glass">
             <MapPin size={16} className="text-gray-500" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-white/40">Address</p>
-            <p className="text-sm font-medium text-white">{profile?.address || 'Not set'}</p>
-            <p className="text-xs text-white/40">{profile?.city}</p>
+            {editingAddress ? (
+              <div className="space-y-2">
+                <input className="input text-sm" value={addressValue} onChange={e => setAddressValue(e.target.value)} placeholder="Enter your address" />
+                <input className="input text-sm" value={cityValue} onChange={e => setCityValue(e.target.value)} placeholder="City" />
+                <div className="flex gap-2">
+                  <button onClick={saveAddress} disabled={savingAddress} className="btn-primary text-xs py-2" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                    <Check size={14} /> {savingAddress ? 'Saving...' : 'Save'}
+                  </button>
+                  <button onClick={() => setEditingAddress(false)} className="btn-secondary text-xs py-2">
+                    <X size={14} /> Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-white/40">Address</p>
+                <p className="text-sm font-medium text-white">{profile?.address || 'Not set'}</p>
+                <p className="text-xs text-white/40">{profile?.city}</p>
+                <button onClick={() => { setAddressValue(profile?.address || ''); setCityValue(profile?.city || ''); setEditingAddress(true) }}
+                  className="mt-1 flex items-center gap-1 text-xs font-semibold" style={{ color: '#A6B300' }}>
+                  <Edit2 size={11} /> {profile?.address ? 'Edit Address' : 'Add Address'}
+                </button>
+              </>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-3 px-4 py-3.5">
+        <div className="flex items-center gap-3 border-t border-gray-50 dark:border-gray-800 px-4 py-3.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl glass">
             <Bike size={16} className="text-gray-500" />
           </div>

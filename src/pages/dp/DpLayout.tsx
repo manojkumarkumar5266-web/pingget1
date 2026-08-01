@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
-import { Chrome as Home, ClipboardList, Wallet, User, LogOut, TriangleAlert as AlertTriangle } from 'lucide-react'
+import { Chrome as Home, ClipboardList, Wallet, User, LogOut, TriangleAlert as AlertTriangle, Bell } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { FullScreenLoader } from '../../components/ui'
@@ -21,6 +21,7 @@ export default function DpLayout() {
   const [commissionOwed, setCommissionOwed] = useState(0)
   const [submittedPending, setSubmittedPending] = useState(false)
   const [receiptRejected, setReceiptRejected] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     const fetchDp = async () => {
@@ -58,16 +59,34 @@ export default function DpLayout() {
     return () => { supabase.removeChannel(channel) }
   }, [dpLoaded, profile])
 
+  useEffect(() => {
+    if (!profile) return
+    const fetchUnread = async () => {
+      const { count } = await supabase.from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', profile.id).eq('is_read', false).is('deleted_at', null)
+      setUnreadCount(count || 0)
+    }
+    fetchUnread()
+    const channel = supabase.channel(`dp-unread-${profile.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [profile])
+
   if (!dpLoaded) return <FullScreenLoader />
   if (!dp) return <DpSetupNeeded />
   if (dp.status === 'pending') return <DpPendingApproval />
   if (dp.status === 'rejected' || dp.status === 'suspended' || dp.status === 'deleted') return <DpBlocked status={dp.status} />
 
   const navItems = [
-    { path: '/dp',          label: 'Requests', icon: Home },
-    { path: '/dp/orders',   label: 'Orders',   icon: ClipboardList },
-    { path: '/dp/wallet',   label: 'Wallet',   icon: Wallet },
-    { path: '/dp/profile',  label: 'Profile',  icon: User },
+    { path: '/dp',               label: 'Requests', icon: Home },
+    { path: '/dp/orders',        label: 'Orders',   icon: ClipboardList },
+    { path: '/dp/notifications', label: 'Alerts',   icon: Bell, badge: unreadCount },
+    { path: '/dp/wallet',        label: 'Wallet',   icon: Wallet },
+    { path: '/dp/profile',       label: 'Profile',  icon: User },
   ]
   const isActive = (path: string) => location.pathname === path
 
@@ -136,10 +155,11 @@ export default function DpLayout() {
       {/* Floating Bottom Navigation */}
       {!isOnChat && !isOnNav && (
         <nav className="fixed bottom-4 left-0 right-0 z-20 flex justify-center px-4">
-          <div className="flex w-full max-w-xs items-center justify-around rounded-[28px] px-2 py-2 nav-island">
+          <div className="flex w-full max-w-sm items-center justify-around rounded-[28px] px-2 py-2 nav-island">
             {navItems.map(item => {
               const Icon = item.icon
               const active = isActive(item.path)
+              const badge = (item as any).badge
               return (
                 <button key={item.path} onClick={() => navigate(item.path)}
                   className="relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-all"
@@ -147,6 +167,11 @@ export default function DpLayout() {
                   <Icon size={22} />
                   <span className="text-[10px] font-semibold">{item.label}</span>
                   {active && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full" style={{ background: '#A6B300' }} />}
+                  {badge > 0 && (
+                    <span className="absolute top-0.5 right-1/2 translate-x-[14px] flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white" style={{ background: '#ef4444' }}>
+                      {badge > 9 ? '9+' : badge}
+                    </span>
+                  )}
                 </button>
               )
             })}
