@@ -89,8 +89,16 @@ export default function UserOrders() {
 
   const confirmDelivery = async (req: RequestWithDp) => {
     setUpdating(req.id)
-    await supabase.from('requests').update({ status: 'completed', delivery_accepted_at: new Date().toISOString() }).eq('id', req.id)
-    await supabase.from('orders').update({ status: 'completed', completed_at: new Date().toISOString(), delivery_accepted_at: new Date().toISOString() }).eq('request_id', req.id)
+    const now = new Date().toISOString()
+    const { error: reqError } = await supabase.from('requests').update({ status: 'completed', delivery_accepted_at: now }).eq('id', req.id)
+    if (reqError) {
+      const { error: fallback } = await supabase.from('requests').update({ status: 'completed' }).eq('id', req.id)
+      if (fallback) { setUpdating(null); alert('Could not confirm delivery. Please try again.'); return }
+    }
+    const { error: orderError } = await supabase.from('orders').update({ status: 'completed', completed_at: now, delivery_accepted_at: now }).eq('request_id', req.id)
+    if (orderError) {
+      await supabase.from('orders').update({ status: 'completed', completed_at: now }).eq('request_id', req.id)
+    }
     await supabase.from('notifications').insert({
       user_id: req.accepted_dp_id,
       title: 'Delivery Confirmed',
