@@ -1,10 +1,10 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
 import { EmptyState, StatusBadge, ServiceStatusBanner, SkeletonList, SectionHeader } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
-import { Package, Plus, Clock, MapPin, CheckCircle2, Bike, ChevronRight, ShoppingBag, ChevronLeft } from 'lucide-react'
+import { Package, Clock, MapPin, CheckCircle2, Bike, ChevronRight, ShoppingBag } from 'lucide-react'
 
 const STATUS_STEPS: Record<string, number> = {
   pending: 0, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
@@ -29,11 +29,6 @@ export default function UserHome() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ total: 0, completed: 0, active: 0 })
   const [infoCards, setInfoCards] = useState<InfoCard[]>([])
-  const [currentCardIdx, setCurrentCardIdx] = useState(0)
-  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null)
-  const cardRef = useRef<HTMLDivElement>(null)
-  const startXRef = useRef<number | null>(null)
-  const currentOffsetRef = useRef(0)
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -79,42 +74,7 @@ export default function UserHome() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  const handleSwipe = (direction: 'left' | 'right') => {
-    setSwipeDirection(direction)
-    setTimeout(() => {
-      setCurrentCardIdx(prev => Math.min(prev + 1, infoCards.length))
-      setSwipeDirection(null)
-      if (cardRef.current) cardRef.current.style.transform = ''
-      currentOffsetRef.current = 0
-    }, 300)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startXRef.current = e.touches[0].clientX
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (startXRef.current === null || !cardRef.current) return
-    const diff = e.touches[0].clientX - startXRef.current
-    currentOffsetRef.current = diff
-    cardRef.current.style.transform = `translateX(${diff}px) rotate(${diff * 0.05}deg)`
-    cardRef.current.style.opacity = String(Math.max(0.5, 1 - Math.abs(diff) / 400))
-  }
-
-  const handleTouchEnd = () => {
-    if (Math.abs(currentOffsetRef.current) > 100) {
-      handleSwipe(currentOffsetRef.current > 0 ? 'right' : 'left')
-    } else if (cardRef.current) {
-      cardRef.current.style.transform = ''
-      cardRef.current.style.opacity = '1'
-      currentOffsetRef.current = 0
-    }
-    startXRef.current = null
-  }
-
   const firstName = profile?.full_name?.split(' ')[0] || 'there'
-  const currentCard = infoCards[currentCardIdx]
-  const allCardsSeen = currentCardIdx >= infoCards.length
 
   return (
     <div className="mx-auto max-w-md px-4 pt-5 pb-4">
@@ -143,66 +103,31 @@ export default function UserHome() {
         ))}
       </div>
 
-      {/* Swipeable Info Cards */}
+      {/* Auto-scrolling Info Cards Marquee */}
       <div className="mb-6 animate-slide-up" style={{ animationDelay: '100ms' }}>
-        {infoCards.length > 0 && !allCardsSeen ? (
-          <div className="relative" style={{ height: '280px' }}>
-            {/* Stack effect: show next card behind */}
-            {currentCardIdx + 1 < infoCards.length && (
-              <div className="absolute inset-0 rounded-3xl scale-95 opacity-50"
-                style={{ background: infoCards[currentCardIdx + 1].bg_color, border: '1px solid rgba(255,255,255,0.08)' }} />
-            )}
-            <div
-              ref={cardRef}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              className="absolute inset-0 rounded-3xl p-6 flex flex-col justify-between transition-all"
-              style={{
-                background: currentCard.bg_color || 'rgba(166,179,0,0.08)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                transform: swipeDirection === 'left' ? 'translateX(-120%) rotate(-15deg)' : swipeDirection === 'right' ? 'translateX(120%) rotate(15deg)' : '',
-                opacity: swipeDirection ? '0' : '1',
-                transition: swipeDirection ? 'all 0.3s ease-out' : 'none',
-              }}
-            >
-              <div>
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-4xl">{currentCard.icon}</span>
-                  <span className="rounded-full px-2.5 py-1 text-[10px] font-bold"
-                    style={{ background: 'rgba(166,179,0,0.2)', color: '#A6B300' }}>
-                    {currentCardIdx + 1} / {infoCards.length}
-                  </span>
+        {infoCards.length > 0 && (
+          <div className="marquee-container">
+            <div className="marquee-track">
+              {[...infoCards, ...infoCards].map((card, i) => (
+                <div key={`${card.id}-${i}`} className="marquee-card"
+                  style={{ background: card.bg_color || 'rgba(166,179,0,0.08)' }}>
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-3xl">{card.icon}</span>
+                    <span className="rounded-full px-2.5 py-1 text-[10px] font-bold"
+                      style={{ background: 'rgba(166,179,0,0.2)', color: '#A6B300' }}>
+                      {((i % infoCards.length) + 1)} / {infoCards.length}
+                    </span>
+                  </div>
+                  {card.image_url && (
+                    <img src={card.image_url} alt={card.title} className="mb-3 h-20 w-full rounded-2xl object-cover" />
+                  )}
+                  <h2 className="text-lg font-extrabold text-white leading-tight mb-1.5">{card.title}</h2>
+                  <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>{card.description}</p>
                 </div>
-                {currentCard.image_url && (
-                  <img src={currentCard.image_url} alt={currentCard.title} className="mb-3 h-24 w-full rounded-2xl object-cover" />
-                )}
-                <h2 className="text-xl font-extrabold text-white leading-tight mb-2">{currentCard.title}</h2>
-                <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>{currentCard.description}</p>
-              </div>
-              <div className="flex items-center justify-between mt-4">
-                <button onClick={() => handleSwipe('left')}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl transition-all active:scale-90"
-                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                  <ChevronLeft size={20} style={{ color: 'rgba(255,255,255,0.5)' }} />
-                </button>
-                <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.3)' }}>Swipe to explore</p>
-                <button onClick={() => handleSwipe('right')}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl transition-all active:scale-90"
-                  style={{ background: 'rgba(166,179,0,0.2)', border: '1px solid rgba(166,179,0,0.3)' }}>
-                  <ChevronRight size={20} style={{ color: '#A6B300' }} />
-                </button>
-              </div>
+              ))}
             </div>
           </div>
-        ) : infoCards.length > 0 && allCardsSeen ? (
-          <div className="rounded-3xl p-6 text-center" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.18)' }}>
-            <p className="text-3xl mb-2">✨</p>
-            <p className="text-sm font-semibold text-white mb-1">You've seen all tips!</p>
-            <button onClick={() => setCurrentCardIdx(0)} className="text-xs font-medium" style={{ color: '#A6B300' }}>View again</button>
-          </div>
-        ) : null}
+        )}
       </div>
 
       {/* Active Orders */}
