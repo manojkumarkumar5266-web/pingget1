@@ -4,7 +4,7 @@ import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } fr
 import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
 import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/VisualTracking'
-import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck } from 'lucide-react'
+import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck, Navigation } from 'lucide-react'
 
 function vehicleIcon(v: string | null | undefined) {
   const s = (v || '').toLowerCase()
@@ -66,6 +66,7 @@ export default function LiveTrackingPage() {
     return () => { supabase.removeChannel(channel) }
   }, [requestId])
 
+  // Live ETA countdown — starts from DP-set eta_minutes and ticks down to 0
   useEffect(() => {
     const baseEta = (request as any)?.eta_minutes
     if (!baseEta || baseEta <= 0) { setLiveEta(null); return }
@@ -88,8 +89,8 @@ export default function LiveTrackingPage() {
   }, [(request as any)?.eta_minutes, request?.status])
 
   const confirmDelivery = async () => {
-    await supabase.from('requests').update({ status: 'completed', delivery_accepted_at: new Date().toISOString() }).eq('id', requestId)
-    await supabase.from('orders').update({ status: 'completed', completed_at: new Date().toISOString(), delivery_accepted_at: new Date().toISOString() }).eq('request_id', requestId)
+    await supabase.from('requests').update({ status: 'completed' }).eq('id', requestId)
+    await supabase.from('orders').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('request_id', requestId)
     await supabase.from('notifications').insert({
       user_id: request?.accepted_dp_id,
       title: 'Delivery Confirmed',
@@ -114,14 +115,6 @@ export default function LiveTrackingPage() {
             stars: ratingStars,
             review: ratingFeedback.trim() || null,
           })
-          const { data: ratings } = await supabase.from('ratings').select('stars').eq('rated_id', request.accepted_dp_id)
-          if (ratings && ratings.length > 0) {
-            const avg = ratings.reduce((s, r) => s + r.stars, 0) / ratings.length
-            await supabase.from('delivery_partners').update({
-              rating_avg: parseFloat(avg.toFixed(2)),
-              rating_count: ratings.length,
-            }).eq('user_id', request.accepted_dp_id)
-          }
         }
       }
     } catch {
@@ -151,14 +144,14 @@ export default function LiveTrackingPage() {
 
   const isCancelled = request.status === 'cancelled'
   const isPending = request.status === 'pending'
-  const isCompleted = request.status === 'completed'
+  const isCompleted = request.status === 'completed' || request.status === 'delivered' || request.status === 'cash_received'
   const isDelivered = request.status === 'delivered' || request.status === 'cash_received'
   const progress = STATUS_PROGRESS[request.status] ?? 0
   const etaLabel = STATUS_ETA[request.status] ?? '--'
+  const etaMinutes = (request as any).eta_minutes
   const VehicleIcon = vehicleIcon(dpData?.vehicle_type)
-  const dpRating = dpData?.rating_avg || 0
-  const dpRatingCount = dpData?.rating_count || 0
 
+  // Mandatory rating overlay
   if (showRating) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6">
@@ -205,7 +198,7 @@ export default function LiveTrackingPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-black">
-      {/* Top bar */}
+      {/* Top bar with phone + chat */}
       <div className="flex-shrink-0 px-4 pt-12 pb-2" style={{ background: 'linear-gradient(180deg, #0B0B0B, transparent)' }}>
         <div className="map-glass-panel flex items-center gap-3 p-3">
           <button onClick={() => navigate('/app')} className="map-control-btn map-control-dark">
@@ -215,10 +208,11 @@ export default function LiveTrackingPage() {
             <p className="text-xs text-white/50">Order Tracking</p>
             <p className="truncate text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
           </div>
+
         </div>
       </div>
 
-      {/* Visual tracking wave */}
+      {/* Top section: Visual tracking wave */}
       <div className="relative flex-shrink-0" style={{ height: '40vh', minHeight: '280px' }}>
         {isPending ? (
           <div className="flex h-full flex-col items-center justify-center bg-black px-6">
@@ -248,9 +242,10 @@ export default function LiveTrackingPage() {
         )}
       </div>
 
-      {/* Bottom section */}
+      {/* Bottom section: DP info + delivery details */}
       <div className="flex-1 overflow-y-auto bg-black px-4 py-4 pb-24">
         <div className="mx-auto max-w-md">
+          {/* DP rating, vehicle, ETA row */}
           {dpProfile && !isCancelled && !isPending && (
             <>
               {/* Stats row: rating | vehicle | ETA */}
@@ -259,8 +254,8 @@ export default function LiveTrackingPage() {
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(251,191,36,0.15)' }}>
                     <Star size={16} style={{ color: '#A6B300' }} fill="#A6B300" />
                   </div>
-                  <p className="text-base font-bold text-white">{dpRating > 0 ? dpRating.toFixed(1) : '—'}</p>
-                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{dpRatingCount} reviews</p>
+                  <p className="text-base font-bold text-white">{dpData?.rating_avg?.toFixed(1) || '0.0'}</p>
+                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{dpData?.rating_count || 0} reviews</p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
@@ -362,29 +357,9 @@ export default function LiveTrackingPage() {
               </div>
               <button onClick={confirmDelivery}
                 className="w-full rounded-2xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
-                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)', boxShadow: '0 8px 24px rgba(22,163,74,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
+                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
                 Accept Delivery
               </button>
-            </div>
-          )}
-
-          {/* Completed: show rating */}
-          {isCompleted && dpRating > 0 && (
-            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
-              <div className="mb-2 flex items-center gap-2">
-                <Star size={16} fill="#FBBF24" className="text-[#A6B300]" />
-                <p className="text-xs font-bold uppercase tracking-wider text-white/60">Delivery Partner Rating</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map(n => (
-                    <Star key={n} size={18} fill={n <= Math.round(dpRating) ? '#FBBF24' : 'none'}
-                      className={n <= Math.round(dpRating) ? 'text-[#A6B300]' : 'text-white/20'} />
-                  ))}
-                </div>
-                <p className="text-sm font-bold text-white">{dpRating.toFixed(1)}</p>
-                <p className="text-xs text-white/40">({dpRatingCount} reviews)</p>
-              </div>
             </div>
           )}
 

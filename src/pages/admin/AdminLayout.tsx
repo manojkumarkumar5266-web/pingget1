@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
-import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity, Menu, X, Layers } from 'lucide-react'
+import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity, Menu, X } from 'lucide-react'
 import Watermark from '../../components/Watermark'
 import Brand from '../../components/Brand'
 import { useEffect, useState } from 'react'
@@ -56,7 +56,6 @@ export default function AdminLayout() {
     { path: '/admin/orders',          label: 'Orders',     icon: ClipboardList,   badge: 0 },
     { path: '/admin/payments',        label: 'Payments',   icon: CreditCard,      badge: pendingReceipts },
     { path: '/admin/notifications',   label: 'Notify',     icon: Bell,            badge: 0 },
-    { path: '/admin/cards',           label: 'Swipe Cards', icon: Layers,          badge: 0 },
     { path: '/admin/operations',      label: 'Live Ops',   icon: Activity,        badge: 0 },
   ]
 

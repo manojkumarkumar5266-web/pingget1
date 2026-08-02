@@ -4,21 +4,11 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
 import { EmptyState, StatusBadge, ServiceStatusBanner, SkeletonList, SectionHeader } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
-import { Package, Clock, MapPin, CheckCircle2, Bike, ChevronRight, ShoppingBag } from 'lucide-react'
+import { Package, Plus, Clock, MapPin, CheckCircle2, Bike, ChevronRight, Zap, ShoppingBag } from 'lucide-react'
 
 const STATUS_STEPS: Record<string, number> = {
   pending: 0, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
   on_the_way: 5, arrived: 6, delivered: 7, cash_received: 8, completed: 8,
-}
-
-type InfoCard = {
-  id: string
-  title: string
-  description: string
-  image_url: string | null
-  icon: string
-  bg_color: string
-  sort_order: number
 }
 
 export default function UserHome() {
@@ -28,7 +18,6 @@ export default function UserHome() {
   const [recentCompleted, setRecentCompleted] = useState<DeliveryRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ total: 0, completed: 0, active: 0 })
-  const [infoCards, setInfoCards] = useState<InfoCard[]>([])
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -57,22 +46,6 @@ export default function UserHome() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [profile])
-
-  useEffect(() => {
-    const fetchInfoCards = async () => {
-      const { data } = await supabase.from('info_cards')
-        .select('id, title, description, image_url, icon, bg_color, sort_order')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true })
-        .limit(10)
-      setInfoCards((data as InfoCard[]) || [])
-    }
-    fetchInfoCards()
-    const channel = supabase.channel('info-cards-rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'info_cards' }, fetchInfoCards)
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [])
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there'
 
@@ -103,31 +76,26 @@ export default function UserHome() {
         ))}
       </div>
 
-      {/* Auto-scrolling Info Cards Marquee */}
-      <div className="mb-6 animate-slide-up" style={{ animationDelay: '100ms' }}>
-        {infoCards.length > 0 && (
-          <div className="marquee-container">
-            <div className="marquee-track">
-              {[...infoCards, ...infoCards].map((card, i) => (
-                <div key={`${card.id}-${i}`} className="marquee-card"
-                  style={{ background: card.bg_color || 'rgba(166,179,0,0.08)' }}>
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-3xl">{card.icon}</span>
-                    <span className="rounded-full px-2.5 py-1 text-[10px] font-bold"
-                      style={{ background: 'rgba(166,179,0,0.2)', color: '#A6B300' }}>
-                      {((i % infoCards.length) + 1)} / {infoCards.length}
-                    </span>
-                  </div>
-                  {card.image_url && (
-                    <img src={card.image_url} alt={card.title} className="mb-3 h-20 w-full rounded-2xl object-cover" />
-                  )}
-                  <h2 className="text-lg font-extrabold text-white leading-tight mb-1.5">{card.title}</h2>
-                  <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>{card.description}</p>
-                </div>
-              ))}
-            </div>
+      {/* Hero CTA */}
+      <div className="mb-6 overflow-hidden rounded-3xl p-5 animate-slide-up relative"
+        style={{ background: 'linear-gradient(135deg, #2a2e00 0%, #1a1d00 100%)', border: '1px solid rgba(166,179,0,0.18)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animationDelay: '100ms' }}>
+        <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full blur-3xl" style={{ background: 'rgba(166,179,0,0.15)' }} />
+        <div className="pointer-events-none absolute -left-6 bottom-0 h-24 w-24 rounded-full blur-2xl" style={{ background: 'rgba(166,179,0,0.08)' }} />
+        <div className="relative z-10">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: 'rgba(166,179,0,0.2)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.3)' }}>
+              <Zap size={10} /> Fast Delivery
+            </span>
           </div>
-        )}
+          <h2 className="text-2xl font-extrabold text-white leading-tight">Get Anything</h2>
+          <p className="mt-1.5 text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>Groceries, parcels, medicines — local partners deliver in minutes.</p>
+          <button onClick={() => navigate('/app/create')}
+            className="btn-primary mt-4 gap-2 px-5 py-3"
+            style={{ background: '#A6B300', color: '#0B0B0B' }}>
+            <Plus size={18} strokeWidth={2.5} />
+            <span className="font-bold">New Request</span>
+          </button>
+        </div>
       </div>
 
       {/* Active Orders */}
@@ -146,7 +114,7 @@ export default function UserHome() {
         <EmptyState
           icon={<ShoppingBag size={40} />}
           title="No active orders"
-          description="Tap the + button below to create a new request."
+          description="Tap 'New Request' above to get started."
         />
       ) : (
         <div className="space-y-3">
@@ -192,7 +160,7 @@ export default function UserHome() {
           } />
           <div className="space-y-2">
             {recentCompleted.map((req, idx) => (
-              <button key={req.id} onClick={() => navigate(`/app/track/${req.id}`)}
+              <button key={req.id} onClick={() => navigate('/app/orders')}
                 className="card flex w-full items-center gap-3 p-3 text-left active:scale-[0.98] animate-slide-up"
                 style={{ animationDelay: `${idx * 40}ms` }}>
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(16,185,129,0.15)' }}>
@@ -221,8 +189,8 @@ function getGreeting() {
 
 async function navigateToOrder(navigate: (path: string) => void, req: DeliveryRequest) {
   if (req.accepted_dp_id) {
-    navigate(`/app/track/${req.id}`)
-  } else {
-    navigate('/app/orders')
+    const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
+    if (data) { navigate(`/app/chat/${data.id}`); return }
   }
+  navigate('/app/orders')
 }
