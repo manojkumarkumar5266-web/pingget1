@@ -38,9 +38,9 @@ function groupByDate(notifs: Notification[]): { label: string; items: Notificati
 
 function notifIcon(type: string) {
   if (type === 'request_accepted') return { icon: <Bike size={17} />, bg: 'rgba(166,179,0,0.15)', color: '#A6B300' }
-  if (type === 'order_delivered' || type === 'delivered') return { icon: <CheckCircle2 size={17} />, bg: 'rgba(16,185,129,0.15)', color: '#34d399' }
+  if (type === 'order_delivered' || type === 'delivered' || type === 'order_completed' || type === 'order_status') return { icon: <CheckCircle2 size={17} />, bg: 'rgba(16,185,129,0.15)', color: '#34d399' }
   if (type === 'order_cancelled' || type === 'cancelled') return { icon: <AlertCircle size={17} />, bg: 'rgba(239,68,68,0.15)', color: '#f87171' }
-  if (type === 'shopping' || type === 'on_the_way') return { icon: <Package size={17} />, bg: 'rgba(251,191,36,0.15)', color: '#fbbf24' }
+  if (type === 'shopping' || type === 'on_the_way' || type === 'purchased' || type === 'arrived' || type === 'order_confirmed') return { icon: <Package size={17} />, bg: 'rgba(251,191,36,0.15)', color: '#fbbf24' }
   if (type === 'chat' || type === 'message') return { icon: <MessageCircle size={17} />, bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' }
   return { icon: <Info size={17} />, bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }
 }
@@ -88,6 +88,10 @@ export default function UserNotifications() {
       if (n.type === 'request_accepted') {
         const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', n.related_id).maybeSingle()
         if (data) { navigate(`/app/chat/${data.id}`); return }
+      }
+      if (n.type === 'order_status' || n.type === 'order_completed' || n.type === 'order_confirmed' || n.type === 'order_delivered' || n.type === 'delivered') {
+        navigate(`/app/track/${n.related_id}`)
+        return
       }
     }
   }

@@ -4,6 +4,7 @@ import { Mail, Phone, MapPin, Bike, LogOut, Shield, Headphones, ChevronRight, Ed
 import { useEffect, useState, useRef } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { useNavigate } from 'react-router-dom'
+import { compressImage } from '../../lib/imageCompress'
 
 export default function DpProfile() {
   const { profile, signOut, refreshProfile } = useAuth()
@@ -38,8 +39,9 @@ export default function DpProfile() {
     if (!file) return
     setUploadingPhoto(true)
     try {
-      const path = `${profile!.id}/avatar-${Date.now()}`
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type })
+      const compressed = await compressImage(file)
+      const path = `${profile!.id}/avatar-${Date.now()}.jpg`
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' })
       if (upErr) throw upErr
       const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
       const { error: dbErr } = await supabase.from('profiles').update({ photo_url: url }).eq('id', profile!.id)

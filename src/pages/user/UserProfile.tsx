@@ -3,6 +3,7 @@ import { Avatar } from '../../components/ui'
 import { Mail, Phone, MapPin, Globe, LogOut, Headphones, Edit2, X, Check, Camera } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+import { compressImage } from '../../lib/imageCompress'
 
 export default function UserProfile() {
   const { profile, signOut, refreshProfile } = useAuth()
@@ -18,8 +19,9 @@ export default function UserProfile() {
     if (!file) return
     setUploadingPhoto(true)
     try {
-      const path = `${profile!.id}/avatar-${Date.now()}`
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type })
+      const compressed = await compressImage(file)
+      const path = `${profile!.id}/avatar-${Date.now()}.jpg`
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' })
       if (upErr) throw upErr
       const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
       const { error: dbErr } = await supabase.from('profiles').update({ photo_url: url }).eq('id', profile!.id)

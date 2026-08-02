@@ -38,7 +38,7 @@ function groupByDate(notifs: Notification[]): { label: string; items: Notificati
 
 function notifIcon(type: string) {
   if (type === 'request_accepted' || type === 'order_received') return { icon: <Bike size={17} />, bg: 'rgba(166,179,0,0.15)', color: '#A6B300' }
-  if (type === 'order_delivered' || type === 'delivered' || type === 'order_completed') return { icon: <CheckCircle2 size={17} />, bg: 'rgba(16,185,129,0.15)', color: '#34d399' }
+  if (type === 'order_delivered' || type === 'delivered' || type === 'order_completed' || type === 'order_status') return { icon: <CheckCircle2 size={17} />, bg: 'rgba(16,185,129,0.15)', color: '#34d399' }
   if (type === 'order_cancelled' || type === 'cancelled' || type === 'order_rejected') return { icon: <AlertCircle size={17} />, bg: 'rgba(239,68,68,0.15)', color: '#f87171' }
   if (type === 'order_placed' || type === 'shopping' || type === 'on_the_way' || type === 'purchased') return { icon: <Package size={17} />, bg: 'rgba(251,191,36,0.15)', color: '#fbbf24' }
   if (type === 'chat' || type === 'message') return { icon: <MessageCircle size={17} />, bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' }
@@ -87,7 +87,7 @@ export default function DpNotifications() {
   const handleTap = async (n: Notification) => {
     if (!n.is_read) markRead(n.id)
     if (n.related_id) {
-      if (n.type === 'request_accepted' || n.type === 'order_received' || n.type === 'order_placed') {
+      if (n.type === 'request_accepted' || n.type === 'order_received' || n.type === 'order_placed' || n.type === 'order_status' || n.type === 'order_confirmed') {
         navigate(`/dp/navigate/${n.related_id}`)
       }
     }

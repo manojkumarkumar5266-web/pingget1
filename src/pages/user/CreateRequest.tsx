@@ -41,11 +41,13 @@ export default function CreateRequest() {
   const { profile } = useAuth()
   const navigate = useNavigate()
 
-  const [description, setDescription] = useState('')
-  const [preferredShop, setPreferredShop] = useState('')
-  const [pickupAddress, setPickupAddress] = useState('')
+  const [description, setDescription] = useState(() => sessionStorage.getItem('cr_description') || '')
+  const [preferredShop, setPreferredShop] = useState(() => sessionStorage.getItem('cr_preferredShop') || '')
+  const [pickupAddress, setPickupAddress] = useState(() => sessionStorage.getItem('cr_pickupAddress') || '')
   const [activeCategory, setActiveCategory] = useState<{ name: string; id: string } | null>(null)
-  const [selections, setSelections] = useState<CategorySelection[]>([])
+  const [selections, setSelections] = useState<CategorySelection[]>(() => {
+    try { return JSON.parse(sessionStorage.getItem('cr_selections') || '[]') } catch { return [] }
+  })
   const [categories, setCategories] = useState<DbCategory[]>([])
   const [showDetails, setShowDetails] = useState(false)
 
@@ -277,12 +279,21 @@ export default function CreateRequest() {
         expected_time: null, max_budget: null, special_instructions: null, radius_meters: 10000, status: 'pending',
       }).select('id').single()
       if (error) throw error
+      sessionStorage.removeItem('cr_description')
+      sessionStorage.removeItem('cr_preferredShop')
+      sessionStorage.removeItem('cr_pickupAddress')
+      sessionStorage.removeItem('cr_selections')
       navigate(`/app/scanning/${inserted.id}`)
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
   }
 
   const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   const totalItems = selections.reduce((s, sel) => s + sel.items.length, 0)
+  useEffect(() => { sessionStorage.setItem('cr_description', description) }, [description])
+  useEffect(() => { sessionStorage.setItem('cr_preferredShop', preferredShop) }, [preferredShop])
+  useEffect(() => { sessionStorage.setItem('cr_pickupAddress', pickupAddress) }, [pickupAddress])
+  useEffect(() => { sessionStorage.setItem('cr_selections', JSON.stringify(selections)) }, [selections])
+
   const canSubmit = (selections.length > 0 || description.trim().length > 0) && !loading && !!deliveryAddressText
 
   return (
@@ -310,7 +321,7 @@ export default function CreateRequest() {
       <div className="flex-1 overflow-y-auto pb-32 px-4 pt-5 space-y-5">
         {/* Delivery Address Card - Colorful */}
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>Delivery Address</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Delivery Address</p>
           {deliveryAddressText && !showAddressForm && !showAddressList ? (
             <div>
               {addresses.length > 1 && (
@@ -442,7 +453,7 @@ export default function CreateRequest() {
 
         {/* Category Grid - Colorful */}
         <div>
-          <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.4)' }}>What do you need?</p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>What do you need?</p>
           <div className="grid grid-cols-4 gap-2.5">
             {categories.map(cat => {
               const sel = selections.find(s => s.category === cat.name)
@@ -471,7 +482,7 @@ export default function CreateRequest() {
         {/* Selected Items Summary - Colorful */}
         {selections.length > 0 && (
           <div className="space-y-2 animate-slide-up">
-            <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Selected Items</p>
+            <p className="text-xs font-bold uppercase tracking-wide" style={{ color: '#C4D600' }}>Selected Items</p>
             {selections.map(sel => {
               const color = CATEGORY_COLORS[sel.category] || '#A6B300'
               return (
@@ -512,7 +523,7 @@ export default function CreateRequest() {
 
         {/* Items List & Notes — colorful card */}
         <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <label className="label flex items-center gap-1.5 mb-2">
+          <label className="label flex items-center gap-1.5 mb-2" style={{ color: '#C4D600' }}>
             <ListChecks size={14} /> Items List & Notes
             <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
           </label>
@@ -522,7 +533,7 @@ export default function CreateRequest() {
 
           {/* Photos inside notes section */}
           <div className="mt-3">
-            <p className="mb-2 text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>Add Photos (items, shopping list, prescription)</p>
+            <p className="mb-2 text-xs font-semibold" style={{ color: '#C4D600' }}>Add Photos (items, shopping list, prescription)</p>
             <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
             {photoPreviews.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
@@ -547,7 +558,7 @@ export default function CreateRequest() {
 
           {/* Voice note inside notes section */}
           <div className="mt-3">
-            <p className="mb-2 text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>Voice Note</p>
+            <p className="mb-2 text-xs font-semibold" style={{ color: '#C4D600' }}>Voice Note</p>
             {voiceBlob ? (
               <div className="flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
                 <button type="button" onClick={playVoice}
@@ -592,11 +603,11 @@ export default function CreateRequest() {
         {/* Preferred Shop + Pickup Location — colorful cards */}
         <div className="space-y-3">
           <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <label className="label flex items-center gap-1.5"><Store size={13} style={{ color: '#A6B300' }} /> Preferred Shop <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+            <label className="label flex items-center gap-1.5" style={{ color: '#C4D600' }}><Store size={13} style={{ color: '#A6B300' }} /> Preferred Shop <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
             <input className="input" value={preferredShop} onChange={e => setPreferredShop(e.target.value)} placeholder="e.g. Reliance Fresh, D-Mart, More, Medical Shop" />
           </div>
           <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <label className="label flex items-center gap-1.5"><MapPin size={13} style={{ color: '#A6B300' }} /> Pickup Location <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+            <label className="label flex items-center gap-1.5" style={{ color: '#C4D600' }}><MapPin size={13} style={{ color: '#A6B300' }} /> Pickup Location <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
             <input className="input" value={pickupAddress} onChange={e => setPickupAddress(e.target.value)} placeholder="Where the partner should collect items" />
           </div>
         </div>
@@ -616,7 +627,7 @@ export default function CreateRequest() {
           )}
           <button type="button" onClick={handleSubmit} disabled={!canSubmit}
             className="w-full flex items-center justify-center rounded-2xl py-4 text-base font-bold tracking-wide transition-all active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100"
-            style={{ background: canSubmit ? 'linear-gradient(135deg, #A6B300, #808000)' : 'rgba(255,255,255,0.08)', color: canSubmit ? '#0B0B0B' : 'rgba(255,255,255,0.3)', boxShadow: canSubmit ? '0 8px 24px rgba(166,179,0,0.35)' : 'none' }}>
+            style={{ background: canSubmit ? 'linear-gradient(135deg, #A6B300, #808000)' : 'rgba(255,255,255,0.08)', color: canSubmit ? '#0B0B0B' : 'rgba(255,255,255,0.3)', boxShadow: canSubmit ? '0 8px 24px rgba(166,179,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -2px 0 rgba(0,0,0,0.15)' : 'none', border: canSubmit ? '1px solid rgba(166,179,0,0.6)' : '1px solid rgba(255,255,255,0.08)' }}>
             {loading ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0B0B0B]/30" style={{ borderTopColor: '#0B0B0B' }} />

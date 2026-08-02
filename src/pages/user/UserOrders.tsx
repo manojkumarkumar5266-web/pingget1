@@ -64,8 +64,8 @@ export default function UserOrders() {
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     let query = supabase.from('requests').select('*').eq('user_id', profile!.id)
-    if (tab === 'active') query = query.in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived'])
-    else if (tab === 'completed') query = query.in('status', ['completed','delivered','cash_received'])
+    if (tab === 'active') query = query.in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received'])
+    else if (tab === 'completed') query = query.eq('status', 'completed')
     else query = query.eq('status', 'cancelled')
     const { data } = await query.order('created_at', { ascending: false })
     const requests = (data as DeliveryRequest[]) || []
@@ -89,7 +89,15 @@ export default function UserOrders() {
 
   const confirmDelivery = async (req: RequestWithDp) => {
     setUpdating(req.id)
-    await supabase.from('requests').update({ status: 'completed' }).eq('id', req.id)
+    await supabase.from('requests').update({ status: 'completed', delivery_accepted_at: new Date().toISOString() }).eq('id', req.id)
+    await supabase.from('orders').update({ status: 'completed', completed_at: new Date().toISOString(), delivery_accepted_at: new Date().toISOString() }).eq('request_id', req.id)
+    await supabase.from('notifications').insert({
+      user_id: req.accepted_dp_id,
+      title: 'Delivery Confirmed',
+      body: 'Customer confirmed receipt. The order is now complete.',
+      type: 'order_completed',
+      related_id: req.id,
+    })
     await fetchOrders()
     setUpdating(null)
   }
@@ -99,13 +107,17 @@ export default function UserOrders() {
     if (data) navigate(`/app/chat/${data.id}`)
   }
 
+  const openTracking = (req: RequestWithDp) => {
+    navigate(`/app/track/${req.id}`)
+  }
+
   const tabs = [
     { key: 'active' as Tab,    label: 'Active' },
     { key: 'completed' as Tab, label: 'Completed' },
     { key: 'cancelled' as Tab, label: 'Cancelled' },
   ]
   const counts = {
-    active: orders.filter(o => ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived'].includes(o.status)).length,
+    active: orders.filter(o => ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received'].includes(o.status)).length,
   }
 
   return (
@@ -138,7 +150,7 @@ export default function UserOrders() {
       ) : (
         <div className="space-y-3 pb-8">
           {orders.map((req, i) => (
-            <div key={req.id} className="card overflow-hidden animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
+            <div key={req.id} onClick={() => tab === 'active' && openTracking(req)} className="card overflow-hidden animate-slide-up cursor-pointer" style={{ animationDelay: `${i * 50}ms` }}>
               <div className="p-4">
                 {/* Top row */}
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -199,7 +211,7 @@ export default function UserOrders() {
 
               {/* Action row */}
               {tab === 'active' && (
-                <div className="flex flex-wrap gap-2 px-4 pb-4">
+                <div className="flex flex-wrap gap-2 px-4 pb-4" onClick={e => e.stopPropagation()}>
                   {req.accepted_dp_id && (
                     <button onClick={() => openChat(req)}
                       className="flex items-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-semibold transition-all active:scale-95"
@@ -210,9 +222,9 @@ export default function UserOrders() {
                   {(req.status === 'delivered' || req.status === 'cash_received') && (
                     <button onClick={() => confirmDelivery(req)} disabled={updating === req.id}
                       className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl py-2 text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
-                      style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                      style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 6px 16px rgba(166,179,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)' }}>
                       <CheckCircle2 size={13} />
-                      {updating === req.id ? 'Confirming...' : 'Confirm Delivery'}
+                      {updating === req.id ? 'Confirming...' : 'Accept Delivery'}
                     </button>
                   )}
                   {['pending', 'accepted', 'confirmed', 'shopping'].includes(req.status) && (
@@ -230,6 +242,11 @@ export default function UserOrders() {
                       Cancel Order
                     </button>
                   )}
+                  <button onClick={() => openTracking(req)}
+                    className="flex items-center gap-1 rounded-2xl px-3 py-2 text-xs font-semibold transition-all active:scale-95"
+                    style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
+                    <ChevronRight size={13} /> Track
+                  </button>
                 </div>
               )}
             </div>

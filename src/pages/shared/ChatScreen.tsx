@@ -23,7 +23,7 @@ export default function ChatScreen() {
   const [showRating, setShowRating] = useState(false)
   const [hasRated, setHasRated] = useState(false)
   const [fullOrderData, setFullOrderData] = useState<any>(null)
-  const [greetingSent, setGreetingSent] = useState(false)
+  const greetingSentRef = useRef(false)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [showPickupPhoto, setShowPickupPhoto] = useState(false)
@@ -117,8 +117,8 @@ export default function ChatScreen() {
   }, [roomId, isUser, profile])
 
   useEffect(() => {
-    if (!room || !profile || greetingSent || messages.length > 0) return
-    setGreetingSent(true)
+    if (!room || !profile || greetingSentRef.current || messages.length > 0) return
+    greetingSentRef.current = true
     const otherName = otherUser?.full_name?.split(' ')[0] || 'there'
     const myName = profile.full_name?.split(' ')[0] || 'there'
     if (isUser) {
@@ -126,7 +126,7 @@ export default function ChatScreen() {
     } else {
       sendMessage(`Hi ${otherName}, I'm ${myName}. I'll be delivering your order today.`)
     }
-  }, [room, profile, greetingSent, messages.length, isUser, otherUser])
+  }, [room, profile, messages.length, isUser, otherUser])
 
   useEffect(() => {
     if (!roomId) return
@@ -333,13 +333,13 @@ export default function ChatScreen() {
           )}
         </div>
         {order && <StatusBadge status={order.status} />}
-        {!isCompleted && (
+        {!isCompleted && isUser && !order && (
           <button
             onClick={async () => {
               if (!room) return
               if (confirm('Cancel this request? Chat will close.')) {
                 await supabase.from('requests').update({ status: 'cancelled' }).eq('id', room.request_id)
-                navigate(isUser ? '/app' : '/dp')
+                navigate('/app')
               }
             }}
             className="shrink-0 rounded-2xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
@@ -359,15 +359,7 @@ export default function ChatScreen() {
               Discuss items and delivery charge. Your partner will send a quotation.
             </div>
           )}
-          {!order && !isUser && (
-            <div className="mb-4">
-              <button onClick={() => setShowQuotation(true)}
-                className="w-full gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-95"
-                style={{ background: '#A6B300', color: '#0B0B0B' }}>
-                <FileText size={16} /> Send Quotation
-              </button>
-            </div>
-          )}
+
 
           {messages.map((msg, index) => {
             const isOwn = msg.sender_id === profile!.id
@@ -405,9 +397,13 @@ export default function ChatScreen() {
                         <p className="text-sm font-bold tracking-wide" style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }}>Quotation</p>
                       </div>
                       {msg.quotation_data.photo_url && (
-                        <button type="button" onClick={() => setLightboxImage(msg.quotation_data.photo_url)}>
-                          <img src={msg.quotation_data.photo_url} alt="Proof" className="h-28 w-full rounded-xl object-cover" />
-                        </button>
+                        <div className="flex flex-wrap gap-1.5">
+                          {msg.quotation_data.photo_url.split(',').map((url: string, i: number) => (
+                            <button key={i} type="button" onClick={() => setLightboxImage(url)}>
+                              <img src={url} alt={`Proof ${i + 1}`} className="h-20 w-20 rounded-xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+                            </button>
+                          ))}
+                        </div>
                       )}
                       <ul className="space-y-1.5">
                         {String(msg.quotation_data.items_summary || '').split('\n').map((line: string, i: number) =>
@@ -580,13 +576,22 @@ export default function ChatScreen() {
       )}
       {showRating && <RatingModal onClose={() => setShowRating(false)} onSubmit={submitRating} targetName={otherUser?.full_name || 'Delivery Partner'} />}
 
-      {/* View Full Order button */}
+      {/* View Full Order + Send Quotation buttons */}
       {fullOrderData && !isCompleted && (
-        <button onClick={() => navigate(isUser ? `/app/chat/${roomId}/order` : `/dp/chat/${roomId}/order`)}
-          className="fixed bottom-20 right-4 z-20 flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95"
-          style={{ background: '#A6B300', color: '#0B0B0B' }}>
-          <ClipboardList size={14} /> View Full Order
-        </button>
+        <div className="fixed bottom-20 left-0 right-0 z-20 flex justify-center gap-2 px-4">
+          <button onClick={() => navigate(isUser ? `/app/chat/${roomId}/order` : `/dp/chat/${roomId}/order`)}
+            className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95"
+            style={{ background: '#A6B300', color: '#0B0B0B' }}>
+            <ClipboardList size={14} /> View Full Order
+          </button>
+          {!isUser && !order && (
+            <button onClick={() => setShowQuotation(true)}
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95"
+              style={{ background: '#808000', color: '#fff' }}>
+              <FileText size={14} /> Send Quotation
+            </button>
+          )}
+        </div>
       )}
 
       {/* Image lightbox */}
@@ -679,25 +684,40 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
   )
 }
 
+const MAX_PROOF_PHOTOS = 10
 function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { onClose: () => void; onSend: (itemCost: number, deliveryCharge: number, itemsSummary: string, photoUrl?: string | null) => void; initialItems?: string; roomId: string; senderId: string }) {
   const [items, setItems] = useState(() => initialItems || '')
   const [itemCost, setItemCost] = useState('')
   const [deliveryCharge, setDeliveryCharge] = useState('')
-  const [photoFile, setPhotoFile] = useState<File | null>(null)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [photoFiles, setPhotoFiles] = useState<File[]>([])
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return
-    setPhotoFile(file); setPhotoPreview(URL.createObjectURL(file))
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    const remaining = MAX_PROOF_PHOTOS - photoFiles.length
+    const toAdd = files.slice(0, remaining)
+    if (toAdd.length < files.length) alert(`You can upload up to ${MAX_PROOF_PHOTOS} photos.`)
+    setPhotoFiles(prev => [...prev, ...toAdd])
+    setPhotoPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))])
+  }
+  const removePhoto = (idx: number) => {
+    setPhotoPreviews(prev => { URL.revokeObjectURL(prev[idx]); return prev.filter((_, i) => i !== idx) })
+    setPhotoFiles(prev => prev.filter((_, i) => i !== idx))
   }
   const handleSend = async () => {
     setUploading(true)
     let photoUrl: string | null = null
-    if (photoFile) {
-      const path = `quotations/${senderId}/${Date.now()}-quote`
-      const { error } = await supabase.storage.from('media').upload(path, photoFile, { upsert: true })
-      if (!error) photoUrl = supabase.storage.from('media').getPublicUrl(path).data.publicUrl
+    if (photoFiles.length > 0) {
+      const ts = Date.now()
+      const urls: string[] = []
+      for (let i = 0; i < photoFiles.length; i++) {
+        const path = `quotations/${senderId}/${ts}-proof-${i}`
+        const { error } = await supabase.storage.from('media').upload(path, photoFiles[i], { upsert: true })
+        if (!error) urls.push(supabase.storage.from('media').getPublicUrl(path).data.publicUrl)
+      }
+      photoUrl = urls.length > 0 ? urls.join(',') : null
     }
     setUploading(false)
     onSend(parseFloat(itemCost) || 0, parseFloat(deliveryCharge) || 0, items, photoUrl)
@@ -711,41 +731,47 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
         </div>
         <div className="overflow-y-auto px-5 pb-8 space-y-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
           <div>
-            <label className="label">Items Summary</label>
+            <label className="label" style={{ color: '#C4D600' }}>Items Summary</label>
             <p className="mb-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Edit the customer's request — each item on its own line.</p>
             <textarea className="input min-h-24 resize-none" value={items} onChange={e => setItems(e.target.value)} placeholder="2kg Rice&#10;1L Milk" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label flex items-center gap-1"><IndianRupee size={12} /> Item Cost</label>
+              <label className="label flex items-center gap-1" style={{ color: '#C4D600' }}><IndianRupee size={12} /> Item Cost</label>
               <input type="number" className="input" value={itemCost} onChange={e => setItemCost(e.target.value)} placeholder="0" />
             </div>
             <div>
-              <label className="label flex items-center gap-1"><IndianRupee size={12} /> Delivery Fee</label>
+              <label className="label flex items-center gap-1" style={{ color: '#C4D600' }}><IndianRupee size={12} /> Delivery Fee</label>
               <input type="number" className="input" value={deliveryCharge} onChange={e => setDeliveryCharge(e.target.value)} placeholder="0" />
             </div>
           </div>
           <div>
-            <label className="label">Proof Photo <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
-            <input ref={photoInputRef} type="file" className="hidden" accept="image/*" onChange={handlePhotoSelect} />
-            {photoPreview ? (
-              <div className="relative">
-                <img src={photoPreview} alt="Proof" className="h-28 w-full rounded-2xl object-cover" />
-                <button onClick={() => { setPhotoFile(null); setPhotoPreview(null) }} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full" style={{ background: 'rgba(0,0,0,0.7)' }}>
-                  <X size={12} className="text-white" />
-                </button>
+            <label className="label" style={{ color: '#C4D600' }}>Proof Photos <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(up to {MAX_PROOF_PHOTOS})</span></label>
+            <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotoSelect} />
+            {photoPreviews.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {photoPreviews.map((preview, idx) => (
+                  <div key={idx} className="relative">
+                    <img src={preview} alt={`Proof ${idx + 1}`} className="h-20 w-20 rounded-2xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+                    <button onClick={() => removePhoto(idx)} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-lg">
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ) : (
+            )}
+            {photoFiles.length < MAX_PROOF_PHOTOS && (
               <button onClick={() => photoInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm transition-all active:scale-95"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px dashed rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.4)' }}>
-                <Camera size={15} /> Upload Receipt Photo
+                style={{ background: 'rgba(166,179,0,0.08)', border: '1.5px dashed rgba(166,179,0,0.25)', color: '#A6B300' }}>
+                <Camera size={15} /> {photoFiles.length > 0 ? 'Add More Photos' : 'Upload Proof Photos'}
               </button>
             )}
+            <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>{photoFiles.length}/{MAX_PROOF_PHOTOS} photos</p>
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-            <button onClick={handleSend} disabled={!items || !deliveryCharge || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-xl py-3"
-              style={{ background: '#A6B300', color: '#0B0B0B' }}>
+            <button onClick={handleSend} disabled={!items || !deliveryCharge || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-xl py-3 transition-all active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(166,179,0,0.35)' }}>
               {uploading ? 'Uploading...' : 'Send'}
             </button>
           </div>

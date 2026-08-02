@@ -259,7 +259,7 @@ export default function DpNavigationPage() {
             <button onClick={openGoogleMaps}
               className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95"
               style={{ background: '#A6B300', color: '#0B0B0B' }}>
-              <Navigation size={18} /> Navigate to Customer
+              <Navigation size={18} /> Open in Google Maps
             </button>
           </div>
 
