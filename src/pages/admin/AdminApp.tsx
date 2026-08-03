@@ -4,6 +4,8 @@ import AdminDashboard from './AdminDashboard'
 import AdminDps from './AdminDps'
 import AdminCities from './AdminCities'
 import AdminOrders from './AdminOrders'
+import AdminAdvanceRequests from './AdminAdvanceRequests'
+import AdminAdvanceSettings from './AdminAdvanceSettings'
 import AdminPayments from './AdminPayments'
 import AdminUsers from './AdminUsers'
 import AdminNotifications from './AdminNotifications'
@@ -18,6 +20,8 @@ export default function AdminApp() {
         <Route path="/users" element={<AdminUsers />} />
         <Route path="/cities" element={<AdminCities />} />
         <Route path="/orders" element={<AdminOrders />} />
+        <Route path="/advance-requests" element={<AdminAdvanceRequests />} />
+        <Route path="/advance-settings" element={<AdminAdvanceSettings />} />
         <Route path="/payments" element={<AdminPayments />} />
         <Route path="/notifications" element={<AdminNotifications />} />
       </Route>

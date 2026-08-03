@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
-import { supabase, DeliveryRequest, Profile } from '../../lib/supabase'
+import { supabase, DeliveryRequest, Profile, type AdvanceSettings } from '../../lib/supabase'
 import { EmptyState, StatusBadge, Avatar, SkeletonList } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
-import { ClipboardList, Clock, MapPin, MessageCircle, Bike, CheckCircle2, Package, ShoppingBag, Truck, ChevronRight } from 'lucide-react'
+import CancellationModal from '../../components/CancellationModal'
+import RescheduleModal from '../../components/RescheduleModal'
+import { ClipboardList, Clock, MapPin, MessageCircle, Bike, CheckCircle2, Package, ShoppingBag, Truck, ChevronRight, CalendarClock, CalendarPlus } from 'lucide-react'
 
 type Tab = 'active' | 'completed' | 'cancelled'
 type RequestWithDp = DeliveryRequest & { _dp?: Profile }
@@ -60,13 +62,16 @@ export default function UserOrders() {
   const [orders, setOrders] = useState<RequestWithDp[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<RequestWithDp | null>(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState<RequestWithDp | null>(null)
+  const [advanceSettings, setAdvanceSettings] = useState<AdvanceSettings | null>(null)
 
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     let query = supabase.from('requests').select('*').eq('user_id', profile!.id)
-    if (tab === 'active') query = query.in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received'])
+    if (tab === 'active') query = query.in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled'])
     else if (tab === 'completed') query = query.eq('status', 'completed')
-    else query = query.eq('status', 'cancelled')
+    else query = query.in('status', ['cancelled', 'expired'])
     const { data } = await query.order('created_at', { ascending: false })
     const requests = (data as DeliveryRequest[]) || []
     const dpIds = [...new Set(requests.map(r => r.accepted_dp_id).filter(Boolean))] as string[]
@@ -80,6 +85,9 @@ export default function UserOrders() {
   }, [profile, tab])
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
+  useEffect(() => {
+    supabase.from('advance_settings').select('*').limit(1).maybeSingle().then(({ data }) => { if (data) setAdvanceSettings(data as AdvanceSettings) })
+  }, [])
   useEffect(() => {
     const channel = supabase.channel('user-orders-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `user_id=eq.${profile!.id}` }, fetchOrders)
@@ -125,7 +133,7 @@ export default function UserOrders() {
     { key: 'cancelled' as Tab, label: 'Cancelled' },
   ]
   const counts = {
-    active: orders.filter(o => ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received'].includes(o.status)).length,
+    active: orders.filter(o => ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled'].includes(o.status)).length,
   }
 
   return (
@@ -169,7 +177,7 @@ export default function UserOrders() {
                 </div>
 
                 {/* Timeline for active */}
-                {tab === 'active' && !['pending', 'cancelled'].includes(req.status) && (
+                {tab === 'active' && !['pending', 'cancelled', 'scheduled', 'rescheduled'].includes(req.status) && (
                   <OrderTimeline status={req.status} />
                 )}
 
@@ -178,6 +186,16 @@ export default function UserOrders() {
                   <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.04)' }}>
                     <div className="h-2 w-2 rounded-full bg-white/30 animate-pulse" />
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Waiting for a partner to accept...</p>
+                  </div>
+                )}
+
+                {/* Scheduled badge */}
+                {(req.status === 'scheduled' || req.status === 'rescheduled') && req.is_scheduled && (
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}>
+                    <CalendarClock size={14} style={{ color: '#818cf8' }} />
+                    <p className="text-xs font-medium" style={{ color: '#818cf8' }}>
+                      {req.request_category} · {req.scheduled_date} at {req.scheduled_slot || req.scheduled_time}
+                    </p>
                   </div>
                 )}
 
@@ -235,19 +253,21 @@ export default function UserOrders() {
                       {updating === req.id ? 'Confirming...' : 'Accept Delivery'}
                     </button>
                   )}
-                  {['pending', 'accepted', 'confirmed', 'shopping'].includes(req.status) && (
+                  {['pending', 'accepted', 'confirmed', 'shopping', 'scheduled', 'rescheduled'].includes(req.status) && (
                     <button
-                      onClick={async () => {
-                        if (!window.confirm('Cancel this order?')) return
-                        setUpdating(req.id)
-                        await supabase.from('requests').update({ status: 'cancelled' }).eq('id', req.id)
-                        await fetchOrders()
-                        setUpdating(null)
-                      }}
+                      onClick={() => setCancelTarget(req)}
                       disabled={updating === req.id}
                       className="ml-auto flex items-center gap-1 rounded-2xl px-3 py-2 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
                       style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
-                      Cancel Order
+                      {req.status === 'scheduled' || req.status === 'rescheduled' ? 'Cancel Request' : 'Cancel Order'}
+                    </button>
+                  )}
+                  {(req.status === 'scheduled' || req.status === 'rescheduled') && !req.accepted_dp_id && (
+                    <button
+                      onClick={() => setRescheduleTarget(req)}
+                      className="flex items-center gap-1 rounded-2xl px-3 py-2 text-xs font-semibold transition-all active:scale-95"
+                      style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', color: '#818cf8' }}>
+                      <CalendarPlus size={13} /> Reschedule
                     </button>
                   )}
                   <button onClick={() => openTracking(req)}
@@ -261,6 +281,108 @@ export default function UserOrders() {
           ))}
         </div>
       )}
+
+      {/* Cancellation Modal */}
+      {cancelTarget && (
+        <CancellationModal
+          open={!!cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          status={cancelTarget.status}
+          fee={advanceSettings?.cancellation_fee_after_accept ?? 0}
+          freeBeforeAccept={true}
+          adminOverride={advanceSettings?.admin_override_cancellation ?? true}
+          cutoffMinutes={advanceSettings?.cancellation_cutoff_minutes ?? 120}
+          onConfirm={async (reason) => {
+            setUpdating(cancelTarget.id)
+            const hasFee = !!cancelTarget.accepted_dp_id
+            await supabase.from('requests').update({
+              status: 'cancelled',
+              cancellation_reason: reason,
+              cancelled_by: 'customer',
+              cancellation_fee: hasFee ? (advanceSettings?.cancellation_fee_after_accept ?? 0) : 0,
+            }).eq('id', cancelTarget.id)
+            await fetchOrders()
+            setUpdating(null)
+            setCancelTarget(null)
+          }}
+        />
+      )}
+
+      {/* Reschedule Modal */}
+      {rescheduleTarget && advanceSettings && (
+        <RescheduleModal
+          open={!!rescheduleTarget}
+          onClose={() => setRescheduleTarget(null)}
+          request={rescheduleTarget}
+          settings={advanceSettings}
+          actorType="customer"
+          timeSlots={generateTimeSlots(advanceSettings.business_hours_start, advanceSettings.business_hours_end, advanceSettings.slot_duration_minutes)}
+          onConfirm={async (newDate, newSlot, newDescription, newShopName, rescheduleReason) => {
+            setUpdating(rescheduleTarget.id)
+            const oldHistory = rescheduleTarget.reschedule_history || []
+            const newHistory = [...oldHistory, {
+              actor: 'customer',
+              old_date: rescheduleTarget.scheduled_date,
+              old_slot: rescheduleTarget.scheduled_slot,
+              new_date: newDate.toISOString().slice(0, 10),
+              new_slot: newSlot,
+              old_description: rescheduleTarget.description,
+              new_description: newDescription,
+              old_shop: rescheduleTarget.shop_name,
+              new_shop: newShopName,
+              reason: rescheduleReason,
+              timestamp: new Date().toISOString(),
+            }]
+            const slotStart = newSlot.split('-')[0]
+            const [sh, sm] = slotStart.split(':').map(Number)
+            const scheduledTimestamp = new Date(newDate)
+            scheduledTimestamp.setHours(sh, sm, 0, 0)
+            await supabase.from('requests').update({
+              status: 'rescheduled',
+              scheduled_date: newDate.toISOString().slice(0, 10),
+              scheduled_time: slotStart,
+              scheduled_slot: newSlot,
+              scheduled_timestamp: scheduledTimestamp.toISOString(),
+              description: newDescription || rescheduleTarget.description,
+              shop_name: newShopName || null,
+              preferred_shop: newShopName || rescheduleTarget.preferred_shop,
+              reschedule_count: (rescheduleTarget.reschedule_count || 0) + 1,
+              reschedule_history: newHistory,
+            }).eq('id', rescheduleTarget.id)
+            await supabase.from('reschedule_logs').insert({
+              request_id: rescheduleTarget.id,
+              actor_id: profile!.id,
+              actor_type: 'customer',
+              old_date: rescheduleTarget.scheduled_date,
+              old_slot: rescheduleTarget.scheduled_slot,
+              new_date: newDate.toISOString().slice(0, 10),
+              new_slot: newSlot,
+              old_description: rescheduleTarget.description,
+              new_description: newDescription,
+              old_shop_name: rescheduleTarget.shop_name,
+              new_shop_name: newShopName,
+              reason: rescheduleReason,
+            })
+            await fetchOrders()
+            setUpdating(null)
+            setRescheduleTarget(null)
+          }}
+        />
+      )}
     </div>
   )
+}
+
+function generateTimeSlots(start: string, end: string, durationMin: number): { key: string; label: string; start: string; end: string }[] {
+  const [sh, sm] = start.split(':').map(Number)
+  const [eh, em] = end.split(':').map(Number)
+  const startMin = sh * 60 + sm
+  const endMin = eh * 60 + em
+  const slots: { key: string; label: string; start: string; end: string }[] = []
+  for (let t = startMin; t + durationMin <= endMin; t += durationMin) {
+    const s = `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`
+    const e = `${String(Math.floor((t + durationMin) / 60) % 24).padStart(2, '0')}:${String((t + durationMin) % 60).padStart(2, '0')}`
+    slots.push({ key: `${s}-${e}`, label: `${s} - ${e}`, start: s, end: e })
+  }
+  return slots
 }

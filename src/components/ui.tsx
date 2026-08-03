@@ -78,6 +78,7 @@ export function StatusBadge({ status }: { status: string }) {
     shopping: 'Shopping', purchased: 'Purchased', on_the_way: 'On Way',
     arrived: 'Arrived', delivered: 'Delivered', cash_received: 'Cash Rcvd',
     completed: 'Completed', cancelled: 'Cancelled',
+    scheduled: 'Scheduled', expired: 'Expired', rescheduled: 'Rescheduled',
   }
   const styles: Record<string, { bg: string; text: string; dot: string }> = {
     pending:      { bg: 'rgba(255,255,255,0.07)', text: 'rgba(255,255,255,0.6)', dot: '#666' },
@@ -91,6 +92,9 @@ export function StatusBadge({ status }: { status: string }) {
     cash_received:{ bg: 'rgba(16,185,129,0.15)',  text: '#34d399',              dot: '#10b981' },
     completed:    { bg: 'rgba(16,185,129,0.15)',  text: '#34d399',              dot: '#10b981' },
     cancelled:    { bg: 'rgba(239,68,68,0.15)',   text: '#f87171',              dot: '#ef4444' },
+    scheduled:    { bg: 'rgba(99,102,241,0.15)',   text: '#818cf8',              dot: '#6366f1' },
+    expired:      { bg: 'rgba(107,114,128,0.15)',  text: '#9ca3af',              dot: '#6b7280' },
+    rescheduled:  { bg: 'rgba(168,85,247,0.15)',  text: '#c084fc',              dot: '#a855f7' },
   }
   const s = styles[status] || styles.pending
   return (

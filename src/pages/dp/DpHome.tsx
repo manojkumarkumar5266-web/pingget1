@@ -430,6 +430,20 @@ export default function DpHome() {
                   )}
                 </div>
 
+                {/* Scheduled badge */}
+                {req.is_scheduled && req.request_category && (
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}>
+                      {req.request_category}
+                    </span>
+                    {req.scheduled_slot && (
+                      <span className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                        Scheduled: {req.scheduled_slot}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {/* Items list */}
                 {req.description && (
                   <ul className="mb-2 space-y-1">

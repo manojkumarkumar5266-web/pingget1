@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
 import { EmptyState, StatusBadge, ServiceStatusBanner, SkeletonList, SectionHeader } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
-import { Package, Plus, Clock, MapPin, CheckCircle2, Bike, ChevronRight, Zap, ShoppingBag } from 'lucide-react'
+import { Package, Plus, Clock, MapPin, CheckCircle2, Bike, ChevronRight, Zap, ShoppingBag, CalendarClock } from 'lucide-react'
 
 const STATUS_STEPS: Record<string, number> = {
   pending: 0, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
@@ -23,7 +23,7 @@ export default function UserHome() {
     const fetchOrders = async () => {
       const [activeRes, completedRes] = await Promise.all([
         supabase.from('requests').select('*').eq('user_id', profile!.id)
-          .in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received'])
+          .in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled'])
           .order('created_at', { ascending: false }),
         supabase.from('requests').select('*').eq('user_id', profile!.id)
           .eq('status','completed').order('created_at', { ascending: false }).limit(3),
@@ -89,12 +89,20 @@ export default function UserHome() {
           </div>
           <h2 className="text-2xl font-extrabold text-white leading-tight">Get Anything</h2>
           <p className="mt-1.5 text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>Groceries, parcels, medicines — local partners deliver in minutes.</p>
-          <button onClick={() => navigate('/app/create')}
-            className="btn-primary mt-4 gap-2 px-5 py-3"
-            style={{ background: '#A6B300', color: '#0B0B0B' }}>
-            <Plus size={18} strokeWidth={2.5} />
-            <span className="font-bold">New Request</span>
-          </button>
+          <div className="mt-4 flex gap-2.5">
+            <button onClick={() => navigate('/app/create')}
+              className="btn-primary gap-2 px-5 py-3"
+              style={{ background: '#A6B300', color: '#0B0B0B' }}>
+              <Plus size={18} strokeWidth={2.5} />
+              <span className="font-bold">Instant</span>
+            </button>
+            <button onClick={() => navigate('/app/create-advance')}
+              className="flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold transition-all active:scale-95"
+              style={{ background: 'rgba(255,255,255,0.06)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.25)' }}>
+              <CalendarClock size={18} strokeWidth={2.5} />
+              <span>Advance</span>
+            </button>
+          </div>
         </div>
       </div>
 

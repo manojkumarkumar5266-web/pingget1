@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatCurrency, formatTime } from '../../lib/utils'
-import { Users, Bike, Package, IndianRupee, TrendingUp, Clock, CheckCircle, XCircle, Activity, Download, Bell, UserPlus, Bike as BikeIcon, CreditCard, X, Star, Zap, AlertCircle } from 'lucide-react'
+import { Users, Bike, Package, IndianRupee, TrendingUp, Clock, CheckCircle, XCircle, Activity, Download, Bell, UserPlus, Bike as BikeIcon, CreditCard, X, Star, Zap, AlertCircle, CalendarClock, Repeat, BarChart3 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { CountUp, SkeletonList } from '../../components/ui'
 
@@ -226,6 +226,9 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Advance Request Analytics */}
+      <AdvanceAnalytics />
+
       {/* Top DPs + Recent Orders */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="card p-5 animate-slide-up" style={{ animationDelay: '480ms' }}>
@@ -325,6 +328,146 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function AdvanceAnalytics() {
+  const [advanceStats, setAdvanceStats] = useState<any>(null)
+  const [loadingAdv, setLoadingAdv] = useState(true)
+
+  useEffect(() => {
+    const fetchAdvanceStats = async () => {
+      const today = new Date(); today.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
+      const next7 = new Date(today); next7.setDate(next7.getDate() + 7)
+
+      const { data: allAdvance } = await supabase
+        .from('requests')
+        .select('id, status, scheduled_date, scheduled_timestamp, estimated_total_charge, recurring_type, cancellation_fee, created_at, charge_breakdown')
+        .eq('order_type', 'advance')
+        .order('created_at', { ascending: false })
+        .limit(500)
+
+      const rows = allAdvance || []
+      const todayStr = today.toISOString().slice(0, 10)
+      const tomorrowStr = tomorrow.toISOString().slice(0, 10)
+
+      const todayCount = rows.filter((r: any) => r.scheduled_date === todayStr).length
+      const tomorrowCount = rows.filter((r: any) => r.scheduled_date === tomorrowStr).length
+      const next7Count = rows.filter((r: any) => {
+        if (!r.scheduled_date) return false
+        const d = new Date(r.scheduled_date); d.setHours(0, 0, 0, 0)
+        return d >= today && d <= next7
+      }).length
+      const waiting = rows.filter((r: any) => r.status === 'scheduled' || r.status === 'pending').length
+      const accepted = rows.filter((r: any) => r.status === 'accepted' || r.status === 'confirmed').length
+      const completed = rows.filter((r: any) => r.status === 'completed').length
+      const expired = rows.filter((r: any) => r.status === 'expired').length
+      const recurring = rows.filter((r: any) => r.recurring_type && r.recurring_type !== 'none').length
+      const revenue = rows.filter((r: any) => r.status === 'completed').reduce((s: number, r: any) => s + Number(r.estimated_total_charge || 0), 0)
+      const bookingRevenue = rows.reduce((s: number, r: any) => s + Number(r.estimated_total_charge || 0), 0)
+      const cancellationRevenue = rows.filter((r: any) => r.status === 'cancelled').reduce((s: number, r: any) => s + Number(r.cancellation_fee || 0), 0)
+
+      setAdvanceStats({ todayCount, tomorrowCount, next7Count, waiting, accepted, completed, expired, recurring, revenue, bookingRevenue, cancellationRevenue, total: rows.length })
+      setLoadingAdv(false)
+    }
+    fetchAdvanceStats()
+    const channel = supabase.channel('admin-advance-analytics')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, fetchAdvanceStats)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  if (loadingAdv || !advanceStats) return null
+
+  const cards = [
+    { label: "Today's Scheduled", value: advanceStats.todayCount, icon: CalendarClock, color: '#A6B300' },
+    { label: 'Tomorrow', value: advanceStats.tomorrowCount, icon: CalendarClock, color: '#818cf8' },
+    { label: 'Next 7 Days', value: advanceStats.next7Count, icon: CalendarClock, color: '#60a5fa' },
+    { label: 'Waiting', value: advanceStats.waiting, icon: Clock, color: '#fbbf24' },
+    { label: 'Accepted', value: advanceStats.accepted, icon: CheckCircle, color: '#34d399' },
+    { label: 'Completed', value: advanceStats.completed, icon: CheckCircle, color: '#A6B300' },
+    { label: 'Expired', value: advanceStats.expired, icon: XCircle, color: '#6b7280' },
+    { label: 'Recurring', value: advanceStats.recurring, icon: Repeat, color: '#c084fc' },
+  ]
+
+  const revenueCards = [
+    { label: 'Advance Revenue', value: advanceStats.revenue, icon: IndianRupee, color: '#A6B300' },
+    { label: 'Booking Revenue', value: advanceStats.bookingRevenue, icon: TrendingUp, color: '#60a5fa' },
+    { label: 'Cancellation Revenue', value: advanceStats.cancellationRevenue, icon: XCircle, color: '#f87171' },
+  ]
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center gap-2 mb-4">
+        <BarChart3 size={20} style={{ color: '#A6B300' }} />
+        <h2 className="text-lg font-bold text-white">Advance Request Analytics</h2>
+      </div>
+
+      {/* Status Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        {cards.map((c, i) => {
+          const Icon = c.icon
+          return (
+            <div key={i} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 30}ms` }}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: `${c.color}1a` }}>
+                  <Icon size={16} style={{ color: c.color }} />
+                </div>
+                <span className="text-2xl font-bold text-white">{c.value}</span>
+              </div>
+              <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>{c.label}</p>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Revenue Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        {revenueCards.map((c, i) => {
+          const Icon = c.icon
+          return (
+            <div key={i} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 30}ms` }}>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${c.color}1a` }}>
+                  <Icon size={18} style={{ color: c.color }} />
+                </div>
+                <div>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.label}</p>
+                  <p className="text-lg font-bold" style={{ color: c.color }}>₹{c.value.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Simple Bar Chart */}
+      <div className="card p-5">
+        <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#C4D600' }}>Status Distribution</p>
+        <div className="space-y-3">
+          {[
+            { label: 'Waiting', count: advanceStats.waiting, color: '#fbbf24' },
+            { label: 'Accepted', count: advanceStats.accepted, color: '#34d399' },
+            { label: 'Completed', count: advanceStats.completed, color: '#A6B300' },
+            { label: 'Expired', count: advanceStats.expired, color: '#6b7280' },
+            { label: 'Recurring', count: advanceStats.recurring, color: '#c084fc' },
+          ].map((bar, i) => {
+            const max = Math.max(advanceStats.total, 1)
+            const pct = (bar.count / max) * 100
+            return (
+              <div key={i} className="flex items-center gap-3">
+                <span className="w-24 text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.6)' }}>{bar.label}</span>
+                <div className="flex-1 h-6 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: bar.color }} />
+                </div>
+                <span className="w-8 text-right text-xs font-bold text-white">{bar.count}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

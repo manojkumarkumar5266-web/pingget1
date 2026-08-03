@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import UserLayout from './UserLayout'
 import UserHome from './UserHome'
 import CreateRequest from './CreateRequest'
+import CreateAdvanceRequest from './CreateAdvanceRequest'
 import ScanningPage from './ScanningPage'
 import LiveTrackingPage from './LiveTrackingPage'
 import UserOrders from './UserOrders'
@@ -16,6 +17,7 @@ export default function UserApp() {
       <Route element={<UserLayout />}>
         <Route path="/" element={<UserHome />} />
         <Route path="/create" element={<CreateRequest />} />
+        <Route path="/create-advance" element={<CreateAdvanceRequest />} />
         <Route path="/scanning/:requestId" element={<ScanningPage />} />
         <Route path="/track/:requestId" element={<LiveTrackingPage />} />
         <Route path="/orders" element={<UserOrders />} />
