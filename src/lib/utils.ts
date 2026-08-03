@@ -61,6 +61,18 @@ export const STATUS_LABELS: Record<string, string> = {
   cash_received: 'Cash Received',
   completed: 'Completed',
   cancelled: 'Cancelled',
+  // V3 Advance Request statuses
+  scheduled: 'Scheduled',
+  expired: 'Expired',
+  rescheduled: 'Rescheduled',
+  searching_dp: 'Searching',
+  dp_reserved: 'Reserved',
+  waiting_payment: 'Payment Pending',
+  payment_verified: 'Payment Verified',
+  booking_confirmed: 'Booking Confirmed',
+  task_started: 'Task Started',
+  task_completed: 'Task Completed',
+  no_dp_found: 'No DP Found',
 }
 
 export const STATUS_COLORS: Record<string, string> = {
@@ -75,4 +87,16 @@ export const STATUS_COLORS: Record<string, string> = {
   cash_received: 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300',
   completed: 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300',
   cancelled: 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300',
+  // V3 Advance Request statuses
+  scheduled: 'bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300',
+  expired: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  rescheduled: 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300',
+  searching_dp: 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300',
+  dp_reserved: 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300',
+  waiting_payment: 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300',
+  payment_verified: 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300',
+  booking_confirmed: 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300',
+  task_started: 'bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300',
+  task_completed: 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300',
+  no_dp_found: 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300',
 }

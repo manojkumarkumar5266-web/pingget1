@@ -69,7 +69,7 @@ export default function UserOrders() {
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     let query = supabase.from('requests').select('*').eq('user_id', profile!.id)
-    if (tab === 'active') query = query.in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled','searching_dp','dp_reserved','waiting_payment','payment_verified','booking_confirmed','task_started','task_completed','no_dp_found'])
+    if (tab === 'active') query = query.in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled','dp_reserved','waiting_payment','payment_verified','booking_confirmed','task_started','task_completed','no_dp_found'])
     else if (tab === 'completed') query = query.eq('status', 'completed')
     else query = query.in('status', ['cancelled', 'expired'])
     const { data } = await query.order('created_at', { ascending: false })

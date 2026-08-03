@@ -62,6 +62,7 @@ export default function DpHome() {
   const [dpLoading, setDpLoading] = useState(true)
   const [savingRange, setSavingRange] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [reservingId, setReservingId] = useState<string | null>(null)
   const [rangeKm, setRangeKm] = useState(5)
   const rangeInitialised = useRef(false)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -138,6 +139,7 @@ export default function DpHome() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: 'status=eq.searching_dp' },
         () => { showToast('New advance booking nearby!'); fetchRequests() })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' }, () => fetchRequests())
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, () => fetchRequests())
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [dp?.is_online, dpLoading, profile])
@@ -169,26 +171,32 @@ export default function DpHome() {
   }
 
   const acceptRequest = async (req: RequestWithUser) => {
-    // For advance bookings in searching_dp status, use the reservation RPC
-    if (req.order_type === 'advance' && req.status === 'searching_dp') {
-      const { data: reserved, error } = await supabase.rpc(
-        'reserve_dp_for_advance',
-        { p_request_id: req.id, p_dp_user_id: profile!.id }
-      )
-      if (error || !reserved) {
-        showToast(error?.message || 'Failed to reserve this booking')
+    if (reservingId) return
+    setReservingId(req.id)
+    try {
+      // For advance bookings in searching_dp status, use the reservation RPC
+      if (req.order_type === 'advance' && req.status === 'searching_dp') {
+        const { data: reserved, error } = await supabase.rpc(
+          'reserve_dp_for_advance',
+          { p_request_id: req.id, p_dp_user_id: profile!.id }
+        )
+        if (error || !reserved) {
+          showToast(error?.message || 'Failed to reserve this booking')
+          return
+        }
+        // Navigate to the chat room for this request
+        const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
+        if (room) navigate(`/dp/chat/${room.id}`)
+        else navigate('/dp/orders')
         return
       }
-      // Navigate to the chat room for this request
-      const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
-      if (room) navigate(`/dp/chat/${room.id}`)
-      else navigate('/dp/orders')
-      return
+      const { data, error } = await supabase.rpc('accept_request', { p_request_id: req.id, p_dp_user_id: profile!.id })
+      const row = Array.isArray(data) ? data[0] : data
+      if (error || !row?.success) { showToast(row?.error_msg || error?.message || 'Failed to accept request'); return }
+      navigate(`/dp/chat/${row.chat_room_id}`)
+    } finally {
+      setReservingId(null)
     }
-    const { data, error } = await supabase.rpc('accept_request', { p_request_id: req.id, p_dp_user_id: profile!.id })
-    const row = Array.isArray(data) ? data[0] : data
-    if (error || !row?.success) { showToast(row?.error_msg || error?.message || 'Failed to accept request'); return }
-    navigate(`/dp/chat/${row.chat_room_id}`)
   }
 
   const getDistance = (req: DeliveryRequest): number | null => {
@@ -515,10 +523,14 @@ export default function DpHome() {
 
                 {/* Action buttons */}
                 <div className="mt-3.5 flex gap-2">
-                  <button onClick={() => acceptRequest(req)}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold transition-all active:scale-95"
+                  <button onClick={() => acceptRequest(req)} disabled={reservingId === req.id}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
                     style={{ background: '#A6B300', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.3)' }}>
-                    {req.order_type === 'advance' && req.status === 'searching_dp' ? <><CalendarClock size={16} /> Reserve</> : <><Check size={16} strokeWidth={3} /> Accept</>}
+                    {reservingId === req.id
+                      ? <><Loader2 size={16} className="animate-spin" /> Reserving...</>
+                      : req.order_type === 'advance' && req.status === 'searching_dp'
+                        ? <><CalendarClock size={16} /> Reserve</>
+                        : <><Check size={16} strokeWidth={3} /> Accept</>}
                   </button>
                   <button onClick={() => declineRequest(req)}
                     className="flex items-center justify-center rounded-2xl px-4 py-3 transition-all active:scale-95"

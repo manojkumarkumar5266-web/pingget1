@@ -7,7 +7,7 @@ import { createVehicleIcon, createUserLocationIcon, type VehicleType } from '../
 import { formatDistance } from '../../lib/utils'
 import L from 'leaflet'
 import { supabase } from '../../lib/supabase'
-import { X, Bike, CheckCircle2, ChevronRight, Clock, Package, Search, MapPin } from 'lucide-react'
+import { X, Bike, CheckCircle2, ChevronRight, Clock, Package, Search, MapPin, Loader2 } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 const SCAN_RADIUS_KM = 5
@@ -28,13 +28,24 @@ export default function SearchingMapPage() {
   const dpMarkerRefs = useRef<Map<string, L.Marker>>(new Map())
   const userMarkerRef = useRef<L.Marker | null>(null)
   const radiusCircleRef = useRef<L.Circle | null>(null)
-  const [phase, setPhase] = useState<'scanning' | 'found' | 'none'>('scanning')
+  const [phase, setPhase] = useState<'scanning' | 'found' | 'none' | 'retrying'>('scanning')
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
     if (!scanning && scanCount >= MAX_SCANS) {
       setPhase(dps.length > 0 ? 'found' : 'none')
     }
   }, [scanning, scanCount, dps.length])
+
+  // Auto-retry: when no DP found, wait a few seconds then reset scan
+  useEffect(() => {
+    if (phase !== 'none' || !requestId) return
+    const timer = setTimeout(() => {
+      setRetryCount(c => c + 1)
+      setPhase('scanning')
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [phase, requestId])
 
   // User marker + search radius circle
   useEffect(() => {
@@ -86,7 +97,7 @@ export default function SearchingMapPage() {
     })
   }, [map, ready, dps])
 
-  // Listen for acceptance — auto navigate to chat
+  // Listen for acceptance or reservation — auto navigate to chat
   useEffect(() => {
     if (!requestId) return
     const channel = supabase
@@ -98,7 +109,10 @@ export default function SearchingMapPage() {
         filter: `id=eq.${requestId}`,
       }, (payload: any) => {
         const next = payload.new as any
-        if (next?.status === 'accepted' && next?.accepted_dp_id) {
+        // Instant request: DP accepts → status 'accepted' + accepted_dp_id
+        // Advance request: DP reserves → status 'dp_reserved' + reserved_dp_id
+        if ((next?.status === 'accepted' && next?.accepted_dp_id) ||
+            (next?.status === 'dp_reserved' && next?.reserved_dp_id)) {
           supabase
             .from('chat_rooms')
             .select('id')
@@ -107,6 +121,10 @@ export default function SearchingMapPage() {
             .then(({ data }) => {
               if (data) navigate(`/app/chat/${data.id}`)
             })
+        }
+        // If no DP found, stay on searching and let the scheduler retry
+        if (next?.status === 'no_dp_found') {
+          setPhase('none')
         }
       })
       .subscribe()
@@ -222,20 +240,15 @@ export default function SearchingMapPage() {
           {phase === 'none' && (
             <div className="space-y-2 animate-slide-up">
               <div className="map-glass-panel p-4 text-center">
-                <MapPin size={24} className="mx-auto mb-2 text-white/50" />
-                <p className="font-semibold text-white">No partners online nearby</p>
-                <p className="mt-1 text-xs text-white/60">Your request stays live — a partner may accept it soon</p>
+                <Loader2 size={24} className="mx-auto mb-2 animate-spin" style={{ color: '#A6B300' }} />
+                <p className="font-semibold text-white">Still searching for a delivery partner...</p>
+                <p className="mt-1 text-xs text-white/60">Retrying automatically in a few seconds (attempt {retryCount + 1})</p>
               </div>
               <div className="flex gap-3">
                 <button onClick={cancelRequest}
                   className="flex-1 rounded-2xl py-3 text-sm font-semibold text-white/80 active:scale-95"
                   style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
                   Cancel
-                </button>
-                <button onClick={() => navigate('/app/orders')}
-                  className="flex-1 rounded-2xl py-3 text-sm font-bold text-white active:scale-95"
-                  style={{ background: 'linear-gradient(135deg,#808000,#606000)' }}>
-                  Track Order
                 </button>
               </div>
             </div>

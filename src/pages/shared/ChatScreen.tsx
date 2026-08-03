@@ -199,10 +199,35 @@ export default function ChatScreen() {
     if (!room?.request_id) return
     const channel = supabase.channel(`chat-cancel-${room.request_id}-${profile?.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `id=eq.${room.request_id}` },
-        (payload: any) => { if ((payload.new as any)?.status === 'cancelled') navigate(isUser ? '/app' : '/dp') })
+        (payload: any) => {
+          const updated = payload.new as any
+          if (updated.status === 'cancelled') navigate(isUser ? '/app' : '/dp')
+          // Refresh fullOrderData so payment status / booking status changes reflect immediately
+          setFullOrderData(updated)
+          // If advance payment status changed, refetch advance payment data
+          if (updated.advance_payment_id) {
+            supabase.from('advance_payments').select('*').eq('id', updated.advance_payment_id).maybeSingle()
+              .then(({ data }) => { if (data) setAdvancePaymentData(data) })
+          }
+        })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [room?.request_id, isUser, profile?.id, navigate])
+
+  // Realtime: listen for advance_payments changes (payment proof upload, verification, rejection)
+  useEffect(() => {
+    if (!room?.request_id || !fullOrderData?.advance_payment_id) return
+    const apId = fullOrderData.advance_payment_id
+    const channel = supabase.channel(`advance-payment-${apId}-${profile?.id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'advance_payments', filter: `id=eq.${apId}` },
+        (payload: any) => {
+          setAdvancePaymentData(payload.new)
+          // Also refetch messages so payment proof / verification messages appear
+          fetchMessages()
+        })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [room?.request_id, fullOrderData?.advance_payment_id, profile?.id])
 
   useEffect(() => {
     if (!roomId || !profile?.id) return

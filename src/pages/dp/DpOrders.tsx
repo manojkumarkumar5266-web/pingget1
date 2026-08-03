@@ -22,7 +22,7 @@ export default function DpOrders() {
   const fetchOrders = useCallback(async () => {
     let query = supabase.from('requests').select('*').eq('accepted_dp_id', profile!.id)
     if (tab === 'active') {
-      query = query.in('status', ['accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received', 'searching_dp', 'dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed', 'task_started'])
+      query = query.in('status', ['accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received', 'dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed', 'task_started'])
     } else if (tab === 'completed') {
       query = query.eq('status', 'completed')
     } else {
