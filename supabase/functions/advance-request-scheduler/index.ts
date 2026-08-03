@@ -30,11 +30,13 @@ Deno.serve(async (req: Request) => {
     const leadMinutes = settings?.notification_lead_minutes ?? 30;
     const now = Date.now();
 
-    // 1. Transition scheduled→pending for requests due within lead time
+    // 1. Transition scheduled→searching_dp for advance requests due within lead time
+    //    In V3, advance requests start as 'searching_dp' immediately after booking.
+    //    Legacy 'scheduled' requests are also transitioned to 'searching_dp'.
     const { data: activated, error: activateError } = await supabase
       .from("requests")
-      .update({ status: "pending" })
-      .eq("status", "scheduled")
+      .update({ status: "searching_dp" })
+      .in("status", ["scheduled"])
       .eq("order_type", "advance")
       .not("scheduled_timestamp", "is", null)
       .filter(`scheduled_timestamp.lte.${new Date(now + leadMinutes * 60 * 1000).toISOString()}`)
@@ -72,14 +74,24 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 3. Expire scheduled/pending requests based on configurable expiry
+    // 2b. Retry search for searching_dp requests (V3 reservation flow)
+    //     This calls the retry_search_for_advance RPC which:
+    //     - Expands the search radius if admin settings allow
+    //     - Finds available DPs and reserves the first one
+    //     - Creates chat room and notifies both parties
+    const { data: reservedCount, error: retryError } = await supabase.rpc("retry_search_for_advance");
+    if (retryError) {
+      console.error("Retry search error:", retryError.message);
+    }
+
+    // 3. Expire scheduled/searching_dp requests based on configurable expiry
     const expiryMinutes = getExpiryMinutes(settings?.expiry_mode, settings?.expiry_custom_minutes);
     if (expiryMinutes !== null) {
       const expireThreshold = new Date(now - expiryMinutes * 60 * 1000).toISOString();
       const { data: expired, error: expireError } = await supabase
         .from("requests")
         .update({ status: "expired", expired_at: new Date().toISOString() })
-        .in("status", ["scheduled", "pending"])
+        .in("status", ["scheduled", "searching_dp"])
         .eq("order_type", "advance")
         .not("scheduled_timestamp", "is", null)
         .filter(`scheduled_timestamp.lt.${expireThreshold}`)
@@ -102,14 +114,14 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 4. Smart configurable reminders
+    // 4. Smart configurable reminders — sent for booking_confirmed and scheduled requests
     const reminderConfigs = [
       { enabled: settings?.reminder_24h, minutes: 24 * 60, type: "advance_reminder_24h", title: "Advance Request — 24 Hours Left", body: "is in 24 hours." },
       { enabled: settings?.reminder_12h, minutes: 12 * 60, type: "advance_reminder_12h", title: "Advance Request — 12 Hours Left", body: "is in 12 hours." },
-      { enabled: settings?.reminder_2h, minutes: 2 * 60, type: "advance_reminder_2h", title: "Advance Request — 2 Hours Left", body: "is in 2 hours. We'll start finding a delivery partner soon." },
-      { enabled: settings?.reminder_1h, minutes: 60, type: "advance_reminder_1h", title: "Advance Request — 1 Hour Left", body: "is in 1 hour. We'll start finding a delivery partner soon." },
-      { enabled: settings?.reminder_30m, minutes: 30, type: "advance_reminder_30m", title: "Advance Request — 30 Minutes Left", body: "is in 30 minutes. Getting ready to find your delivery partner." },
-      { enabled: settings?.reminder_15m, minutes: 15, type: "advance_reminder_15m", title: "Advance Request — 15 Minutes Left", body: "is in 15 minutes. We're about to start searching for a delivery partner." },
+      { enabled: settings?.reminder_2h, minutes: 2 * 60, type: "advance_reminder_2h", title: "Advance Request — 2 Hours Left", body: "is in 2 hours." },
+      { enabled: settings?.reminder_1h, minutes: 60, type: "advance_reminder_1h", title: "Advance Request — 1 Hour Left", body: "is in 1 hour." },
+      { enabled: settings?.reminder_30m, minutes: 30, type: "advance_reminder_30m", title: "Advance Request — 30 Minutes Left", body: "is in 30 minutes." },
+      { enabled: settings?.reminder_15m, minutes: 15, type: "advance_reminder_15m", title: "Advance Request — 15 Minutes Left", body: "is in 15 minutes." },
       { enabled: settings?.reminder_5m, minutes: 5, type: "advance_reminder_5m", title: "Advance Request — 5 Minutes Left", body: "is starting in 5 minutes." },
     ];
 
@@ -121,7 +133,7 @@ Deno.serve(async (req: Request) => {
       const { data: reminders } = await supabase
         .from("requests")
         .select("id, user_id, request_category, scheduled_date, scheduled_time")
-        .eq("status", "scheduled")
+        .in("status", ["scheduled", "booking_confirmed"])
         .eq("order_type", "advance")
         .not("scheduled_timestamp", "is", null)
         .filter(`scheduled_timestamp.lte.${ahead}`)
@@ -243,7 +255,7 @@ async function createNextRecurringRequest(supabase: any, parentReq: any): Promis
       delivery_lng: parentReq.delivery_lng,
       max_budget: parentReq.max_budget,
       radius_meters: parentReq.radius_meters || 10000,
-      status: "scheduled",
+      status: "searching_dp",
       order_type: "advance",
       is_scheduled: true,
       scheduled_date: nextDateStr,

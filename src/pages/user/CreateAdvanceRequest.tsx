@@ -319,16 +319,17 @@ export default function CreateAdvanceRequest() {
     return supabase.storage.from('media').getPublicUrl(path).data.publicUrl
   }
 
-  // Calendar logic
+  // Calendar logic — today is now selectable
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const maxDays = settings?.max_advance_days ?? 7
   const maxDate = new Date(today)
   maxDate.setDate(maxDate.getDate() + maxDays)
+  const bufferMinutes = settings?.min_advance_buffer_minutes ?? 30
 
   const getSelectableDates = (): Date[] => {
     const dates: Date[] = []
-    for (let i = 1; i <= maxDays; i++) {
+    for (let i = 0; i <= maxDays; i++) {
       const d = new Date(today)
       d.setDate(d.getDate() + i)
       dates.push(d)
@@ -442,6 +443,14 @@ export default function CreateAdvanceRequest() {
       const scheduledTimestamp = new Date(selectedDate)
       scheduledTimestamp.setHours(sh, sm, 0, 0)
 
+      // Client-side validation: scheduled time must be in the future with buffer
+      const bufferMs = bufferMinutes * 60 * 1000
+      if (scheduledTimestamp.getTime() < Date.now() + bufferMs) {
+        setError('The selected time slot is no longer available. Please choose a future time slot.')
+        setLoading(false)
+        return
+      }
+
       const { data: inserted, error: insertError } = await supabase.from('requests').insert({
         user_id: profile!.id,
         description: fullDescription,
@@ -490,6 +499,39 @@ export default function CreateAdvanceRequest() {
         related_id: inserted.id,
       })
 
+      // V3: Immediately search for nearby available DPs and reserve the first one
+      try {
+        const { data: availableDps, error: searchError } = await supabase.rpc(
+          'search_available_dps_for_advance',
+          { p_request_id: inserted.id }
+        )
+        if (searchError) {
+          console.error('[CreateAdvanceRequest] DP search error:', searchError)
+        } else if (availableDps && availableDps.length > 0) {
+          // Try to reserve the first available DP
+          const { data: reserved, error: reserveError } = await supabase.rpc(
+            'reserve_dp_for_advance',
+            { p_request_id: inserted.id, p_dp_user_id: availableDps[0].dp_user_id }
+          )
+          if (reserveError) {
+            console.error('[CreateAdvanceRequest] DP reserve error:', reserveError)
+          } else if (reserved) {
+            // DP reserved successfully — update the notification
+            await supabase.from('notifications').insert({
+              user_id: profile!.id,
+              title: 'Delivery Partner Reserved!',
+              body: `A delivery partner has been reserved for your ${category} booking on ${formatDateKey(selectedDate)} at ${selectedSlot}. Open the chat to complete the advance payment.`,
+              type: 'dp_reserved',
+              related_id: inserted.id,
+            })
+          }
+        }
+        // If no DP found, the request stays in 'searching_dp' and the scheduler will retry
+      } catch (searchReserveErr) {
+        console.error('[CreateAdvanceRequest] Search/reserve error:', searchReserveErr)
+        // Don't throw — the request is created and will be retried by the scheduler
+      }
+
       navigate('/app/orders')
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
   }
@@ -532,7 +574,7 @@ export default function CreateAdvanceRequest() {
         </button>
         <div className="flex-1">
           <h1 className="text-lg font-bold text-white">Advance Request</h1>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Schedule a task up to {maxDays} days ahead</p>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Schedule from today up to {maxDays} days ahead</p>
         </div>
         {/* Step indicator */}
         <div className="flex items-center gap-1.5">
@@ -619,6 +661,7 @@ export default function CreateAdvanceRequest() {
                 nightEnd={settings.night_charge_end}
                 peakStart={settings.peak_hours_start}
                 peakEnd={settings.peak_hours_end}
+                bufferMinutes={bufferMinutes}
               />
             )}
 

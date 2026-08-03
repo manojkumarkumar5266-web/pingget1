@@ -48,10 +48,13 @@ const DEFAULT_SETTINGS: Omit<AdvanceSettings, 'id' | 'created_at' | 'updated_at'
   reservation_search_radius_meters: 10000,
   payment_deadline_minutes: 120,
   dp_cancel_research: true,
+  min_advance_buffer_minutes: 30,
 }
 
 const LEAD_OPTIONS = [15, 30, 45, 60, 90, 120]
 const SLOT_OPTIONS = [30, 60]
+const BUFFER_OPTIONS = [15, 30, 45, 60]
+const MAX_DAYS_OPTIONS = [1, 3, 7, 15, 30, 60, 90]
 const EXPIRY_OPTIONS: { value: AdvanceSettings['expiry_mode']; label: string }[] = [
   { value: '30_minutes', label: '30 Minutes' },
   { value: '1_hour', label: '1 Hour' },
@@ -149,7 +152,24 @@ export default function AdminAdvanceSettings() {
       {/* Scheduling */}
       <SectionTitle title="Scheduling" />
       <div className="card p-4 mb-4 space-y-4">
-        <NumberField label="Maximum Advance Days" value={s.max_advance_days} onChange={v => update('max_advance_days', v)} min={1} max={30} />
+        <div>
+          <label className="label">Maximum Advance Booking Days</label>
+          <div className="flex flex-wrap gap-2">
+            {MAX_DAYS_OPTIONS.map(opt => (
+              <Pill key={opt} active={s.max_advance_days === opt} onClick={() => update('max_advance_days', opt)}>{opt} {opt === 1 ? 'day' : 'days'}</Pill>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>How many days ahead a customer can schedule (includes today)</p>
+        </div>
+        <div>
+          <label className="label">Minimum Advance Buffer Time</label>
+          <div className="flex flex-wrap gap-2">
+            {BUFFER_OPTIONS.map(opt => (
+              <Pill key={opt} active={s.min_advance_buffer_minutes === opt} onClick={() => update('min_advance_buffer_minutes', opt)}>{opt} min</Pill>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Minimum time from now before a today-slot becomes available</p>
+        </div>
         <div>
           <label className="label">Notification Lead Time</label>
           <div className="flex flex-wrap gap-2">

@@ -13,7 +13,7 @@ import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../.
 import { useGps } from '../../hooks/useGps'
 import { EmptyState, ServiceStatusBanner, SkeletonList, EarningsCard, CountUp, StatCard } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency } from '../../lib/utils'
-import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Bike, Car, Truck, Activity, Navigation, Wallet, ChevronRight, MapPinOff, Loader2 } from 'lucide-react'
+import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Bike, Car, Truck, Activity, Navigation, Wallet, ChevronRight, MapPinOff, Loader2, CalendarClock } from 'lucide-react'
 
 function vehicleIcon(vehicleType: string | null) {
   const v = (vehicleType || '').toLowerCase()
@@ -135,6 +135,8 @@ export default function DpHome() {
     const channel = supabase.channel('dp-requests')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: 'status=eq.pending' },
         () => { showToast('New delivery request nearby!'); fetchRequests() })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: 'status=eq.searching_dp' },
+        () => { showToast('New advance booking nearby!'); fetchRequests() })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' }, () => fetchRequests())
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -167,6 +169,22 @@ export default function DpHome() {
   }
 
   const acceptRequest = async (req: RequestWithUser) => {
+    // For advance bookings in searching_dp status, use the reservation RPC
+    if (req.order_type === 'advance' && req.status === 'searching_dp') {
+      const { data: reserved, error } = await supabase.rpc(
+        'reserve_dp_for_advance',
+        { p_request_id: req.id, p_dp_user_id: profile!.id }
+      )
+      if (error || !reserved) {
+        showToast(error?.message || 'Failed to reserve this booking')
+        return
+      }
+      // Navigate to the chat room for this request
+      const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
+      if (room) navigate(`/dp/chat/${room.id}`)
+      else navigate('/dp/orders')
+      return
+    }
     const { data, error } = await supabase.rpc('accept_request', { p_request_id: req.id, p_dp_user_id: profile!.id })
     const row = Array.isArray(data) ? data[0] : data
     if (error || !row?.success) { showToast(row?.error_msg || error?.message || 'Failed to accept request'); return }
@@ -441,6 +459,11 @@ export default function DpHome() {
                         Scheduled: {req.scheduled_slot}
                       </span>
                     )}
+                    {req.order_type === 'advance' && req.status === 'searching_dp' && (
+                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold animate-pulse" style={{ background: 'rgba(166,179,0,0.15)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.25)' }}>
+                        Reserve Now
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -486,7 +509,7 @@ export default function DpHome() {
                   <button onClick={() => acceptRequest(req)}
                     className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold transition-all active:scale-95"
                     style={{ background: '#A6B300', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.3)' }}>
-                    <Check size={16} strokeWidth={3} /> Accept
+                    {req.order_type === 'advance' && req.status === 'searching_dp' ? <><CalendarClock size={16} /> Reserve</> : <><Check size={16} strokeWidth={3} /> Accept</>}
                   </button>
                   <button onClick={() => declineRequest(req)}
                     className="flex items-center justify-center rounded-2xl px-4 py-3 transition-all active:scale-95"

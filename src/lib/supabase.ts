@@ -206,6 +206,7 @@ export type AdvanceSettings = {
   reservation_search_radius_meters: number
   payment_deadline_minutes: number
   dp_cancel_research: boolean
+  min_advance_buffer_minutes: number
   created_at: string
   updated_at: string
 }
