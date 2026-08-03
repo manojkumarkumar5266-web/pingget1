@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, Message, ChatRoom, Order, Profile, DeliveryPartner } from '../../lib/supabase'
 import { Avatar, StatusBadge, ErrorBanner, FullScreenLoader } from '../../components/ui'
 import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
-import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, CheckCircle, ClipboardList, CreditCard, Upload, ShieldCheck, AlertCircle, CalendarClock, Clock, RotateCcw, Shield } from 'lucide-react'
+import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, CheckCircle, ClipboardList, CreditCard, Upload, ShieldCheck, AlertCircle, CalendarClock, Clock, RotateCcw, Shield, MapPin, Navigation, Tag, Volume2, ChevronDown, ChevronUp } from 'lucide-react'
 
 export default function ChatScreen() {
   const { roomId } = useParams()
@@ -410,11 +410,19 @@ export default function ChatScreen() {
         )}
       </header>
 
+      {/* Pinned Advance Task Summary (advance bookings only) */}
+      {fullOrderData?.order_type === 'advance' && (
+        <AdvanceTaskSummary
+          request={fullOrderData}
+          statusLabel={STATUS_LABELS[fullOrderData.status] || fullOrderData.status}
+        />
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4" style={{ background: '#0B0B0B' }}>
         <div className="mx-auto max-w-md space-y-2.5">
           {/* Context banners */}
-          {!order && isUser && (
+          {!order && isUser && fullOrderData?.order_type !== 'advance' && (
             <div className="mb-4 rounded-2xl px-4 py-3 text-center text-xs font-medium animate-fade-in"
               style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)', color: 'rgba(255,255,255,0.6)' }}>
               Discuss items and delivery charge. Your partner will send a quotation.
@@ -1278,6 +1286,93 @@ function RejectPaymentModal({ onClose, advancePaymentId, dpId, onReject }: {
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabel: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const photos: string[] = request.photo_urls || []
+  const hasVoice = !!request.voice_note_url
+  const hasBudget = request.max_budget != null && Number(request.max_budget) > 0
+  const hasInstructions = !!request.special_instructions
+  const hasDescription = !!request.description
+  const category = request.request_category
+  const scheduledDate = request.scheduled_date
+  const scheduledTime = request.scheduled_slot || request.scheduled_time
+  const pickup = request.pickup_address
+  const delivery = request.delivery_address
+
+  const Row = ({ icon, label, value }: { icon: any; label: string; value: string }) => (
+    <div className="flex items-start gap-2 py-1.5">
+      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg" style={{ background: 'rgba(166,179,0,0.1)' }}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.35)' }}>{label}</p>
+        <p className="text-sm text-white break-words">{value}</p>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="shrink-0 px-4 pt-3 pb-1" style={{ background: 'rgba(166,179,0,0.04)', borderBottom: '1px solid rgba(166,179,0,0.12)' }}>
+      <div className="mx-auto max-w-md">
+        <button
+          onClick={() => setExpanded(v => !v)}
+          className="flex w-full items-center justify-between gap-2 py-1.5"
+        >
+          <div className="flex items-center gap-2">
+            <ClipboardList size={15} style={{ color: '#A6B300' }} />
+            <span className="text-sm font-bold text-white">Advance Task Summary</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(166,179,0,0.15)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.25)' }}>
+              {statusLabel}
+            </span>
+            {expanded ? <ChevronUp size={16} style={{ color: 'rgba(255,255,255,0.4)' }} /> : <ChevronDown size={16} style={{ color: 'rgba(255,255,255,0.4)' }} />}
+          </div>
+        </button>
+
+        {expanded && (
+          <div className="pb-3 pt-1 animate-fade-in">
+            {category && <Row icon={<Tag size={12} style={{ color: '#A6B300' }} />} label="Category" value={category} />}
+            {scheduledDate && <Row icon={<CalendarClock size={12} style={{ color: '#A6B300' }} />} label="Scheduled Date" value={scheduledDate} />}
+            {scheduledTime && <Row icon={<Clock size={12} style={{ color: '#A6B300' }} />} label="Scheduled Time" value={scheduledTime} />}
+            {pickup && <Row icon={<MapPin size={12} style={{ color: '#A6B300' }} />} label="Pickup Address" value={pickup} />}
+            {delivery && <Row icon={<Navigation size={12} style={{ color: '#A6B300' }} />} label="Delivery Address" value={delivery} />}
+            {hasDescription && <Row icon={<FileText size={12} style={{ color: '#A6B300' }} />} label="Task Description" value={request.description} />}
+            {hasBudget && <Row icon={<IndianRupee size={12} style={{ color: '#A6B300' }} />} label="Budget" value={formatCurrency(Number(request.max_budget))} />}
+            {hasInstructions && <Row icon={<ShieldCheck size={12} style={{ color: '#A6B300' }} />} label="Special Instructions" value={request.special_instructions} />}
+
+            {photos.length > 0 && (
+              <div className="mt-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>Photos</p>
+                <div className="flex flex-wrap gap-2">
+                  {photos.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`Photo ${i + 1}`} className="h-16 w-16 rounded-xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {hasVoice && (
+              <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(166,179,0,0.06)' }}>
+                <Volume2 size={14} style={{ color: '#A6B300' }} />
+                <span className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Voice note attached</span>
+                <a href={request.voice_note_url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs font-semibold" style={{ color: '#A6B300' }}>Play</a>
+              </div>
+            )}
+
+            <div className="mt-3 flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(166,179,0,0.06)' }}>
+              <CheckCircle size={12} style={{ color: '#A6B300' }} />
+              <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Current Status: <span className="font-bold" style={{ color: '#A6B300' }}>{statusLabel}</span></p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

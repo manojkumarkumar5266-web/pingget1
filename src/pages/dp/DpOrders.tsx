@@ -218,6 +218,11 @@ export default function DpOrders() {
                       </button>
                     )}
                     {req.order_type === 'advance' && req.status === 'task_started' && (
+                      <button onClick={() => navigate(`/dp/navigate/${req.id}`)} className="btn-primary flex-1 gap-1.5 text-sm">
+                        <Navigation size={15} /> Live Tracking
+                      </button>
+                    )}
+                    {req.order_type === 'advance' && req.status === 'task_started' && (
                       <button onClick={async () => {
                         setUpdating(req.id)
                         await supabase.from('requests').update({ status: 'task_completed', task_completed_at: new Date().toISOString() }).eq('id', req.id)

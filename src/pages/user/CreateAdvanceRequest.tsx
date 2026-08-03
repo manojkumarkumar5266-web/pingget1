@@ -500,8 +500,8 @@ export default function CreateAdvanceRequest() {
         related_id: inserted.id,
       })
 
-      // V3: Do NOT auto-reserve. Navigate to the Searching page and wait for a DP to reserve.
-      navigate(`/app/searching/${inserted.id}`)
+      // V3: Do NOT auto-reserve. Navigate to the radar Scanning page and wait for a DP to reserve.
+      navigate(`/app/scanning/${inserted.id}`)
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
   }
 
