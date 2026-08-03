@@ -108,21 +108,20 @@ export default function PremiumTimeSlotSelector({
       {allSlotsInPast ? (
         <div className="py-6 text-center">
           <Clock size={32} className="mx-auto mb-2" style={{ color: 'rgba(255,255,255,0.2)' }} />
-          <p className="text-sm font-medium text-white/60">All time slots for today have passed.</p>
-          <p className="text-xs text-white/40 mt-1">Please select a future date to see available slots.</p>
+          <p className="text-sm font-medium text-white/60">No more slots available today.</p>
+          <p className="text-xs text-white/40 mt-1">Please select another day.</p>
         </div>
       ) : slots.length === 0 ? (
         <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>No slots available for these business hours.</p>
       ) : (
         <div className="grid grid-cols-2 gap-2.5">
-          {slots.map(slot => {
+          {slots.filter(slot => !isSlotInPast(slot.start, selectedDate, bufferMinutes)).map(slot => {
             const isSelected = selectedSlot === slot.key
             const isDisabled = disabledSlots.has(slot.key)
-            const isPast = isSlotInPast(slot.start, selectedDate, bufferMinutes)
             const isNight = isNightTime(slot.start, nightStart, nightEnd)
             const isPeak = isPeakTime(slot.start, peakStart, peakEnd)
             const weekend = isWeekend(selectedDate)
-            const slotDisabled = isDisabled || isPast
+            const slotDisabled = isDisabled
 
             return (
               <button key={slot.key} onClick={() => !slotDisabled && onSelect(slot.key)} disabled={slotDisabled}
@@ -139,7 +138,7 @@ export default function PremiumTimeSlotSelector({
                 <div className="flex items-center gap-1.5">
                   {slotDisabled ? (
                     <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                      <Lock size={8} /> {isPast ? 'Past' : 'Unavailable'}
+                      <Lock size={8} /> Unavailable
                     </span>
                   ) : (
                     <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase" style={{ color: isSelected ? 'rgba(11,11,11,0.6)' : '#A6B300' }}>

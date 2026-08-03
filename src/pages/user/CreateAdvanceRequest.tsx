@@ -10,7 +10,7 @@ import {
   ArrowLeft, Camera, Mic, MicOff, X, Play, Pause, Store, Package, Trash2, Plus,
   MapPin, Navigation, Home, Edit2, ShoppingBag, Calendar, Clock, Tag,
   IndianRupee, FileText, ChevronRight, Check, ChevronLeft, Phone, AlertCircle,
-  Repeat,
+  Repeat, Search, Radar,
 } from 'lucide-react'
 
 type SavedAddress = {
@@ -154,6 +154,7 @@ export default function CreateAdvanceRequest() {
   const MAX_ADDRESSES = 5
 
   const [loading, setLoading] = useState(false)
+  const [searchingDp, setSearchingDp] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -500,6 +501,7 @@ export default function CreateAdvanceRequest() {
       })
 
       // V3: Immediately search for nearby available DPs and reserve the first one
+      setSearchingDp(true)
       try {
         const { data: availableDps, error: searchError } = await supabase.rpc(
           'search_available_dps_for_advance',
@@ -530,6 +532,8 @@ export default function CreateAdvanceRequest() {
       } catch (searchReserveErr) {
         console.error('[CreateAdvanceRequest] Search/reserve error:', searchReserveErr)
         // Don't throw — the request is created and will be retried by the scheduler
+      } finally {
+        setSearchingDp(false)
       }
 
       navigate('/app/orders')
@@ -1075,6 +1079,26 @@ export default function CreateAdvanceRequest() {
           )}
         </div>
       </div>
+      {/* V3 Searching Animation Overlay */}
+      {searchingDp && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{ background: 'rgba(11,11,11,0.92)', backdropFilter: 'blur(8px)' }}>
+          <div className="relative flex h-32 w-32 items-center justify-center">
+            <div className="absolute inset-0 animate-ping rounded-full" style={{ background: 'rgba(166,179,0,0.15)' }} />
+            <div className="absolute inset-2 animate-pulse rounded-full" style={{ background: 'rgba(166,179,0,0.1)' }} />
+            <div className="absolute inset-4 rounded-full" style={{ background: 'rgba(166,179,0,0.08)' }} />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', boxShadow: '0 0 32px rgba(166,179,0,0.4)' }}>
+              <Radar size={28} className="text-[#0B0B0B]" />
+            </div>
+          </div>
+          <p className="mt-6 text-lg font-bold text-white animate-pulse">Searching nearby delivery partner...</p>
+          <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Reserving your advance booking</p>
+          <div className="mt-4 flex items-center gap-1.5">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="h-2 w-2 rounded-full animate-bounce" style={{ background: '#A6B300', animationDelay: `${i * 150}ms` }} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

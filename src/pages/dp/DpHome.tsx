@@ -12,7 +12,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
 import { useGps } from '../../hooks/useGps'
 import { EmptyState, ServiceStatusBanner, SkeletonList, EarningsCard, CountUp, StatCard } from '../../components/ui'
-import { formatTime, formatDistance, haversineDistance, formatCurrency } from '../../lib/utils'
+import { formatTime, formatDistance, haversineDistance, formatCurrency, STATUS_LABELS, STATUS_COLORS } from '../../lib/utils'
 import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Bike, Car, Truck, Activity, Navigation, Wallet, ChevronRight, MapPinOff, Loader2, CalendarClock } from 'lucide-react'
 
 function vehicleIcon(vehicleType: string | null) {
@@ -447,6 +447,15 @@ export default function DpHome() {
                     </span>
                   )}
                 </div>
+
+                {/* V3 Status badge for advance requests */}
+                {req.order_type === 'advance' && req.status !== 'searching_dp' && req.status !== 'pending' && STATUS_LABELS[req.status] && (
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[req.status] || ''}`}>
+                      {STATUS_LABELS[req.status]}
+                    </span>
+                  </div>
+                )}
 
                 {/* Scheduled badge */}
                 {req.is_scheduled && req.request_category && (

@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, Message, ChatRoom, Order, Profile, DeliveryPartner } from '../../lib/supabase'
 import { Avatar, StatusBadge, ErrorBanner, FullScreenLoader } from '../../components/ui'
 import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
-import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, CheckCircle, ClipboardList, CreditCard, Upload, ShieldCheck, AlertCircle, CalendarClock, Clock } from 'lucide-react'
+import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, CheckCircle, ClipboardList, CreditCard, Upload, ShieldCheck, AlertCircle, CalendarClock, Clock, RotateCcw, Shield } from 'lucide-react'
 
 export default function ChatScreen() {
   const { roomId } = useParams()
@@ -505,8 +505,8 @@ export default function ChatScreen() {
                           </span>
                         </div>
                       </div>
-                      {/* Customer: Upload payment proof button */}
-                      {isUser && msg.quotation_data.status === 'waiting' && msg.advance_payment_id && (
+                      {/* Customer: Upload payment proof button (also after rejection so they can re-upload) */}
+                      {isUser && (msg.quotation_data.status === 'waiting' || msg.quotation_data.status === 'rejected') && msg.advance_payment_id && (
                         <button onClick={() => { setShowPaymentProof(msg.advance_payment_id); setAdvancePaymentData(msg.quotation_data) }}
                           className="w-full rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
                           style={{ background: '#A6B300', color: '#0B0B0B' }}>
@@ -526,10 +526,47 @@ export default function ChatScreen() {
                             await supabase.from('requests').update({ status: 'booking_confirmed' }).eq('advance_payment_id', msg.advance_payment_id)
                             await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: 'Advance Confirmation Payment Verified. Your booking has been successfully reserved. See you on the scheduled date and time.' })
                             await supabase.from('notifications').insert({ user_id: fullOrderData?.user_id, title: 'Payment Verified', body: 'Your advance payment has been verified. Booking confirmed!', type: 'payment_verified', related_id: fullOrderData?.id })
+                            fetchMessages()
                           }}
                             className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
                             style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
                             <ShieldCheck size={12} className="inline mr-1" /> Verify
+                          </button>
+                        </div>
+                      )}
+                      {/* DP: Request Another Proof after rejection */}
+                      {!isUser && msg.quotation_data.status === 'rejected' && msg.advance_payment_id && (
+                        <button onClick={async () => {
+                          await supabase.from('advance_payments').update({ status: 'waiting', reject_reason: null }).eq('id', msg.advance_payment_id)
+                          await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: 'Please re-upload the payment proof with the correct details.' })
+                          fetchMessages()
+                        }}
+                          className="w-full rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
+                          style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b' }}>
+                          <RotateCcw size={12} className="inline mr-1" /> Request Another Proof
+                        </button>
+                      )}
+                      {/* Admin Override: Force verify or reject */}
+                      {profile?.role === 'admin' && msg.advance_payment_id && msg.quotation_data.status !== 'verified' && (
+                        <div className="flex gap-2">
+                          <button onClick={async () => {
+                            await supabase.from('advance_payments').update({ status: 'verified', verified_by: profile!.id, verified_at: new Date().toISOString(), admin_override: true }).eq('id', msg.advance_payment_id)
+                            await supabase.from('requests').update({ status: 'booking_confirmed' }).eq('advance_payment_id', msg.advance_payment_id)
+                            await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: '[Admin Override] Payment verified by admin. Booking confirmed.' })
+                            fetchMessages()
+                          }}
+                            className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
+                            style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
+                            <Shield size={12} className="inline mr-1" /> Force Verify
+                          </button>
+                          <button onClick={async () => {
+                            await supabase.from('advance_payments').update({ status: 'rejected', verified_by: profile!.id, verified_at: new Date().toISOString(), admin_override: true, reject_reason: 'Rejected by admin' }).eq('id', msg.advance_payment_id)
+                            await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: '[Admin Override] Payment rejected by admin.' })
+                            fetchMessages()
+                          }}
+                            className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
+                            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
+                            <Shield size={12} className="inline mr-1" /> Force Reject
                           </button>
                         </div>
                       )}
