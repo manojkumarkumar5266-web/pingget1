@@ -115,19 +115,18 @@ export default function UserLayout() {
               const active = isActive(item.path)
               return (
                 <button key={item.path} onClick={() => navigate(item.path)}
-                  className="relative flex flex-col items-center gap-0.5 px-4 py-1.5 transition-all"
-                  style={{ minWidth: 56 }}>
-                  <Icon size={22} style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)', transition: 'color 0.2s' }} />
+                  className="relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all"
+                  style={{ minWidth: 56, background: active ? 'rgba(166,179,0,0.12)' : 'transparent' }}>
+                  <Icon size={22} style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)', transition: 'color 0.2s, transform 0.2s', transform: active ? 'translateY(-1px) scale(1.08)' : 'none' }} />
                   <span className="text-[10px] font-semibold" style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.35)' }}>{item.label}</span>
-                  {active && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full" style={{ background: '#A6B300' }} />}
                 </button>
               )
             })}
 
             {/* FAB center */}
             <button onClick={() => navigate('/app/create')}
-              className="relative -mt-5 flex h-14 w-14 items-center justify-center rounded-2xl transition-all active:scale-90 shadow-glow-lg animate-glow-pulse"
-              style={{ background: 'linear-gradient(135deg,#A6B300,#BFD400)', boxShadow: '0 4px 20px rgba(166,179,0,0.5)' }}>
+              className="relative -mt-6 flex h-14 w-14 items-center justify-center rounded-2xl transition-all active:scale-90"
+              style={{ background: 'linear-gradient(135deg,#C0D900,#A6B300)', boxShadow: '0 6px 24px rgba(166,179,0,0.55)', border: '2px solid rgba(255,255,255,0.15)' }}>
               <Plus size={26} className="text-[#0B0B0B] font-bold" strokeWidth={3} />
             </button>
 
@@ -137,18 +136,17 @@ export default function UserLayout() {
               const active = isActive(item.path)
               return (
                 <button key={item.path} onClick={() => navigate(item.path)}
-                  className="relative flex flex-col items-center gap-0.5 px-4 py-1.5 transition-all"
-                  style={{ minWidth: 56 }}>
+                  className="relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all"
+                  style={{ minWidth: 56, background: active ? 'rgba(166,179,0,0.12)' : 'transparent' }}>
                   <div className="relative">
-                    <Icon size={22} style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)', transition: 'color 0.2s' }} />
+                    <Icon size={22} style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)', transition: 'color 0.2s, transform 0.2s', transform: active ? 'translateY(-1px) scale(1.08)' : 'none' }} />
                     {item.badge && item.badge > 0 && (
-                      <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                      <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-[#181818]">
                         {item.badge > 9 ? '9+' : item.badge}
                       </span>
                     )}
                   </div>
                   <span className="text-[10px] font-semibold" style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.35)' }}>{item.label}</span>
-                  {active && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full" style={{ background: '#A6B300' }} />}
                 </button>
               )
             })}

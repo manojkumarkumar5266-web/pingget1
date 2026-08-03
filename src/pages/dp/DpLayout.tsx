@@ -162,13 +162,12 @@ export default function DpLayout() {
               const badge = (item as any).badge
               return (
                 <button key={item.path} onClick={() => navigate(item.path)}
-                  className="relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-all"
-                  style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)' }}>
-                  <Icon size={22} />
+                  className="relative flex flex-1 flex-col items-center gap-0.5 py-2 rounded-2xl transition-all"
+                  style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)', background: active ? 'rgba(166,179,0,0.12)' : 'transparent' }}>
+                  <Icon size={22} style={{ transform: active ? 'translateY(-1px) scale(1.08)' : 'none', transition: 'transform 0.2s' }} />
                   <span className="text-[10px] font-semibold">{item.label}</span>
-                  {active && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full" style={{ background: '#A6B300' }} />}
                   {badge > 0 && (
-                    <span className="absolute top-0.5 right-1/2 translate-x-[14px] flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white" style={{ background: '#ef4444' }}>
+                    <span className="absolute top-0.5 right-1/2 translate-x-[14px] flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white ring-2 ring-[#181818]" style={{ background: '#ef4444' }}>
                       {badge > 9 ? '9+' : badge}
                     </span>
                   )}
