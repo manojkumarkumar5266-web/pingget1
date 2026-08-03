@@ -43,6 +43,11 @@ const DEFAULT_SETTINGS: Omit<AdvanceSettings, 'id' | 'created_at' | 'updated_at'
   expand_search_radius: true,
   search_radius_increment_meters: 2000,
   max_search_radius_meters: 20000,
+  // V3 fields
+  confirmation_fee: 0,
+  reservation_search_radius_meters: 10000,
+  payment_deadline_minutes: 120,
+  dp_cancel_research: true,
 }
 
 const LEAD_OPTIONS = [15, 30, 45, 60, 90, 120]
@@ -260,6 +265,21 @@ export default function AdminAdvanceSettings() {
             <Toggle value={s[r.key]} onChange={v => update(r.key, v)} />
           </div>
         ))}
+      </div>
+
+      {/* V3 Reservation Settings */}
+      <SectionTitle title="Reservation & Payment (V3)" />
+      <div className="card p-4 mb-4 space-y-4">
+        <NumberField label="Confirmation Fee (advance payment)" value={s.confirmation_fee} onChange={v => update('confirmation_fee', v)} min={0} />
+        <NumberField label="Reservation Search Radius (meters)" value={s.reservation_search_radius_meters} onChange={v => update('reservation_search_radius_meters', v)} min={1000} />
+        <NumberField label="Payment Deadline (minutes)" value={s.payment_deadline_minutes} onChange={v => update('payment_deadline_minutes', v)} min={5} />
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-white">Auto Re-search on DP Cancel</p>
+            <p className="text-sm text-white/40">Automatically search for a new DP if the reserved DP cancels</p>
+          </div>
+          <Toggle value={s.dp_cancel_research} onChange={v => update('dp_cancel_research', v)} />
+        </div>
       </div>
 
       {/* Smart DP Matching */}

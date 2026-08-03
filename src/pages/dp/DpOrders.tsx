@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
 import { EmptyState, StatusBadge, SkeletonCard, Tabs } from '../../components/ui'
 import { formatTime, formatCurrency } from '../../lib/utils'
-import { ClipboardList, Clock, MapPin, MessageCircle, Lock, Package, Camera, Wallet, Navigation, XCircle } from 'lucide-react'
+import { ClipboardList, Clock, MapPin, MessageCircle, Lock, Package, Camera, Wallet, Navigation, XCircle, Play, CalendarClock, CreditCard, CheckCircle2 } from 'lucide-react'
 import DeliveryProofUploader from '../../components/DeliveryProofUploader'
 
 type Tab = 'active' | 'completed' | 'cancelled'
@@ -22,7 +22,7 @@ export default function DpOrders() {
   const fetchOrders = useCallback(async () => {
     let query = supabase.from('requests').select('*').eq('accepted_dp_id', profile!.id)
     if (tab === 'active') {
-      query = query.in('status', ['accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received'])
+      query = query.in('status', ['accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received', 'searching_dp', 'dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed', 'task_started'])
     } else if (tab === 'completed') {
       query = query.eq('status', 'completed')
     } else {
@@ -147,6 +147,20 @@ export default function DpOrders() {
                     <p className="text-xs font-semibold text-primary-700 dark:text-primary-300">Open Chat to agree on price with the customer</p>
                   </div>
                 )}
+                {req.order_type === 'advance' && ['dp_reserved','waiting_payment','payment_verified','booking_confirmed'].includes(req.status) && (
+                  <div className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
+                    <CalendarClock size={14} style={{ color: '#A6B300' }} />
+                    <p className="text-xs font-medium" style={{ color: '#A6B300' }}>
+                      {req.request_category} · {req.scheduled_date} at {req.scheduled_slot || req.scheduled_time}
+                    </p>
+                  </div>
+                )}
+                {req.order_type === 'advance' && req.status === 'waiting_payment' && (
+                  <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                    <CreditCard size={12} style={{ color: '#f59e0b' }} />
+                    <p className="text-xs" style={{ color: '#f59e0b' }}>Waiting for customer's advance payment confirmation</p>
+                  </div>
+                )}
 
                 {awaitingUser && (
                   <div className="mt-3 flex items-center justify-center rounded-xl bg-warning-50 px-3 py-2.5 text-xs font-medium text-warning-700 dark:bg-warning-950/30 dark:text-warning-300 animate-pulse-soft">
@@ -188,6 +202,32 @@ export default function DpOrders() {
                     {canNavigate && (
                       <button onClick={() => navigate(`/dp/navigate/${req.id}`)} className="btn-primary flex-1 gap-1.5 text-sm">
                         <Navigation size={15} /> Navigate
+                      </button>
+                    )}
+                    {req.order_type === 'advance' && req.status === 'booking_confirmed' && (
+                      <button onClick={async () => {
+                        setUpdating(req.id)
+                        await supabase.from('requests').update({ status: 'task_started', task_started_at: new Date().toISOString() }).eq('id', req.id)
+                        await supabase.from('notifications').insert({ user_id: req.user_id, title: 'Task Started', body: 'Your delivery partner has started the task. Live tracking is now enabled.', type: 'task_started', related_id: req.id })
+                        setUpdating(null)
+                        fetchOrders()
+                      }} disabled={updating === req.id}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                        style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>
+                        <Play size={14} /> Start Task
+                      </button>
+                    )}
+                    {req.order_type === 'advance' && req.status === 'task_started' && (
+                      <button onClick={async () => {
+                        setUpdating(req.id)
+                        await supabase.from('requests').update({ status: 'task_completed', task_completed_at: new Date().toISOString() }).eq('id', req.id)
+                        await supabase.from('notifications').insert({ user_id: req.user_id, title: 'Task Completed', body: 'Your delivery partner has completed the task.', type: 'task_completed', related_id: req.id })
+                        setUpdating(null)
+                        fetchOrders()
+                      }} disabled={updating === req.id}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                        style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399' }}>
+                        <CheckCircle2 size={14} /> Complete Task
                       </button>
                     )}
                   </div>

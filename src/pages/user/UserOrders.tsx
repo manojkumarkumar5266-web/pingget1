@@ -6,7 +6,7 @@ import { EmptyState, StatusBadge, Avatar, SkeletonList } from '../../components/
 import { formatTime } from '../../lib/utils'
 import CancellationModal from '../../components/CancellationModal'
 import RescheduleModal from '../../components/RescheduleModal'
-import { ClipboardList, Clock, MapPin, MessageCircle, Bike, CheckCircle2, Package, ShoppingBag, Truck, ChevronRight, CalendarClock, CalendarPlus } from 'lucide-react'
+import { ClipboardList, Clock, MapPin, MessageCircle, Bike, CheckCircle2, Package, ShoppingBag, Truck, ChevronRight, CalendarClock, CalendarPlus, CreditCard } from 'lucide-react'
 
 type Tab = 'active' | 'completed' | 'cancelled'
 type RequestWithDp = DeliveryRequest & { _dp?: Profile }
@@ -69,7 +69,7 @@ export default function UserOrders() {
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     let query = supabase.from('requests').select('*').eq('user_id', profile!.id)
-    if (tab === 'active') query = query.in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled'])
+    if (tab === 'active') query = query.in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled','searching_dp','dp_reserved','waiting_payment','payment_verified','booking_confirmed','task_started','task_completed','no_dp_found'])
     else if (tab === 'completed') query = query.eq('status', 'completed')
     else query = query.in('status', ['cancelled', 'expired'])
     const { data } = await query.order('created_at', { ascending: false })
@@ -133,7 +133,7 @@ export default function UserOrders() {
     { key: 'cancelled' as Tab, label: 'Cancelled' },
   ]
   const counts = {
-    active: orders.filter(o => ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled'].includes(o.status)).length,
+    active: orders.filter(o => ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled','searching_dp','dp_reserved','waiting_payment','payment_verified','booking_confirmed','task_started','task_completed','no_dp_found'].includes(o.status)).length,
   }
 
   return (
@@ -190,12 +190,36 @@ export default function UserOrders() {
                 )}
 
                 {/* Scheduled badge */}
-                {(req.status === 'scheduled' || req.status === 'rescheduled') && req.is_scheduled && (
+                {(req.status === 'scheduled' || req.status === 'rescheduled' || req.status === 'searching_dp' || req.status === 'dp_reserved' || req.status === 'waiting_payment' || req.status === 'payment_verified' || req.status === 'booking_confirmed') && req.is_scheduled && (
                   <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}>
                     <CalendarClock size={14} style={{ color: '#818cf8' }} />
                     <p className="text-xs font-medium" style={{ color: '#818cf8' }}>
                       {req.request_category} · {req.scheduled_date} at {req.scheduled_slot || req.scheduled_time}
                     </p>
+                  </div>
+                )}
+                {req.status === 'searching_dp' && (
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
+                    <div className="h-2 w-2 rounded-full animate-pulse" style={{ background: '#A6B300' }} />
+                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Searching for a delivery partner...</p>
+                  </div>
+                )}
+                {req.status === 'dp_reserved' && (
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)' }}>
+                    <CheckCircle2 size={14} style={{ color: '#A6B300' }} />
+                    <p className="text-xs font-medium" style={{ color: '#A6B300' }}>Delivery partner reserved! Waiting for payment confirmation.</p>
+                  </div>
+                )}
+                {req.status === 'waiting_payment' && (
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                    <CreditCard size={14} style={{ color: '#f59e0b' }} />
+                    <p className="text-xs font-medium" style={{ color: '#f59e0b' }}>Please complete the advance payment in chat.</p>
+                  </div>
+                )}
+                {req.status === 'booking_confirmed' && (
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                    <CheckCircle2 size={14} style={{ color: '#34d399' }} />
+                    <p className="text-xs font-medium" style={{ color: '#34d399' }}>Booking confirmed! See you on the scheduled date.</p>
                   </div>
                 )}
 
@@ -253,7 +277,7 @@ export default function UserOrders() {
                       {updating === req.id ? 'Confirming...' : 'Accept Delivery'}
                     </button>
                   )}
-                  {['pending', 'accepted', 'confirmed', 'shopping', 'scheduled', 'rescheduled'].includes(req.status) && (
+                  {['pending', 'accepted', 'confirmed', 'shopping', 'scheduled', 'rescheduled', 'searching_dp', 'dp_reserved', 'waiting_payment', 'booking_confirmed'].includes(req.status) && (
                     <button
                       onClick={() => setCancelTarget(req)}
                       disabled={updating === req.id}
@@ -262,7 +286,7 @@ export default function UserOrders() {
                       {req.status === 'scheduled' || req.status === 'rescheduled' ? 'Cancel Request' : 'Cancel Order'}
                     </button>
                   )}
-                  {(req.status === 'scheduled' || req.status === 'rescheduled') && !req.accepted_dp_id && (
+                  {(req.status === 'scheduled' || req.status === 'rescheduled') && !req.accepted_dp_id && !req.reserved_dp_id && (
                     <button
                       onClick={() => setRescheduleTarget(req)}
                       className="flex items-center gap-1 rounded-2xl px-3 py-2 text-xs font-semibold transition-all active:scale-95"

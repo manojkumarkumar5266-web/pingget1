@@ -69,6 +69,9 @@ export type RequestStatus =
   | 'pending' | 'accepted' | 'confirmed' | 'shopping' | 'purchased'
   | 'on_the_way' | 'arrived' | 'delivered' | 'cash_received' | 'completed' | 'cancelled'
   | 'scheduled' | 'expired' | 'rescheduled'
+  // V3 Reservation-based advance request statuses
+  | 'searching_dp' | 'dp_reserved' | 'waiting_payment' | 'payment_verified'
+  | 'booking_confirmed' | 'task_started' | 'task_completed' | 'no_dp_found'
 
 export type DeliveryRequest = {
   id: string
@@ -124,6 +127,36 @@ export type DeliveryRequest = {
   cancelled_by: string | null
   cancellation_fee: number | null
   expired_at: string | null
+  // V3 reservation fields
+  reserved_dp_id: string | null
+  reserved_at: string | null
+  payment_deadline: string | null
+  advance_payment_id: string | null
+  task_started_at: string | null
+  task_completed_at: string | null
+  dp_cancelled_count: number
+  search_radius_current: number | null
+}
+
+export type AdvancePayment = {
+  id: string
+  request_id: string
+  chat_room_id: string | null
+  dp_id: string
+  customer_id: string
+  amount: number
+  payment_deadline: string | null
+  status: 'waiting' | 'proof_uploaded' | 'verified' | 'rejected' | 'expired'
+  screenshot_url: string | null
+  upi_ref: string | null
+  transaction_id: string | null
+  customer_remarks: string | null
+  uploaded_at: string | null
+  verified_by: string | null
+  verified_at: string | null
+  reject_reason: string | null
+  admin_override: boolean
+  created_at: string
 }
 
 export type AdvanceSettings = {
@@ -168,6 +201,11 @@ export type AdvanceSettings = {
   expand_search_radius: boolean
   search_radius_increment_meters: number
   max_search_radius_meters: number
+  // V3 fields
+  confirmation_fee: number
+  reservation_search_radius_meters: number
+  payment_deadline_minutes: number
+  dp_cancel_research: boolean
   created_at: string
   updated_at: string
 }
@@ -180,7 +218,7 @@ export type ChatRoom = {
   created_at: string
 }
 
-export type MessageType = 'text' | 'image' | 'voice' | 'location' | 'quotation' | 'order_summary'
+export type MessageType = 'text' | 'image' | 'voice' | 'location' | 'quotation' | 'order_summary' | 'advance_payment' | 'payment_proof'
 
 export type Message = {
   id: string
@@ -194,6 +232,7 @@ export type Message = {
   quotation_data: any
   is_read: boolean
   read_at: string | null
+  advance_payment_id: string | null
   created_at: string
 }
 

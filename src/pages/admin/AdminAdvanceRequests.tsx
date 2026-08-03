@@ -58,12 +58,12 @@ export default function AdminAdvanceRequests() {
       const d = new Date(schedDate); d.setHours(0,0,0,0)
       return d >= today && d <= next7
     }
-    if (filter === 'pending') return r.status === 'scheduled' || r.status === 'pending'
-    if (filter === 'assigned') return r.status === 'accepted' || r.status === 'confirmed'
-    if (filter === 'accepted') return r.status === 'accepted'
-    if (filter === 'completed') return r.status === 'completed'
+    if (filter === 'pending') return ['scheduled','pending','searching_dp'].includes(r.status)
+    if (filter === 'assigned') return ['accepted','confirmed','dp_reserved','waiting_payment','payment_verified','booking_confirmed'].includes(r.status)
+    if (filter === 'accepted') return ['accepted','dp_reserved','waiting_payment','payment_verified','booking_confirmed'].includes(r.status)
+    if (filter === 'completed') return ['completed','task_completed'].includes(r.status)
     if (filter === 'cancelled') return r.status === 'cancelled'
-    if (filter === 'expired') return r.status === 'expired'
+    if (filter === 'expired') return ['expired','no_dp_found'].includes(r.status)
     if (filter === 'rescheduled') return r.status === 'rescheduled'
     return true
   }).filter(r =>
@@ -380,14 +380,14 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
 
           {/* Reschedule & Cancel buttons for admin */}
           <div className="flex gap-2">
-            {['scheduled', 'rescheduled', 'pending', 'accepted', 'confirmed'].includes(request.status) && (
+            {['scheduled', 'rescheduled', 'pending', 'accepted', 'confirmed', 'searching_dp', 'dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed'].includes(request.status) && (
               <button onClick={() => onReschedule(request)}
                 className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold transition-all active:scale-95"
                 style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', color: '#818cf8' }}>
                 <CalendarPlus size={16} /> Reschedule
               </button>
             )}
-            {['scheduled', 'rescheduled', 'pending', 'accepted', 'confirmed'].includes(request.status) && (
+            {['scheduled', 'rescheduled', 'pending', 'accepted', 'confirmed', 'searching_dp', 'dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed'].includes(request.status) && (
               <button onClick={async () => {
                 if (!window.confirm('Cancel this request? Admin override will waive any fees.')) return
                 await supabase.from('requests').update({

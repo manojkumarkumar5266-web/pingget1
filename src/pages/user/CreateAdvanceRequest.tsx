@@ -457,7 +457,7 @@ export default function CreateAdvanceRequest() {
         max_budget: maxBudget ? parseFloat(maxBudget) : null,
         special_instructions: null,
         radius_meters: 10000,
-        status: 'scheduled',
+        status: 'searching_dp',
         order_type: 'advance',
         is_scheduled: true,
         scheduled_date: formatDateKey(selectedDate),
@@ -484,8 +484,8 @@ export default function CreateAdvanceRequest() {
 
       await supabase.from('notifications').insert({
         user_id: profile!.id,
-        title: 'Advance Request Scheduled',
-        body: `Your ${category} request is scheduled for ${formatDateKey(selectedDate)} at ${selectedSlot}. We'll find a delivery partner before your scheduled time.`,
+        title: 'Advance Request Created',
+        body: `Your ${category} request is scheduled for ${formatDateKey(selectedDate)} at ${selectedSlot}. We are now searching for a delivery partner to reserve immediately.`,
         type: 'advance_request_created',
         related_id: inserted.id,
       })

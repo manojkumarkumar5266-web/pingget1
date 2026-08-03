@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, Message, ChatRoom, Order, Profile, DeliveryPartner } from '../../lib/supabase'
 import { Avatar, StatusBadge, ErrorBanner, FullScreenLoader } from '../../components/ui'
 import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
-import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, CheckCircle, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, CheckCircle, ClipboardList, CreditCard, Upload, ShieldCheck, AlertCircle, CalendarClock, Clock } from 'lucide-react'
 
 export default function ChatScreen() {
   const { roomId } = useParams()
@@ -27,6 +27,17 @@ export default function ChatScreen() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [showPickupPhoto, setShowPickupPhoto] = useState(false)
+  const [showAdvancePayment, setShowAdvancePayment] = useState(false)
+  const [showPaymentProof, setShowPaymentProof] = useState<string | null>(null)
+  const [advancePaymentData, setAdvancePaymentData] = useState<any>(null)
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null)
+  const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null)
+  const [upiRef, setUpiRef] = useState('')
+  const [transactionId, setTransactionId] = useState('')
+  const [paymentRemarks, setPaymentRemarks] = useState('')
+  const [rejectReason, setRejectReason] = useState('')
+  const [showRejectModal, setShowRejectModal] = useState<string | null>(null)
+  const [uploadingProof, setUploadingProof] = useState(false)
   const [recording, setRecording] = useState(false)
   const [voiceDuration, setVoiceDuration] = useState(0)
   const [otherTyping, setOtherTyping] = useState(false)
@@ -105,6 +116,15 @@ export default function ChatScreen() {
       const { data: reqData } = await supabase.from('requests').select('*').eq('id', roomData.request_id).maybeSingle()
       setRequestDescription((reqData as any)?.description || '')
       setFullOrderData(reqData as any)
+      // Fetch advance payment if exists
+      if ((reqData as any)?.advance_payment_id) {
+        const { data: apData } = await supabase.from('advance_payments').select('*').eq('id', (reqData as any).advance_payment_id).maybeSingle()
+        setAdvancePaymentData(apData)
+      } else {
+        // Also check by request_id
+        const { data: apData } = await supabase.from('advance_payments').select('*').eq('request_id', roomData.request_id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+        setAdvancePaymentData(apData)
+      }
       const { data: orderData } = await supabase.from('orders').select('*').eq('request_id', roomData.request_id).maybeSingle()
       setOrder(orderData as Order | null)
       if (orderData?.status === 'completed') {
@@ -226,6 +246,22 @@ export default function ChatScreen() {
     }).select().single()
     if (!error && data) setMessages(prev => [...prev, data as Message])
     setInput('')
+  }
+
+  const fetchMessages = async () => {
+    if (!roomId) return
+    const { data: msgs } = await supabase.from('messages').select('*').eq('chat_room_id', roomId).order('created_at', { ascending: true })
+    setMessages((msgs as Message[]) || [])
+    // Also refresh advance payment data
+    if (fullOrderData?.id) {
+      const { data: apData } = await supabase.from('advance_payments').select('*').eq('request_id', fullOrderData.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+      setAdvancePaymentData(apData)
+    }
+    // Refresh request data
+    if (fullOrderData?.id) {
+      const { data: reqData } = await supabase.from('requests').select('*').eq('id', fullOrderData.id).maybeSingle()
+      if (reqData) setFullOrderData(reqData as any)
+    }
   }
 
   const sendQuotation = async (itemCost: number, deliveryCharge: number, itemsSummary: string, photoUrl?: string | null) => {
@@ -439,6 +475,93 @@ export default function ChatScreen() {
                     </div>
                   )}
 
+                  {/* Advance Payment Card */}
+                  {msg.message_type === 'advance_payment' && msg.quotation_data && (
+                    <div className="w-72 space-y-3 p-4 rounded-2xl"
+                      style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(166,179,0,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(166,179,0,0.2)'}` }}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(166,179,0,0.2)' }}>
+                          <CreditCard size={16} style={{ color: '#A6B300' }} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold" style={{ color: isOwn ? '#0B0B0B' : '#A6B300' }}>Advance Booking Confirmation</p>
+                          <p className="text-[10px]" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)' }}>Payment Request</p>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Booking ID</span><span className="font-mono font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{(msg.quotation_data.booking_id || '').slice(0, 8)}...</span></div>
+                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Date</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_date || 'N/A'}</span></div>
+                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Time</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_time || 'N/A'}</span></div>
+                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Amount</span><span className="font-bold" style={{ color: '#A6B300' }}>{formatCurrency(msg.quotation_data.amount)}</span></div>
+                        {msg.quotation_data.payment_deadline && (
+                          <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Deadline</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.payment_deadline}</span></div>
+                        )}
+                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Purpose</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>Advance Booking Confirmation</span></div>
+                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Status</span>
+                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                            style={{ background: msg.quotation_data.status === 'verified' ? 'rgba(16,185,129,0.2)' : msg.quotation_data.status === 'proof_uploaded' ? 'rgba(59,130,246,0.2)' : msg.quotation_data.status === 'rejected' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
+                              color: msg.quotation_data.status === 'verified' ? '#34d399' : msg.quotation_data.status === 'proof_uploaded' ? '#60a5fa' : msg.quotation_data.status === 'rejected' ? '#f87171' : '#f59e0b' }}>
+                            {msg.quotation_data.status === 'waiting' ? 'Waiting For Payment' : msg.quotation_data.status === 'proof_uploaded' ? 'Proof Uploaded' : msg.quotation_data.status === 'verified' ? 'Payment Verified' : msg.quotation_data.status === 'rejected' ? 'Rejected' : 'Expired'}
+                          </span>
+                        </div>
+                      </div>
+                      {/* Customer: Upload payment proof button */}
+                      {isUser && msg.quotation_data.status === 'waiting' && msg.advance_payment_id && (
+                        <button onClick={() => { setShowPaymentProof(msg.advance_payment_id); setAdvancePaymentData(msg.quotation_data) }}
+                          className="w-full rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
+                          style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                          <Upload size={12} className="inline mr-1" /> Upload Payment Proof
+                        </button>
+                      )}
+                      {/* DP: Verify/Reject buttons when proof uploaded */}
+                      {!isUser && msg.quotation_data.status === 'proof_uploaded' && msg.advance_payment_id && (
+                        <div className="flex gap-2">
+                          <button onClick={() => setShowRejectModal(msg.advance_payment_id)}
+                            className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
+                            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
+                            Reject
+                          </button>
+                          <button onClick={async () => {
+                            await supabase.from('advance_payments').update({ status: 'verified', verified_by: profile!.id, verified_at: new Date().toISOString() }).eq('id', msg.advance_payment_id)
+                            await supabase.from('requests').update({ status: 'booking_confirmed' }).eq('advance_payment_id', msg.advance_payment_id)
+                            await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: 'Advance Confirmation Payment Verified. Your booking has been successfully reserved. See you on the scheduled date and time.' })
+                            await supabase.from('notifications').insert({ user_id: fullOrderData?.user_id, title: 'Payment Verified', body: 'Your advance payment has been verified. Booking confirmed!', type: 'payment_verified', related_id: fullOrderData?.id })
+                          }}
+                            className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
+                            style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
+                            <ShieldCheck size={12} className="inline mr-1" /> Verify
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Payment Proof Card */}
+                  {msg.message_type === 'payment_proof' && msg.quotation_data && (
+                    <div className="w-72 space-y-3 p-4 rounded-2xl"
+                      style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(59,130,246,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(59,130,246,0.2)'}` }}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(59,130,246,0.2)' }}>
+                          <ShieldCheck size={16} style={{ color: '#60a5fa' }} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold" style={{ color: isOwn ? '#0B0B0B' : '#60a5fa' }}>Payment Proof Uploaded</p>
+                          <p className="text-[10px]" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)' }}>Customer payment confirmation</p>
+                        </div>
+                      </div>
+                      {msg.quotation_data.screenshot_url && (
+                        <a href={msg.quotation_data.screenshot_url} target="_blank" rel="noopener noreferrer">
+                          <img src={msg.quotation_data.screenshot_url} alt="Payment Proof" className="h-32 w-full rounded-xl object-cover" />
+                        </a>
+                      )}
+                      <div className="space-y-1 text-xs">
+                        {msg.quotation_data.upi_ref && <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>UPI Ref</span><span className="font-mono font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.upi_ref}</span></div>}
+                        {msg.quotation_data.transaction_id && <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Transaction ID</span><span className="font-mono font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.transaction_id}</span></div>}
+                        {msg.quotation_data.customer_remarks && <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Remarks</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.customer_remarks}</span></div>}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Timestamp + ticks */}
                   <div className={`mt-1 flex items-center justify-end gap-1 text-[10px]`}
                     style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.3)' }}>
@@ -591,6 +714,14 @@ export default function ChatScreen() {
               <FileText size={14} /> Send Quotation
             </button>
           )}
+          {/* V3: DP Request Advance Payment button for advance bookings */}
+          {!isUser && fullOrderData?.order_type === 'advance' && ['dp_reserved'].includes(fullOrderData.status) && !advancePaymentData && (
+            <button onClick={() => setShowAdvancePayment(true)}
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>
+              <CreditCard size={14} /> Request Advance Payment
+            </button>
+          )}
         </div>
       )}
 
@@ -602,6 +733,42 @@ export default function ChatScreen() {
           </button>
           <img src={lightboxImage} alt="Full size" className="max-h-full max-w-full object-contain" onClick={e => e.stopPropagation()} />
         </div>
+      )}
+
+      {/* V3: Advance Payment Request Modal (DP sends payment card in chat) */}
+      {showAdvancePayment && room && fullOrderData && (
+        <AdvancePaymentModal
+          onClose={() => setShowAdvancePayment(false)}
+          roomId={room.id}
+          request={fullOrderData}
+          dpId={profile!.id}
+          onSent={() => { setShowAdvancePayment(false); fetchMessages() }}
+        />
+      )}
+
+      {/* V3: Payment Proof Upload Modal (Customer uploads proof) */}
+      {showPaymentProof && room && (
+        <PaymentProofModal
+          onClose={() => { setShowPaymentProof(null); setPaymentProofFile(null); setPaymentProofPreview(null); setUpiRef(''); setTransactionId(''); setPaymentRemarks('') }}
+          roomId={room.id}
+          advancePaymentId={showPaymentProof}
+          customerId={profile!.id}
+          onSent={() => { setShowPaymentProof(null); setPaymentProofFile(null); setPaymentProofPreview(null); setUpiRef(''); setTransactionId(''); setPaymentRemarks(''); fetchMessages() }}
+        />
+      )}
+
+      {/* V3: Reject Payment Modal (DP rejects with reason) */}
+      {showRejectModal && room && (
+        <RejectPaymentModal
+          onClose={() => { setShowRejectModal(null); setRejectReason('') }}
+          advancePaymentId={showRejectModal}
+          dpId={profile!.id}
+          onReject={async (reason) => {
+            await supabase.from('advance_payments').update({ status: 'rejected', reject_reason: reason, verified_by: profile!.id, verified_at: new Date().toISOString() }).eq('id', showRejectModal)
+            await supabase.from('messages').insert({ chat_room_id: room.id, sender_id: profile!.id, message_type: 'text', content: `Payment rejected: ${reason}` })
+            setShowRejectModal(null); setRejectReason(''); fetchMessages()
+          }}
+        />
       )}
     </div>
   )
@@ -806,6 +973,248 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
           <button onClick={onClose} className="btn-secondary flex-1">Skip</button>
           <button onClick={() => onSubmit(stars, review)} className="flex-1 btn font-bold rounded-xl py-3"
             style={{ background: '#A6B300', color: '#0B0B0B' }}>Submit</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// V3: Advance Payment Modal — DP sends a premium payment card inside chat
+function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
+  onClose: () => void
+  roomId: string
+  request: any
+  dpId: string
+  onSent: () => void
+}) {
+  const [amount, setAmount] = useState('')
+  const [deadline, setDeadline] = useState('120')
+  const [sending, setSending] = useState(false)
+
+  const handleSend = async () => {
+    if (!amount || parseFloat(amount) <= 0) return
+    setSending(true)
+    try {
+      const deadlineMinutes = parseInt(deadline) || 120
+      const paymentDeadline = new Date(Date.now() + deadlineMinutes * 60000).toISOString()
+      const bookingId = request.id
+
+      const { data: ap, error } = await supabase.from('advance_payments').insert({
+        request_id: request.id,
+        chat_room_id: roomId,
+        dp_id: dpId,
+        customer_id: request.user_id,
+        amount: parseFloat(amount),
+        payment_deadline: paymentDeadline,
+        status: 'waiting',
+      }).select('id').single()
+      if (error) throw error
+
+      await supabase.from('requests').update({
+        status: 'waiting_payment',
+        advance_payment_id: ap.id,
+        payment_deadline: paymentDeadline,
+      }).eq('id', request.id)
+
+      await supabase.from('messages').insert({
+        chat_room_id: roomId,
+        sender_id: dpId,
+        message_type: 'advance_payment',
+        advance_payment_id: ap.id,
+        quotation_data: {
+          booking_id: bookingId,
+          scheduled_date: request.scheduled_date,
+          scheduled_time: request.scheduled_slot || request.scheduled_time,
+          amount: parseFloat(amount),
+          payment_deadline: new Date(paymentDeadline).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+          purpose: 'Advance Booking Confirmation',
+          status: 'waiting',
+        },
+      })
+
+      await supabase.from('notifications').insert({
+        user_id: request.user_id,
+        title: 'Payment Request',
+        body: `Your delivery partner has requested an advance confirmation payment of ₹${amount}. Please upload your payment proof in chat.`,
+        type: 'payment_request',
+        related_id: request.id,
+      })
+
+      onSent()
+    } catch (e) {
+      console.error('AdvancePaymentModal error:', e)
+      alert('Failed to send payment request. Please try again.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
+        <div className="px-5 pb-8 pt-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <CreditCard size={20} style={{ color: '#A6B300' }} />
+            <h3 className="text-lg font-bold text-white">Request Advance Payment</h3>
+          </div>
+          <p className="text-sm text-white/50">Send a premium payment card to the customer inside this chat. The customer will upload their payment proof here.</p>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Amount (₹)</label>
+            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="200" className="input" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Payment Deadline (minutes)</label>
+            <input type="number" value={deadline} onChange={e => setDeadline(e.target.value)} placeholder="120" className="input" />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={handleSend} disabled={sending || !amount}
+              className="flex-1 rounded-xl py-3 font-bold transition-all active:scale-95 disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>
+              {sending ? 'Sending...' : 'Send Payment Card'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// V3: Payment Proof Modal — Customer uploads payment screenshot and reference
+function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, onSent }: {
+  onClose: () => void
+  roomId: string
+  advancePaymentId: string
+  customerId: string
+  onSent: () => void
+}) {
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [upiRef, setUpiRef] = useState('')
+  const [txnId, setTxnId] = useState('')
+  const [remarks, setRemarks] = useState('')
+  const [uploading, setUploading] = useState(false)
+
+  const handleFile = (f: File) => {
+    setFile(f)
+    setPreview(URL.createObjectURL(f))
+  }
+
+  const handleSubmit = async () => {
+    if (!file) { alert('Please upload a payment screenshot'); return }
+    setUploading(true)
+    try {
+      const ts = Date.now()
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `payment-proofs/${customerId}/${ts}-${ext}`
+      const { error: upErr } = await supabase.storage.from('media').upload(path, file)
+      if (upErr) throw upErr
+      const { data: urlData } = supabase.storage.from('media').getPublicUrl(path)
+      const screenshotUrl = urlData.publicUrl
+
+      await supabase.from('advance_payments').update({
+        status: 'proof_uploaded',
+        screenshot_url: screenshotUrl,
+        upi_ref: upiRef || null,
+        transaction_id: txnId || null,
+        customer_remarks: remarks || null,
+        uploaded_at: new Date().toISOString(),
+      }).eq('id', advancePaymentId)
+
+      await supabase.from('messages').insert({
+        chat_room_id: roomId,
+        sender_id: customerId,
+        message_type: 'payment_proof',
+        advance_payment_id: advancePaymentId,
+        quotation_data: {
+          screenshot_url: screenshotUrl,
+          upi_ref: upiRef || null,
+          transaction_id: txnId || null,
+          customer_remarks: remarks || null,
+        },
+      })
+
+      onSent()
+    } catch (e) {
+      console.error('PaymentProofModal error:', e)
+      alert('Failed to upload payment proof. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
+        <div className="px-5 pb-8 pt-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <Upload size={20} style={{ color: '#A6B300' }} />
+            <h3 className="text-lg font-bold text-white">Upload Payment Proof</h3>
+          </div>
+          <p className="text-sm text-white/50">Upload your payment screenshot and enter your UPI reference number or transaction ID.</p>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Payment Screenshot</label>
+            <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} className="hidden" id="proof-file" />
+            <label htmlFor="proof-file" className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 py-6 text-sm text-white/50 transition-all hover:border-[#A6B300] hover:text-[#A6B300]">
+              {preview ? <img src={preview} alt="Preview" className="h-24 rounded-lg object-cover" /> : <><Camera size={20} /> Tap to upload screenshot</>}
+            </label>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">UPI Reference Number</label>
+            <input value={upiRef} onChange={e => setUpiRef(e.target.value)} placeholder="e.g. 9876543210" className="input" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Transaction ID (optional)</label>
+            <input value={txnId} onChange={e => setTxnId(e.target.value)} placeholder="Bank transaction ID" className="input" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Remarks (optional)</label>
+            <textarea value={remarks} onChange={e => setRemarks(e.target.value)} placeholder="Any notes for the delivery partner" className="input min-h-16 resize-none" />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={handleSubmit} disabled={uploading || !file}
+              className="flex-1 rounded-xl py-3 font-bold transition-all active:scale-95 disabled:opacity-50"
+              style={{ background: '#A6B300', color: '#0B0B0B' }}>
+              {uploading ? 'Uploading...' : 'Submit Proof'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// V3: Reject Payment Modal — DP rejects with mandatory reason
+function RejectPaymentModal({ onClose, advancePaymentId, dpId, onReject }: {
+  onClose: () => void
+  advancePaymentId: string
+  dpId: string
+  onReject: (reason: string) => void
+}) {
+  const [reason, setReason] = useState('')
+
+  return (
+    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
+        <div className="px-5 pb-8 pt-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={20} style={{ color: '#f87171' }} />
+            <h3 className="text-lg font-bold text-white">Reject Payment</h3>
+          </div>
+          <p className="text-sm text-white/50">Please provide a reason for rejecting this payment. This is mandatory.</p>
+          <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Payment amount does not match, invalid screenshot..." className="input min-h-24 resize-none" />
+          <div className="flex gap-2">
+            <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={() => reason.trim() && onReject(reason.trim())} disabled={!reason.trim()}
+              className="flex-1 rounded-xl py-3 font-bold transition-all active:scale-95 disabled:opacity-50"
+              style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
+              Reject Payment
+            </button>
+          </div>
         </div>
       </div>
     </div>
