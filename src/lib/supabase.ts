@@ -68,6 +68,7 @@ export type DeliveryPartner = {
 export type RequestStatus =
   | 'pending' | 'accepted' | 'confirmed' | 'shopping' | 'purchased'
   | 'on_the_way' | 'arrived' | 'delivered' | 'cash_received' | 'completed' | 'cancelled'
+  | 'scheduled' | 'expired' | 'rescheduled'
 
 export type DeliveryRequest = {
   id: string
@@ -96,6 +97,79 @@ export type DeliveryRequest = {
   dp_lng: number | null
   dp_heading: number | null
   dp_last_update: string | null
+  order_type: 'instant' | 'advance'
+  is_scheduled: boolean
+  scheduled_date: string | null
+  scheduled_time: string | null
+  scheduled_slot: string | null
+  scheduled_timestamp: string | null
+  request_category: string | null
+  shop_name: string | null
+  shop_phone: string | null
+  shop_address: string | null
+  shop_lat: number | null
+  shop_lng: number | null
+  estimated_task_duration: number | null
+  estimated_total_charge: number | null
+  charge_breakdown: Record<string, number> | null
+  recurring_type: 'none' | 'daily' | 'weekly' | 'monthly' | 'custom'
+  recurring_interval_days: number | null
+  recurring_weekday: number | null
+  recurring_month_day: number | null
+  recurring_parent_id: string | null
+  recurring_count: number
+  reschedule_count: number
+  reschedule_history: Array<Record<string, unknown>> | null
+  cancellation_reason: string | null
+  cancelled_by: string | null
+  cancellation_fee: number | null
+  expired_at: string | null
+}
+
+export type AdvanceSettings = {
+  id: string
+  enabled: boolean
+  max_advance_days: number
+  notification_lead_minutes: number
+  business_hours_start: string
+  business_hours_end: string
+  slot_duration_minutes: number
+  advance_booking_fee: number
+  platform_fee: number
+  min_service_charge: number
+  max_service_charge: number
+  dp_convenience_charge: number
+  emergency_charge: number
+  holiday_charge: number
+  night_charge: number
+  night_charge_start: string
+  night_charge_end: string
+  peak_hour_charge: number
+  peak_hours_start: string
+  peak_hours_end: string
+  cancellation_cutoff_minutes: number
+  reschedule_cutoff_minutes: number
+  recurring_enabled: boolean
+  weekend_charge: number
+  weekend_charge_enabled: boolean
+  platform_fee_percent: number
+  dp_convenience_percent: number
+  cancellation_fee_after_accept: number
+  admin_override_cancellation: boolean
+  expiry_mode: '30_minutes' | '1_hour' | '2_hours' | '4_hours' | 'end_of_slot' | 'never'
+  expiry_custom_minutes: number
+  reminder_24h: boolean
+  reminder_12h: boolean
+  reminder_2h: boolean
+  reminder_1h: boolean
+  reminder_30m: boolean
+  reminder_15m: boolean
+  reminder_5m: boolean
+  expand_search_radius: boolean
+  search_radius_increment_meters: number
+  max_search_radius_meters: number
+  created_at: string
+  updated_at: string
 }
 
 export type ChatRoom = {
