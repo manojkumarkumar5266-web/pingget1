@@ -14,10 +14,6 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
 
-function formatDateKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
 export default function PremiumCalendar({ selectedDate, onSelect, maxDays }: Props) {
   const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d }, [])
   const maxDate = useMemo(() => { const d = new Date(today); d.setDate(d.getDate() + maxDays); return d }, [today, maxDays])
@@ -37,7 +33,6 @@ export default function PremiumCalendar({ selectedDate, onSelect, maxDays }: Pro
   const isDateEnabled = (day: number): boolean => {
     const d = new Date(viewYear, viewMonth, day)
     d.setHours(0, 0, 0, 0)
-    if (isSameDay(d, today)) return false
     if (d < today) return false
     if (d > maxDate) return false
     return true
@@ -94,11 +89,13 @@ export default function PremiumCalendar({ selectedDate, onSelect, maxDays }: Pro
               style={selected
                 ? { background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.4)' }
                 : enabled
-                  ? { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }
+                  ? todayBadge
+                    ? { background: 'rgba(166,179,0,0.08)', border: '1.5px solid rgba(166,179,0,0.25)', color: '#A6B300' }
+                    : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }
                   : { background: 'transparent', color: 'rgba(255,255,255,0.15)', cursor: 'not-allowed' }}>
               <span className={`text-sm font-bold ${selected ? 'text-[#0B0B0B]' : ''}`}>{day}</span>
               {todayBadge && !selected && (
-                <span className="mt-0.5 text-[8px] font-bold uppercase" style={{ color: 'rgba(255,255,255,0.3)' }}>Today</span>
+                <span className="mt-0.5 text-[8px] font-bold uppercase" style={{ color: '#A6B300' }}>Today</span>
               )}
               {selected && (
                 <span className="mt-0.5 text-[8px] font-bold uppercase text-[#0B0B0B]/70">Selected</span>
@@ -125,7 +122,7 @@ export default function PremiumCalendar({ selectedDate, onSelect, maxDays }: Pro
       )}
 
       <p className="mt-3 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-        Select from tomorrow up to {maxDays} days ahead. Today and past dates are disabled.
+        Select from today up to {maxDays} days ahead. Past dates are disabled.
       </p>
     </div>
   )
