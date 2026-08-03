@@ -20,7 +20,8 @@ export default function DpOrders() {
   const [pendingCommission, setPendingCommission] = useState(0)
 
   const fetchOrders = useCallback(async () => {
-    let query = supabase.from('requests').select('*').eq('accepted_dp_id', profile!.id)
+    let query = supabase.from('requests').select('*')
+      .or(`accepted_dp_id.eq.${profile!.id},reserved_dp_id.eq.${profile!.id}`)
     if (tab === 'active') {
       query = query.in('status', ['accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received', 'dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed', 'task_started'])
     } else if (tab === 'completed') {
@@ -44,6 +45,10 @@ export default function DpOrders() {
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'requests',
         filter: `accepted_dp_id=eq.${profile!.id}`,
+      }, () => fetchOrders())
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'requests',
+        filter: `reserved_dp_id=eq.${profile!.id}`,
       }, () => fetchOrders())
       .subscribe()
     return () => { supabase.removeChannel(channel) }

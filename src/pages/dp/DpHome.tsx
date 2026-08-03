@@ -134,14 +134,21 @@ export default function DpHome() {
     }
     fetchRequests()
     const channel = supabase.channel('dp-requests')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: 'status=eq.pending' },
-        () => { showToast('New delivery request nearby!'); fetchRequests() })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests', filter: 'status=eq.searching_dp' },
-        () => { showToast('New advance booking nearby!'); fetchRequests() })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests' },
+        (payload: any) => {
+          const newStatus = payload?.new?.status
+          const orderType = payload?.new?.order_type
+          if (newStatus === 'pending') showToast('New delivery request nearby!')
+          else if (newStatus === 'searching_dp') showToast('New advance booking nearby!')
+          else return
+          fetchRequests()
+        })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' }, () => fetchRequests())
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, () => fetchRequests())
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    // Polling fallback every 10s — ensures DPs never miss a request even if realtime drops
+    const pollInterval = setInterval(fetchRequests, 10000)
+    return () => { supabase.removeChannel(channel); clearInterval(pollInterval) }
   }, [dp?.is_online, dpLoading, profile])
 
   useEffect(() => {
@@ -180,13 +187,13 @@ export default function DpHome() {
           'reserve_dp_for_advance',
           { p_request_id: req.id, p_dp_user_id: profile!.id }
         )
-        if (error || !reserved) {
-          showToast(error?.message || 'Failed to reserve this booking')
+        const row = Array.isArray(reserved) ? reserved[0] : reserved
+        if (error || !row || !row.success) {
+          showToast(row?.error_msg || error?.message || 'Failed to reserve this booking')
           return
         }
-        // Navigate to the chat room for this request
-        const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
-        if (room) navigate(`/dp/chat/${room.id}`)
+        // Navigate to the chat room returned by the RPC
+        if (row.chat_room_id) navigate(`/dp/chat/${row.chat_room_id}`)
         else navigate('/dp/orders')
         return
       }
