@@ -8,6 +8,7 @@ import {
   CheckCircle2, X, Bike, Car, Truck, MapPin, Clock, RefreshCw,
   Navigation, Search, MapPinOff, Loader2, Radar,
 } from 'lucide-react'
+import { MascotWaiting } from '../../components/Illustrations'
 
 type DpSpot = {
   id: string
@@ -325,6 +326,10 @@ export default function ScanningPage() {
 
       {/* Radar */}
       <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ maxHeight: '48vh' }}>
+        {/* Customer waiting illustration */}
+        <div className="absolute right-3 top-3 z-10 opacity-90">
+          <MascotWaiting className="w-24 h-24" />
+        </div>
         {/* Ambient glow */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div

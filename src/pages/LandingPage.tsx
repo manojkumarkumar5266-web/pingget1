@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Brand from '../components/Brand'
-import { HeroScene, MascotWave } from '../components/Illustrations'
+import { HeroScene, MascotHandoff } from '../components/Illustrations'
 import {
   ArrowRight, MapPin, Shield, Zap, MessageCircle,
 } from 'lucide-react'
@@ -27,7 +27,7 @@ export default function LandingPage() {
         <div className="flex flex-1 flex-col justify-center max-w-md mx-auto w-full">
           {/* Mascot illustration */}
           <div className={`mb-6 flex justify-center transition-all duration-700 delay-200 ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-            <MascotWave className="w-48 h-56" />
+            <MascotHandoff className="w-64 h-48" />
           </div>
 
           {/* Hero tagline */}

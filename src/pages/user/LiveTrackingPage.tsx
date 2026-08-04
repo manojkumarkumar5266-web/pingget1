@@ -5,6 +5,7 @@ import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
 import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/VisualTracking'
 import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck, Navigation } from 'lucide-react'
+import { MascotOnBike } from '../../components/Illustrations'
 
 function vehicleIcon(v: string | null | undefined) {
   const s = (v || '').toLowerCase()
@@ -216,9 +217,7 @@ export default function LiveTrackingPage() {
       <div className="relative flex-shrink-0" style={{ height: '40vh', minHeight: '280px' }}>
         {isPending ? (
           <div className="flex h-full flex-col items-center justify-center bg-black px-6">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-              <Clock size={28} className="animate-pulse" style={{ color: '#A6B300' }} />
-            </div>
+            <MascotOnBike className="w-56 h-44" />
             <p className="text-lg font-bold text-white">Waiting for partner</p>
             <p className="mt-1 text-center text-sm text-white/40">Your request is live. A partner will accept shortly.</p>
           </div>

@@ -6,6 +6,7 @@ import { EmptyState, StatusBadge, ServiceStatusBanner, SkeletonList, SectionHead
 import { formatTime } from '../../lib/utils'
 import { Package, Plus, Clock, MapPin, CheckCircle2, Bike, ChevronRight, Zap, ShoppingBag, CalendarClock } from 'lucide-react'
 import { IllusHeroCard, IllusEmpty } from '../../components/Illustrations'
+import FeatureCarousel from '../../components/FeatureCarousel'
 
 const STATUS_STEPS: Record<string, number> = {
   pending: 0, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
@@ -76,6 +77,9 @@ export default function UserHome() {
           </div>
         ))}
       </div>
+
+      {/* Feature Carousel */}
+      <FeatureCarousel />
 
       {/* Hero CTA */}
       <div className="mb-6 overflow-hidden rounded-3xl p-5 animate-slide-up relative"

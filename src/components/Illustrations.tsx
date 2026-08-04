@@ -1,371 +1,613 @@
-import type { CSSProperties } from 'react'
+import type { SVGProps } from 'react'
 
-const ACCENT = '#A6B300'
-const ACCENT_LIGHT = '#C0D900'
-const ACCENT_DARK = '#7a8500'
-const BG_DARK = '#181818'
-const SURFACE = '#232323'
-const WHITE = '#ffffff'
-const MUTED = 'rgba(255,255,255,0.5)'
+const OLIVE = '#A6B300'
+const OLIVE_DARK = '#808000'
+const OLIVE_LIGHT = '#C4D600'
+const DARK_BG = '#0B0B0B'
+const CARD_BG = '#181818'
+const SKIN = '#F5C9A0'
+const SKIN_DARK = '#E0A878'
+const WHITE = '#FFFFFF'
+const AMBER = '#FBBF24'
+const BLUE = '#3B82F6'
+const RED = '#EF4444'
+const GREEN = '#10B981'
+const TEAL = '#14B8A6'
+const PURPLE = '#8B5CF6'
+const PINK = '#EC4899'
+const ORANGE = '#F97316'
 
-type IllustrationProps = {
-  className?: string
-  style?: CSSProperties
-}
+type SvgProps = SVGProps<SVGSVGElement>
 
-/* ═══════════════════════════════════════════════
-   PingGET Delivery Mascot — a friendly, rounded
-   character wearing a helmet, riding a scooter
-   with a delivery box. Brand olive-green palette.
-   ═══════════════════════════════════════════════ */
-export function MascotDelivery({ className, style }: IllustrationProps) {
+function MascotHead({ cx = 100, cy = 70, expression = 'happy' }: { cx?: number; cy?: number; expression?: 'happy' | 'neutral' | 'excited' }) {
+  const eyes = expression === 'excited'
+    ? <>{<path d={`M${cx - 14} ${cy - 2} l8 -6 l-8 -2 z`} fill={DARK_BG} />}{<path d={`M${cx + 6} ${cy - 2} l8 -6 l-8 -2 z`} fill={DARK_BG} />}</>
+    : <>{<circle cx={cx - 10} cy={cy - 2} r={3.5} fill={DARK_BG} />}{<circle cx={cx + 10} cy={cy - 2} r={3.5} fill={DARK_BG} />}</>
+  const mouth = expression === 'happy'
+    ? <path d={`M${cx - 10} ${cy + 8} Q${cx} ${cy + 16} ${cx + 10} ${cy + 8}`} stroke={DARK_BG} strokeWidth={2.5} fill="none" strokeLinecap="round" />
+    : expression === 'excited'
+    ? <ellipse cx={cx} cy={cy + 10} rx={7} ry={5} fill={DARK_BG} />
+    : <line x1={cx - 8} y1={cy + 10} x2={cx + 8} y2={cy + 10} stroke={DARK_BG} strokeWidth={2.5} strokeLinecap="round" />
   return (
-    <svg viewBox="0 0 400 500" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* Ground shadow */}
-      <ellipse cx="200" cy="460" rx="120" ry="18" fill="rgba(0,0,0,0.35)" />
-
-      {/* Scooter body */}
-      <path d="M120 380 Q100 370 105 350 L130 320 Q140 310 155 315 L260 315 Q280 315 285 330 L295 370 Q295 385 280 388 L140 388 Q122 388 120 380Z" fill={ACCENT_DARK} />
-      {/* Seat */}
-      <path d="M140 322 Q160 314 190 316 L255 316 Q268 316 270 326 L262 334 L145 334 Z" fill={SURFACE} />
-      {/* Delivery box */}
-      <rect x="150" y="270" width="90" height="55" rx="8" fill={ACCENT} />
-      <rect x="150" y="270" width="90" height="55" rx="8" fill="none" stroke={ACCENT_LIGHT} strokeWidth="1.5" />
-      <path d="M165 285 L225 285 M165 295 L210 295" stroke={ACCENT_DARK} strokeWidth="2" strokeLinecap="round" />
-      <text x="195" y="312" textAnchor="middle" fontSize="10" fontWeight="bold" fill={BG_DARK} fontFamily="system-ui">pinGGet</text>
-
-      {/* Front wheel */}
-      <circle cx="120" cy="395" r="28" fill="none" stroke={SURFACE} strokeWidth="6" />
-      <circle cx="120" cy="395" r="14" fill={BG_DARK} stroke={ACCENT_DARK} strokeWidth="2" />
-      <circle cx="120" cy="395" r="4" fill={ACCENT} />
-
-      {/* Back wheel */}
-      <circle cx="285" cy="395" r="28" fill="none" stroke={SURFACE} strokeWidth="6" />
-      <circle cx="285" cy="395" r="14" fill={BG_DARK} stroke={ACCENT_DARK} strokeWidth="2" />
-      <circle cx="285" cy="395" r="4" fill={ACCENT} />
-
-      {/* Handlebar */}
-      <path d="M285 330 Q300 335 305 350 M305 350 L315 345" stroke={SURFACE} strokeWidth="5" strokeLinecap="round" fill="none" />
-
-      {/* Character body — torso */}
-      <path d="M175 220 Q165 240 168 270 L235 270 Q238 240 228 220 Z" fill={ACCENT} />
-      {/* Arm reaching handlebar */}
-      <path d="M225 235 Q255 250 280 340" stroke={ACCENT} strokeWidth="14" strokeLinecap="round" fill="none" />
-      {/* Hand */}
-      <circle cx="305" cy="345" r="8" fill="#E8C9A0" />
-
-      {/* Character head — rounded */}
-      <circle cx="200" cy="185" r="38" fill="#E8C9A0" />
+    <g>
       {/* Helmet */}
-      <path d="M162 185 Q162 145 200 142 Q238 145 238 185 L238 175 Q238 150 200 148 Q162 150 162 175 Z" fill={ACCENT_DARK} />
-      <path d="M162 175 Q162 150 200 148 Q238 150 238 175 L238 168 Q238 145 200 143 Q162 145 162 168 Z" fill={ACCENT} />
-      {/* Helmet visor */}
-      <path d="M170 180 Q200 175 230 180 L228 195 Q200 190 172 195 Z" fill="rgba(0,0,0,0.6)" />
-      {/* Smile */}
-      <path d="M188 200 Q200 208 212 200" stroke={BG_DARK} strokeWidth="2" strokeLinecap="round" fill="none" />
-      {/* Eyes — happy dots */}
-      <circle cx="190" cy="192" r="2.5" fill={BG_DARK} />
-      <circle cx="210" cy="192" r="2.5" fill={BG_DARK} />
-
-      {/* Motion lines */}
-      <path d="M55 340 L85 340 M50 360 L75 360 M60 320 L85 320" stroke={ACCENT} strokeWidth="3" strokeLinecap="round" opacity="0.6" />
-
-      {/* Sparkle accents */}
-      <g opacity="0.7">
-        <path d="M330 180 L335 190 L345 195 L335 200 L330 210 L325 200 L315 195 L325 190 Z" fill={ACCENT_LIGHT} />
-        <path d="M60 200 L63 207 L70 210 L63 213 L60 220 L57 213 L50 210 L57 207 Z" fill={ACCENT_LIGHT} opacity="0.5" />
-      </g>
-    </svg>
-  )
-}
-
-/* ═══════════════════════════════════════════════
-   Mascot waving — used on welcome / landing
-   ═══════════════════════════════════════════════ */
-export function MascotWave({ className, style }: IllustrationProps) {
-  return (
-    <svg viewBox="0 0 300 360" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* Shadow */}
-      <ellipse cx="150" cy="340" rx="80" ry="12" fill="rgba(0,0,0,0.3)" />
-
-      {/* Body */}
-      <path d="M120 200 Q110 230 113 280 L187 280 Q190 230 180 200 Z" fill={ACCENT} />
-
-      {/* Head */}
-      <circle cx="150" cy="160" r="42" fill="#E8C9A0" />
-      {/* Helmet */}
-      <path d="M108 160 Q108 115 150 112 Q192 115 192 160 L192 148 Q192 118 150 116 Q108 118 108 148 Z" fill={ACCENT_DARK} />
-      <path d="M108 148 Q108 118 150 116 Q192 118 192 148 L192 140 Q192 112 150 110 Q108 112 108 140 Z" fill={ACCENT} />
+      <path d={`M${cx - 28} ${cy - 8} Q${cx - 28} ${cy - 38} ${cx} ${cy - 38} Q${cx + 28} ${cy - 38} ${cx + 28} ${cy - 8} L${cx + 24} ${cy - 4} L${cx - 24} ${cy - 4} Z`} fill={OLIVE} />
+      <path d={`M${cx - 28} ${cy - 8} Q${cx - 28} ${cy - 38} ${cx} ${cy - 38} Q${cx + 28} ${cy - 38} ${cx + 28} ${cy - 8} L${cx + 24} ${cy - 4} L${cx - 24} ${cy - 4} Z`} fill="none" stroke={OLIVE_DARK} strokeWidth={1.5} />
+      {/* Helmet shine */}
+      <path d={`M${cx - 20} ${cy - 30} Q${cx - 24} ${cy - 20} ${cx - 22} ${cy - 12}`} stroke={OLIVE_LIGHT} strokeWidth={2} fill="none" strokeLinecap="round" opacity={0.6} />
       {/* Visor */}
-      <path d="M116 155 Q150 150 184 155 L182 172 Q150 167 118 172 Z" fill="rgba(0,0,0,0.55)" />
-      {/* Smile */}
-      <path d="M136 178 Q150 186 164 178" stroke={BG_DARK} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-      {/* Eyes */}
-      <circle cx="138" cy="170" r="3" fill={BG_DARK} />
-      <circle cx="162" cy="170" r="3" fill={BG_DARK} />
+      <path d={`M${cx - 24} ${cy - 4} L${cx + 24} ${cy - 4} L${cx + 20} ${cy + 4} L${cx - 20} ${cy + 4} Z`} fill="rgba(0,0,0,0.6)" />
+      {/* Face */}
+      <ellipse cx={cx} cy={cy + 6} rx={20} ry={18} fill={SKIN} />
+      {/* Cheek */}
+      <circle cx={cx - 14} cy={cy + 10} r={3} fill={PINK} opacity={0.3} />
+      <circle cx={cx + 14} cy={cy + 10} r={3} fill={PINK} opacity={0.3} />
+      {eyes}
+      {mouth}
+    </g>
+  )
+}
 
-      {/* Waving arm */}
-      <path d="M180 215 Q210 185 225 140" stroke={ACCENT} strokeWidth="14" strokeLinecap="round" fill="none" />
-      {/* Hand waving */}
-      <circle cx="225" cy="135" r="10" fill="#E8C9A0" />
-      {/* Wave lines */}
-      <path d="M245 115 L255 105 M250 130 L265 128 M242 145 L255 150" stroke={ACCENT_LIGHT} strokeWidth="2.5" strokeLinecap="round" />
-
-      {/* Other arm */}
-      <path d="M120 215 Q105 245 110 275" stroke={ACCENT} strokeWidth="14" strokeLinecap="round" fill="none" />
-
-      {/* Delivery bag at feet */}
-      <rect x="125" y="290" width="50" height="35" rx="6" fill={ACCENT_DARK} />
-      <rect x="125" y="290" width="50" height="35" rx="6" fill="none" stroke={ACCENT_LIGHT} strokeWidth="1" />
-      <path d="M135 305 L165 305 M135 312 L158 312" stroke={ACCENT} strokeWidth="2" strokeLinecap="round" />
-
+export function MascotWave(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 200 240" fill="none" {...props}>
+      {/* Glow */}
+      <ellipse cx={100} cy={210} rx={50} ry={8} fill={OLIVE} opacity={0.08} />
+      {/* Body */}
+      <path d="M70 140 Q70 130 80 128 L120 128 Q130 130 130 140 L130 200 Q130 210 120 210 L80 210 Q70 210 70 200 Z" fill={OLIVE_DARK} />
+      {/* Collar */}
+      <path d="M80 128 Q100 136 120 128 L120 134 Q100 142 80 134 Z" fill={OLIVE} />
+      {/* Name badge */}
+      <rect x={88} y={155} width={24} height={16} rx={3} fill={WHITE} opacity={0.9} />
+      <rect x={92} y={160} width={16} height={2} rx={1} fill={OLIVE_DARK} />
+      <rect x={92} y={165} width={10} height={2} rx={1} fill={OLIVE_DARK} opacity={0.5} />
+      {/* Head */}
+      <MascotHead cx={100} cy={80} expression="happy" />
+      {/* Left arm */}
+      <path d="M70 145 L55 175 Q53 180 58 182 L62 184 Q67 186 69 181 L80 155" fill={OLIVE_DARK} />
+      {/* Right arm waving */}
+      <path d="M130 145 L145 115 Q148 110 153 112 L158 116 Q162 118 160 122 L148 155" fill={OLIVE_DARK} />
+      {/* Hand */}
+      <circle cx={158} cy={112} r={9} fill={SKIN} />
+      <circle cx={158} cy={112} r={9} fill="none" stroke={SKIN_DARK} strokeWidth={1} />
+      {/* Motion lines for wave */}
+      <path d="M168 100 Q174 98 172 92" stroke={OLIVE_LIGHT} strokeWidth={2} fill="none" strokeLinecap="round" opacity={0.5} />
+      <path d="M175 105 Q182 103 180 96" stroke={OLIVE_LIGHT} strokeWidth={2} fill="none" strokeLinecap="round" opacity={0.4} />
+      {/* Hi speech bubble */}
+      <g>
+        <path d="M125 30 Q125 18 137 18 L175 18 Q187 18 187 30 L187 48 Q187 60 175 60 L145 60 L138 68 L140 60 L137 60 Q125 60 125 48 Z" fill={WHITE} />
+        <text x={156} y={44} textAnchor="middle" fontSize={16} fontWeight="bold" fill={OLIVE_DARK} fontFamily="system-ui">Hi!</text>
+      </g>
       {/* Sparkles */}
-      <g opacity="0.6">
-        <path d="M250 200 L254 208 L262 212 L254 216 L250 224 L246 216 L238 212 L246 208 Z" fill={ACCENT_LIGHT} />
-        <path d="M55 130 L58 136 L64 139 L58 142 L55 148 L52 142 L46 139 L52 136 Z" fill={ACCENT_LIGHT} opacity="0.4" />
+      <circle cx={40} cy={60} r={2} fill={OLIVE_LIGHT} opacity={0.5} />
+      <circle cx={180} cy={80} r={1.5} fill={AMBER} opacity={0.4} />
+      <circle cx={30} cy={120} r={1.5} fill={OLIVE_LIGHT} opacity={0.3} />
+    </svg>
+  )
+}
+
+export function MascotHandoff(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 280 200" fill="none" {...props}>
+      {/* Ground */}
+      <ellipse cx={140} cy={185} rx={110} ry={10} fill={OLIVE} opacity={0.06} />
+      {/* === Delivery Partner (left) === */}
+      <MascotHead cx={70} cy={55} expression="happy" />
+      {/* DP Body */}
+      <path d="M48 105 Q48 98 56 96 L84 96 Q92 98 92 105 L92 170 Q92 178 84 178 L56 178 Q48 178 48 170 Z" fill={OLIVE_DARK} />
+      <path d="M56 96 Q70 104 84 96 L84 102 Q70 108 56 102 Z" fill={OLIVE} />
+      {/* DP left arm (holding package) */}
+      <path d="M92 110 L115 125 Q120 128 118 133 L114 137 Q110 140 106 136 L90 125" fill={OLIVE_DARK} />
+      {/* Package being handed */}
+      <g>
+        <rect x={108} y={118} width={28} height={28} rx={3} fill={ORANGE} />
+        <rect x={108} y={118} width={28} height={28} rx={3} fill="none" stroke="#C2410C" strokeWidth={1.5} />
+        <line x1={122} y1={118} x2={122} y2={146} stroke="#C2410C" strokeWidth={1} opacity={0.5} />
+        <line x1={108} y1={132} x2={136} y2={132} stroke="#C2410C" strokeWidth={1} opacity={0.5} />
+        {/* Tape */}
+        <rect x={119} y={118} width={6} height={28} fill="#C2410C" opacity={0.3} />
+      </g>
+      {/* Sparkle on package */}
+      <path d="M140 115 l2 4 l4 2 l-4 2 l-2 4 l-2 -4 l-4 -2 l4 -2 z" fill={AMBER} opacity={0.6} />
+
+      {/* === Customer (right) === */}
+      {/* Customer head */}
+      <ellipse cx={210} cy={48} rx={22} ry={24} fill={SKIN} />
+      {/* Hair */}
+      <path d="M188 45 Q188 22 210 22 Q232 22 232 45 L232 40 Q228 30 210 28 Q192 30 188 40 Z" fill="#3D2B1F" />
+      {/* Customer eyes */}
+      <circle cx={202} cy={50} r={3} fill={DARK_BG} />
+      <circle cx={218} cy={50} r={3} fill={DARK_BG} />
+      {/* Customer smile */}
+      <path d="M202 58 Q210 64 218 58" stroke={DARK_BG} strokeWidth={2} fill="none" strokeLinecap="round" />
+      {/* Cheeks */}
+      <circle cx={196} cy={56} r={3} fill={PINK} opacity={0.3} />
+      <circle cx={224} cy={56} r={3} fill={PINK} opacity={0.3} />
+      {/* Customer body */}
+      <path d="M188 95 Q188 88 196 86 L224 86 Q232 88 232 95 L232 170 Q232 178 224 178 L196 178 Q188 178 188 170 Z" fill={BLUE} />
+      {/* Customer arm reaching for package */}
+      <path d="M188 110 L168 125 Q164 128 166 133 L170 137 Q174 140 178 136 L192 125" fill={BLUE} />
+      {/* Hand */}
+      <circle cx={170} cy={130} r={8} fill={SKIN} />
+
+      {/* Connection sparkles between them */}
+      <circle cx={155} cy={100} r={2} fill={OLIVE_LIGHT} opacity={0.5} />
+      <circle cx={148} cy={110} r={1.5} fill={AMBER} opacity={0.4} />
+    </svg>
+  )
+}
+
+export function MascotOnBike(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 240 200" fill="none" {...props}>
+      {/* Ground line */}
+      <ellipse cx={120} cy={180} rx={90} ry={6} fill={OLIVE} opacity={0.06} />
+      {/* Speed lines behind */}
+      <path d="M20 100 L50 100" stroke={OLIVE_LIGHT} strokeWidth={2} strokeLinecap="round" opacity={0.3} />
+      <path d="M15 115 L45 115" stroke={OLIVE_LIGHT} strokeWidth={2} strokeLinecap="round" opacity={0.2} />
+      <path d="M25 130 L48 130" stroke={OLIVE_LIGHT} strokeWidth={2} strokeLinecap="round" opacity={0.25} />
+      {/* === Scooter === */}
+      {/* Body */}
+      <path d="M55 150 Q50 140 55 135 L75 130 L120 130 Q130 130 135 138 L140 150 L135 160 L60 160 Q52 160 55 150 Z" fill={OLIVE_DARK} />
+      <path d="M55 150 Q50 140 55 135 L75 130 L120 130 Q130 130 135 138 L140 150 L135 160 L60 160 Q52 160 55 150 Z" fill="none" stroke={OLIVE} strokeWidth={1.5} />
+      {/* Seat */}
+      <path d="M75 130 L110 130 L108 122 L78 122 Z" fill="#1a1a1a" />
+      {/* Delivery box */}
+      <rect x={80} y={88} width={40} height={36} rx={4} fill={OLIVE} />
+      <rect x={80} y={88} width={40} height={36} rx={4} fill="none" stroke={OLIVE_DARK} strokeWidth={1.5} />
+      <rect x={86} y={96} width={28} height={20} rx={2} fill={WHITE} opacity={0.9} />
+      <text x={100} y={110} textAnchor="middle" fontSize={9} fontWeight="bold" fill={OLIVE_DARK} fontFamily="system-ui">P</text>
+      {/* Headlight */}
+      <ellipse cx={138} cy={145} rx={6} ry={4} fill={AMBER} opacity={0.7} />
+      <path d="M138 145 L170 140 L170 150 L138 148 Z" fill={AMBER} opacity={0.1} />
+      {/* Front wheel */}
+      <circle cx={140} cy={165} r={16} fill="none" stroke="#333" strokeWidth={4} />
+      <circle cx={140} cy={165} r={6} fill="#555" />
+      {/* Back wheel */}
+      <circle cx={65} cy={165} r={16} fill="none" stroke="#333" strokeWidth={4} />
+      <circle cx={65} cy={165} r={6} fill="#555" />
+      {/* Handlebar */}
+      <path d="M120 130 L130 120 L138 122" stroke="#333" strokeWidth={3} fill="none" strokeLinecap="round" />
+      {/* === Rider === */}
+      <MascotHead cx={115} cy={65} expression="excited" />
+      {/* Rider body leaning forward */}
+      <path d="M100 100 Q98 95 105 93 L125 93 Q132 95 130 100 L128 130 L102 130 Z" fill={OLIVE_DARK} />
+      {/* Arm to handlebar */}
+      <path d="M130 105 L138 120 Q140 124 136 126 L132 128 Q128 130 126 126 L120 115" fill={OLIVE_DARK} />
+      {/* Speed sparkles */}
+      <circle cx={160} cy={120} r={1.5} fill={AMBER} opacity={0.5} />
+      <circle cx={170} cy={110} r={1} fill={OLIVE_LIGHT} opacity={0.4} />
+      <circle cx={175} cy={130} r={1.5} fill={AMBER} opacity={0.3} />
+    </svg>
+  )
+}
+
+export function MascotWaiting(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 200 200" fill="none" {...props}>
+      {/* Ground */}
+      <ellipse cx={100} cy={180} rx={60} ry={6} fill={OLIVE} opacity={0.06} />
+      {/* Head */}
+      <ellipse cx={100} cy={50} rx={22} ry={24} fill={SKIN} />
+      {/* Hair */}
+      <path d="M78 47 Q78 24 100 24 Q122 24 122 47 L122 42 Q118 32 100 30 Q82 32 78 42 Z" fill="#3D2B1F" />
+      {/* Eyes looking at phone */}
+      <circle cx={93} cy={52} r={3} fill={DARK_BG} />
+      <circle cx={107} cy={52} r={3} fill={DARK_BG} />
+      {/* Slight smile */}
+      <path d="M93 60 Q100 64 107 60" stroke={DARK_BG} strokeWidth={2} fill="none" strokeLinecap="round" />
+      {/* Cheeks */}
+      <circle cx={86} cy={58} r={3} fill={PINK} opacity={0.3} />
+      <circle cx={114} cy={58} r={3} fill={PINK} opacity={0.3} />
+      {/* Body */}
+      <path d="M78 95 Q78 88 86 86 L114 86 Q122 88 122 95 L122 170 Q122 178 114 178 L86 178 Q78 178 78 170 Z" fill={BLUE} />
+      {/* Arms holding phone */}
+      <path d="M78 105 L68 130 L78 135 L88 115" fill={BLUE} />
+      <path d="M122 105 L132 130 L122 135 L112 115" fill={BLUE} />
+      {/* Phone */}
+      <rect x={78} y={108} width={44} height={30} rx={4} fill={DARK_BG} />
+      <rect x={82} y={112} width={36} height={22} rx={2} fill={OLIVE_DARK} opacity={0.3} />
+      {/* Mini radar on phone */}
+      <circle cx={100} cy={123} r={8} fill="none" stroke={OLIVE_LIGHT} strokeWidth={1} opacity={0.5} />
+      <circle cx={100} cy={123} r={4} fill="none" stroke={OLIVE_LIGHT} strokeWidth={1} opacity={0.4} />
+      <circle cx={100} cy={123} r={1.5} fill={OLIVE_LIGHT} />
+      {/* Thought bubble with clock */}
+      <g>
+        <circle cx={150} cy={45} r={20} fill={WHITE} opacity={0.9} />
+        <circle cx={150} cy={45} r={20} fill="none" stroke={OLIVE} strokeWidth={1.5} />
+        <circle cx={150} cy={45} r={14} fill="none" stroke={OLIVE_DARK} strokeWidth={1.5} />
+        <line x1={150} y1={45} x2={150} y2={37} stroke={OLIVE_DARK} strokeWidth={2} strokeLinecap="round" />
+        <line x1={150} y1={45} x2={156} y2={48} stroke={OLIVE_DARK} strokeWidth={2} strokeLinecap="round" />
+        <circle cx={150} cy={45} r={1.5} fill={OLIVE_DARK} />
+        {/* Thought dots */}
+        <circle cx={135} cy={70} r={3} fill={WHITE} opacity={0.7} />
+        <circle cx={128} cy={80} r={2} fill={WHITE} opacity={0.5} />
       </g>
     </svg>
   )
 }
 
-/* ═══════════════════════════════════════════════
-   Hero scene — mascot on scooter with city skyline
-   silhouette. Used on landing page background.
-   ═══════════════════════════════════════════════ */
-export function HeroScene({ className, style }: IllustrationProps) {
+export function HeroScene(props: SvgProps) {
   return (
-    <svg viewBox="0 0 800 600" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* Sky gradient backdrop */}
+    <svg viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMidYMid slice" {...props}>
       <defs>
-        <linearGradient id="heroSky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#0B0B0B" />
-          <stop offset="60%" stopColor="#141414" />
-          <stop offset="100%" stopColor="#1a1a1a" />
-        </linearGradient>
-        <radialGradient id="heroGlow" cx="50%" cy="45%" r="40%">
-          <stop offset="0%" stopColor="rgba(166,179,0,0.15)" />
-          <stop offset="100%" stopColor="rgba(166,179,0,0)" />
+        <radialGradient id="heroGlow" cx="50%" cy="35%" r="50%">
+          <stop offset="0%" stopColor={OLIVE} stopOpacity="0.08" />
+          <stop offset="100%" stopColor="transparent" />
         </radialGradient>
       </defs>
-      <rect width="800" height="600" fill="url(#heroSky)" />
-      <rect width="800" height="600" fill="url(#heroGlow)" />
-
-      {/* City skyline silhouette */}
-      <g fill={BG_DARK} opacity="0.7">
-        <rect x="0" y="380" width="60" height="220" />
-        <rect x="55" y="340" width="50" height="260" />
-        <rect x="100" y="360" width="70" height="240" />
-        <rect x="165" y="320" width="45" height="280" />
-        <rect x="205" y="370" width="60" height="230" />
-        <rect x="530" y="350" width="55" height="250" />
-        <rect x="580" y="310" width="50" height="290" />
-        <rect x="625" y="370" width="65" height="230" />
-        <rect x="685" y="340" width="55" height="260" />
-        <rect x="735" y="360" width="65" height="240" />
+      <rect width="400" height="600" fill={DARK_BG} />
+      <rect width="400" height="600" fill="url(#heroGlow)" />
+      {/* City skyline */}
+      <g opacity="0.04">
+        <rect x={20} y={350} width={40} height={100} fill={WHITE} />
+        <rect x={70} y={300} width={35} height={150} fill={WHITE} />
+        <rect x={115} y={330} width={30} height={120} fill={WHITE} />
+        <rect x={155} y={280} width={45} height={170} fill={WHITE} />
+        <rect x={210} y={320} width={30} height={130} fill={WHITE} />
+        <rect x={250} y={290} width={40} height={160} fill={WHITE} />
+        <rect x={300} y={340} width={35} height={110} fill={WHITE} />
+        <rect x={345} y={310} width={30} height={140} fill={WHITE} />
       </g>
-      {/* Building windows */}
-      <g fill={ACCENT} opacity="0.3">
-        <rect x="65" y="360" width="6" height="8" />
-        <rect x="78" y="360" width="6" height="8" />
-        <rect x="65" y="380" width="6" height="8" />
-        <rect x="175" y="340" width="6" height="8" />
-        <rect x="188" y="360" width="6" height="8" />
-        <rect x="590" y="330" width="6" height="8" />
-        <rect x="603" y="350" width="6" height="8" />
-        <rect x="700" y="360" width="6" height="8" />
-        <rect x="713" y="380" width="6" height="8" />
-      </g>
-
-      {/* Road */}
-      <rect x="0" y="520" width="800" height="80" fill="#0F0F0F" />
-      <line x1="0" y1="555" x2="800" y2="555" stroke={ACCENT_DARK} strokeWidth="2" strokeDasharray="30 20" opacity="0.5" />
-
-      {/* Mascot on scooter — centered */}
-      <g transform="translate(220, 130) scale(0.72)">
-        <MascotDelivery />
-      </g>
-
-      {/* Floating elements */}
-      <g opacity="0.5">
-        {/* Floating package icon */}
-        <rect x="620" y="120" width="36" height="36" rx="6" fill="none" stroke={ACCENT} strokeWidth="2" />
-        <path d="M620 138 L656 138 M638 120 L638 156" stroke={ACCENT} strokeWidth="1.5" />
-        {/* Floating chat bubble */}
-        <rect x="100" y="100" width="50" height="32" rx="16" fill="none" stroke={ACCENT_LIGHT} strokeWidth="2" />
-        <circle cx="115" cy="116" r="3" fill={ACCENT_LIGHT} />
-        <circle cx="127" cy="116" r="3" fill={ACCENT_LIGHT} />
-        <circle cx="139" cy="116" r="3" fill={ACCENT_LIGHT} />
-      </g>
-
-      {/* Sparkles */}
-      <g opacity="0.4">
-        <path d="M680 200 L685 212 L697 217 L685 222 L680 234 L675 222 L663 217 L675 212 Z" fill={ACCENT_LIGHT} />
-        <path d="M120 280 L124 288 L132 292 L124 296 L120 304 L116 296 L108 292 L116 288 Z" fill={ACCENT_LIGHT} opacity="0.5" />
-      </g>
+      {/* Floating dots */}
+      <circle cx={60} cy={100} r={3} fill={OLIVE} opacity={0.15} />
+      <circle cx={340} cy={150} r={2} fill={OLIVE_LIGHT} opacity={0.12} />
+      <circle cx={80} cy={250} r={2} fill={OLIVE} opacity={0.1} />
+      <circle cx={320} cy={280} r={3} fill={OLIVE_LIGHT} opacity={0.1} />
     </svg>
   )
 }
 
-/* ═══════════════════════════════════════════════
-   Category illustrations — simple, recognizable
-   icons drawn in brand style on dark bg
-   ═══════════════════════════════════════════════ */
-export function IllusGrocery({ className, style }: IllustrationProps) {
+export function IllusHeroCard(props: SvgProps) {
   return (
-    <svg viewBox="0 0 80 80" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* Bag */}
-      <path d="M22 28 L58 28 L62 68 L18 68 Z" fill={ACCENT} />
-      <path d="M22 28 L58 28 L62 68 L18 68 Z" fill="none" stroke={ACCENT_LIGHT} strokeWidth="1.5" />
-      {/* Handles */}
-      <path d="M28 28 Q28 16 40 16 Q52 16 52 28" stroke={ACCENT_LIGHT} strokeWidth="2.5" fill="none" />
-      {/* Items sticking out */}
-      <path d="M30 28 L30 18 Q30 14 34 14 L34 28" fill={BG_DARK} stroke={ACCENT_DARK} strokeWidth="1" />
-      <ellipse cx="38" cy="20" rx="5" ry="8" fill="#22C55E" />
-      <ellipse cx="48" cy="18" rx="4" ry="7" fill="#F59E0B" />
-      {/* Label */}
-      <rect x="28" y="42" width="24" height="12" rx="3" fill={BG_DARK} opacity="0.7" />
-      <path d="M32 48 L48 48 M32 51 L44 51" stroke={ACCENT_LIGHT} strokeWidth="1" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-export function IllusFood({ className, style }: IllustrationProps) {
-  return (
-    <svg viewBox="0 0 80 80" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* Plate */}
-      <circle cx="40" cy="42" r="28" fill={SURFACE} stroke={ACCENT_DARK} strokeWidth="2" />
-      <circle cx="40" cy="42" r="22" fill={BG_DARK} />
-      {/* Food sections */}
-      <path d="M40 22 Q30 30 28 42 Q40 46 52 42 Q50 30 40 22Z" fill={ACCENT} />
-      <path d="M28 42 Q30 54 40 60 Q46 52 44 44Z" fill="#F59E0B" opacity="0.8" />
-      <path d="M40 60 Q50 54 52 42 L44 44 Q42 52 40 60Z" fill="#EF4444" opacity="0.7" />
-      {/* Steam */}
-      <path d="M34 18 Q32 14 35 10 M40 16 Q38 12 41 8 M46 18 Q44 14 47 10" stroke={MUTED} strokeWidth="2" strokeLinecap="round" fill="none" />
-    </svg>
-  )
-}
-
-export function IllusMedicine({ className, style }: IllustrationProps) {
-  return (
-    <svg viewBox="0 0 80 80" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* Bottle */}
-      <rect x="26" y="22" width="28" height="42" rx="6" fill={ACCENT} />
-      <rect x="26" y="22" width="28" height="42" rx="6" fill="none" stroke={ACCENT_LIGHT} strokeWidth="1.5" />
-      {/* Cap */}
-      <rect x="30" y="14" width="20" height="10" rx="3" fill={ACCENT_DARK} />
-      {/* Cross */}
-      <rect x="36" y="36" width="8" height="20" rx="2" fill={WHITE} />
-      <rect x="30" y="42" width="20" height="8" rx="2" fill={WHITE} />
-      {/* Pills */}
-      <ellipse cx="22" cy="56" rx="6" ry="4" fill="#EF4444" opacity="0.8" transform="rotate(-20 22 56)" />
-      <ellipse cx="60" cy="58" rx="6" ry="4" fill="#3B82F6" opacity="0.8" transform="rotate(15 60 58)" />
-    </svg>
-  )
-}
-
-export function IllusParcel({ className, style }: IllustrationProps) {
-  return (
-    <svg viewBox="0 0 80 80" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* Box */}
-      <path d="M18 30 L40 20 L62 30 L62 56 L40 66 L18 56 Z" fill={ACCENT} />
-      <path d="M18 30 L40 40 L62 30" stroke={ACCENT_DARK} strokeWidth="2" fill="none" />
-      <path d="M40 40 L40 66" stroke={ACCENT_DARK} strokeWidth="2" />
-      {/* Tape */}
-      <path d="M36 18 L36 62 M44 18 L44 62" stroke={ACCENT_LIGHT} strokeWidth="2" opacity="0.5" />
-      {/* Label */}
-      <rect x="28" y="44" width="18" height="10" rx="2" fill={BG_DARK} opacity="0.6" />
-      <path d="M31 48 L43 48 M31 51 L39 51" stroke={ACCENT_LIGHT} strokeWidth="0.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-/* ═══════════════════════════════════════════════
-   Empty state illustration — mascot looking at
-   empty clipboard, casual and friendly
-   ═══════════════════════════════════════════════ */
-export function IllusEmpty({ className, style }: IllustrationProps) {
-  return (
-    <svg viewBox="0 0 200 200" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
-      {/* Shadow */}
-      <ellipse cx="100" cy="175" rx="55" ry="8" fill="rgba(0,0,0,0.25)" />
-
-      {/* Mascot — simplified, smaller */}
-      {/* Body */}
-      <path d="M80 105 Q73 125 75 150 L125 150 Q127 125 120 105 Z" fill={ACCENT} />
-      {/* Head */}
-      <circle cx="100" cy="82" r="26" fill="#E8C9A0" />
-      {/* Helmet */}
-      <path d="M74 82 Q74 52 100 50 Q126 52 126 82 L126 72 Q126 48 100 46 Q74 48 74 72 Z" fill={ACCENT_DARK} />
-      <path d="M74 72 Q74 48 100 46 Q126 48 126 72 L126 66 Q126 44 100 42 Q74 44 74 66 Z" fill={ACCENT} />
-      <path d="M79 78 Q100 74 121 78 L119 90 Q100 86 81 90 Z" fill="rgba(0,0,0,0.5)" />
-      {/* Eyes — looking down at clipboard */}
-      <circle cx="92" cy="88" r="2" fill={BG_DARK} />
-      <circle cx="108" cy="88" r="2" fill={BG_DARK} />
-      {/* Neutral mouth */}
-      <path d="M94 98 Q100 100 106 98" stroke={BG_DARK} strokeWidth="1.5" strokeLinecap="round" fill="none" />
-
-      {/* Arm holding clipboard */}
-      <path d="M120 112 Q135 120 140 135" stroke={ACCENT} strokeWidth="10" strokeLinecap="round" fill="none" />
-
-      {/* Clipboard */}
-      <rect x="130" y="120" width="35" height="45" rx="4" fill={SURFACE} stroke={ACCENT_DARK} strokeWidth="1.5" />
-      <rect x="140" y="116" width="15" height="6" rx="2" fill={ACCENT_DARK} />
-      {/* Empty lines */}
-      <path d="M136 135 L159 135 M136 142 L154 142 M136 149 L157 149" stroke={MUTED} strokeWidth="1" strokeLinecap="round" />
-
-      {/* Other arm */}
-      <path d="M80 112 Q72 130 75 148" stroke={ACCENT} strokeWidth="10" strokeLinecap="round" fill="none" />
-
-      {/* Floating question mark / dots */}
-      <g opacity="0.4">
-        <circle cx="160" cy="80" r="3" fill={ACCENT_LIGHT} />
-        <circle cx="170" cy="95" r="2" fill={ACCENT_LIGHT} />
-        <circle cx="50" cy="70" r="3" fill={ACCENT_LIGHT} />
-        <circle cx="40" cy="85" r="2" fill={ACCENT_LIGHT} />
-      </g>
-    </svg>
-  )
-}
-
-/* ═══════════════════════════════════════════════
-   Hero card background — abstract brand shapes
-   for the user home hero card
-   ═══════════════════════════════════════════════ */
-export function IllusHeroCard({ className, style }: IllustrationProps) {
-  return (
-    <svg viewBox="0 0 600 200" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <svg viewBox="0 0 400 200" fill="none" preserveAspectRatio="xMidYMid slice" {...props}>
       <defs>
-        <linearGradient id="heroCardGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="rgba(166,179,0,0.12)" />
-          <stop offset="100%" stopColor="rgba(166,179,0,0.02)" />
+        <linearGradient id="heroCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={OLIVE_DARK} stopOpacity="0.15" />
+          <stop offset="100%" stopColor={DARK_BG} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect width="600" height="200" fill="url(#heroCardGrad)" />
-      {/* Abstract speed lines */}
-      <path d="M400 40 Q450 60 480 100 M420 80 Q460 90 490 120 M380 120 Q430 130 470 160"
-        stroke={ACCENT} strokeWidth="2" strokeLinecap="round" opacity="0.15" fill="none" />
-      {/* Mini mascot silhouette */}
-      <g transform="translate(380, 20) scale(0.28)" opacity="0.25">
-        <MascotDelivery />
-      </g>
-      {/* Dot pattern */}
-      <g fill={ACCENT} opacity="0.08">
-        <circle cx="50" cy="30" r="2" /><circle cx="80" cy="30" r="2" /><circle cx="110" cy="30" r="2" />
-        <circle cx="50" cy="60" r="2" /><circle cx="80" cy="60" r="2" /><circle cx="110" cy="60" r="2" />
-        <circle cx="50" cy="90" r="2" /><circle cx="80" cy="90" r="2" /><circle cx="110" cy="90" r="2" />
+      <rect width="400" height="200" fill="url(#heroCardGrad)" />
+      {/* Abstract shapes */}
+      <circle cx={320} cy={40} r={50} fill={OLIVE} opacity={0.06} />
+      <circle cx={350} cy={150} r={30} fill={OLIVE_LIGHT} opacity={0.05} />
+      <path d="M280 60 Q310 40 340 70 Q330 100 300 90 Z" fill={OLIVE} opacity={0.04} />
+    </svg>
+  )
+}
+
+export function IllusEmpty(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 120 120" fill="none" {...props}>
+      <ellipse cx={60} cy={105} rx={35} ry={5} fill={OLIVE} opacity={0.06} />
+      {/* Empty box */}
+      <path d="M30 55 L60 40 L90 55 L90 90 L60 105 L30 90 Z" fill="none" stroke={OLIVE} strokeWidth={2} opacity={0.3} />
+      <path d="M30 55 L60 70 L90 55" fill="none" stroke={OLIVE} strokeWidth={2} opacity={0.3} />
+      <path d="M60 70 L60 105" fill="none" stroke={OLIVE} strokeWidth={2} opacity={0.3} />
+      {/* Question mark */}
+      <text x={60} y={80} textAnchor="middle" fontSize={28} fontWeight="bold" fill={OLIVE} opacity={0.4} fontFamily="system-ui">{'?'}</text>
+    </svg>
+  )
+}
+
+// ===== Category Illustrations =====
+export function CategoryIcon({ name, size = 32, className }: { name: string; size?: number; className?: string }) {
+  const map: Record<string, (p: SvgProps) => JSX.Element> = {
+    Shopping: CatShopping,
+    Pickup: CatPickup,
+    Delivery: CatDelivery,
+    Documents: CatDocuments,
+    Medicine: CatMedicine,
+    Food: CatFood,
+    Flowers: CatFlowers,
+    Gifts: CatGifts,
+    Groceries: CatGroceries,
+    Laundry: CatLaundry,
+    Courier: CatCourier,
+    'Personal Assistant': CatPersonalAssistant,
+    'Custom Request': CatCustomRequest,
+  }
+  const Comp = map[name] || CatCustomRequest
+  return <Comp width={size} height={size} viewBox="0 0 48 48" className={className} />
+}
+
+function CatShopping(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <path d="M12 14 L38 14 L34 36 L16 36 Z" fill="none" stroke={ORANGE} strokeWidth={2.5} strokeLinejoin="round" />
+      <path d="M16 14 Q16 8 24 8 Q32 8 32 14" fill="none" stroke={ORANGE} strokeWidth={2.5} strokeLinecap="round" />
+      <circle cx={20} cy={24} r={2} fill={ORANGE} />
+      <circle cx={30} cy={24} r={2} fill={ORANGE} />
+    </svg>
+  )
+}
+function CatPickup(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <rect x={8} y={20} width={22} height={18} rx={2} fill="none" stroke={BLUE} strokeWidth={2.5} />
+      <path d="M30 26 L40 26 L42 32 L42 38 L30 38" fill="none" stroke={BLUE} strokeWidth={2.5} strokeLinejoin="round" />
+      <circle cx={16} cy={40} r={3} fill={BLUE} />
+      <circle cx={36} cy={40} r={3} fill={BLUE} />
+    </svg>
+  )
+}
+function CatDelivery(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <rect x={6} y={14} width={24} height={20} rx={2} fill="none" stroke={TEAL} strokeWidth={2.5} />
+      <path d="M30 20 L38 20 L42 26 L42 34 L30 34" fill="none" stroke={TEAL} strokeWidth={2.5} strokeLinejoin="round" />
+      <circle cx={14} cy={38} r={3} fill={TEAL} />
+      <circle cx={34} cy={38} r={3} fill={TEAL} />
+      <line x1={14} y1={24} x2={22} y2={24} stroke={TEAL} strokeWidth={2} strokeLinecap="round" />
+    </svg>
+  )
+}
+function CatDocuments(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <path d="M14 8 L30 8 L36 14 L36 40 L14 40 Z" fill="none" stroke={PURPLE} strokeWidth={2.5} strokeLinejoin="round" />
+      <path d="M30 8 L30 14 L36 14" fill="none" stroke={PURPLE} strokeWidth={2.5} strokeLinejoin="round" />
+      <line x1={18} y1={20} x2={32} y2={20} stroke={PURPLE} strokeWidth={2} strokeLinecap="round" />
+      <line x1={18} y1={26} x2={32} y2={26} stroke={PURPLE} strokeWidth={2} strokeLinecap="round" />
+      <line x1={18} y1={32} x2={28} y2={32} stroke={PURPLE} strokeWidth={2} strokeLinecap="round" />
+    </svg>
+  )
+}
+function CatMedicine(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <rect x={10} y={16} width={28} height={20} rx={10} fill="none" stroke={RED} strokeWidth={2.5} />
+      <line x1={24} y1={16} x2={24} y2={36} stroke={RED} strokeWidth={2.5} />
+      <circle cx={24} cy={26} r={4} fill="none" stroke={RED} strokeWidth={2} />
+      <path d="M20 10 L28 10" stroke={RED} strokeWidth={2.5} strokeLinecap="round" />
+    </svg>
+  )
+}
+function CatFood(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <path d="M12 20 L36 20 L34 38 L14 38 Z" fill="none" stroke={AMBER} strokeWidth={2.5} strokeLinejoin="round" />
+      <path d="M16 20 Q16 12 24 12 Q32 12 32 20" fill="none" stroke={AMBER} strokeWidth={2.5} />
+      <circle cx={20} cy={28} r={2} fill={AMBER} />
+      <circle cx={28} cy={30} r={2} fill={AMBER} />
+    </svg>
+  )
+}
+function CatFlowers(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <circle cx={24} cy={16} r={5} fill={PINK} />
+      <circle cx={18} cy={20} r={5} fill={PINK} opacity={0.7} />
+      <circle cx={30} cy={20} r={5} fill={PINK} opacity={0.7} />
+      <circle cx={20} cy={26} r={5} fill={PINK} opacity={0.5} />
+      <circle cx={28} cy={26} r={5} fill={PINK} opacity={0.5} />
+      <circle cx={24} cy={22} r={3} fill={AMBER} />
+      <path d="M24 30 L24 42" stroke={GREEN} strokeWidth={2.5} strokeLinecap="round" />
+      <path d="M24 36 Q20 34 18 36" fill="none" stroke={GREEN} strokeWidth={2} />
+    </svg>
+  )
+}
+function CatGifts(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <rect x={10} y={20} width={28} height={22} rx={2} fill="none" stroke={PURPLE} strokeWidth={2.5} />
+      <line x1={24} y1={20} x2={24} y2={42} stroke={PURPLE} strokeWidth={2} />
+      <line x1={10} y1={28} x2={38} y2={28} stroke={PURPLE} strokeWidth={2} />
+      <path d="M18 20 Q18 12 24 14 Q30 12 30 20" fill="none" stroke={PURPLE} strokeWidth={2} />
+      <circle cx={24} cy={14} r={2} fill={AMBER} />
+    </svg>
+  )
+}
+function CatGroceries(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <path d="M10 18 L38 18 L36 40 L12 40 Z" fill="none" stroke={GREEN} strokeWidth={2.5} strokeLinejoin="round" />
+      <path d="M14 18 Q14 10 24 10 Q34 10 34 18" fill="none" stroke={GREEN} strokeWidth={2.5} />
+      <circle cx={20} cy={28} r={3} fill={RED} />
+      <path d="M26 26 L30 34" stroke={AMBER} strokeWidth={2.5} strokeLinecap="round" />
+    </svg>
+  )
+}
+function CatLaundry(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <rect x={8} y={10} width={32} height={30} rx={3} fill="none" stroke={BLUE} strokeWidth={2.5} />
+      <circle cx={24} cy={26} r={10} fill="none" stroke={BLUE} strokeWidth={2.5} />
+      <circle cx={14} cy={16} r={1.5} fill={BLUE} />
+      <circle cx={20} cy={16} r={1.5} fill={BLUE} />
+      <circle cx={34} cy={16} r={1.5} fill={BLUE} />
+      <circle cx={22} cy={24} r={2} fill={BLUE} opacity={0.5} />
+      <circle cx={28} cy={28} r={2} fill={BLUE} opacity={0.5} />
+    </svg>
+  )
+}
+function CatCourier(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <rect x={8} y={14} width={32} height={24} rx={2} fill="none" stroke={OLIVE} strokeWidth={2.5} />
+      <path d="M8 22 L40 22" stroke={OLIVE} strokeWidth={2} />
+      <rect x={16} y={26} width={16} height={8} rx={1} fill="none" stroke={OLIVE} strokeWidth={2} />
+      <path d="M20 14 L20 10 L28 10 L28 14" fill="none" stroke={OLIVE} strokeWidth={2} />
+    </svg>
+  )
+}
+function CatPersonalAssistant(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <circle cx={18} cy={16} r={6} fill="none" stroke={TEAL} strokeWidth={2.5} />
+      <path d="M8 38 Q8 26 18 26 Q28 26 28 38" fill="none" stroke={TEAL} strokeWidth={2.5} strokeLinecap="round" />
+      <circle cx={34} cy={20} r={6} fill="none" stroke={TEAL} strokeWidth={2.5} opacity={0.6} />
+      <path d="M28 38 Q28 30 34 30 Q40 30 40 38" fill="none" stroke={TEAL} strokeWidth={2.5} strokeLinecap="round" opacity={0.6} />
+    </svg>
+  )
+}
+function CatCustomRequest(props: SvgProps) {
+  return (
+    <svg fill="none" {...props}>
+      <path d="M24 8 L26 18 L36 20 L26 22 L24 32 L22 22 L12 20 L22 18 Z" fill={AMBER} opacity={0.8} />
+      <circle cx={36} cy={34} r={4} fill={OLIVE_LIGHT} opacity={0.6} />
+      <circle cx={12} cy={36} r={3} fill={PINK} opacity={0.5} />
+    </svg>
+  )
+}
+
+export const CategoryIllustration = CategoryIcon
+export const IllusGrocery = CatGroceries
+
+// ===== Feature Carousel Illustrations =====
+export function FeatureInstantDelivery(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 200 140" fill="none" {...props}>
+      <ellipse cx={100} cy={125} rx={70} ry={6} fill={AMBER} opacity={0.06} />
+      {/* Lightning bolt */}
+      <path d="M155 25 L145 50 L155 50 L145 75" stroke={AMBER} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M155 25 L145 50 L155 50 L145 75" fill={AMBER} opacity={0.15} />
+      {/* Mini bike */}
+      <circle cx={70} cy={100} r={14} fill="none" stroke="#444" strokeWidth={3} />
+      <circle cx={130} cy={100} r={14} fill="none" stroke="#444" strokeWidth={3} />
+      <path d="M55 95 L85 90 L125 90 L140 95 L140 105 L55 105 Z" fill={OLIVE_DARK} />
+      <rect x={80} y={65} width={30} height={28} rx={3} fill={OLIVE} />
+      <text x={95} y={82} textAnchor="middle" fontSize={10} fontWeight="bold" fill={DARK_BG} fontFamily="system-ui">P</text>
+      {/* 10 min badge */}
+      <g>
+        <circle cx={45} cy={45} r={18} fill={AMBER} />
+        <text x={45} y={42} textAnchor="middle" fontSize={8} fontWeight="bold" fill={DARK_BG} fontFamily="system-ui">10</text>
+        <text x={45} y={52} textAnchor="middle" fontSize={6} fontWeight="bold" fill={DARK_BG} fontFamily="system-ui">MIN</text>
       </g>
     </svg>
   )
 }
 
-/* ═══════════════════════════════════════════════
-   Category image resolver — returns the right
-   illustration component for a category name
-   ═══════════════════════════════════════════════ */
-export function CategoryIllustration({ name, className, style }: { name: string; className?: string; style?: CSSProperties }) {
-  const lower = name.toLowerCase()
-  if (lower.includes('food') || lower.includes('tiffin') || lower.includes('meal')) return <IllusFood className={className} style={style} />
-  if (lower.includes('med') || lower.includes('pharm') || lower.includes('drug')) return <IllusMedicine className={className} style={style} />
-  if (lower.includes('grocery') || lower.includes('veg') || lower.includes('fruit') || lower.includes('market')) return <IllusGrocery className={className} style={style} />
-  return <IllusParcel className={className} style={style} />
+export function FeatureAdvanceBooking(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 200 140" fill="none" {...props}>
+      <ellipse cx={100} cy={125} rx={70} ry={6} fill={BLUE} opacity={0.06} />
+      {/* Calendar */}
+      <rect x={55} y={30} width={90} height={75} rx={6} fill="none" stroke={BLUE} strokeWidth={2.5} />
+      <rect x={55} y={30} width={90} height={18} rx={6} fill={BLUE} opacity={0.15} />
+      <line x1={70} y1={22} x2={70} y2={36} stroke={BLUE} strokeWidth={3} strokeLinecap="round" />
+      <line x1={130} y1={22} x2={130} y2={36} stroke={BLUE} strokeWidth={3} strokeLinecap="round" />
+      {/* Date grid */}
+      {[0, 1, 2].map(row =>
+        [0, 1, 2, 3].map(col => (
+          <circle key={`${row}-${col}`} cx={70 + col * 18} cy={62 + row * 14} r={3} fill={BLUE} opacity={0.2} />
+        ))
+      )}
+      {/* Selected date */}
+      <circle cx={88} cy={76} r={8} fill={BLUE} />
+      <path d="M84 76 L87 79 L92 73" stroke={WHITE} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Clock */}
+      <circle cx={155} cy={100} r={16} fill="none" stroke={BLUE} strokeWidth={2.5} />
+      <line x1={155} y1={100} x2={155} y2={92} stroke={BLUE} strokeWidth={2} strokeLinecap="round" />
+      <line x1={155} y1={100} x2={161} y2={103} stroke={BLUE} strokeWidth={2} strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function FeatureOrderYourWay(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 200 140" fill="none" {...props}>
+      <ellipse cx={100} cy={125} rx={70} ry={6} fill={PURPLE} opacity={0.06} />
+      {/* Clipboard */}
+      <rect x={50} y={25} width={70} height={90} rx={5} fill="none" stroke={PURPLE} strokeWidth={2.5} />
+      <rect x={70} y={18} width={30} height={12} rx={3} fill={PURPLE} opacity={0.3} />
+      {/* Checklist items */}
+      {[0, 1, 2].map(i => (
+        <g key={i}>
+          <rect x={58} y={42 + i * 20} width={10} height={10} rx={2} fill="none" stroke={PURPLE} strokeWidth={2} />
+          <path d={`M${60} ${47 + i * 20} L${63} ${50 + i * 20} L${67} ${44 + i * 20}`} stroke={PURPLE} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1={74} y1={47 + i * 20} x2={108} y2={47 + i * 20} stroke={PURPLE} strokeWidth={2} strokeLinecap="round" opacity={0.4} />
+        </g>
+      ))}
+      {/* Pen */}
+      <path d="M130 40 L150 60 L145 70 L125 50 Z" fill={PURPLE} opacity={0.6} />
+      <path d="M125 50 L130 40 L133 43 L128 53 Z" fill={PURPLE} />
+    </svg>
+  )
+}
+
+export function FeatureAskAnything(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 200 140" fill="none" {...props}>
+      <ellipse cx={100} cy={125} rx={70} ry={6} fill={TEAL} opacity={0.06} />
+      {/* Chat bubbles */}
+      <path d="M30 30 Q30 22 38 22 L80 22 Q88 22 88 30 L88 50 Q88 58 80 58 L50 58 L40 66 L42 58 L38 58 Q30 58 30 50 Z" fill={TEAL} opacity={0.15} />
+      <circle cx={45} cy={36} r={2} fill={TEAL} />
+      <circle cx={55} cy={36} r={2} fill={TEAL} />
+      <circle cx={65} cy={36} r={2} fill={TEAL} />
+      <path d="M100 60 Q100 52 108 52 L165 52 Q173 52 173 60 L173 82 Q173 90 165 90 L130 90 L120 98 L122 90 L108 90 Q100 90 100 82 Z" fill={TEAL} opacity={0.25} />
+      <text x={136} y={76} textAnchor="middle" fontSize={18} fontWeight="bold" fill={TEAL} fontFamily="system-ui">{'?'}</text>
+      {/* Mini items */}
+      <rect x={110} y={100} width={12} height={12} rx={2} fill={ORANGE} opacity={0.5} />
+      <circle cx={140} cy={106} r={6} fill={RED} opacity={0.4} />
+      <rect x={155} y={100} width={12} height={12} rx={2} fill={GREEN} opacity={0.4} />
+    </svg>
+  )
+}
+
+export function FeatureGetEverything(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 200 140" fill="none" {...props}>
+      <ellipse cx={100} cy={125} rx={70} ry={6} fill={ORANGE} opacity={0.06} />
+      {/* Shopping bag */}
+      <path d="M60 50 L140 50 L132 120 L68 120 Z" fill="none" stroke={ORANGE} strokeWidth={2.5} strokeLinejoin="round" />
+      <path d="M75 50 Q75 30 100 30 Q125 30 125 50" fill="none" stroke={ORANGE} strokeWidth={2.5} />
+      {/* Items overflowing */}
+      <circle cx={85} cy={42} r={8} fill={RED} opacity={0.7} />
+      <path d="M100 35 Q100 25 108 25 Q116 25 116 35 L116 42 L100 42 Z" fill={AMBER} opacity={0.7} />
+      <rect x={112} y={38} width={14} height={14} rx={2} fill={BLUE} opacity={0.6} />
+      {/* Inside bag items */}
+      <circle cx={85} cy={75} r={6} fill={GREEN} opacity={0.4} />
+      <rect x={100} y={70} width={12} height={12} rx={2} fill={PURPLE} opacity={0.4} />
+      <circle cx={115} cy={80} r={5} fill={RED} opacity={0.4} />
+    </svg>
+  )
+}
+
+export function FeatureLocalPartners(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 200 140" fill="none" {...props}>
+      <ellipse cx={100} cy={125} rx={70} ry={6} fill={GREEN} opacity={0.06} />
+      {/* Map pin */}
+      <path d="M100 30 Q80 30 80 50 Q80 70 100 95 Q120 70 120 50 Q120 30 100 30 Z" fill={GREEN} opacity={0.2} />
+      <path d="M100 30 Q80 30 80 50 Q80 70 100 95 Q120 70 120 50 Q120 30 100 30 Z" fill="none" stroke={GREEN} strokeWidth={2.5} />
+      <circle cx={100} cy={50} r={8} fill={GREEN} />
+      {/* Nearby partner dots */}
+      <circle cx={60} cy={70} r={6} fill={OLIVE} opacity={0.5} />
+      <circle cx={140} cy={65} r={6} fill={OLIVE} opacity={0.5} />
+      <circle cx={70} cy={100} r={5} fill={OLIVE} opacity={0.4} />
+      <circle cx={130} cy={105} r={5} fill={OLIVE} opacity={0.4} />
+      {/* Connection lines */}
+      <path d="M100 50 L60 70" stroke={GREEN} strokeWidth={1.5} opacity={0.3} strokeDasharray="3 3" />
+      <path d="M100 50 L140 65" stroke={GREEN} strokeWidth={1.5} opacity={0.3} strokeDasharray="3 3" />
+      <path d="M100 50 L70 100" stroke={GREEN} strokeWidth={1.5} opacity={0.2} strokeDasharray="3 3" />
+      <path d="M100 50 L130 105" stroke={GREEN} strokeWidth={1.5} opacity={0.2} strokeDasharray="3 3" />
+    </svg>
+  )
+}
+
+export function FeatureTrackLive(props: SvgProps) {
+  return (
+    <svg viewBox="0 0 200 140" fill="none" {...props}>
+      <ellipse cx={100} cy={125} rx={70} ry={6} fill={OLIVE} opacity={0.06} />
+      {/* Route path */}
+      <path d="M30 100 Q50 80 70 90 T130 80 Q150 70 170 50" fill="none" stroke={OLIVE} strokeWidth={2.5} strokeDasharray="5 4" strokeLinecap="round" />
+      {/* Start dot */}
+      <circle cx={30} cy={100} r={6} fill={BLUE} />
+      {/* End dot */}
+      <circle cx={170} cy={50} r={6} fill={RED} />
+      {/* Moving bike on path */}
+      <g>
+        <circle cx={100} cy={85} r={10} fill={OLIVE} opacity={0.2} />
+        <circle cx={100} cy={85} r={6} fill={OLIVE} />
+        <text x={100} y={89} textAnchor="middle" fontSize={8} fontWeight="bold" fill={DARK_BG} fontFamily="system-ui">P</text>
+      </g>
+      {/* LIVE badge */}
+      <g>
+        <rect x={75} y={25} width={36} height={16} rx={8} fill={RED} />
+        <circle cx={83} cy={33} r={3} fill={WHITE} />
+        <text x={98} y={36} textAnchor="middle" fontSize={8} fontWeight="bold" fill={WHITE} fontFamily="system-ui">LIVE</text>
+      </g>
+    </svg>
+  )
 }
