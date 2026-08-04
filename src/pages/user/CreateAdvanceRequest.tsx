@@ -12,6 +12,7 @@ import {
   IndianRupee, FileText, ChevronRight, Check, ChevronLeft, Phone, AlertCircle,
   Repeat, Search,
 } from 'lucide-react'
+import { CategoryIcon } from '../../components/Illustrations'
 
 type SavedAddress = {
   id: string
@@ -29,19 +30,19 @@ type SavedAddress = {
 }
 
 const REQUEST_CATEGORIES = [
-  { name: 'Shopping', icon: '🛒' },
-  { name: 'Pickup', icon: '📦' },
-  { name: 'Delivery', icon: '🚚' },
-  { name: 'Documents', icon: '📄' },
-  { name: 'Medicine', icon: '💊' },
-  { name: 'Food', icon: '🍱' },
-  { name: 'Flowers', icon: '🌸' },
-  { name: 'Gifts', icon: '🎁' },
-  { name: 'Groceries', icon: '🥬' },
-  { name: 'Laundry', icon: '👔' },
-  { name: 'Courier', icon: '📮' },
-  { name: 'Personal Assistant', icon: '🤝' },
-  { name: 'Custom Request', icon: '✨' },
+  { name: 'Shopping' },
+  { name: 'Pickup' },
+  { name: 'Delivery' },
+  { name: 'Documents' },
+  { name: 'Medicine' },
+  { name: 'Food' },
+  { name: 'Flowers' },
+  { name: 'Gifts' },
+  { name: 'Groceries' },
+  { name: 'Laundry' },
+  { name: 'Courier' },
+  { name: 'Personal Assistant' },
+  { name: 'Custom Request' },
 ]
 
 const TASK_DURATIONS = [15, 30, 45, 60, 90, 120]
@@ -570,7 +571,7 @@ export default function CreateAdvanceRequest() {
                     style={category === cat.name
                       ? { background: 'rgba(166,179,0,0.12)', border: '1.5px solid rgba(166,179,0,0.4)' }
                       : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <span className="text-2xl">{cat.icon}</span>
+                    <CategoryIcon name={cat.name} size={32} />
                     <span className="text-center text-[10px] font-semibold leading-tight" style={{ color: category === cat.name ? '#A6B300' : 'rgba(255,255,255,0.55)' }}>
                       {cat.name}
                     </span>
