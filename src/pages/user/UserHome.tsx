@@ -5,6 +5,7 @@ import { supabase, DeliveryRequest } from '../../lib/supabase'
 import { EmptyState, StatusBadge, ServiceStatusBanner, SkeletonList, SectionHeader } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
 import { Package, Plus, Clock, MapPin, CheckCircle2, Bike, ChevronRight, Zap, ShoppingBag, CalendarClock } from 'lucide-react'
+import { IllusHeroCard, IllusEmpty } from '../../components/Illustrations'
 
 const STATUS_STEPS: Record<string, number> = {
   pending: 0, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
@@ -78,9 +79,9 @@ export default function UserHome() {
 
       {/* Hero CTA */}
       <div className="mb-6 overflow-hidden rounded-3xl p-5 animate-slide-up relative"
-        style={{ background: 'linear-gradient(135deg, #2a2e00 0%, #1a1d00 100%)', border: '1px solid rgba(166,179,0,0.18)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animationDelay: '100ms' }}>
-        <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full blur-3xl" style={{ background: 'rgba(166,179,0,0.15)' }} />
-        <div className="pointer-events-none absolute -left-6 bottom-0 h-24 w-24 rounded-full blur-2xl" style={{ background: 'rgba(166,179,0,0.08)' }} />
+        style={{ border: '1px solid rgba(166,179,0,0.18)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animationDelay: '100ms' }}>
+        <IllusHeroCard className="absolute inset-0 h-full w-full" />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(26,29,0,0.85) 0%, rgba(11,11,11,0.7) 100%)' }} />
         <div className="relative z-10">
           <div className="mb-3 flex items-center gap-2">
             <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: 'rgba(166,179,0,0.2)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.3)' }}>
@@ -120,7 +121,7 @@ export default function UserHome() {
         <SkeletonList count={2} lines={3} />
       ) : activeOrders.length === 0 ? (
         <EmptyState
-          icon={<ShoppingBag size={40} />}
+          illustration={<IllusEmpty className="w-28 h-28" />}
           title="No active orders"
           description="Tap 'New Request' above to get started."
         />

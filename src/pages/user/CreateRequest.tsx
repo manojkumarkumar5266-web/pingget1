@@ -5,15 +5,11 @@ import { supabase } from '../../lib/supabase'
 import { ErrorBanner } from '../../components/ui'
 import CategorySelectionModal, { type CategorySelection } from '../../components/CategorySelectionModal'
 import { Camera, Mic, MicOff, X, Play, Pause, Store, ArrowLeft, Package, Trash2, Plus, ChevronRight, FileText, MapPin, Navigation, Home, Edit2, ListChecks, ShoppingBag } from 'lucide-react'
+import { CategoryIllustration, IllusGrocery } from '../../components/Illustrations'
 
 type DbCategory = { id: string; name: string; icon: string }
 
-const ICON_MAP: Record<string, string> = {
-  Food: '🍱', Medicine: '💊', Grocery: '🛒', Parcel: '📦',
-  Courier: '🚀', Gift: '🎁', Laundry: '👔', Documents: '📄',
-  Flowers: '🌸', Electronics: '📱',
-  Vegetables: '🥕', Fruits: '🍎', Stationery: '✏️', Sports: '⚽',
-}
+// Category illustrations are rendered via CategoryIllustration component
 
 const CATEGORY_COLORS: Record<string, string> = {
   Food: '#A6B300', Medicine: '#A6B300', Grocery: '#A6B300', Parcel: '#A6B300',
@@ -464,7 +460,10 @@ export default function CreateRequest() {
                   style={sel
                     ? { background: `${color}22`, border: `1.5px solid ${color}66` }
                     : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <span className="text-2xl">{ICON_MAP[cat.name] || cat.icon}</span>
+                  <div className="relative h-12 w-12 overflow-hidden rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <CategoryIllustration name={cat.name} className="h-full w-full" />
+                    {sel && <div className="absolute inset-0" style={{ background: `${color}40` }} />}
+                  </div>
                   <span className="text-center text-[10px] font-semibold leading-tight" style={{ color: sel ? color : 'rgba(255,255,255,0.55)' }}>
                     {cat.name}
                   </span>
@@ -489,7 +488,9 @@ export default function CreateRequest() {
                 <div key={sel.category} className="rounded-2xl p-4" style={{ background: `${color}11`, border: `1px solid ${color}33` }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-base">{ICON_MAP[sel.category] || '📦'}</span>
+                      <div className="h-6 w-6 overflow-hidden rounded-lg" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <CategoryIllustration name={sel.category} className="h-full w-full" />
+                      </div>
                       <p className="font-bold text-white text-sm">{sel.category}</p>
                       <span className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ background: color }}>
                         {sel.items.length} item{sel.items.length !== 1 ? 's' : ''}

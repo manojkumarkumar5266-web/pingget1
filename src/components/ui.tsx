@@ -27,22 +27,54 @@ export function FullScreenLoader() {
 }
 
 // ── Empty State ──────────────────────────────────
-export function EmptyState({ icon, title, description, action }: { icon?: ReactNode; title: string; description?: string; action?: ReactNode }) {
+export function EmptyState({
+  icon,
+  illustration,
+  title,
+  description,
+  action,
+}: {
+  icon?: ReactNode
+  illustration?: ReactNode
+  title: string
+  description?: string
+  action?: ReactNode
+}) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in-up px-4">
-      {icon && (
-        <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl animate-float"
-          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ color: 'rgba(255,255,255,0.2)' }}>{icon}</div>
+      {illustration ? (
+        <div className="mb-6 animate-fade-in">
+          {illustration}
         </div>
-      )}
+      ) : icon ? (
+        <div
+          className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl animate-float"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <div style={{ color: 'rgba(255,255,255,0.2)' }}>
+            {icon}
+          </div>
+        </div>
+      ) : null}
+
       <p className="text-base font-bold text-white/80">{title}</p>
-      {description && <p className="mt-2 max-w-xs text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>{description}</p>}
+
+      {description && (
+        <p
+          className="mt-2 max-w-xs text-sm leading-relaxed"
+          style={{ color: 'rgba(255,255,255,0.4)' }}
+        >
+          {description}
+        </p>
+      )}
+
       {action && <div className="mt-5">{action}</div>}
     </div>
   )
 }
-
 // ── Error Banner ─────────────────────────────────
 export function ErrorBanner({ message }: { message: string }) {
   return (
