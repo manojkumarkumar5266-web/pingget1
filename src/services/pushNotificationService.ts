@@ -433,7 +433,7 @@ class PushNotificationService {
   private extractPayload(notification: any): PushNotificationPayload {
     const data = notification?.data || {}
     return {
-      title: notification?.title || data?.title || 'PingGET',
+      title: notification?.title || data?.title || 'New notification',
       body: notification?.body || data?.body || '',
       image: data?.image || data?.imageUrl || undefined,
       route: data?.route || undefined,

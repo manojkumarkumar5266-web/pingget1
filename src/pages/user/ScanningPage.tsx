@@ -8,7 +8,7 @@ import {
   CheckCircle2, X, Bike, Car, Truck, MapPin, Clock, RefreshCw,
   Navigation, Search, MapPinOff, Loader2, Radar,
 } from 'lucide-react'
-import { MascotWaiting } from '../../components/Illustrations'
+import { Images } from '../../lib/customImages'
 
 type DpSpot = {
   id: string
@@ -182,6 +182,7 @@ export default function ScanningPage() {
             if (ringRef.current) clearInterval(ringRef.current)
             if (elapsedRef.current) clearInterval(elapsedRef.current)
             setPartnerFound(true)
+            // Show Order Picked Up image for 2s, then open chat
             setTimeout(() => {
               supabase
                 .from('chat_rooms')
@@ -192,7 +193,7 @@ export default function ScanningPage() {
                   if (data) navigate(`/app/chat/${data.id}`)
                   else navigate('/app')
                 })
-            }, 1800)
+            }, 2000)
           }
           if (next?.status === 'cancelled' || next?.status === 'expired') {
             navigate('/app')
@@ -227,7 +228,7 @@ export default function ScanningPage() {
     setPhase('scanning')
   }
 
-  const SIZE = 260
+  const SIZE = 340
   const CX = SIZE / 2
   const CY = SIZE / 2
   const R = SIZE / 2 - 12
@@ -245,37 +246,14 @@ export default function ScanningPage() {
 
   if (partnerFound) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-[#0B0B0B] animate-fade-in">
-        <div className="relative flex items-center justify-center">
-          {[1, 2, 3].map(i => (
-            <div
-              key={i}
-              className="absolute rounded-full border-2 animate-ping"
-              style={{
-                width: 60 + i * 50,
-                height: 60 + i * 50,
-                borderColor: 'rgba(166,179,0,0.3)',
-                animationDelay: `${i * 0.2}s`,
-                animationDuration: '1.5s',
-              }}
-            />
-          ))}
-          <div
-            className="relative flex h-24 w-24 items-center justify-center rounded-full animate-success-pop"
-            style={{
-              background: 'linear-gradient(135deg, #A6B300, #BFD400)',
-              boxShadow: '0 0 40px rgba(166,179,0,0.6)',
-            }}
-          >
-            <CheckCircle2 size={44} className="text-[#0B0B0B]" strokeWidth={2.5} />
-          </div>
-        </div>
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-white">Partner Found!</h2>
-          <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Opening chat...
-          </p>
-        </div>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0B0B0B] px-6">
+        <img
+          src={Images.orderPickedUp}
+          alt="Order picked up"
+          className="w-full max-w-sm object-contain rounded-3xl"
+          draggable={false}
+        />
+        <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Opening chat...</p>
       </div>
     )
   }
@@ -324,82 +302,64 @@ export default function ScanningPage() {
         </button>
       </div>
 
-      {/* Radar */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ maxHeight: '48vh' }}>
-        {/* Customer waiting illustration */}
-        <div className="absolute right-3 top-3 z-10 opacity-90">
-          <MascotWaiting className="w-24 h-24" />
-        </div>
-        {/* Ambient glow */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div
-            className="h-64 w-64 rounded-full blur-3xl"
-            style={{
-              background: dpCount > 0 ? 'rgba(166,179,0,0.06)' : 'transparent',
-              transition: 'background 0.8s',
-            }}
+      {/* Radar: left waiting image from scanner→bottom; right = scan + status */}
+      <div className="relative flex flex-1 min-h-0 overflow-hidden px-3">
+        <div className="flex w-[34%] flex-col pt-2 pb-2">
+          <div className="flex-1" />
+          <img
+            src={Images.userWaiting}
+            alt=""
+            className="w-full flex-1 max-h-[55%] object-contain object-bottom"
+            draggable={false}
           />
         </div>
 
-        {/* Pulsing background rings */}
-        {phase === 'scanning' &&
-          [1, 2, 3].map(i => (
-            <div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                width: SIZE * (0.3 + i * 0.25),
-                height: SIZE * (0.3 + i * 0.25),
-                border: '1px solid rgba(166,179,0,0.06)',
-                animation: `radarPing ${1.8 + i * 0.4}s ease-out infinite`,
-                animationDelay: `${i * 0.5}s`,
-              }}
-            />
-          ))}
+        <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
+          {phase === 'scanning' &&
+            [1, 2, 3].map(i => (
+              <div
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: SIZE * (0.28 + i * 0.22),
+                  height: SIZE * (0.28 + i * 0.22),
+                  border: '1px solid rgba(166,179,0,0.08)',
+                  animation: `radarPing ${1.8 + i * 0.4}s ease-out infinite`,
+                  animationDelay: `${i * 0.5}s`,
+                }}
+              />
+            ))}
 
-        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'relative', zIndex: 1 }}>
-          {/* Background rings */}
-          {[0.25, 0.5, 0.75, 1].map((pct, i) => (
-            <circle key={i} cx={CX} cy={CY} r={R * pct} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
-          ))}
-
-          {/* Accent ring at 50% */}
-          <circle cx={CX} cy={CY} r={R * 0.5} fill="none" stroke="rgba(166,179,0,0.12)" strokeWidth={1.5} />
-
-          {/* Expanding scan circle */}
-          {phase === 'scanning' && (
-            <>
-              <circle cx={CX} cy={CY} r={R * ringScale} fill="none" stroke="#A6B300" strokeWidth={2} opacity={1.2 - ringScale * 1.2} />
-              <circle cx={CX} cy={CY} r={R * ringScale * 0.75} fill={`rgba(166,179,0,${0.03 * (1 - ringScale)})`} stroke="none" />
-            </>
-          )}
-
-          {/* DP markers */}
-          {spots.map(spot => {
-            const rad = (spot.angle * Math.PI) / 180
-            const dr = (spot.radius / 100) * R
-            const dx = CX + dr * Math.cos(rad)
-            const dy = CY + dr * Math.sin(rad)
-            const Icon = vehicleIcon(spot.vehicle_type)
-            return (
-              <g key={spot.id}>
-                <circle cx={dx} cy={dy} r={18} fill="rgba(166,179,0,0.08)" stroke="rgba(166,179,0,0.3)" strokeWidth={1.5} />
-                <circle cx={dx} cy={dy} r={13} fill="#A6B300" />
-                <g transform={`translate(${dx - 9}, ${dy - 9}) scale(0.75)`}>
-                  <Icon size={24} style={{ color: '#0B0B0B' }} strokeWidth={2.5} />
+          <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="max-w-full" style={{ position: 'relative', zIndex: 1 }}>
+            {[0.25, 0.5, 0.75, 1].map((pct, i) => (
+              <circle key={i} cx={CX} cy={CY} r={R * pct} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+            ))}
+            <circle cx={CX} cy={CY} r={R * 0.5} fill="none" stroke="rgba(166,179,0,0.12)" strokeWidth={1.5} />
+            {phase === 'scanning' && (
+              <>
+                <circle cx={CX} cy={CY} r={R * ringScale} fill="none" stroke="#A6B300" strokeWidth={2.5} opacity={1.2 - ringScale * 1.2} />
+                <circle cx={CX} cy={CY} r={R * ringScale * 0.75} fill={`rgba(166,179,0,${0.03 * (1 - ringScale)})`} stroke="none" />
+              </>
+            )}
+            {spots.map(spot => {
+              const rad = (spot.angle * Math.PI) / 180
+              const dr = (spot.radius / 100) * R
+              const dx = CX + dr * Math.cos(rad)
+              const dy = CY + dr * Math.sin(rad)
+              const Icon = vehicleIcon(spot.vehicle_type)
+              return (
+                <g key={spot.id}>
+                  <circle cx={dx} cy={dy} r={20} fill="rgba(166,179,0,0.08)" stroke="rgba(166,179,0,0.3)" strokeWidth={1.5} />
+                  <circle cx={dx} cy={dy} r={14} fill="#A6B300" />
+                  <g transform={`translate(${dx - 9}, ${dy - 9}) scale(0.75)`}>
+                    <Icon size={24} style={{ color: '#0B0B0B' }} strokeWidth={2.5} />
+                  </g>
                 </g>
-              </g>
-            )
-          })}
-
-          {/* User dot — center */}
-          <circle cx={CX} cy={CY} r={22} fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.2)" strokeWidth={1.5} />
-          <circle cx={CX} cy={CY} r={10} fill="#3b82f6" />
-          <circle cx={CX} cy={CY} r={16} fill="none" stroke="#3b82f6" strokeWidth={1.5} opacity={0.5} />
-        </svg>
-
-        <div className="absolute flex flex-col items-center" style={{ top: '50%', transform: 'translateY(30px)', pointerEvents: 'none' }}>
-          <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>You</p>
+              )
+            })}
+            <circle cx={CX} cy={CY} r={24} fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.2)" strokeWidth={1.5} />
+            <circle cx={CX} cy={CY} r={11} fill="#3b82f6" />
+          </svg>
         </div>
       </div>
 

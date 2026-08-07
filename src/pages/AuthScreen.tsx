@@ -238,8 +238,8 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
       await supabase.auth.signOut()
       const msg =
         fixedRole === 'user'
-          ? 'This is the Customer app. Delivery partners should use the PingGET Partner app.'
-          : 'This is the Partner app. Customers should use the PingGET Customer app.'
+          ? 'This is the Customer app. Delivery partners should use the Partner app.'
+          : 'This is the Partner app. Customers should use the Customer app.'
       setError(msg)
       setSignInEmail(''); setSignInPassword(''); setLoading(false)
       return

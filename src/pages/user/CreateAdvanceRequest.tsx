@@ -12,7 +12,8 @@ import {
   IndianRupee, FileText, ChevronRight, Check, ChevronLeft, Phone, AlertCircle,
   Repeat, Search,
 } from 'lucide-react'
-import { CategoryIcon } from '../../components/Illustrations'
+import { getCategoryImage } from '../../lib/customImages'
+import { getSelectedDeliveryAddress } from '../../components/AddressPicker'
 
 type SavedAddress = {
   id: string
@@ -45,7 +46,7 @@ const REQUEST_CATEGORIES = [
   { name: 'Custom Request' },
 ]
 
-const TASK_DURATIONS = [15, 30, 45, 60, 90, 120]
+const TASK_DURATIONS = [15, 30, 45, 60, 90, 120] // kept for charge calc fallback; UI removed
 
 function formatDateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -113,6 +114,26 @@ export default function CreateAdvanceRequest() {
   const [shopLat, setShopLat] = useState<number | null>(null)
   const [shopLng, setShopLng] = useState<number | null>(null)
   const [taskDuration, setTaskDuration] = useState<number>(30)
+  /** Multi-category drafts saved from category popup sheets */
+  type CatDraft = {
+    category: string
+    description: string
+    selectedDate: Date | null
+    selectedSlot: string | null
+    photoFiles: File[]
+    photoPreviews: string[]
+    voiceBlob: Blob | null
+    voiceDuration: number
+  }
+  const [categoryDrafts, setCategoryDrafts] = useState<CatDraft[]>(() => {
+    try {
+      const raw = sessionStorage.getItem('adv_category_drafts_meta')
+      if (!raw) return []
+      const parsed = JSON.parse(raw) as Omit<CatDraft, 'photoFiles' | 'photoPreviews' | 'voiceBlob'>[]
+      return parsed.map(p => ({ ...p, photoFiles: [], photoPreviews: [], voiceBlob: null, selectedDate: p.selectedDate ? new Date(p.selectedDate) : null }))
+    } catch { return [] }
+  })
+  const [sheetCategory, setSheetCategory] = useState<string | null>(null)
 
   const [description, setDescription] = useState('')
   const [maxBudget, setMaxBudget] = useState('')
@@ -412,21 +433,32 @@ export default function CreateAdvanceRequest() {
 
   const fmtDur = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
-  const canProceedStep1 = !!category
+  const canProceedStep1 = categoryDrafts.length > 0 || !!category
   const canProceedStep2 = !!selectedDate && !!selectedSlot
-  const canProceedStep3 = !!fullAddressText && (description.trim().length > 0 || customDescription.trim().length > 0 || photoFiles.length > 0 || voiceBlob !== null)
+  const canProceedStep3 = true // address from Home; details already in category drafts
+
 
   const handleSubmit = async () => {
     setError(null)
-    if (!fullAddressText) { setError('Please select or add a delivery address'); return }
-    if (!category) { setError('Please select a category'); return }
-    if (!selectedDate || !selectedSlot) { setError('Please select date and time slot'); return }
+    const homeAddr = await getSelectedDeliveryAddress(profile!.id)
+    const deliveryText = homeAddr?.text || fullAddressText
+    if (!deliveryText) { setError('Please select a delivery address on the Home page first'); return }
+
+    const drafts = categoryDrafts.length > 0 ? categoryDrafts : null
+    const primary = drafts?.[0]
+    const cat = primary?.category || category
+    const date = primary?.selectedDate || selectedDate
+    const slot = primary?.selectedSlot || selectedSlot
+    if (!cat) { setError('Please select a category'); return }
+    if (!date || !slot) { setError('Please select date and time slot'); return }
     if (!settings) { setError('Settings not loaded yet. Please wait.'); return }
 
-    const fullDescription = [
-      category === 'Custom Request' && customDescription.trim() ? customDescription.trim() : null,
-      description.trim() || null,
-    ].filter(Boolean).join('\n')
+    const fullDescription = drafts
+      ? drafts.map(d => `[${d.category}]\n${d.description}\nScheduled: ${d.selectedDate ? formatDateKey(d.selectedDate) : ''} ${d.selectedSlot || ''}`).join('\n\n')
+      : [
+          category === 'Custom Request' && customDescription.trim() ? customDescription.trim() : null,
+          description.trim() || null,
+        ].filter(Boolean).join('\n')
     if (!fullDescription.trim()) { setError('Please describe your task or add items'); return }
 
     setLoading(true)
@@ -434,18 +466,19 @@ export default function CreateAdvanceRequest() {
       if (recording) stopRecording()
       const ts = Date.now()
       const photoUrls: string[] = []
-      for (let i = 0; i < photoFiles.length; i++) {
-        const url = await uploadToStorage(photoFiles[i], `requests/${profile!.id}/${ts}-photo-${i}`)
+      const filesToUpload = primary?.photoFiles?.length ? primary.photoFiles : photoFiles
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const url = await uploadToStorage(filesToUpload[i], `requests/${profile!.id}/${ts}-photo-${i}`)
         if (url) photoUrls.push(url)
       }
-      const voiceUrl = voiceBlob ? await uploadToStorage(voiceBlob, `requests/${profile!.id}/${ts}-voice.webm`) : null
+      const voiceSrc = primary?.voiceBlob || voiceBlob
+      const voiceUrl = voiceSrc ? await uploadToStorage(voiceSrc, `requests/${profile!.id}/${ts}-voice.webm`) : null
 
-      const slotStart = selectedSlot.split('-')[0]
+      const slotStart = slot.split('-')[0]
       const [sh, sm] = slotStart.split(':').map(Number)
-      const scheduledTimestamp = new Date(selectedDate)
+      const scheduledTimestamp = new Date(date)
       scheduledTimestamp.setHours(sh, sm, 0, 0)
 
-      // Client-side validation: scheduled time must be in the future with buffer
       const bufferMs = bufferMinutes * 60 * 1000
       if (scheduledTimestamp.getTime() < Date.now() + bufferMs) {
         setError('The selected time slot is no longer available. Please choose a future time slot.')
@@ -462,20 +495,20 @@ export default function CreateAdvanceRequest() {
         pickup_address: shopAddress.trim() || null,
         pickup_lat: shopLat,
         pickup_lng: shopLng,
-        delivery_address: fullAddressText,
-        delivery_lat: selectedAddress?.lat || null,
-        delivery_lng: selectedAddress?.lng || null,
+        delivery_address: deliveryText,
+        delivery_lat: homeAddr?.lat ?? selectedAddress?.lat ?? null,
+        delivery_lng: homeAddr?.lng ?? selectedAddress?.lng ?? null,
         max_budget: maxBudget ? parseFloat(maxBudget) : null,
         special_instructions: null,
         radius_meters: 10000,
         status: 'searching_dp',
         order_type: 'advance',
         is_scheduled: true,
-        scheduled_date: formatDateKey(selectedDate),
-        scheduled_time: selectedSlot.split('-')[0],
-        scheduled_slot: selectedSlot,
+        scheduled_date: formatDateKey(date),
+        scheduled_time: slotStart,
+        scheduled_slot: slot,
         scheduled_timestamp: scheduledTimestamp.toISOString(),
-        request_category: category,
+        request_category: drafts ? drafts.map(d => d.category).join(', ') : cat,
         shop_name: shopName.trim() || null,
         shop_phone: shopPhone.trim() || null,
         shop_address: shopAddress.trim() || null,
@@ -493,15 +526,15 @@ export default function CreateAdvanceRequest() {
 
       if (insertError) throw insertError
 
+      sessionStorage.removeItem('adv_category_drafts_meta')
       await supabase.from('notifications').insert({
         user_id: profile!.id,
         title: 'Advance Request Created',
-        body: `Your ${category} request is scheduled for ${formatDateKey(selectedDate)} at ${selectedSlot}. We are now searching for a delivery partner to reserve immediately.`,
+        body: `Your advance request is scheduled. Searching for a delivery partner.`,
         type: 'advance_request_created',
         related_id: inserted.id,
       })
 
-      // V3: Do NOT auto-reserve. Navigate to the radar Scanning page and wait for a DP to reserve.
       navigate(`/app/scanning/${inserted.id}`)
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
   }
@@ -558,60 +591,167 @@ export default function CreateAdvanceRequest() {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-32 px-4 pt-5 space-y-5">
-        {/* STEP 1: Category Selection */}
+        {/* STEP 1: Category Selection — images + popup sheet */}
         {step === 1 && (
-          <div className="space-y-5 animate-slide-up">
+          <div className="space-y-5">
             <div>
               <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>What do you need done?</p>
               <p className="mb-4 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Choose a category for your scheduled task</p>
               <div className="grid grid-cols-3 gap-2.5">
-                {REQUEST_CATEGORIES.map(cat => (
-                  <button key={cat.name} onClick={() => setCategory(cat.name)}
-                    className="relative flex flex-col items-center gap-2 rounded-2xl p-4 transition-all active:scale-90"
-                    style={category === cat.name
-                      ? { background: 'rgba(166,179,0,0.12)', border: '1.5px solid rgba(166,179,0,0.4)' }
-                      : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <CategoryIcon name={cat.name} size={32} />
-                    <span className="text-center text-[10px] font-semibold leading-tight" style={{ color: category === cat.name ? '#A6B300' : 'rgba(255,255,255,0.55)' }}>
-                      {cat.name}
-                    </span>
-                    {category === cat.name && (
-                      <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: '#A6B300' }}>
-                        <Check size={11} className="text-[#0B0B0B]" strokeWidth={3} />
+                {REQUEST_CATEGORIES.map(cat => {
+                  const saved = categoryDrafts.find(d => d.category === cat.name)
+                  return (
+                    <button key={cat.name} type="button" onClick={() => {
+                      setCategory(cat.name)
+                      setSheetCategory(cat.name)
+                      if (saved) {
+                        setDescription(saved.description)
+                        setSelectedDate(saved.selectedDate)
+                        setSelectedSlot(saved.selectedSlot)
+                      } else {
+                        setDescription(cat.name === 'Custom Request' ? customDescription : '')
+                        setSelectedDate(null)
+                        setSelectedSlot(null)
+                      }
+                    }}
+                      className="relative flex flex-col items-center gap-2 rounded-2xl p-3 active:scale-90"
+                      style={saved || category === cat.name
+                        ? { background: 'rgba(166,179,0,0.12)', border: '1.5px solid rgba(166,179,0,0.4)' }
+                        : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <img src={getCategoryImage(cat.name)} alt={cat.name} className="h-12 w-12 rounded-xl object-cover" draggable={false} />
+                      <span className="text-center text-[10px] font-semibold leading-tight" style={{ color: saved || category === cat.name ? '#A6B300' : 'rgba(255,255,255,0.55)' }}>
+                        {cat.name}
                       </span>
-                    )}
-                  </button>
-                ))}
+                      {saved && (
+                        <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: '#A6B300' }}>
+                          <Check size={11} className="text-[#0B0B0B]" strokeWidth={3} />
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
-            {/* Custom Request Description */}
-            {category === 'Custom Request' && (
-              <div className="rounded-2xl p-4 animate-slide-up" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <label className="label flex items-center gap-1.5 mb-2" style={{ color: '#C4D600' }}>
-                  <FileText size={14} /> Describe your task
-                </label>
-                <textarea className="input min-h-[120px] resize-none text-sm leading-relaxed"
-                  value={customDescription} onChange={e => setCustomDescription(e.target.value)}
-                  placeholder="Describe any legal task you want a delivery partner to perform. Be as detailed as possible — what to pick up, where to go, what to do..." />
+            {categoryDrafts.length > 0 && (
+              <div className="rounded-2xl p-3" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
+                <p className="text-xs font-bold" style={{ color: '#A6B300' }}>{categoryDrafts.length} categor{categoryDrafts.length === 1 ? 'y' : 'ies'} saved</p>
+                <p className="text-[11px] text-white/50 mt-0.5">Tap a category again to edit · Final Submit when ready</p>
               </div>
             )}
 
-            {/* Task Duration */}
-            <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Estimated Task Duration</p>
-              <div className="flex flex-wrap gap-2">
-                {TASK_DURATIONS.map(d => (
-                  <button key={d} onClick={() => setTaskDuration(d)}
-                    className="rounded-xl px-4 py-2.5 text-sm font-semibold transition-all active:scale-95"
-                    style={taskDuration === d
-                      ? { background: '#A6B300', color: '#0B0B0B' }
-                      : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.55)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    {d < 60 ? `${d} min` : `${d / 60} hr`}
+            {/* Category detail half-sheet */}
+            {sheetCategory && (
+              <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={() => setSheetCategory(null)}>
+                <div className="w-full max-h-[88vh] overflow-y-auto rounded-t-3xl p-5 space-y-4" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)' }}
+                  onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <img src={getCategoryImage(sheetCategory)} alt="" className="h-8 w-8 rounded-lg object-cover" />
+                      <h3 className="text-base font-bold text-white">{sheetCategory}</h3>
+                    </div>
+                    <button type="button" onClick={() => setSheetCategory(null)} className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                      <X size={16} className="text-white/50" />
+                    </button>
+                  </div>
+
+                  <div className="rounded-2xl p-3 relative" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-xs font-bold" style={{ color: '#C4D600' }}>Notes</p>
+                      <div className="flex gap-2">
+                        <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
+                        <button type="button" onClick={() => photoInputRef.current?.click()} className="rounded-lg px-2 py-1 text-[11px] font-bold" style={{ background: 'rgba(166,179,0,0.15)', color: '#A6B300' }}>
+                          <Camera size={12} className="inline mr-1" />Photo
+                        </button>
+                        {recording ? (
+                          <button type="button" onClick={stopRecording} className="rounded-lg px-2 py-1 text-[11px] font-bold text-red-400">Stop</button>
+                        ) : (
+                          <button type="button" onClick={startRecording} className="rounded-lg px-2 py-1 text-[11px] font-bold" style={{ background: 'rgba(166,179,0,0.15)', color: '#A6B300' }}>
+                            <Mic size={12} className="inline mr-1" />Voice
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {photoPreviews.length > 0 && (
+                      <div className="mb-2 flex flex-wrap gap-1.5">
+                        {photoPreviews.map((p, i) => (
+                          <div key={i} className="relative">
+                            <img src={p} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                            <button type="button" onClick={() => removePhoto(i)} className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center"><X size={8} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {voiceBlob && (
+                      <div className="mb-2 text-xs" style={{ color: '#A6B300' }}>Voice note attached · {Math.floor(voiceDuration / 60)}:{String(voiceDuration % 60).padStart(2, '0')}</div>
+                    )}
+                    <textarea className="input min-h-[100px] resize-none text-sm" value={description} onChange={e => setDescription(e.target.value)}
+                      placeholder="Describe this task…" />
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Select date & time</p>
+                    <PremiumCalendar selectedDate={selectedDate} onSelect={setSelectedDate} maxDays={maxDays} />
+                    {selectedDate && settings && (
+                      <div className="mt-3">
+                        <PremiumTimeSlotSelector
+                          slots={timeSlots}
+                          selectedSlot={selectedSlot}
+                          onSelect={setSelectedSlot}
+                          selectedDate={selectedDate}
+                          nightStart={settings.night_charge_start}
+                          nightEnd={settings.night_charge_end}
+                          peakStart={settings.peak_hours_start}
+                          peakEnd={settings.peak_hours_end}
+                          bufferMinutes={bufferMinutes}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!description.trim() && photoFiles.length === 0 && !voiceBlob) {
+                        setError('Add notes, photo, or voice for this category'); return
+                      }
+                      if (!selectedDate || !selectedSlot) {
+                        setError('Select date and time slot'); return
+                      }
+                      const draft: CatDraft = {
+                        category: sheetCategory,
+                        description: description.trim(),
+                        selectedDate,
+                        selectedSlot,
+                        photoFiles: [...photoFiles],
+                        photoPreviews: [...photoPreviews],
+                        voiceBlob,
+                        voiceDuration,
+                      }
+                      setCategoryDrafts(prev => {
+                        const next = [...prev.filter(d => d.category !== sheetCategory), draft]
+                        sessionStorage.setItem('adv_category_drafts_meta', JSON.stringify(next.map(d => ({
+                          category: d.category, description: d.description,
+                          selectedDate: d.selectedDate?.toISOString() || null,
+                          selectedSlot: d.selectedSlot, voiceDuration: d.voiceDuration,
+                        }))))
+                        return next
+                      })
+                      setCategory(sheetCategory)
+                      setSheetCategory(null)
+                      setError(null)
+                      // clear media for next category
+                      setPhotoFiles([]); setPhotoPreviews([]); setVoiceBlob(null); setVoiceDuration(0)
+                      setDescription(''); setSelectedDate(null); setSelectedSlot(null)
+                    }}
+                    className="w-full rounded-2xl py-3.5 text-sm font-bold"
+                    style={{ background: '#A6B300', color: '#0B0B0B' }}
+                  >
+                    Save & choose another
                   </button>
-                ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -1015,16 +1155,21 @@ export default function CreateAdvanceRequest() {
       {/* Sticky Bottom Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-10 px-4 py-4" style={{ background: 'linear-gradient(180deg, transparent, #0B0B0B 30%)' }}>
         <div className="mx-auto max-w-md">
-          {step < 4 ? (
+          {step === 1 && categoryDrafts.length > 0 ? (
+            <button type="button" onClick={handleSubmit} disabled={loading}
+              className="w-full flex items-center justify-center rounded-2xl py-4 text-base font-bold disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>
+              {loading ? 'Submitting...' : `Final Submit (${categoryDrafts.length})`}
+            </button>
+          ) : step < 4 ? (
             <button type="button"
               onClick={() => {
-                if (step === 1 && !canProceedStep1) { setError('Please select a category'); return }
+                if (step === 1 && !canProceedStep1) { setError('Save at least one category first'); return }
                 if (step === 2 && !canProceedStep2) { setError('Please select date and time slot'); return }
-                if (step === 3 && !canProceedStep3) { setError('Please add a description or items, and select a delivery address'); return }
                 setError(null)
                 setStep(step + 1)
               }}
-              disabled={(step === 1 && !canProceedStep1) || (step === 2 && !canProceedStep2) || (step === 3 && !canProceedStep3)}
+              disabled={(step === 1 && !canProceedStep1) || (step === 2 && !canProceedStep2)}
               className="w-full flex items-center justify-center rounded-2xl py-4 text-base font-bold tracking-wide transition-all active:scale-[0.97] disabled:opacity-40 disabled:active:scale-100"
               style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(166,179,0,0.35)' }}>
               <span className="flex items-center gap-2">Continue <ChevronRight size={18} strokeWidth={2.5} /></span>

@@ -163,7 +163,7 @@ export default function DpNavigationPage() {
         <div className="mx-auto max-w-md">
           {/* Horizontal progress steps */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">Delivery Progress</p>
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#C4D600' }}>Delivery Progress</p>
             <div className="flex items-center justify-between">
               {STATUS_FLOW.map((step, i) => {
                 const reached = stepIndex > i || isDelivered || isCompleted
@@ -173,20 +173,20 @@ export default function DpNavigationPage() {
                   <div key={i} className="flex flex-1 flex-col items-center relative">
                     {i > 0 && (
                       <div className="absolute right-1/2 top-3 h-0.5 w-full" style={{
-                        background: reached ? '#A6B300' : 'rgba(255,255,255,0.1)',
+                        background: reached ? '#C4D600' : 'rgba(255,255,255,0.1)',
                         transition: 'background 0.5s ease',
                       }} />
                     )}
                     <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full transition-all"
                       style={{
-                        background: reached ? '#A6B300' : isCurrent ? 'rgba(166,179,0,0.2)' : 'rgba(255,255,255,0.05)',
-                        border: isCurrent ? '2px solid #A6B300' : '2px solid transparent',
-                        boxShadow: isCurrent ? '0 0 12px rgba(166,179,0,0.4)' : 'none',
+                        background: reached ? '#C4D600' : isCurrent ? 'rgba(196,214,0,0.2)' : 'rgba(255,255,255,0.05)',
+                        border: isCurrent ? '2px solid #C4D600' : '2px solid transparent',
+                        boxShadow: isCurrent ? '0 0 12px rgba(196,214,0,0.4)' : 'none',
                       }}>
                       {reached ? <Icon size={13} className="text-black" /> : <div className="h-2 w-2 rounded-full bg-white/20" />}
                     </div>
                     <span className="mt-1 text-[8px] font-medium text-center leading-tight"
-                      style={{ color: reached || isCurrent ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)' }}>
+                      style={{ color: reached || isCurrent ? '#C4D600' : 'rgba(255,255,255,0.25)' }}>
                       {step.label.replace('Mark ', '').replace('Start ', '').replace('Items ', '')}
                     </span>
                   </div>
@@ -198,12 +198,12 @@ export default function DpNavigationPage() {
           {/* ETA update */}
           {['confirmed', 'shopping', 'purchased', 'on_the_way'].includes(request.status) && (
             <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Update ETA (minutes)</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: '#C4D600' }}>Update ETA (minutes)</p>
               <div className="flex gap-2">
                 <input type="number" min={1} max={120} value={etaMinutes ?? ''} onChange={e => setEtaMinutes(e.target.value ? parseInt(e.target.value) : null)}
-                  placeholder="Enter minutes" className="input flex-1" />
+                  placeholder="Enter minutes" className="input flex-1" style={{ borderColor: 'rgba(196,214,0,0.35)' }} />
                 <button onClick={updateEta} disabled={!etaMinutes || updatingEta}
-                  className="btn-primary disabled:opacity-40 px-5" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+                  className="btn-primary disabled:opacity-40 px-5 font-bold" style={{ background: '#C4D600', color: '#0B0B0B' }}>
                   {updatingEta ? '...' : 'Update'}
                 </button>
               </div>
@@ -325,6 +325,33 @@ export default function DpNavigationPage() {
               <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: '#A6B300' }} />
               <p className="font-bold text-white">Waiting for customer to accept delivery</p>
               <p className="mt-1 text-xs text-white/40">You'll be able to go home once the customer confirms receipt</p>
+            </div>
+          )}
+
+          {/* Accept Payment after customer marks Payment Completed */}
+          {(request as any).payment_completed_at && !(request as any).payment_accepted_at && (
+            <div className="rounded-2xl p-4" style={{ border: '1px solid rgba(196,214,0,0.35)', background: 'rgba(196,214,0,0.08)' }}>
+              <p className="mb-3 text-sm font-bold" style={{ color: '#C4D600' }}>Customer marked payment completed</p>
+              <button
+                type="button"
+                onClick={async () => {
+                  await supabase.from('requests').update({
+                    payment_accepted_at: new Date().toISOString(),
+                  } as any).eq('id', requestId)
+                  await supabase.from('notifications').insert({
+                    user_id: request.user_id,
+                    title: 'Payment Accepted',
+                    body: 'Partner accepted your payment. Please rate the delivery.',
+                    type: 'payment_accepted',
+                    related_id: requestId,
+                  })
+                  navigate('/dp')
+                }}
+                className="w-full rounded-2xl py-3.5 text-sm font-bold"
+                style={{ background: '#C4D600', color: '#0B0B0B' }}
+              >
+                Accept Payment
+              </button>
             </div>
           )}
 

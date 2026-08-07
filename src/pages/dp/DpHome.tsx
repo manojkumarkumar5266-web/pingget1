@@ -270,9 +270,12 @@ export default function DpHome() {
         <GpsBanner />
 
         {/* Greeting */}
-        <div className="mb-5 animate-fade-in-up">
-          <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Good {dpGreetWord},</p>
-          <h1 className="text-2xl font-bold text-white leading-tight">{dpFirstName} 👋</h1>
+        <div className="mb-5 animate-fade-in-up flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Good {dpGreetWord},</p>
+            <h1 className="text-2xl font-bold text-white leading-tight truncate">Hai {dpFirstName}</h1>
+          </div>
+          <img src="/images/hai-hand.png" alt="" className="h-14 w-14 object-contain shrink-0" draggable={false} />
         </div>
 
         {/* Offline earnings card */}
@@ -328,9 +331,12 @@ export default function DpHome() {
       <GpsBanner />
 
       {/* Greeting */}
-      <div className="mb-5 animate-fade-in-up">
-        <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Good {dpGreetWord},</p>
-        <h1 className="text-2xl font-bold text-white leading-tight">{dpFirstName} 👋</h1>
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Good {dpGreetWord},</p>
+          <h1 className="text-2xl font-bold text-white leading-tight truncate">Hai {dpFirstName}</h1>
+        </div>
+        <img src="/images/hai-hand.png" alt="" className="h-14 w-14 object-contain shrink-0" draggable={false} />
       </div>
 
       {/* Commission due banner */}
@@ -461,6 +467,16 @@ export default function DpHome() {
                       {formatDistance(dist)}
                     </span>
                   )}
+                </div>
+
+                {/* Instant vs Advance label */}
+                <div className="mb-2 flex items-center gap-1.5 flex-wrap">
+                  <span className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                    style={req.order_type === 'advance'
+                      ? { background: 'rgba(59,130,246,0.15)', color: '#60A5FA', border: '1px solid rgba(59,130,246,0.3)' }
+                      : { background: 'rgba(166,179,0,0.15)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.3)' }}>
+                    {req.order_type === 'advance' ? 'Advance Request' : 'Instant Request'}
+                  </span>
                 </div>
 
                 {/* V3 Status badge for advance requests */}
