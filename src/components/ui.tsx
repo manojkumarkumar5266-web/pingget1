@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useState, useCallback, createContext, useContext, useMemo } from 'react'
 import { Loader as Loader2, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, CirclePause as PauseCircle, X, Info, AlertCircle, TrendingUp } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { Images } from '../lib/customImages'
 
 // ── Spinner ─────────────────────────────────────
 export function Spinner({ size = 24 }: { size?: number }) {
@@ -15,12 +16,11 @@ export function Spinner({ size = 24 }: { size?: number }) {
 export function FullScreenLoader() {
   return (
     <div className="flex h-screen items-center justify-center bg-[#0B0B0B]">
-      <div className="flex flex-col items-center gap-5 animate-fade-in">
+      <div className="flex flex-col items-center gap-5">
         <div className="relative flex h-16 w-16 items-center justify-center">
           <div className="absolute h-16 w-16 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: '#A6B300', borderRightColor: 'rgba(166,179,0,0.3)' }} />
-          <div className="h-6 w-6 rounded-full" style={{ background: 'rgba(166,179,0,0.2)', border: '1px solid rgba(166,179,0,0.4)' }} />
+          <img src={Images.logo} alt="" className="h-8 w-8 object-contain" draggable={false} />
         </div>
-        <p className="text-sm font-medium text-white/40 tracking-wide">PingGET</p>
       </div>
     </div>
   )

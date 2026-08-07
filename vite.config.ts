@@ -1,23 +1,4 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { fileURLToPath, URL } from 'node:url'
+import { createAppConfig } from './vite.app.config'
 
-export default defineConfig({
-  plugins: [react()],
-  base: './',
-
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
-  },
-
-  build: {
-    outDir: 'dist',
-  },
-
-  server: {
-    host: true,
-    port: 5173,
-  },
-})
+// Default `vite` / `npm run build` = Customer (user) app
+export default createAppConfig((process.env.VITE_APP_TARGET as 'user' | 'dp' | 'admin') || 'user')

@@ -195,7 +195,7 @@ export default function DpProfile() {
         <LogOut size={18} /> Sign Out
       </button>
 
-      <p className="mt-4 text-center text-xs text-white/40">PingGET v1.0.0</p>
+      <p className="mt-4 text-center text-xs text-white/40">Partner v1.0.0</p>
     </div>
   )
 }
