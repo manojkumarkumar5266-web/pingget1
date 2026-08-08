@@ -128,14 +128,14 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div className="p-4 md:p-8">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between animate-fade-in-up">
+    <div className="p-4 md:p-8" style={{ background: '#050505', minHeight: '100%' }}>
+      <div className="mb-7 flex items-center justify-between animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: '#D4F000' }}>Operations</p>
+          <h1 className="text-[28px] font-extrabold tracking-tight text-white">Dashboard</h1>
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>Live operations overview</span>
-            <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold"
+            <span className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>Live overview</span>
+            <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold"
               style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.25)' }}>
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" /> LIVE
             </span>
