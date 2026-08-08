@@ -38,7 +38,7 @@ export default function LandingPage() {
 
         <div className="flex flex-1 flex-col items-center justify-center py-6">
           <img
-            src={dp ? Images.welcomeDp : Images.landingHero}
+            src={dp ? Images.welcomeDp : Images.welcome}
             alt=""
             className="mb-8 w-full max-h-[46vh] object-contain"
             style={{ background: 'transparent' }}

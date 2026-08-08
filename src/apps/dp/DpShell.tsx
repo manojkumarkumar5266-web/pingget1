@@ -6,13 +6,11 @@ import AuthScreen from '../../pages/AuthScreen'
 import ResetPassword from '../../pages/ResetPassword'
 import DpApp from '../../pages/dp/DpApp'
 import LandingPage from '../../pages/LandingPage'
-import Welcome from '../../components/Welcome'
 import PermissionOnboarding from '../../components/PermissionOnboarding'
 import Watermark from '../../components/Watermark'
 import { Clock, XCircle, ArrowLeft } from 'lucide-react'
 
 const ONBOARDING_KEY = 'pingget_dp_permissions_done'
-const WELCOME_KEY = 'pingget_dp_welcomed'
 
 function DpPendingScreen() {
   const { signOut } = useAuth()
@@ -62,15 +60,14 @@ function DpRejectedScreen() {
 
 /**
  * Delivery Partner mobile app shell.
- * Only allows role=dp. Customer/admin accounts are signed out.
+ * First open: permissions → Get Started. Signed-in: go straight to app (no welcome splash).
  */
 export default function DpShell() {
   const { session, profile, loading, passwordRecovery, oauthResolving, signOut } = useAuth()
   const location = useLocation()
-  const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem(WELCOME_KEY))
   const [showPermissions, setShowPermissions] = useState(() => {
     if (typeof window === 'undefined') return false
-    return !localStorage.getItem(ONBOARDING_KEY) && !sessionStorage.getItem(WELCOME_KEY)
+    return !localStorage.getItem(ONBOARDING_KEY)
   })
   const [roleError, setRoleError] = useState<string | null>(null)
 
@@ -87,28 +84,13 @@ export default function DpShell() {
     }
   }, [loading, profile, signOut])
 
-  const isRecoveryRoute = location.pathname === '/reset-password' || passwordRecovery
-
-  if (!isRecoveryRoute && showWelcome) {
-    return (
-      <Welcome
-        onDone={() => {
-          sessionStorage.setItem(WELCOME_KEY, '1')
-          setShowWelcome(false)
-        }}
-      />
-    )
-  }
-  if (!isRecoveryRoute && showPermissions) {
-    return (
-      <PermissionOnboarding
-        onComplete={() => {
-          localStorage.setItem(ONBOARDING_KEY, '1')
-          setShowPermissions(false)
-        }}
-      />
-    )
-  }
+  // Returning signed-in users skip first-launch flow permanently
+  useEffect(() => {
+    if (session && !localStorage.getItem(ONBOARDING_KEY)) {
+      localStorage.setItem(ONBOARDING_KEY, '1')
+      setShowPermissions(false)
+    }
+  }, [session])
 
   if (passwordRecovery || location.pathname === '/reset-password') {
     return (
@@ -123,6 +105,18 @@ export default function DpShell() {
   }
 
   if (loading) return <FullScreenLoader />
+
+  // First launch only (signed out): permissions → Get Started. Signed-in skips entirely.
+  if (showPermissions && !session) {
+    return (
+      <PermissionOnboarding
+        onComplete={() => {
+          localStorage.setItem(ONBOARDING_KEY, '1')
+          setShowPermissions(false)
+        }}
+      />
+    )
+  }
 
   if (!session) {
     return (
