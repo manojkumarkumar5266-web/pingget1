@@ -1,26 +1,30 @@
 import { ReactNode } from 'react'
+import Brand from './Brand'
+import { pg } from '../design/tokens'
 
-type Props = { children: ReactNode; title?: string; subtitle?: string; showBrand?: boolean }
-
-/** Auth chrome — logos removed; titles come from each screen. */
-export default function AuthLayout({ children, title, subtitle }: Props) {
+/** Auth chrome — official pinGGet logo, no plain PingGET text */
+export default function AuthLayout({
+  children,
+  title,
+  subtitle,
+}: {
+  children: ReactNode
+  title?: string
+  subtitle?: string
+  showBrand?: boolean
+}) {
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden bg-[#0B0B0B]">
-      <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-start px-5 py-10">
-        <div className="w-full max-w-md">
-          <div
-            className="rounded-3xl p-6"
-            style={{ background: '#181818', border: '1px solid rgba(255,255,255,0.08)' }}
-          >
-            {(title || subtitle) && (
-              <div className="mb-6">
-                {title && <h2 className="text-2xl font-bold text-white">{title}</h2>}
-                {subtitle && <p className="mt-1 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>{subtitle}</p>}
-              </div>
-            )}
-            {children}
-          </div>
-        </div>
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center px-5 py-10" style={{ background: pg.bg }}>
+      <div className="mb-8 flex flex-col items-center text-center">
+        <Brand size="lg" className="mb-4" />
+        {title && <h1 className="text-[28px] font-extrabold tracking-tight">{title}</h1>}
+        {subtitle && <p className="mt-2 text-sm" style={{ color: pg.text3 }}>{subtitle}</p>}
+      </div>
+      <div
+        className="w-full max-w-md rounded-[28px] p-5"
+        style={{ background: pg.surface, border: `1px solid ${pg.line}` }}
+      >
+        {children}
       </div>
     </div>
   )

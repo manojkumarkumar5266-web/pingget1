@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Clock, Check, Lock, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { pg } from '../design/tokens'
+import { Surface, Chip as PgChip } from '../design/primitives'
 
 type Slot = { key: string; label: string; start: string; end: string }
 
@@ -90,29 +92,29 @@ export default function PremiumTimeSlotSelector({
   const allSlotsInPast = todaySelected && slots.length > 0 && slots.every(s => isSlotInPast(s.start, selectedDate, bufferMinutes))
 
   return (
-    <div className="rounded-3xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-      <div className="flex items-center gap-2 mb-4">
-        <Clock size={16} style={{ color: '#A6B300' }} />
-        <span className="text-sm font-semibold text-white">Available Time Slots</span>
+    <Surface className="p-5" style={{ background: pg.bgElevated }}>
+      <div className="mb-4 flex items-center gap-2">
+        <Clock size={16} style={{ color: pg.lime }} />
+        <span className="text-sm font-extrabold">Available Time Slots</span>
       </div>
 
       {todaySelected && (
-        <div className="mb-3 flex items-center gap-2 rounded-2xl px-3 py-2.5" style={{ background: 'rgba(166,179,0,0.06)', border: '1px solid rgba(166,179,0,0.15)' }}>
-          <AlertCircle size={13} style={{ color: '#A6B300' }} />
-          <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>
+        <Surface accent className="mb-3 flex items-center gap-2 px-3 py-2.5">
+          <AlertCircle size={13} style={{ color: pg.lime }} />
+          <p className="text-xs font-medium" style={{ color: pg.text2 }}>
             Only future time slots are available for today. Slots at least {bufferMinutes} minutes from now.
           </p>
-        </div>
+        </Surface>
       )}
 
       {allSlotsInPast ? (
         <div className="py-6 text-center">
-          <Clock size={32} className="mx-auto mb-2" style={{ color: 'rgba(255,255,255,0.2)' }} />
-          <p className="text-sm font-medium text-white/60">No more slots available today.</p>
-          <p className="text-xs text-white/40 mt-1">Please select another day.</p>
+          <Clock size={32} className="mx-auto mb-2" style={{ color: pg.text4 }} />
+          <p className="text-sm font-bold" style={{ color: pg.text3 }}>No more slots available today.</p>
+          <p className="mt-1 text-xs" style={{ color: pg.text4 }}>Please select another day.</p>
         </div>
       ) : slots.length === 0 ? (
-        <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>No slots available for these business hours.</p>
+        <p className="text-sm" style={{ color: pg.text3 }}>No slots available for these business hours.</p>
       ) : (
         <div className="grid grid-cols-2 gap-2.5">
           {slots.filter(slot => !isSlotInPast(slot.start, selectedDate, bufferMinutes)).map(slot => {
@@ -124,33 +126,38 @@ export default function PremiumTimeSlotSelector({
             const slotDisabled = isDisabled
 
             return (
-              <button key={slot.key} onClick={() => !slotDisabled && onSelect(slot.key)} disabled={slotDisabled}
-                className="relative flex flex-col items-start gap-1 rounded-2xl p-3.5 transition-all active:scale-95 disabled:cursor-not-allowed"
+              <button
+                key={slot.key}
+                type="button"
+                onClick={() => !slotDisabled && onSelect(slot.key)}
+                disabled={slotDisabled}
+                className="relative flex flex-col items-start gap-1 rounded-2xl p-3.5 text-left transition-all active:scale-95 disabled:cursor-not-allowed"
                 style={isSelected
-                  ? { background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.3)' }
+                  ? { background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(212,240,0,0.3)' }
                   : slotDisabled
-                    ? { background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.2)' }
-                    : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)' }}>
-                <div className="flex items-center gap-1.5 w-full">
-                  <span className="text-sm font-bold">{slot.label}</span>
+                    ? { background: pg.bg, border: `1px solid ${pg.line}`, color: pg.text4 }
+                    : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text }}
+              >
+                <div className="flex w-full items-center gap-1.5">
+                  <span className="text-sm font-extrabold">{slot.label}</span>
                   {isSelected && <Check size={14} strokeWidth={3} className="ml-auto" />}
                 </div>
                 <div className="flex items-center gap-1.5">
                   {slotDisabled ? (
-                    <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                    <span className="flex items-center gap-0.5 text-[9px] font-extrabold uppercase" style={{ color: pg.text4 }}>
                       <Lock size={8} /> Unavailable
                     </span>
                   ) : (
-                    <span className="flex items-center gap-0.5 text-[9px] font-bold uppercase" style={{ color: isSelected ? 'rgba(11,11,11,0.6)' : '#A6B300' }}>
+                    <span className="flex items-center gap-0.5 text-[9px] font-extrabold uppercase" style={{ color: isSelected ? 'rgba(10,10,10,0.6)' : pg.lime }}>
                       <Check size={8} /> Available
                     </span>
                   )}
                 </div>
                 {!isSelected && !slotDisabled && (
-                  <div className="flex flex-wrap gap-1 mt-0.5">
-                    {isNight && <span className="rounded-full px-1.5 py-0.5 text-[8px] font-bold" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>NIGHT</span>}
-                    {isPeak && <span className="rounded-full px-1.5 py-0.5 text-[8px] font-bold" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>PEAK</span>}
-                    {weekend && <span className="rounded-full px-1.5 py-0.5 text-[8px] font-bold" style={{ background: 'rgba(236,72,153,0.15)', color: '#f472b6' }}>WEEKEND</span>}
+                  <div className="mt-0.5 flex flex-wrap gap-1">
+                    {isNight && <PgChip tone="info">Night</PgChip>}
+                    {isPeak && <PgChip tone="warn">Peak</PgChip>}
+                    {weekend && <PgChip tone="danger">Weekend</PgChip>}
                   </div>
                 )}
               </button>
@@ -158,6 +165,6 @@ export default function PremiumTimeSlotSelector({
           })}
         </div>
       )}
-    </div>
+    </Surface>
   )
 }

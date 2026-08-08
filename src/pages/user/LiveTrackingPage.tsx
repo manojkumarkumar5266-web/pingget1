@@ -6,6 +6,8 @@ import { STATUS_LABELS } from '../../lib/utils'
 import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/VisualTracking'
 import { Images } from '../../lib/customImages'
 import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck } from 'lucide-react'
+import { pg } from '../../design/tokens'
+import { CTA, Surface } from '../../design/primitives'
 
 function vehicleIcon(v: string | null | undefined) {
   const s = (v || '').toLowerCase()
@@ -176,7 +178,7 @@ export default function LiveTrackingPage() {
 
   if (payPhase === 'thanks') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6" style={{ background: pg.bg }}>
         <img src={Images.customerThankYou} alt="Thank you" className="w-full max-w-sm object-contain mb-4" draggable={false} />
         <p className="text-sm text-white/50">Returning home...</p>
       </div>
@@ -188,7 +190,7 @@ export default function LiveTrackingPage() {
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6 overflow-y-auto py-8">
         <div className="w-full max-w-sm">
           <img src={Images.paymentReceived} alt="Thank you payment received" className="w-full object-contain mb-4 rounded-2xl" draggable={false} />
-          <div className="rounded-3xl p-6 text-center" style={{ background: '#181818', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <Surface className="rounded-[28px] p-6 text-center">
             <h2 className="mb-1 text-xl font-bold text-white">Rate Your Delivery</h2>
             <p className="mb-5 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
               How was {dpProfile?.full_name?.split(' ')[0] || 'your partner'}'s service?
@@ -197,7 +199,7 @@ export default function LiveTrackingPage() {
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} type="button" onClick={() => setRatingStars(n)} className="active:scale-90">
                   <Star size={36} fill={n <= ratingStars ? '#FBBF24' : 'none'}
-                    className={n <= ratingStars ? 'text-[#A6B300]' : 'text-white/20'} />
+                    className={n <= ratingStars ? 'text-[#D4F000]' : 'text-white/20'} />
                 </button>
               ))}
             </div>
@@ -208,29 +210,30 @@ export default function LiveTrackingPage() {
               rows={3}
               className="input mb-5 w-full resize-none text-sm"
             />
-            <button type="button" onClick={submitRating} disabled={ratingStars === 0 || ratingSubmitting}
-              className="btn-primary w-full disabled:opacity-40">
+            <CTA type="button" onClick={submitRating} disabled={ratingStars === 0 || ratingSubmitting} className="w-full">
               {ratingSubmitting ? 'Submitting...' : 'Confirm Rating & Feedback'}
-            </button>
-          </div>
+            </CTA>
+          </Surface>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black">
-      {/* Minimal top — no ribbon */}
+    <div className="flex min-h-screen flex-col" style={{ background: pg.bg }}>
       <div className="flex-shrink-0 px-4 pt-12 pb-2">
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => navigate('/app')} className="map-control-btn map-control-dark">
             <ArrowLeft size={18} />
           </button>
-          <p className="text-sm font-semibold text-white/80">Order tracking</p>
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>Live</p>
+            <p className="text-sm font-extrabold text-white">Order tracking</p>
+          </div>
         </div>
       </div>
 
-      <div className="relative flex-shrink-0" style={{ height: '38vh', minHeight: '240px' }}>
+      <div className="relative flex-shrink-0" style={{ height: '46vh', minHeight: '300px' }}>
         {isPending ? (
           <div className="flex h-full flex-col items-center justify-center bg-black px-6">
             <img src={Images.userWaiting} alt="" className="w-40 h-40 object-contain mb-3" />
@@ -252,35 +255,35 @@ export default function LiveTrackingPage() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-black px-4 py-4 pb-24">
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24" style={{ background: pg.bg }}>
         <div className="mx-auto max-w-md">
           {dpProfile && !isCancelled && !isPending && (
             <>
               <div className="mb-3 grid grid-cols-3 gap-2.5">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
+                <Surface className="p-3 text-center">
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(251,191,36,0.15)' }}>
-                    <Star size={16} style={{ color: '#A6B300' }} fill="#A6B300" />
+                    <Star size={16} style={{ color: pg.lime }} fill={pg.lime} />
                   </div>
                   <p className="text-base font-bold text-white">{dpData?.rating_avg?.toFixed(1) || '0.0'}</p>
-                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{dpData?.rating_count || 0} reviews</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
-                  <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
-                    <VehicleIcon size={16} style={{ color: '#A6B300' }} />
+                  <p className="text-[10px]" style={{ color: pg.text3 }}>{dpData?.rating_count || 0} reviews</p>
+                </Surface>
+                <Surface className="p-3 text-center">
+                  <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: pg.limeDim }}>
+                    <VehicleIcon size={16} style={{ color: pg.lime }} />
                   </div>
                   <p className="text-base font-bold text-white capitalize">{dpData?.vehicle_type || 'Bike'}</p>
-                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Vehicle</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
+                  <p className="text-[10px]" style={{ color: pg.text3 }}>Vehicle</p>
+                </Surface>
+                <Surface className="p-3 text-center">
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(59,130,246,0.15)' }}>
-                    <Clock size={16} style={{ color: '#A6B300' }} />
+                    <Clock size={16} style={{ color: pg.lime }} />
                   </div>
                   <p className="text-base font-bold text-white">{liveEta !== null ? (liveEta === 0 ? '0m' : `${liveEta}m`) : etaLabel}</p>
-                  <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>ETA</p>
-                </div>
+                  <p className="text-[10px]" style={{ color: pg.text3 }}>ETA</p>
+                </Surface>
               </div>
 
-              <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <Surface className="mb-4 p-4">
                 <div className="flex items-center gap-3">
                   <div className="relative h-16 w-16 overflow-hidden rounded-2xl bg-white/5 shrink-0">
                     {dpProfile.photo_url ? (
@@ -297,28 +300,28 @@ export default function LiveTrackingPage() {
                     <>
                       <button type="button" onClick={() => { window.location.href = `tel:${dpProfile.phone || ''}` }}
                         className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0"
-                        style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
+                        style={{ background: pg.limeDim, border: '1px solid rgba(212,240,0,0.25)', color: pg.lime }}>
                         <Phone size={18} />
                       </button>
                       <button type="button" onClick={async () => {
                         const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
                         if (data) navigate(`/app/chat/${data.id}`)
-                      }} className="flex h-11 w-11 items-center justify-center rounded-xl text-black shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #a8c020, #808000)' }}>
+                      }} className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0"
+                        style={{ background: pg.lime, color: pg.limeText }}>
                         <MessageCircle size={18} />
                       </button>
                     </>
                   )}
                 </div>
-              </div>
+              </Surface>
 
-              <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <Surface className="mb-4 p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <MapPin size={16} className="text-red-400" />
                   <p className="text-xs font-bold uppercase tracking-wider text-white/60">Delivery Address</p>
                 </div>
-                <p className="text-sm text-white/80 leading-relaxed">{request.delivery_address || 'Not specified'}</p>
-              </div>
+                <p className="text-sm leading-relaxed" style={{ color: pg.text2 }}>{request.delivery_address || 'Not specified'}</p>
+              </Surface>
             </>
           )}
 
@@ -341,36 +344,32 @@ export default function LiveTrackingPage() {
                   <p className="text-xs text-white/40">Confirm receipt to continue</p>
                 </div>
               </div>
-              <button type="button" onClick={confirmDelivery}
-                className="w-full rounded-2xl py-3.5 text-sm font-bold text-white"
-                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+              <CTA type="button" onClick={confirmDelivery} className="w-full" style={{ background: pg.success, color: '#fff', boxShadow: 'none' }}>
                 Accept Delivery
-              </button>
+              </CTA>
             </div>
           )}
 
           {(payPhase === 'awaiting_user_payment' || (request.status === 'completed' && payPhase === 'idle')) && (
-            <div className="mb-4 rounded-2xl p-4" style={{ border: '1px solid rgba(166,179,0,0.3)', background: 'rgba(166,179,0,0.08)' }}>
-              <p className="mb-3 text-sm text-white/70">Confirm you have paid your partner.</p>
-              <button type="button" onClick={markPaymentCompleted}
-                className="w-full rounded-2xl py-3.5 text-sm font-bold"
-                style={{ background: '#A6B300', color: '#0B0B0B' }}>
+            <Surface accent className="mb-4 p-4">
+              <p className="mb-3 text-sm" style={{ color: pg.text2 }}>Confirm you have paid your partner.</p>
+              <CTA type="button" onClick={markPaymentCompleted} className="w-full">
                 Payment Completed
-              </button>
-            </div>
+              </CTA>
+            </Surface>
           )}
 
           {payPhase === 'awaiting_dp_accept' && (
-            <div className="mb-4 rounded-2xl p-4 text-center" style={{ border: '1px solid rgba(166,179,0,0.25)', background: 'rgba(166,179,0,0.06)' }}>
-              <p className="font-semibold text-white">Waiting for partner to Accept Payment…</p>
-              <p className="mt-1 text-xs text-white/45">You will rate the delivery next</p>
-            </div>
+            <Surface accent className="mb-4 p-4 text-center">
+              <p className="font-extrabold">Waiting for partner to Accept Payment…</p>
+              <p className="mt-1 text-xs" style={{ color: pg.text3 }}>You will rate the delivery next</p>
+            </Surface>
           )}
 
           {isCancelled && (
             <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-center">
               <p className="font-semibold text-red-400">Order Cancelled</p>
-              <button type="button" onClick={() => navigate('/app')} className="btn-primary mt-3">Back Home</button>
+              <CTA onClick={() => navigate('/app')} className="mt-3 w-full">Back Home</CTA>
             </div>
           )}
         </div>

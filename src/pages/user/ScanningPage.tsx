@@ -7,6 +7,8 @@ import { formatDistance } from '../../lib/utils'
 import { X, Clock, RefreshCw, MapPinOff, Loader2, Radar, MapPin } from 'lucide-react'
 import { Images } from '../../lib/customImages'
 import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
+import { pg } from '../../design/tokens'
+import { CTA, IconButton, Surface } from '../../design/primitives'
 
 type DpSpot = {
   id: string
@@ -17,9 +19,10 @@ type DpSpot = {
   full_name: string
 }
 
-const RADIUS_STEPS_M = [500, 1000, 2000, 5000, 10000]
+const RADIUS_STEPS_M = [2000, 5000, 10000]
 const RADIUS_STEP_INTERVAL_MS = 8000
 const SCAN_INTERVAL_MS = 3500
+const DEFAULT_MAP_RADIUS_M = 10_000
 
 /** Offset a point roughly by distance/bearing for map display when RPC omits coords */
 function offsetFromCenter(lat: number, lng: number, distM: number, angleDeg: number): { lat: number; lng: number } {
@@ -216,21 +219,22 @@ export default function ScanningPage() {
 
   if (partnerFound) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0B0B0B] px-6">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6" style={{ background: '#050505' }}>
         <img
           src={Images.orderAccepted}
           alt="Order accepted"
-          className="w-full max-w-sm object-contain rounded-3xl"
+          className="w-full max-w-md object-contain"
+          style={{ borderRadius: 28 }}
           draggable={false}
         />
-        <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Opening order tracking...</p>
+        <p className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.45)' }}>Opening order tracking…</p>
       </div>
     )
   }
 
   if (gps.permissionDenied) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-[#0B0B0B] px-8 text-center">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 px-8 text-center" style={{ background: pg.bg }}>
         <div className="flex h-20 w-20 items-center justify-center rounded-3xl" style={{ background: 'rgba(239,68,68,0.1)' }}>
           <MapPinOff size={40} className="text-red-400" />
         </div>
@@ -240,9 +244,7 @@ export default function ScanningPage() {
             Please allow location access so we can find delivery partners near you.
           </p>
         </div>
-        <button onClick={() => gps.requestPermission()} className="btn px-6 py-3 text-sm font-bold" style={{ background: '#A6B300', color: '#0B0B0B' }}>
-          Allow Location
-        </button>
+        <CTA onClick={() => gps.requestPermission()}>Allow Location</CTA>
         <button onClick={cancelRequest} className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
           Cancel
         </button>
@@ -251,49 +253,44 @@ export default function ScanningPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#0B0B0B]">
-      <div className="flex items-center justify-between px-5 pt-12 pb-2 shrink-0">
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ background: pg.bg }}>
+      <div className="flex items-center justify-between px-5 pb-2 pt-12 shrink-0">
         <div>
-          <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
             {waitingForAccept ? 'Waiting' : 'Scanning'}
           </p>
-          <h1 className="text-xl font-bold text-white">
-            {waitingForAccept ? 'Partner Found' : 'Finding Partners'}
+          <h1 className="text-2xl font-extrabold tracking-tight text-white">
+            {waitingForAccept ? 'Partner nearby' : 'Finding partners'}
           </h1>
         </div>
-        <button
-          onClick={cancelRequest}
-          disabled={requestCancelled}
-          className="flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-90"
-          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
-        >
-          <X size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
-        </button>
+        <IconButton onClick={cancelRequest} disabled={requestCancelled} className="!h-11 !w-11">
+          <X size={18} />
+        </IconButton>
       </div>
 
-      <div className="relative mx-3 h-[42vh] min-h-[220px] overflow-hidden rounded-3xl shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div className="relative mx-3 h-[46vh] min-h-[260px] overflow-hidden shrink-0" style={{ borderRadius: 28, border: '1px solid rgba(255,255,255,0.1)' }}>
         {center ? (
           <FreeStreetMap
             center={center}
-            zoom={radiusStepIndex <= 1 ? 14 : radiusStepIndex <= 3 ? 13 : 12}
+            zoom={radiusStepIndex === 0 ? 14 : radiusStepIndex === 1 ? 13 : 12}
             markers={markers}
-            radiusMeters={radiusMeters}
+            radiusMeters={DEFAULT_MAP_RADIUS_M}
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-[#121212] text-sm text-white/40">
-            Getting your location…
+          <div className="flex h-full items-center justify-center text-sm" style={{ background: pg.surface, color: pg.text3 }}>
+            Detecting your location…
           </div>
         )}
         <div
-          className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-xs font-bold"
-          style={{ background: 'rgba(11,11,11,0.75)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.35)' }}
+          className="pointer-events-none absolute right-3 top-3 rounded-full px-3 py-1.5 text-xs font-extrabold"
+          style={{ background: 'rgba(5,5,5,0.9)', color: pg.lime, border: '1px solid rgba(212,240,0,0.35)' }}
         >
           Radius {radiusLabel}
         </div>
       </div>
 
-      <div className="flex items-center gap-4 px-5 py-3 shrink-0">
-        <img src={Images.userWaiting} alt="" className="h-24 w-20 object-contain" draggable={false} />
+      <div className="flex items-center gap-4 px-5 py-4 shrink-0">
+        <img src={Images.userWaiting} alt="" className="h-36 w-32 object-contain" draggable={false} />
         <div className="flex-1">
           <h2 className="text-lg font-bold text-white">
             {waitingForAccept
@@ -319,9 +316,9 @@ export default function ScanningPage() {
               key={step}
               className="flex-1 rounded-full py-1 text-center text-[10px] font-bold transition-all"
               style={{
-                background: i <= radiusStepIndex ? 'rgba(166,179,0,0.18)' : 'rgba(255,255,255,0.05)',
-                color: i <= radiusStepIndex ? '#A6B300' : 'rgba(255,255,255,0.3)',
-                border: i === radiusStepIndex ? '1px solid rgba(166,179,0,0.4)' : '1px solid transparent',
+                background: i <= radiusStepIndex ? 'rgba(212,240,0,0.18)' : 'rgba(255,255,255,0.05)',
+                color: i <= radiusStepIndex ? pg.lime : pg.text4,
+                border: i === radiusStepIndex ? '1px solid rgba(212,240,0,0.4)' : '1px solid transparent',
               }}
             >
               {formatDistance(step)}
@@ -332,21 +329,19 @@ export default function ScanningPage() {
 
       <div className="flex-1 overflow-y-auto px-4 pb-10">
         {waitingForAccept || phase === 'scanning' ? (
-          <div
-            className="rounded-3xl p-4"
-            style={{
-              background: waitingForAccept ? 'rgba(166,179,0,0.08)' : 'rgba(255,255,255,0.04)',
-              border: waitingForAccept ? '1px solid rgba(166,179,0,0.2)' : '1px solid rgba(255,255,255,0.08)',
-            }}
+          <Surface
+            className="p-4"
+            accent={waitingForAccept}
+            style={!waitingForAccept ? { background: pg.bgElevated } : undefined}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.limeDim }}>
                 {waitingForAccept ? (
-                  <Loader2 size={18} style={{ color: '#A6B300' }} className="animate-spin" />
-                ) : retrying ? (
-                  <RefreshCw size={18} style={{ color: '#A6B300' }} className="animate-spin" />
-                ) : (
-                  <Radar size={18} style={{ color: '#A6B300' }} className="animate-pulse" />
+                  <Loader2 size={18} style={{ color: pg.lime }} className="animate-spin" />
+                  ) : retrying ? (
+                  <RefreshCw size={18} style={{ color: pg.lime }} className="animate-spin" />
+                  ) : (
+                  <Radar size={18} style={{ color: pg.lime }} className="animate-pulse" />
                 )}
               </div>
               <div className="flex-1">
@@ -363,32 +358,28 @@ export default function ScanningPage() {
                 <Clock size={13} style={{ color: 'rgba(255,255,255,0.5)' }} />
                 <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Est. wait</p>
               </div>
-              <p className="text-xs font-bold" style={{ color: '#A6B300' }}>{fmtWait(estimatedWaitSeconds)}</p>
+              <p className="text-xs font-extrabold" style={{ color: pg.lime }}>{fmtWait(estimatedWaitSeconds)}</p>
             </div>
-            <p className="mt-2 text-center text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <p className="mt-2 text-center text-xs" style={{ color: pg.text3 }}>
               Order tracking opens automatically when a partner accepts
             </p>
-          </div>
+          </Surface>
         ) : (
           <div className="space-y-2">
-            <div className="rounded-3xl p-4 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <MapPin size={24} className="mx-auto mb-2" style={{ color: 'rgba(255,255,255,0.4)' }} />
-              <p className="font-bold text-white">No Partners Online Nearby</p>
-              <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            <Surface className="p-4 text-center">
+              <MapPin size={24} className="mx-auto mb-2" style={{ color: pg.text3 }} />
+              <p className="font-extrabold">No Partners Online Nearby</p>
+              <p className="mt-1 text-xs" style={{ color: pg.text3 }}>
                 Your request is live — a partner may accept shortly.
               </p>
-            </div>
+            </Surface>
             <div className="flex gap-2">
-              <button onClick={cancelRequest} disabled={requestCancelled} className="btn-secondary flex-1">
+              <CTA variant="secondary" onClick={cancelRequest} disabled={requestCancelled} className="flex-1">
                 Cancel
-              </button>
-              <button
-                onClick={scanAgain}
-                className="flex-1 btn flex items-center justify-center gap-2"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'white' }}
-              >
+              </CTA>
+              <CTA variant="secondary" onClick={scanAgain} className="flex-1">
                 <RefreshCw size={15} /> Scan Again
-              </button>
+              </CTA>
             </div>
           </div>
         )}

@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { AlertTriangle, X, Check, IndianRupee } from 'lucide-react'
+import { pg } from '../design/tokens'
+import { CTA, IconButton, Surface } from '../design/primitives'
+import { Chip } from './ui'
 
 type Props = {
   open: boolean
@@ -39,35 +42,41 @@ export default function CancellationModal({
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }} onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden animate-slide-up"
-        style={{ background: '#181818', border: '1px solid rgba(255,255,255,0.1)' }}
-        onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={20} style={{ color: '#f87171' }} />
-            <h2 className="text-base font-bold text-white">Cancel Request</h2>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
+      style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md overflow-hidden animate-slide-up rounded-t-[28px] sm:rounded-[28px]"
+        style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 px-5 py-4" style={{ borderBottom: `1px solid ${pg.line}` }}>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: 'rgba(255,77,79,0.12)' }}>
+              <AlertTriangle size={18} style={{ color: pg.danger }} />
+            </div>
+            <h2 className="text-[17px] font-extrabold tracking-tight">Cancel Request</h2>
           </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} />
-          </button>
+          <IconButton onClick={onClose} className="!h-9 !w-9 !rounded-xl">
+            <X size={16} />
+          </IconButton>
         </div>
 
-        <div className="px-5 py-5 space-y-4">
-          {/* Policy */}
-          <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#C4D600' }}>Cancellation Policy</p>
-            <div className="space-y-2 text-sm">
+        <div className="space-y-4 px-5 py-5">
+          <Surface className="p-4" style={{ background: pg.bgElevated }}>
+            <p className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.lime }}>Cancellation Policy</p>
+            <div className="space-y-2.5 text-sm">
               {freeBeforeAccept && (
                 <div className="flex items-start gap-2">
-                  <Check size={14} className="mt-0.5 shrink-0 text-green-400" />
-                  <span style={{ color: 'rgba(255,255,255,0.7)' }}>Free cancellation before a delivery partner accepts.</span>
+                  <Check size={14} className="mt-0.5 shrink-0" style={{ color: pg.success }} />
+                  <span style={{ color: pg.text2 }}>Free cancellation before a delivery partner accepts.</span>
                 </div>
               )}
               <div className="flex items-start gap-2">
-                <IndianRupee size={14} className="mt-0.5 shrink-0" style={{ color: actualFee > 0 ? '#f87171' : '#34d399' }} />
-                <span style={{ color: 'rgba(255,255,255,0.7)' }}>
+                <IndianRupee size={14} className="mt-0.5 shrink-0" style={{ color: actualFee > 0 ? pg.danger : pg.success }} />
+                <span style={{ color: pg.text2 }}>
                   {actualFee > 0
                     ? `Cancellation fee of ₹${actualFee} applies after a partner has accepted.`
                     : 'No cancellation fee at this stage.'}
@@ -75,61 +84,57 @@ export default function CancellationModal({
               </div>
               {cutoffMinutes > 0 && (
                 <div className="flex items-start gap-2">
-                  <AlertTriangle size={14} className="mt-0.5 shrink-0 text-yellow-400" />
-                  <span style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  <AlertTriangle size={14} className="mt-0.5 shrink-0" style={{ color: pg.warning }} />
+                  <span style={{ color: pg.text2 }}>
                     Free up to {cutoffMinutes} minutes before scheduled time.
                   </span>
                 </div>
               )}
               {adminOverride && (
                 <div className="flex items-start gap-2">
-                  <Check size={14} className="mt-0.5 shrink-0" style={{ color: '#A6B300' }} />
-                  <span style={{ color: 'rgba(255,255,255,0.7)' }}>Admin can override this policy at any time.</span>
+                  <Check size={14} className="mt-0.5 shrink-0" style={{ color: pg.lime }} />
+                  <span style={{ color: pg.text2 }}>Admin can override this policy at any time.</span>
                 </div>
               )}
             </div>
-          </div>
+          </Surface>
 
-          {/* Fee display */}
           {actualFee > 0 && (
-            <div className="flex items-center justify-between rounded-2xl p-4"
-              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-              <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.7)' }}>Cancellation Fee</span>
-              <span className="text-lg font-bold" style={{ color: '#f87171' }}>₹{actualFee}</span>
-            </div>
+            <Surface className="flex items-center justify-between p-4" style={{ borderColor: 'rgba(255,77,79,0.28)', background: 'rgba(255,77,79,0.08)' }}>
+              <span className="text-sm font-bold" style={{ color: pg.text2 }}>Cancellation Fee</span>
+              <span className="text-lg font-extrabold" style={{ color: pg.danger }}>₹{actualFee}</span>
+            </Surface>
           )}
 
-          {/* Reason */}
           <div>
-            <label className="label mb-2">Reason for cancellation <span style={{ color: '#f87171' }}>*</span></label>
-            <div className="flex flex-wrap gap-2 mb-2">
+            <label className="label mb-2">
+              Reason for cancellation <span style={{ color: pg.danger }}>*</span>
+            </label>
+            <div className="mb-3 flex flex-wrap gap-2">
               {reasons.map(r => (
-                <button key={r} onClick={() => setReason(r)}
-                  className="rounded-xl px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
-                  style={reason === r
-                    ? { background: '#A6B300', color: '#0B0B0B' }
-                    : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  {r}
-                </button>
+                <Chip key={r} label={r} active={reason === r} onClick={() => setReason(r)} />
               ))}
             </div>
-            <textarea className="input min-h-[80px] resize-none text-sm"
-              value={reason} onChange={e => setReason(e.target.value)}
-              placeholder="Please tell us why you're cancelling (required)..." />
+            <textarea
+              className="input min-h-[80px] resize-none text-sm"
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              placeholder="Please tell us why you're cancelling (required)..."
+            />
           </div>
 
-          {/* Buttons */}
           <div className="flex gap-2">
-            <button onClick={onClose}
-              className="flex-1 rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95"
-              style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)' }}>
+            <CTA variant="secondary" onClick={onClose} className="flex-1">
               Keep Request
-            </button>
-            <button onClick={handleConfirm} disabled={!reason.trim() || confirming}
-              className="flex-1 rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-40"
-              style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
+            </CTA>
+            <CTA
+              variant="danger"
+              onClick={handleConfirm}
+              disabled={!reason.trim() || confirming}
+              className="flex-1"
+            >
               {confirming ? 'Cancelling...' : 'Confirm Cancel'}
-            </button>
+            </CTA>
           </div>
         </div>
       </div>

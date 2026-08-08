@@ -4,6 +4,8 @@ import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
+import { pg } from '../design/tokens'
+import { CTA } from '../design/primitives'
 import { Mail, Lock, Eye, EyeOff, ShieldCheck, KeyRound, CircleCheck as CheckCircle } from 'lucide-react'
 
 type View = 'login' | 'forgot'
@@ -30,9 +32,6 @@ export default function AdminLogin() {
     const { error: signInError } = await signInWithEmail(email.trim(), password)
     if (signInError) { setError(signInError); setEmail(''); setPassword(''); setLoading(false); return }
 
-    // AuthContext onAuthStateChange will load profile and App.tsx will redirect by role
-    // Just wait briefly for the redirect to happen
-    // If not admin, the AuthContext profile check will show an error
     setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) { setError('Authentication failed.'); setLoading(false); return }
@@ -42,7 +41,6 @@ export default function AdminLogin() {
         setError('Access denied. This login is for administrators only.')
         setEmail(''); setPassword(''); setLoading(false)
       }
-      // If admin, App.tsx will redirect — nothing to do here
     }, 1500)
   }
 
@@ -62,82 +60,70 @@ export default function AdminLogin() {
 
   if (view === 'forgot') {
     return (
-      <AuthLayout showBrand={false}>
-        <div className="card p-6 animate-fade-in">
-          <button onClick={() => { setView('login'); setError(null); setResetSent(false) }}
-            className="text-sm mb-4 flex items-center gap-1" style={{ color: '#8fa964' }}>
-            ← Back to Admin Login
-          </button>
-          <h2 className="text-xl font-bold text-white mb-1">Forgot Password</h2>
-          <p className="text-sm mb-5" style={{ color: 'rgba(255,255,255,0.55)' }}>
-            Enter your email and we'll send you a reset link.
-          </p>
-          {resetSent ? (
-            <div className="rounded-xl px-4 py-3 text-sm text-white glass-dark">
-              <div className="flex items-center gap-2">
-                <CheckCircle size={16} className="shrink-0 text-green-400" />
-                Reset link sent! Check your email.
-              </div>
+      <AuthLayout title="Forgot Password" subtitle="Enter your email and we'll send you a reset link.">
+        <button type="button" onClick={() => { setView('login'); setError(null); setResetSent(false) }}
+          className="mb-5 flex items-center gap-1 text-sm font-bold" style={{ color: pg.lime }}>
+          ← Back to Admin Login
+        </button>
+        {resetSent ? (
+          <div className="rounded-2xl px-4 py-4 text-sm" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+            <div className="flex items-center gap-2 text-white">
+              <CheckCircle size={16} className="shrink-0 text-green-400" />
+              Reset link sent! Check your email.
             </div>
-          ) : (
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
-                <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
-                <input type="email" className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="admin@pingget.com" required />
-              </div>
-              {error && <ErrorBanner message={error} />}
-              <button type="submit" disabled={loading} className="btn-primary w-full">
-                <KeyRound size={16} /> {loading ? 'Sending...' : 'Send Reset Link'}
-              </button>
-            </form>
-          )}
-        </div>
+          </div>
+        ) : (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div>
+              <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
+              <input type="email" className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="admin@pingget.com" required />
+            </div>
+            {error && <ErrorBanner message={error} />}
+            <CTA type="submit" disabled={loading} className="w-full">
+              <KeyRound size={16} /> {loading ? 'Sending...' : 'Send Reset Link'}
+            </CTA>
+          </form>
+        )}
       </AuthLayout>
     )
   }
 
   return (
-    <AuthLayout>
-      <div className="card p-6 animate-fade-in">
-        <div className="mb-6 text-center">
-          <div className="mb-3 flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #6e8c45, #374524)' }}>
-              <ShieldCheck size={24} className="text-white" />
-            </div>
-          </div>
-          <h2 className="text-xl font-bold text-white">Admin Login</h2>
-          <p className="mt-1 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Restricted access — administrators only</p>
+    <AuthLayout title="Admin Login" subtitle="Restricted access — administrators only">
+      <div className="mb-6 flex justify-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)` }}>
+          <ShieldCheck size={26} style={{ color: pg.lime }} />
         </div>
-        {error && <ErrorBanner message={error} />}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
-            <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@pingget.com" required />
-          </div>
-          <div>
-            <label className="label flex items-center gap-1.5"><Lock size={14} /> Password</label>
-            <div className="relative">
-              <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={password} onChange={e => setPassword(e.target.value)} placeholder="Your password" required />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-          <div className="text-right">
-            <button type="button" onClick={() => { setView('forgot'); setError(null) }}
-              className="text-xs hover:underline" style={{ color: '#8fa964' }}>
-              Forgot password?
+      </div>
+      {error && <ErrorBanner message={error} />}
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div>
+          <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
+          <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@pingget.com" required />
+        </div>
+        <div>
+          <label className="label flex items-center gap-1.5"><Lock size={14} /> Password</label>
+          <div className="relative">
+            <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={password} onChange={e => setPassword(e.target.value)} placeholder="Your password" required />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: pg.text3 }}>
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          <button type="submit" disabled={loading} className="btn-primary w-full">
-            {loading ? 'Signing in...' : 'Sign In as Admin'}
-          </button>
-        </form>
-        <div className="mt-5 text-center">
-          <button onClick={() => navigate('/auth')} className="text-xs hover:underline" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            ← Back to user login
+        </div>
+        <div className="text-right">
+          <button type="button" onClick={() => { setView('forgot'); setError(null) }}
+            className="text-xs font-bold hover:underline" style={{ color: pg.lime }}>
+            Forgot password?
           </button>
         </div>
+        <CTA type="submit" disabled={loading} className="w-full">
+          {loading ? 'Signing in...' : 'Sign In as Admin'}
+        </CTA>
+      </form>
+      <div className="mt-5 text-center">
+        <button type="button" onClick={() => navigate('/auth')} className="text-xs hover:underline" style={{ color: pg.text3 }}>
+          ← Back to user login
+        </button>
       </div>
     </AuthLayout>
   )

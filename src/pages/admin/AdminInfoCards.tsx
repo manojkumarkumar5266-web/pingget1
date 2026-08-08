@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context'
 import { Plus, Trash2, ToggleLeft, ToggleRight, GripVertical, X, Save } from 'lucide-react'
+import { AdminShell, AdminHeader } from './adminChrome'
+import { pg } from '../../design/tokens'
 
 type InfoCard = {
   id: string
@@ -20,7 +22,7 @@ export default function AdminInfoCards() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<InfoCard | null>(null)
-  const [form, setForm] = useState({ title: '', description: '', icon: '📦', bg_color: 'rgba(166,179,0,0.08)', image_url: '', sort_order: 0 })
+  const [form, setForm] = useState({ title: '', description: '', icon: '📦', bg_color: 'rgba(212,240,0,0.08)', image_url: '', sort_order: 0 })
 
   const fetchCards = async () => {
     const { data } = await supabase.from('info_cards').select('*').order('sort_order', { ascending: true })
@@ -43,7 +45,7 @@ export default function AdminInfoCards() {
 
   const openNew = () => {
     setEditing(null)
-    setForm({ title: '', description: '', icon: '📦', bg_color: 'rgba(166,179,0,0.08)', image_url: '', sort_order: cards.length + 1 })
+    setForm({ title: '', description: '', icon: '📦', bg_color: 'rgba(212,240,0,0.08)', image_url: '', sort_order: cards.length + 1 })
     setShowModal(true)
   }
 
@@ -65,20 +67,19 @@ export default function AdminInfoCards() {
     fetchCards()
   }
 
-  if (loading) return <div className="p-4 text-white/40">Loading...</div>
+  if (loading) return <AdminShell><p style={{ color: pg.text3 }}>Loading...</p></AdminShell>
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white">Swipe Cards</h1>
-          <p className="text-sm text-white/40">Cards shown to users on home screen (max 10)</p>
-        </div>
-        <button onClick={openNew} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold active:scale-95"
-          style={{ background: '#A6B300', color: '#0B0B0B' }}>
+    <AdminShell>
+      <AdminHeader title="Swipe Cards" action={
+        <button onClick={openNew} className="btn-primary text-sm flex items-center gap-1.5">
           <Plus size={16} /> New Card
         </button>
-      </div>
+      } />
+
+      <p className="mb-5 text-sm" style={{ color: pg.text3 }}>Cards shown to users on home screen (max 10)</p>
+
+      <div className="mx-auto max-w-2xl">
 
       {cards.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
@@ -101,7 +102,7 @@ export default function AdminInfoCards() {
                 <div className="flex items-center gap-2">
                   <button onClick={() => toggleActive(card)} className="transition-transform active:scale-90">
                     {card.is_active
-                      ? <ToggleRight size={24} style={{ color: '#A6B300' }} />
+                      ? <ToggleRight size={24} style={{ color: '#D4F000' }} />
                       : <ToggleLeft size={24} className="text-white/30" />}
                   </button>
                   <button onClick={() => openEdit(card)} className="rounded-lg px-2 py-1 text-xs font-semibold text-white/60 hover:text-white"
@@ -142,7 +143,7 @@ export default function AdminInfoCards() {
               </div>
               <div>
                 <label className="label">Background Color</label>
-                <input className="input" value={form.bg_color} onChange={e => setForm({ ...form, bg_color: e.target.value })} placeholder="rgba(166,179,0,0.08)" />
+                <input className="input" value={form.bg_color} onChange={e => setForm({ ...form, bg_color: e.target.value })} placeholder="rgba(212,240,0,0.08)" />
               </div>
               <div>
                 <label className="label">Sort Order</label>
@@ -155,6 +156,7 @@ export default function AdminInfoCards() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AdminShell>
   )
 }

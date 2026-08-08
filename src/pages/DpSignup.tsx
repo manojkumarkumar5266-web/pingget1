@@ -4,6 +4,8 @@ import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
+import { pg } from '../design/tokens'
+import { CTA, IconButton, Surface } from '../design/primitives'
 import { ArrowLeft, ArrowRight, Camera, Upload, Mail, MapPin, User, Phone, Truck, FileText, Shield, CircleCheck as CheckCircle, Circle as XCircle, Lock, Eye, EyeOff, KeyRound } from 'lucide-react'
 
 type View = 'signup' | 'signin' | 'forgot' | 'success'
@@ -287,25 +289,23 @@ export default function DpSignup() {
   if (view === 'forgot') {
     return (
       <AuthLayout showBrand={false}>
-        <div className="card p-6">
-          <button onClick={() => { setView('signin'); setError(null); setResetSent(false) }} className="text-sm text-primary-300 mb-4">← Back to Sign In</button>
-          <h2 className="text-xl font-bold text-white mb-1">Forgot Password</h2>
-          <p className="text-sm text-white/50 mb-6">Enter your email and we&apos;ll send you a reset link.</p>
-          {resetSent ? (
-            <div className="rounded-xl px-4 py-3 text-sm text-green-300 glass-dark">
-              <div className="flex items-center gap-2"><CheckCircle size={16} className="shrink-0" /> Reset link sent! Check your email.</div>
+        <button type="button" onClick={() => { setView('signin'); setError(null); setResetSent(false) }} className="mb-4 text-sm font-bold hover:underline" style={{ color: pg.lime }}>← Back to Sign In</button>
+        <h2 className="mb-1 text-xl font-extrabold">Forgot Password</h2>
+        <p className="mb-6 text-sm" style={{ color: pg.text3 }}>Enter your email and we&apos;ll send you a reset link.</p>
+        {resetSent ? (
+          <Surface accent className="px-4 py-3 text-sm" style={{ color: pg.success }}>
+            <div className="flex items-center gap-2"><CheckCircle size={16} className="shrink-0" /> Reset link sent! Check your email.</div>
+          </Surface>
+        ) : (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div>
+              <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
+              <input type="email" className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="you@example.com" required />
             </div>
-          ) : (
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
-                <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
-                <input type="email" className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="you@example.com" required />
-              </div>
-              {error && <ErrorBanner message={error} />}
-              <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2"><KeyRound size={16} /> {loading ? 'Sending...' : 'Send Reset Link'}</button>
-            </form>
-          )}
-        </div>
+            {error && <ErrorBanner message={error} />}
+            <CTA type="submit" disabled={loading} className="w-full"><KeyRound size={16} /> {loading ? 'Sending...' : 'Send Reset Link'}</CTA>
+          </form>
+        )}
       </AuthLayout>
     )
   }
@@ -314,12 +314,11 @@ export default function DpSignup() {
   if (view === 'signin') {
     return (
       <AuthLayout showBrand={false}>
-        <div className="card p-6">
-          <button onClick={() => { setView('signup'); setStep(1); setError(null) }} className="text-sm text-primary-300 mb-4">← Back</button>
-          <h2 className="text-xl font-bold text-white mb-1">Delivery Partner Sign In</h2>
-          <p className="text-sm text-white/50 mb-6">Sign in with your email and password</p>
-          {error && <ErrorBanner message={error} />}
-          <form onSubmit={handleDpSignIn} className="space-y-3">
+        <button type="button" onClick={() => { setView('signup'); setStep(1); setError(null) }} className="mb-4 text-sm font-bold hover:underline" style={{ color: pg.lime }}>← Back</button>
+        <h2 className="mb-1 text-xl font-extrabold">Delivery Partner Sign In</h2>
+        <p className="mb-6 text-sm" style={{ color: pg.text3 }}>Sign in with your email and password</p>
+        {error && <ErrorBanner message={error} />}
+        <form onSubmit={handleDpSignIn} className="space-y-3">
             <div>
               <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
               <input type="email" className="input" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" required />
@@ -337,8 +336,8 @@ export default function DpSignup() {
               <label className="label flex items-center gap-1.5"><MapPin size={14} /> Your Area Pincode (optional)</label>
               <div className="flex gap-2">
                 <input className="input flex-1" value={signInPincode} onChange={e => setSignInPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} />
-                <button type="button" onClick={() => autoDetectPincode(setSignInPincode, setError)} className="btn-ghost shrink-0 px-3" title="Detect my location">
-                  <MapPin size={16} style={{ color: '#808000' }} />
+                <button type="button" onClick={() => autoDetectPincode(setSignInPincode, setError)} className="shrink-0 rounded-2xl px-3 py-2" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }} title="Detect my location">
+                  <MapPin size={16} style={{ color: pg.lime }} />
                 </button>
               </div>
               {signInPincodeChecking && <p className="mt-1 text-xs text-white/40">Checking service area...</p>}
@@ -351,15 +350,14 @@ export default function DpSignup() {
               )}
             </div>
             <div className="text-right">
-              <button type="button" onClick={() => { setView('forgot'); setError(null); setResetSent(false) }} className="text-xs text-primary-300 hover:underline">Forgot password?</button>
+              <button type="button" onClick={() => { setView('forgot'); setError(null); setResetSent(false) }} className="text-xs font-bold hover:underline" style={{ color: pg.lime }}>Forgot password?</button>
             </div>
-            <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Signing in...' : 'Sign In'}</button>
+            <CTA type="submit" disabled={loading} className="w-full">{loading ? 'Signing in...' : 'Sign In'}</CTA>
           </form>
-          <p className="mt-4 text-center text-xs text-white/50">
+          <p className="mt-4 text-center text-xs" style={{ color: pg.text3 }}>
             Don&apos;t have an account?{' '}
-            <button onClick={() => { setView('signup'); setStep(1); setError(null) }} className="text-primary-300 font-semibold hover:underline">Sign up here</button>
+            <button type="button" onClick={() => { setView('signup'); setStep(1); setError(null) }} className="font-extrabold hover:underline" style={{ color: pg.lime }}>Sign up here</button>
           </p>
-        </div>
       </AuthLayout>
     )
   }
@@ -373,37 +371,38 @@ export default function DpSignup() {
   return (
     <AuthLayout>
       <div className="mb-4 flex items-center gap-3">
-        <button
+        <IconButton
           onClick={() => { if (step === 2) { setStep(1); setError(null) } else if (step === 3) { setStep(2); setError(null) } else navigate('/landing') }}
-          className="btn-ghost p-2 text-white"
+          className="!h-10 !w-10"
         >
-          <ArrowLeft size={20} />
-        </button>
-        <div className="flex-1"></div>
+          <ArrowLeft size={18} />
+        </IconButton>
       </div>
 
-      <div className="mb-2 text-center">
-        <h2 className="text-xl font-bold text-white">Earn money delivering in your neighbourhood!</h2>
-        <p className="mt-1 text-sm text-white/70">Join as a delivery partner and get started today</p>
+      <div className="mb-4 text-center">
+        <h2 className="text-xl font-extrabold tracking-tight">Earn money delivering in your neighbourhood!</h2>
+        <p className="mt-1 text-sm" style={{ color: pg.text3 }}>Join as a delivery partner and get started today</p>
       </div>
 
-      {/* Progress */}
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-4 flex items-center gap-2">
         {[1, 2, 3, 4].map(s => (
           <div key={s} className="flex flex-1 items-center gap-2">
-            <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${s <= step ? 'text-white' : 'bg-white/20 text-white/60'}`} style={s <= step ? { backgroundColor: '#808000' } : {}}>
+            <div
+              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-extrabold transition-all"
+              style={s <= step ? { background: pg.lime, color: pg.limeText } : { background: pg.surface2, color: pg.text3 }}
+            >
               {s < step ? <CheckCircle size={14} /> : s}
             </div>
-            {s < 4 && <div className="flex-1 h-0.5 rounded-full" style={{ background: s < step ? '#808000' : 'rgba(255,255,255,0.2)' }} />}
+            {s < 4 && <div className="h-0.5 flex-1 rounded-full" style={{ background: s < step ? pg.lime : pg.line }} />}
           </div>
         ))}
       </div>
 
-      <div className="card p-6">
+      <div>
         {step === 1 && (
           <>
-            <h2 className="mb-1 text-xl font-bold text-white">Basic Information</h2>
-            <p className="mb-5 text-sm text-white/50">All fields are required</p>
+            <h2 className="mb-1 text-xl font-extrabold">Basic Information</h2>
+            <p className="mb-5 text-sm" style={{ color: pg.text3 }}>All fields are required</p>
             <form onSubmit={handleStep1} className="space-y-3">
               <div><label className="label flex items-center gap-1.5"><User size={14} /> Full Name *</label><input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required /></div>
               <div><label className="label flex items-center gap-1.5"><Phone size={14} /> Phone Number *</label><input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required /></div>
@@ -431,22 +430,25 @@ export default function DpSignup() {
                 {confirmPassword && password !== confirmPassword && <p className="mt-1 text-xs text-red-400">Passwords do not match</p>}
               </div>
               {error && <ErrorBanner message={error} />}
-              <button type="submit" className="btn-primary w-full">Continue <ArrowRight size={16} /></button>
+              <CTA type="submit" className="w-full">Continue <ArrowRight size={16} /></CTA>
             </form>
           </>
         )}
 
         {step === 2 && (
           <>
-            <h2 className="mb-1 text-xl font-bold text-white">Vehicle & Identity</h2>
-            <p className="mb-5 text-sm text-white/50">All fields are required</p>
+            <h2 className="mb-1 text-xl font-extrabold">Vehicle & Identity</h2>
+            <p className="mb-5 text-sm" style={{ color: pg.text3 }}>All fields are required</p>
             <form onSubmit={handleStep2} className="space-y-3">
               <div>
                 <label className="label flex items-center gap-1.5"><Truck size={14} /> Vehicle Type *</label>
                 <div className="grid grid-cols-3 gap-2">
                   {VEHICLE_TYPES.map(v => (
                     <button key={v} type="button" onClick={() => setVehicleType(v)}
-                      className={`rounded-xl border-2 py-2.5 text-sm font-medium transition-all ${vehicleType === v ? 'text-white' : 'border-white/15 text-white/40'}`}
+                      className="rounded-2xl border-2 py-2.5 text-sm font-bold transition-all"
+                      style={vehicleType === v
+                        ? { borderColor: pg.lime, background: pg.limeDim, color: pg.lime }
+                        : { borderColor: pg.line, color: pg.text3 }}
                     >{v}</button>
                   ))}
                 </div>
@@ -459,15 +461,15 @@ export default function DpSignup() {
               </div>
               <div><label className="label flex items-center gap-1.5"><Phone size={14} /> Emergency Contact *</label><input className="input" value={emergencyContact} onChange={e => setEmergencyContact(e.target.value)} placeholder="+91 98765 43210" required /></div>
               {error && <ErrorBanner message={error} />}
-              <button type="submit" className="btn-primary w-full">Continue <ArrowRight size={16} /></button>
+              <CTA type="submit" className="w-full">Continue <ArrowRight size={16} /></CTA>
             </form>
           </>
         )}
 
         {step === 3 && (
           <>
-            <h2 className="mb-1 text-xl font-bold text-white">Documents & Photo</h2>
-            <p className="mb-5 text-sm text-white/50">Upload your profile photo, Aadhaar{needsLicense ? ', and driving licence' : ''}. All required.</p>
+            <h2 className="mb-1 text-xl font-extrabold">Documents & Photo</h2>
+            <p className="mb-5 text-sm" style={{ color: pg.text3 }}>Upload your profile photo, Aadhaar{needsLicense ? ', and driving licence' : ''}. All required.</p>
             <form onSubmit={handleStep3} className="space-y-5">
               <div>
                 <label className="label flex items-center gap-1.5"><Camera size={14} /> Profile Photo *</label>
@@ -475,23 +477,23 @@ export default function DpSignup() {
                 {photoPreview ? (
                   <div className="relative">
                     <img src={photoPreview} alt="Profile" className="h-28 w-28 rounded-2xl object-cover" />
-                    <button type="button" onClick={() => photoInputRef.current?.click()} className="absolute bottom-1 right-1 rounded-full p-1.5 text-white shadow" style={{ backgroundColor: '#808000' }}><Camera size={14} /></button>
+                    <button type="button" onClick={() => photoInputRef.current?.click()} className="absolute bottom-1 right-1 rounded-full p-1.5 shadow" style={{ background: pg.lime, color: pg.limeText }}><Camera size={14} /></button>
                   </div>
                 ) : (
-                  <button type="button" onClick={() => photoInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 text-white/50"><Camera size={20} style={{ color: '#808000' }} /> Take Photo or Upload *</button>
+                  <button type="button" onClick={() => photoInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-4" style={{ borderColor: pg.line, color: pg.text3 }}><Camera size={20} style={{ color: pg.lime }} /> Take Photo or Upload *</button>
                 )}
               </div>
               <div>
                 <label className="label flex items-center gap-1.5"><Upload size={14} /> Aadhaar Proof *</label>
                 <input ref={aadhaarInputRef} type="file" className="hidden" accept="image/*,application/pdf" onChange={e => e.target.files?.[0] && pickFile(e.target.files[0], 'aadhaar')} />
                 {aadhaarPreview ? (
-                  <div className="flex items-center gap-3 rounded-xl border p-3">
+                  <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
                     {aadhaarFile?.type.startsWith('image') ? <img src={aadhaarPreview} alt="Aadhaar" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg "><FileText size={24} className="text-green-400" /></div>}
                     <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-white">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
                     <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                   </div>
                 ) : (
-                  <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 text-white/50"><Upload size={20} style={{ color: '#808000' }} /> Upload Aadhaar *</button>
+                  <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-4" style={{ borderColor: pg.line, color: pg.text3 }}><Upload size={20} style={{ color: pg.lime }} /> Upload Aadhaar *</button>
                 )}
               </div>
               {needsLicense && (
@@ -499,27 +501,29 @@ export default function DpSignup() {
                   <label className="label flex items-center gap-1.5"><FileText size={14} /> Driving Licence *</label>
                   <input ref={licenseInputRef} type="file" className="hidden" accept="image/*,application/pdf" onChange={e => e.target.files?.[0] && pickFile(e.target.files[0], 'license')} />
                   {licensePreview ? (
-                    <div className="flex items-center gap-3 rounded-xl border p-3">
+                    <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
                       {licenseFile?.type.startsWith('image') ? <img src={licensePreview} alt="Licence" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg "><FileText size={24} className="text-green-400" /></div>}
                       <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-white">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
                       <button type="button" onClick={() => licenseInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                     </div>
                   ) : (
-                    <button type="button" onClick={() => licenseInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 text-white/50"><Upload size={20} className="text-yellow-400" /> Upload Driving Licence *</button>
+                    <button type="button" onClick={() => licenseInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-4" style={{ borderColor: pg.line, color: pg.text3 }}><Upload size={20} style={{ color: pg.warning }} /> Upload Driving Licence *</button>
                   )}
                 </div>
               )}
-              <div className="flex items-start gap-2 rounded-xl p-3 text-xs"><Shield size={14} className="mt-0.5 shrink-0" /> Your documents are securely stored and only visible to admin for verification.</div>
+              <Surface className="flex items-start gap-2 p-3 text-xs" style={{ background: pg.bgElevated }}>
+                <Shield size={14} className="mt-0.5 shrink-0" style={{ color: pg.lime }} /> Your documents are securely stored and only visible to admin for verification.
+              </Surface>
               {error && <ErrorBanner message={error} />}
-              <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Submitting application...' : 'Submit Application'}</button>
+              <CTA type="submit" disabled={loading} className="w-full">{loading ? 'Submitting application...' : 'Submit Application'}</CTA>
             </form>
           </>
         )}
       </div>
 
       {step === 1 && (
-        <p className="mt-4 text-center text-sm text-white/70">Already a delivery partner?{' '}
-          <button onClick={() => navigate('/auth')} className="font-semibold hover:underline" style={{ color: '#808000' }}>Sign in here</button>
+        <p className="mt-4 text-center text-sm" style={{ color: pg.text3 }}>Already a delivery partner?{' '}
+          <button type="button" onClick={() => navigate('/auth')} className="font-extrabold hover:underline" style={{ color: pg.lime }}>Sign in here</button>
         </p>
       )}
     </AuthLayout>
@@ -536,17 +540,17 @@ function DpSuccessScreen({ onContinue }: { onContinue: () => void }) {
 
   return (
     <AuthLayout showBrand={false}>
-      <div className="card p-8 text-center animate-bounce-in">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
-          <CheckCircle size={32} className="text-white" />
+      <div className="text-center animate-bounce-in">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: pg.lime }}>
+          <CheckCircle size={32} style={{ color: pg.limeText }} />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Application Submitted!</h2>
-        <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>Your delivery partner application is now under review. You'll be notified once an admin approves it.</p>
-        <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'rgba(143,169,100,0.3)', background: 'rgba(143,169,100,0.08)' }}>
-          <p className="text-sm font-medium" style={{ color: '#808000' }}>Awaiting Admin Approval</p>
-          <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Redirecting to sign in page in {countdown}s...</p>
-        </div>
-        <button onClick={onContinue} className="btn-primary w-full">Go to Sign In Now</button>
+        <h2 className="mb-2 text-2xl font-extrabold">Application Submitted!</h2>
+        <p className="mb-4 text-sm" style={{ color: pg.text3 }}>Your delivery partner application is now under review. You'll be notified once an admin approves it.</p>
+        <Surface accent className="mb-4 p-4">
+          <p className="text-sm font-extrabold" style={{ color: pg.lime }}>Awaiting Admin Approval</p>
+          <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Redirecting to sign in page in {countdown}s...</p>
+        </Surface>
+        <CTA onClick={onContinue} className="w-full">Go to Sign In Now</CTA>
       </div>
     </AuthLayout>
   )

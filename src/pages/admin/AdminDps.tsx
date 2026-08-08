@@ -5,6 +5,8 @@ import { Avatar, EmptyState, SkeletonCard } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
 import { Check, X, Shield, ChevronRight, ArrowLeft, FileText, Phone, Truck, CreditCard, AlertCircle, Download, MapPin } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { AdminShell, AdminHeader, FilterPills, StatusPill, DrawerShell } from './adminChrome'
+import { pg } from '../../design/tokens'
 
 type DpWithProfile = DeliveryPartner & { profile: Profile }
 type Filter = 'pending' | 'approved' | 'rejected' | 'all'
@@ -94,24 +96,13 @@ export default function AdminDps() {
   const filters: Filter[] = ['pending', 'approved', 'rejected', 'all']
 
   return (
-    <div className="p-4 md:p-8">
-      <h1 className="mb-4 text-2xl font-bold text-white">Delivery Partners</h1>
-
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex gap-2 overflow-x-auto">
-          {filters.map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition-all ${
-                filter === f ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-white/40'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+    <AdminShell>
+      <AdminHeader title="Delivery Partners" action={
         <button onClick={exportDps} className="btn-secondary shrink-0 text-sm"><Download size={16} /> Export</button>
+      } />
+
+      <div className="mb-4">
+        <FilterPills options={filters} value={filter} onChange={setFilter} />
       </div>
 
       {loading ? (
@@ -132,9 +123,9 @@ export default function AdminDps() {
               <div className="flex items-center gap-3">
                 <Avatar url={dp.profile?.photo_url} name={dp.profile?.full_name || 'DP'} size={48} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white truncate">{dp.profile?.full_name}</p>
-                  <p className="text-sm text-white/50">{dp.profile?.phone}</p>
-                  <p className="text-xs text-white/40">{dp.vehicle_type || 'Vehicle not set'} • {formatTime(dp.created_at)}</p>
+                  <p className="font-extrabold text-white truncate">{dp.profile?.full_name}</p>
+                  <p className="text-sm" style={{ color: pg.text3 }}>{dp.profile?.phone}</p>
+                  <p className="text-xs" style={{ color: pg.text4 }}>{dp.vehicle_type || 'Vehicle not set'} • {formatTime(dp.created_at)}</p>
                   {dp.status === 'approved' && (
                     <p className="text-xs text-white/40">
                       Rating: {dp.rating_count > 0 ? `${dp.rating_avg} ★ (${dp.rating_count} reviews)` : 'No ratings yet'}
@@ -142,12 +133,8 @@ export default function AdminDps() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className={`badge ${
-                    dp.status === 'approved' ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' :
-                    dp.status === 'pending' ? 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300' :
-                    'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300'
-                  }`}>{dp.status}</span>
-                  <ChevronRight size={16} className='text-white/40' />
+                  <StatusPill status={dp.status} />
+                  <ChevronRight size={16} style={{ color: pg.text4 }} />
                 </div>
               </div>
             </div>
@@ -163,7 +150,7 @@ export default function AdminDps() {
           onReject={() => updateStatus(selected, 'rejected')}
         />
       )}
-    </div>
+    </AdminShell>
   )
 }
 
@@ -290,8 +277,8 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
 
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/10 p-4 dark:border-gray-800">
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white/60">{icon} {title}</div>
+    <div className="rounded-2xl p-4" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+      <div className="mb-3 flex items-center gap-2 text-sm font-extrabold" style={{ color: pg.text3 }}>{icon} {title}</div>
       <div className="space-y-2">{children}</div>
     </div>
   )
@@ -300,7 +287,7 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="text-sm text-white/50 shrink-0">{label}</span>
+      <span className="text-sm shrink-0" style={{ color: pg.text3 }}>{label}</span>
       <span className="text-sm font-medium text-white text-right">{value}</span>
     </div>
   )

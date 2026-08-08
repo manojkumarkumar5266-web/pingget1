@@ -1,47 +1,24 @@
 import { getTrackingStepImage, Images } from '../lib/customImages'
+import { pg } from '../design/tokens'
 
 export const STATUS_PROGRESS: Record<string, number> = {
-  pending: 0,
-  accepted: 12,
-  confirmed: 12,
-  shopping: 28,
-  purchased: 45,
-  on_the_way: 68,
-  arrived: 88,
-  delivered: 100,
-  cash_received: 100,
-  completed: 100,
+  pending: 0, accepted: 12, confirmed: 12, shopping: 28, purchased: 45,
+  on_the_way: 68, arrived: 88, delivered: 100, cash_received: 100, completed: 100,
 }
 
 export const STATUS_ETA: Record<string, string> = {
-  pending: 'Waiting...',
-  accepted: 'Reached store',
-  confirmed: 'Reached store',
-  shopping: 'Reached store',
-  purchased: 'Order picked up',
-  on_the_way: 'On the way',
-  arrived: 'Arrived',
-  delivered: 'Delivered',
-  cash_received: 'Delivered',
-  completed: 'Done',
+  pending: 'Waiting...', accepted: 'Reached store', confirmed: 'Reached store', shopping: 'Reached store',
+  purchased: 'Order picked up', on_the_way: 'On the way', arrived: 'Arrived',
+  delivered: 'Delivered', cash_received: 'Delivered', completed: 'Done',
 }
 
 const STEP_LABELS: Record<string, string> = {
-  accepted: 'Reached store',
-  confirmed: 'Reached store',
-  shopping: 'Reached store',
-  purchased: 'Order picked up',
-  on_the_way: 'On the way',
-  arrived: 'Arrived',
-  delivered: 'Delivered',
-  cash_received: 'Delivered',
-  completed: 'Delivered',
+  accepted: 'Reached store', confirmed: 'Reached store', shopping: 'Reached store',
+  purchased: 'Order picked up', on_the_way: 'On the way', arrived: 'Arrived',
+  delivered: 'Delivered', cash_received: 'Delivered', completed: 'Delivered',
 }
 
-/**
- * Image-based tracking sequence:
- * reached store → picked up → on the way → arrived → delivered
- */
+/** Rebuilt tracking media stage — large step art + progress */
 export default function VisualTracking({
   progress,
   status,
@@ -60,43 +37,40 @@ export default function VisualTracking({
   const label = STEP_LABELS[status] || STATUS_ETA[status] || 'In Progress'
 
   return (
-    <div className="relative flex h-full flex-col justify-center overflow-hidden bg-black px-4 py-4">
-      <div className="mx-auto w-full max-w-sm">
-        <div className="overflow-hidden rounded-3xl" style={{ border: '1px solid rgba(166,179,0,0.2)' }}>
+    <div className="flex h-full flex-col justify-center px-3 py-2" style={{ background: pg.bg }}>
+      <div className="mx-auto w-full max-w-lg">
+        <div className="overflow-hidden" style={{ borderRadius: 28, border: `1px solid rgba(212,240,0,0.22)`, background: pg.surface }}>
           <img
             src={image}
             alt={label}
-            className="w-full h-48 object-cover"
+            className="w-full object-cover"
+            style={{ height: 'min(52vw, 300px)' }}
             draggable={false}
           />
-          <div className="px-4 py-3 text-center" style={{ background: 'rgba(166,179,0,0.08)' }}>
-            <p className="text-base font-bold" style={{ color: '#C4D600' }}>{label}</p>
+          <div className="px-4 py-3.5 text-center" style={{ background: pg.limeDim }}>
+            <p className="text-lg font-extrabold tracking-tight" style={{ color: pg.lime }}>{label}</p>
           </div>
         </div>
 
-        <div className="mt-4 flex items-start justify-between gap-4 px-1">
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-white/40">Pickup</p>
-            <p className="text-xs font-medium text-white/70 truncate">{pickupLabel || 'Store'}</p>
+        <div className="mt-4 flex justify-between gap-4 px-1">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: pg.text4 }}>Pickup</p>
+            <p className="truncate text-sm font-bold" style={{ color: pg.text2 }}>{pickupLabel || 'Store'}</p>
           </div>
-          <div className="flex-1 min-w-0 text-right">
-            <p className="text-[10px] uppercase tracking-wider text-white/40">Delivery</p>
-            <p className="text-xs font-medium text-white/70 truncate">{deliveryLabel || 'You'}</p>
+          <div className="min-w-0 flex-1 text-right">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: pg.text4 }}>Delivery</p>
+            <p className="truncate text-sm font-bold" style={{ color: pg.text2 }}>{deliveryLabel || 'You'}</p>
           </div>
         </div>
 
         <div className="mt-4">
-          <div className="mb-1.5 flex items-center justify-between text-[10px] text-white/40">
-            <span>Progress</span>
-            <span>{progress}%</span>
+          <div className="mb-1.5 flex justify-between text-[11px] font-bold" style={{ color: pg.text4 }}>
+            <span>Progress</span><span>{progress}%</span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+          <div className="h-2.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
             <div
               className="h-full rounded-full transition-all duration-700"
-              style={{
-                width: `${progress}%`,
-                background: 'linear-gradient(90deg, #808000, #a8c020)',
-              }}
+              style={{ width: `${progress}%`, background: `linear-gradient(90deg,#8fa300,${pg.lime})` }}
             />
           </div>
         </div>

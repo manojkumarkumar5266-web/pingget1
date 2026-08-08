@@ -4,6 +4,7 @@ import { supabase, City, Pincode } from '../../lib/supabase'
 import { EmptyState, ErrorBanner, SkeletonCard } from '../../components/ui'
 import { Plus, MapPin, Pause, Play, X, ChevronDown, ChevronRight, ToggleLeft, ToggleRight, Download, Pencil, Check } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { AdminShell, AdminHeader } from './adminChrome'
 
 type CityWithPincodes = City & { pincodes?: Pincode[] }
 
@@ -125,21 +126,20 @@ export default function AdminCities() {
   }
 
   if (loading) return (
-    <div className="p-4 md:p-8">
+    <AdminShell>
       <div className="mb-6 h-8 w-64 skeleton rounded-xl" />
       <div className="space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
-    </div>
+    </AdminShell>
   )
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">City & Pincode Management</h1>
+    <AdminShell>
+      <AdminHeader title="City & Pincode Management" action={
         <div className="flex gap-2">
           <button onClick={exportPincodes} className="btn-secondary text-sm"><Download size={16} /> Export</button>
           <button onClick={() => setShowAdd(true)} className="btn-primary text-sm"><Plus size={16} /> Add City</button>
         </div>
-      </div>
+      } />
 
       {cities.length === 0 ? (
         <EmptyState icon={<MapPin size={48} />} title="No cities added" description="Add cities to control service availability." />
@@ -194,7 +194,7 @@ export default function AdminCities() {
                       <span className="text-gray-300">|</span>
                       <button onClick={() => toggleAllPincodes(city, false)} className="text-xs text-error-600 dark:text-error-400 font-medium">Deactivate All</button>
                       <span className="text-gray-300">|</span>
-                      <button onClick={() => setShowAddPincode(city.id)} className="text-xs font-medium" style={{ color: '#808000' }}>+ Add</button>
+                      <button onClick={() => setShowAddPincode(city.id)} className="text-xs font-medium" style={{ color: '#D4F000' }}>+ Add</button>
                     </div>
                   </div>
                   {showAddPincode === city.id && (
@@ -268,6 +268,6 @@ export default function AdminCities() {
           </div>
         </div>
       )}
-    </div>
+    </AdminShell>
   )
 }

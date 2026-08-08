@@ -5,14 +5,12 @@ import { FullScreenLoader } from '../../components/ui'
 import AuthScreen from '../../pages/AuthScreen'
 import ResetPassword from '../../pages/ResetPassword'
 import DpApp from '../../pages/dp/DpApp'
-import LandingPage from '../../pages/LandingPage'
-import Welcome from '../../components/Welcome'
+import LandingPage, { landingDoneKey } from '../../pages/LandingPage'
 import PermissionOnboarding from '../../components/PermissionOnboarding'
 import Watermark from '../../components/Watermark'
 import { Clock, XCircle, ArrowLeft } from 'lucide-react'
 
 const ONBOARDING_KEY = 'pingget_dp_permissions_done'
-const WELCOME_KEY = 'pingget_dp_welcomed'
 
 function DpPendingScreen() {
   const { signOut } = useAuth()
@@ -61,18 +59,19 @@ function DpRejectedScreen() {
 }
 
 /**
- * Delivery Partner mobile app shell.
- * Only allows role=dp. Customer/admin accounts are signed out.
+ * Partner shell.
+ * First open: permissions → Get Started (once).
+ * After Get Started or any sign-in: never show welcome again.
  */
 export default function DpShell() {
   const { session, profile, loading, passwordRecovery, oauthResolving, signOut } = useAuth()
   const location = useLocation()
-  const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem(WELCOME_KEY))
   const [showPermissions, setShowPermissions] = useState(() => {
     if (typeof window === 'undefined') return false
-    return !localStorage.getItem(ONBOARDING_KEY) && !sessionStorage.getItem(WELCOME_KEY)
+    return !localStorage.getItem(ONBOARDING_KEY)
   })
   const [roleError, setRoleError] = useState<string | null>(null)
+  const landingDone = typeof window !== 'undefined' && !!localStorage.getItem(landingDoneKey(true))
 
   useEffect(() => {
     if (!loading && session && !profile && !passwordRecovery && !oauthResolving) {
@@ -87,28 +86,13 @@ export default function DpShell() {
     }
   }, [loading, profile, signOut])
 
-  const isRecoveryRoute = location.pathname === '/reset-password' || passwordRecovery
-
-  if (!isRecoveryRoute && showWelcome) {
-    return (
-      <Welcome
-        onDone={() => {
-          sessionStorage.setItem(WELCOME_KEY, '1')
-          setShowWelcome(false)
-        }}
-      />
-    )
-  }
-  if (!isRecoveryRoute && showPermissions) {
-    return (
-      <PermissionOnboarding
-        onComplete={() => {
-          localStorage.setItem(ONBOARDING_KEY, '1')
-          setShowPermissions(false)
-        }}
-      />
-    )
-  }
+  useEffect(() => {
+    if (session) {
+      localStorage.setItem(ONBOARDING_KEY, '1')
+      localStorage.setItem(landingDoneKey(true), '1')
+      setShowPermissions(false)
+    }
+  }, [session])
 
   if (passwordRecovery || location.pathname === '/reset-password') {
     return (
@@ -124,7 +108,19 @@ export default function DpShell() {
 
   if (loading) return <FullScreenLoader />
 
+  if (showPermissions && !session) {
+    return (
+      <PermissionOnboarding
+        onComplete={() => {
+          localStorage.setItem(ONBOARDING_KEY, '1')
+          setShowPermissions(false)
+        }}
+      />
+    )
+  }
+
   if (!session) {
+    const defaultPath = landingDone ? '/auth' : '/landing'
     return (
       <>
         <Watermark />
@@ -135,15 +131,14 @@ export default function DpShell() {
         )}
         <Routes>
           <Route path="/auth" element={<AuthScreen fixedRole="dp" />} />
-          <Route path="/landing" element={<LandingPage />} />
-          <Route path="*" element={<Navigate to="/landing" replace />} />
+          <Route path="/landing" element={landingDone ? <Navigate to="/auth" replace /> : <LandingPage />} />
+          <Route path="*" element={<Navigate to={defaultPath} replace />} />
         </Routes>
       </>
     )
   }
 
   if (!profile) return <FullScreenLoader />
-
   if (profile.role !== 'dp') return <FullScreenLoader />
 
   if (profile.status === 'pending') {

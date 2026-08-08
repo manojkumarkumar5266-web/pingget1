@@ -10,6 +10,8 @@ import {
   ArrowLeft, Navigation, MapPin, MessageCircle, Package, CheckCircle2,
   Bike, Phone, Camera, X, Clock, User as UserIcon, Store,
 } from 'lucide-react'
+import { pg } from '../../design/tokens'
+import { CTA, Surface } from '../../design/primitives'
 
 const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string; notifBody: string; icon: any }[] = [
   { from: 'accepted', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
@@ -181,7 +183,7 @@ export default function DpNavigationPage() {
 
   if (showAcceptedSplash) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0B0B0B] px-6">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6" style={{ background: pg.bg }}>
         <img src={Images.orderAccepted} alt="Order accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} />
         <p className="text-sm text-white/50">Opening order tracking...</p>
       </div>
@@ -189,7 +191,7 @@ export default function DpNavigationPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black">
+    <div className="flex min-h-screen flex-col" style={{ background: pg.bg }}>
       <div className="flex-shrink-0 px-4 pt-12 pb-2">
         <div className="map-glass-panel flex items-center gap-3 p-3">
           <button type="button" onClick={() => navigate('/dp')} className="map-control-btn map-control-dark">
@@ -202,8 +204,8 @@ export default function DpNavigationPage() {
         </div>
       </div>
 
-      {/* Progress store → user + synced step images */}
-      <div className="flex-shrink-0 px-4 pb-2" style={{ height: '34vh', minHeight: 220 }}>
+      {/* Progress store → user + large synced step images */}
+      <div className="flex-shrink-0 px-2 pb-2" style={{ height: '42vh', minHeight: 260 }}>
         <VisualTracking
           progress={progress}
           status={request.status}
@@ -213,15 +215,15 @@ export default function DpNavigationPage() {
       </div>
 
       {mapCenter && (
-        <div className="mx-4 mb-3 h-36 overflow-hidden rounded-2xl shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          <FreeStreetMap center={mapCenter} zoom={13} markers={mapMarkers} interactive={false} />
+        <div className="mx-4 mb-3 h-44 overflow-hidden rounded-[24px] shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+          <FreeStreetMap center={mapCenter} zoom={14} markers={mapMarkers} radiusMeters={10_000} />
         </div>
       )}
 
       <div className="flex-shrink-0 px-4 pb-3">
         <div className="mx-auto max-w-md">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="mb-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#C4D600' }}>Delivery Progress</p>
+          <div className="rounded-[24px] p-4" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+            <p className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.lime }}>Delivery Progress</p>
             <div className="flex items-center justify-between">
               {STATUS_FLOW.filter((s, i, arr) => arr.findIndex(x => x.label === s.label) === i).map((step, i, arr) => {
                 const reached = stepIndex > STATUS_FLOW.indexOf(step) || isDelivered || isCompleted
@@ -231,18 +233,18 @@ export default function DpNavigationPage() {
                   <div key={`${step.label}-${i}`} className="flex flex-1 flex-col items-center relative">
                     {i > 0 && (
                       <div className="absolute right-1/2 top-3 h-0.5 w-full" style={{
-                        background: reached ? '#C4D600' : 'rgba(255,255,255,0.1)',
+                        background: reached ? pg.lime : pg.line,
                       }} />
                     )}
                     <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full"
                       style={{
-                        background: reached ? '#C4D600' : isCurrent ? 'rgba(196,214,0,0.2)' : 'rgba(255,255,255,0.05)',
-                        border: isCurrent ? '2px solid #C4D600' : '2px solid transparent',
+                        background: reached ? pg.lime : isCurrent ? pg.limeDim : pg.surface2,
+                        border: isCurrent ? `2px solid ${pg.lime}` : '2px solid transparent',
                       }}>
                       {reached ? <Icon size={13} className="text-black" /> : <div className="h-2 w-2 rounded-full bg-white/20" />}
                     </div>
                     <span className="mt-1 text-[8px] font-medium text-center leading-tight"
-                      style={{ color: reached || isCurrent ? '#C4D600' : 'rgba(255,255,255,0.25)' }}>
+                      style={{ color: reached || isCurrent ? pg.lime : pg.text4 }}>
                       {step.label}
                     </span>
                   </div>
@@ -252,26 +254,25 @@ export default function DpNavigationPage() {
           </div>
 
           {['confirmed', 'shopping', 'purchased', 'on_the_way', 'accepted'].includes(request.status) && (
-            <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: '#C4D600' }}>Update ETA (minutes)</p>
+            <Surface className="mt-3 p-4">
+              <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.lime }}>Update ETA (minutes)</p>
               <div className="flex gap-2">
                 <input type="number" min={1} max={120} value={etaMinutes ?? ''} onChange={e => setEtaMinutes(e.target.value ? parseInt(e.target.value) : null)}
-                  placeholder="Enter minutes" className="input flex-1" style={{ borderColor: 'rgba(196,214,0,0.35)' }} />
-                <button type="button" onClick={updateEta} disabled={!etaMinutes || updatingEta}
-                  className="btn-primary disabled:opacity-40 px-5 font-bold" style={{ background: '#C4D600', color: '#0B0B0B' }}>
+                  placeholder="Enter minutes" className="input flex-1" />
+                <CTA type="button" onClick={updateEta} disabled={!etaMinutes || updatingEta} className="!min-h-[48px] !px-5">
                   {updatingEta ? '...' : 'Update'}
-                </button>
+                </CTA>
               </div>
-            </div>
+            </Surface>
           )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-black px-4 py-4 pb-24">
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24" style={{ background: pg.bg }}>
         <div className="mx-auto max-w-md space-y-4">
           {userProfile && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Customer</div>
+            <Surface className="p-4 animate-slide-up">
+              <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Customer</div>
               <div className="flex items-center gap-3">
                 <div className="h-14 w-14 overflow-hidden rounded-2xl bg-white/5 shrink-0">
                   {userProfile.photo_url ? (
@@ -286,62 +287,55 @@ export default function DpNavigationPage() {
                 </div>
                 <button type="button" onClick={() => { window.location.href = `tel:${userProfile.phone || ''}` }}
                   className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0 disabled:opacity-30"
-                  style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}
+                  style={{ background: pg.limeDim, border: '1px solid rgba(212,240,0,0.25)', color: pg.lime }}
                   disabled={isCompleted}>
                   <Phone size={16} />
                 </button>
                 <button type="button" onClick={async () => {
                   const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
                   if (data) navigate(`/dp/chat/${data.id}`)
-                }} className="flex h-10 w-10 items-center justify-center rounded-xl text-black active:scale-95 transition-transform shrink-0 disabled:opacity-30"
-                  style={{ background: '#A6B300' }}
+                }} className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0 disabled:opacity-30"
+                  style={{ background: pg.lime, color: pg.limeText }}
                   disabled={isCompleted}>
                   <MessageCircle size={16} />
                 </button>
               </div>
-            </div>
+            </Surface>
           )}
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
+          <Surface className="p-4 animate-slide-up">
             <div className="mb-3 flex items-center gap-2">
               <MapPin size={16} className="text-red-400" />
               <p className="text-sm font-bold text-white">Delivery Address</p>
             </div>
             <p className="text-sm text-white/80 mb-3 leading-relaxed">{request.delivery_address || 'Not specified'}</p>
-            <button type="button" onClick={openGoogleMaps}
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95"
-              style={{ background: '#A6B300', color: '#0B0B0B' }}>
+            <CTA type="button" onClick={openGoogleMaps} className="w-full">
               <Navigation size={18} /> Open in Google Maps
-            </button>
-          </div>
+            </CTA>
+          </Surface>
 
           {request.pickup_address && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
+            <Surface className="p-4 animate-slide-up">
               <div className="mb-2 flex items-center gap-2">
-                <Store size={16} style={{ color: '#A6B300' }} />
-                <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Pickup Location</p>
+                <Store size={16} style={{ color: pg.lime }} />
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Pickup Location</p>
               </div>
-              <p className="text-sm text-white/80">{request.pickup_address}</p>
-            </div>
+              <p className="text-sm" style={{ color: pg.text2 }}>{request.pickup_address}</p>
+            </Surface>
           )}
 
           {currentStep && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Update Status</p>
-              <button type="button" onClick={() => updateStatus(currentStep.to, currentStep.notifTitle, currentStep.notifBody)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
-                style={{
-                  background: currentStep.to === 'delivered' ? '#A6B300' : '#808000',
-                  color: currentStep.to === 'delivered' ? '#0B0B0B' : '#fff',
-                }}>
+            <Surface className="p-4 animate-slide-up">
+              <p className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Update Status</p>
+              <CTA type="button" onClick={() => updateStatus(currentStep.to, currentStep.notifTitle, currentStep.notifBody)} className="w-full">
                 <currentStep.icon size={18} /> {currentStep.label}
-              </button>
-            </div>
+              </CTA>
+            </Surface>
           )}
 
           {isDelivered && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
-              <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Delivery Proof Photos</div>
+            <Surface className="p-4 animate-slide-up">
+              <div className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Delivery Proof Photos</div>
               <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
               {photoPreviews.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-2">
@@ -356,31 +350,31 @@ export default function DpNavigationPage() {
                 </div>
               )}
               <button type="button" onClick={() => photoInputRef.current?.click()}
-                className="w-full rounded-xl border-2 border-dashed py-3 text-sm font-medium text-white/50"
-                style={{ borderColor: 'rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)' }}>
+                className="w-full rounded-xl border-2 border-dashed py-3 text-sm font-bold"
+                style={{ borderColor: pg.line, background: pg.bgElevated, color: pg.text3 }}>
                 <Camera size={18} className="mx-auto mb-1 text-white/60" />
                 {photoPreviews.length > 0 ? 'Add More Photos' : 'Take Delivery Photos'}
               </button>
               {photoFiles.length > 0 && (
-                <button type="button" onClick={uploadDeliveryPhotos} disabled={uploading} className="btn-primary mt-2 w-full disabled:opacity-40">
+                <CTA type="button" onClick={uploadDeliveryPhotos} disabled={uploading} className="mt-2 w-full">
                   {uploading ? 'Uploading...' : `Save ${photoFiles.length} Photo${photoFiles.length === 1 ? '' : 's'}`}
-                </button>
+                </CTA>
               )}
-            </div>
+            </Surface>
           )}
 
           {isDelivered && !isCompleted && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center animate-slide-up">
-              <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: '#A6B300' }} />
+            <Surface className="p-4 text-center animate-slide-up">
+              <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: pg.lime }} />
               <p className="font-bold text-white">Waiting for customer to accept delivery</p>
-              <p className="mt-1 text-xs text-white/40">You'll continue after the customer confirms receipt</p>
-            </div>
+              <p className="mt-1 text-xs" style={{ color: pg.text3 }}>You'll continue after the customer confirms receipt</p>
+            </Surface>
           )}
 
           {(request as any).payment_completed_at && !(request as any).payment_accepted_at && (
-            <div className="rounded-2xl p-4" style={{ border: '1px solid rgba(196,214,0,0.35)', background: 'rgba(196,214,0,0.08)' }}>
-              <p className="mb-3 text-sm font-bold" style={{ color: '#C4D600' }}>Customer marked payment completed</p>
-              <button
+            <Surface accent className="p-4">
+              <p className="mb-3 text-sm font-extrabold" style={{ color: pg.lime }}>Customer marked payment completed</p>
+              <CTA
                 type="button"
                 onClick={async () => {
                   await supabase.from('requests').update({
@@ -396,20 +390,17 @@ export default function DpNavigationPage() {
                   setShowThanks(true)
                   setTimeout(() => navigate('/dp'), 2000)
                 }}
-                className="w-full rounded-2xl py-3.5 text-sm font-bold"
-                style={{ background: '#C4D600', color: '#0B0B0B' }}
+                className="w-full"
               >
                 Accept Payment
-              </button>
-            </div>
+              </CTA>
+            </Surface>
           )}
 
           {isCompleted && (
-            <button type="button" onClick={() => navigate('/dp')}
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold active:scale-95 transition-transform"
-              style={{ background: '#A6B300', color: '#0B0B0B' }}>
+            <CTA type="button" onClick={() => navigate('/dp')} className="w-full">
               <CheckCircle2 size={18} /> Delivery Confirmed — Go Home
-            </button>
+            </CTA>
           )}
         </div>
       </div>

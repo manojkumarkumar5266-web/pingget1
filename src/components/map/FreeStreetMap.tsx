@@ -1,8 +1,6 @@
-import { useEffect, useRef } from 'react'
-import * as maplibregl from 'maplibre-gl'
-import type { Map as MapLibreMap, Marker, GeoJSONSource } from 'maplibre-gl'
-import { Images } from '../../lib/customImages'
 import type { LatLng } from '../../lib/mapUtils'
+import { Images } from '../../lib/customImages'
+import { pg } from '../../design/tokens'
 
 export type MapMarker = {
   id: string
@@ -14,206 +12,179 @@ export type MapMarker = {
 type Props = {
   center?: LatLng | null
   zoom?: number
+  destination?: LatLng | null
   markers?: MapMarker[]
-  /** Search radius in meters drawn as a circle around center */
+  /** Search / visibility radius in meters (default 10 km) */
   radiusMeters?: number
   className?: string
   style?: React.CSSProperties
   interactive?: boolean
-  onReady?: (map: MapLibreMap) => void
 }
 
-const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
+const DEFAULT_RADIUS_M = 10_000
 
-function circleGeoJSON(center: LatLng, radiusMeters: number, points = 64): any {
-  const coords: [number, number][] = []
-  const earth = 6371000
-  const lat = (center.lat * Math.PI) / 180
-  const lng = (center.lng * Math.PI) / 180
-  for (let i = 0; i <= points; i++) {
-    const bearing = (i / points) * 2 * Math.PI
-    const lat2 = Math.asin(
-      Math.sin(lat) * Math.cos(radiusMeters / earth) +
-        Math.cos(lat) * Math.sin(radiusMeters / earth) * Math.cos(bearing)
-    )
-    const lng2 =
-      lng +
-      Math.atan2(
-        Math.sin(bearing) * Math.sin(radiusMeters / earth) * Math.cos(lat),
-        Math.cos(radiusMeters / earth) - Math.sin(lat) * Math.sin(lat2)
-      )
-    coords.push([(lng2 * 180) / Math.PI, (lat2 * 180) / Math.PI])
+/** Web Mercator helpers — project lat/lng to overlay % within current viewport */
+function project(lat: number, lng: number, center: LatLng, zoom: number, widthPx: number, heightPx: number) {
+  const scale = 256 * Math.pow(2, zoom)
+  const world = (la: number, ln: number) => {
+    const x = ((ln + 180) / 360) * scale
+    const sin = Math.sin((la * Math.PI) / 180)
+    const y = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale
+    return { x, y }
   }
-  return {
-    type: 'Feature',
-    properties: {},
-    geometry: { type: 'Polygon', coordinates: [coords] },
-  }
+  const c = world(center.lat, center.lng)
+  const p = world(lat, lng)
+  const left = ((p.x - c.x) / widthPx) * 100 + 50
+  const top = ((p.y - c.y) / heightPx) * 100 + 50
+  return { left, top }
 }
 
-function markerEl(kind: MapMarker['kind'], label?: string): HTMLElement {
-  const el = document.createElement('div')
-  el.style.width = '36px'
-  el.style.height = '36px'
-  el.style.display = 'flex'
-  el.style.alignItems = 'center'
-  el.style.justifyContent = 'center'
-  el.style.borderRadius = '50%'
-  el.style.border = '2px solid rgba(255,255,255,0.9)'
-  el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.45)'
-  el.style.overflow = 'hidden'
-
-  if (kind === 'bike' || kind === 'dp') {
-    el.style.background = '#A6B300'
-    const img = document.createElement('img')
-    img.src = Images.bikeMarker
-    img.alt = label || 'Partner'
-    img.style.width = '22px'
-    img.style.height = '22px'
-    img.style.objectFit = 'contain'
-    img.onerror = () => {
-      img.remove()
-      el.textContent = 'B'
-      el.style.color = '#0B0B0B'
-      el.style.fontWeight = '700'
-      el.style.fontSize = '14px'
-    }
-    el.appendChild(img)
-  } else if (kind === 'pickup') {
-    el.style.background = '#3b82f6'
-    el.style.color = '#fff'
-    el.style.fontSize = '12px'
-    el.style.fontWeight = '700'
-    el.textContent = 'P'
-  } else if (kind === 'destination') {
-    el.style.background = '#ef4444'
-    el.style.color = '#fff'
-    el.style.fontSize = '12px'
-    el.style.fontWeight = '700'
-    el.textContent = 'D'
-  } else {
-    el.style.background = '#3b82f6'
-    el.style.width = '18px'
-    el.style.height = '18px'
-    el.style.border = '3px solid #fff'
-  }
-  return el
+function haversineM(a: LatLng, b: LatLng) {
+  const R = 6371000
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180
+  const la1 = (a.lat * Math.PI) / 180
+  const la2 = (b.lat * Math.PI) / 180
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
 }
 
 /**
- * Free street map (MapLibre + OpenFreeMap / OSM) — no Leaflet, no API key.
+ * Google Maps live street view + overlay pins for User / DP within radius.
+ * No OpenStreetMap / MapLibre / Leaflet.
  */
 export default function FreeStreetMap({
   center,
-  zoom = 14,
+  zoom = 13,
+  destination,
   markers = [],
-  radiusMeters,
+  radiusMeters = DEFAULT_RADIUS_M,
   className = '',
   style,
-  interactive = true,
-  onReady,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<MapLibreMap | null>(null)
-  const markersRef = useRef<globalThis.Map<string, Marker>>(new globalThis.Map())
-  const readyRef = useRef(false)
+  const c =
+    center ||
+    markers.find(m => m.kind === 'user')?.position ||
+    { lat: 17.385, lng: 78.4867 }
 
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return
-    const c = center || { lat: 17.385, lng: 78.4867 }
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: STYLE_URL,
-      center: [c.lng, c.lat],
-      zoom,
-      attributionControl: { compact: true },
-      interactive,
-    })
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
-    map.on('load', () => {
-      readyRef.current = true
-      map.addSource('scan-radius', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      })
-      map.addLayer({
-        id: 'scan-radius-fill',
-        type: 'fill',
-        source: 'scan-radius',
-        paint: { 'fill-color': '#A6B300', 'fill-opacity': 0.12 },
-      })
-      map.addLayer({
-        id: 'scan-radius-line',
-        type: 'line',
-        source: 'scan-radius',
-        paint: { 'line-color': '#A6B300', 'line-width': 2, 'line-opacity': 0.55 },
-      })
-      onReady?.(map)
-    })
-    mapRef.current = map
-    return () => {
-      markersRef.current.forEach(m => m.remove())
-      markersRef.current.clear()
-      map.remove()
-      mapRef.current = null
-      readyRef.current = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const dest =
+    destination ||
+    markers.find(m => m.kind === 'destination')?.position ||
+    null
+  const pickup = markers.find(m => m.kind === 'pickup')?.position || null
 
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !center) return
-    map.easeTo({ center: [center.lng, center.lat], duration: 600 })
-  }, [center?.lat, center?.lng])
+  // Keep zoom readable for ~10 km radius
+  const z = radiusMeters >= 8000 ? Math.min(zoom, 12) : zoom
 
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-    const apply = () => {
-      const src = map.getSource('scan-radius') as GeoJSONSource | undefined
-      if (!src || !center || !radiusMeters) {
-        src?.setData({ type: 'FeatureCollection', features: [] })
-        return
-      }
-      src.setData({
-        type: 'FeatureCollection',
-        features: [circleGeoJSON(center, radiusMeters)],
-      })
-    }
-    if (readyRef.current) apply()
-    else map.once('load', apply)
-  }, [center?.lat, center?.lng, radiusMeters])
+  let src: string
+  if (dest) {
+    const from = pickup || c
+    src = `https://www.google.com/maps?saddr=${from.lat},${from.lng}&daddr=${dest.lat},${dest.lng}&hl=en&z=${z}&output=embed`
+  } else {
+    src = `https://www.google.com/maps?q=${c.lat},${c.lng}&hl=en&z=${z}&output=embed`
+  }
 
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-    const existing = markersRef.current
-    const nextIds = new Set(markers.map(m => m.id))
-    existing.forEach((marker, id) => {
-      if (!nextIds.has(id)) {
-        marker.remove()
-        existing.delete(id)
-      }
-    })
-    markers.forEach(m => {
-      const prev = existing.get(m.id)
-      if (prev) {
-        prev.setLngLat([m.position.lng, m.position.lat])
-        return
-      }
-      const marker = new maplibregl.Marker({ element: markerEl(m.kind, m.label) })
-        .setLngLat([m.position.lng, m.position.lat])
-        .addTo(map)
-      existing.set(m.id, marker)
-    })
-  }, [markers])
+  // Assume map container ~390x520 for overlay math (mobile); CSS % still works reasonably
+  const W = 390
+  const H = 520
+
+  const nearby = markers.filter(m => {
+    if (m.kind === 'user') return true
+    if (m.kind === 'pickup' || m.kind === 'destination') return true
+    return haversineM(c, m.position) <= radiusMeters
+  })
+
+  const dpCount = nearby.filter(m => m.kind === 'bike' || m.kind === 'dp').length
+
+  // Radius ring size as % of map height (approx meters → pixels at zoom)
+  const metersPerPx = (156543.03392 * Math.cos((c.lat * Math.PI) / 180)) / Math.pow(2, z)
+  const radiusPx = radiusMeters / Math.max(metersPerPx, 0.1)
+  const radiusPct = Math.min(90, (radiusPx / H) * 100 * 2)
 
   return (
     <div
-      ref={containerRef}
-      className={`free-street-map ${className}`}
+      className={`relative overflow-hidden bg-[#0B0B0B] ${className}`}
       style={{ width: '100%', height: '100%', minHeight: 200, ...style }}
-    />
+    >
+      <iframe
+        title="Google Maps live tracking"
+        src={src}
+        className="absolute inset-0 h-full w-full border-0"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+        allowFullScreen
+      />
+
+      {/* 10 km (or configured) range ring */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          width: `${radiusPct}%`,
+          height: `${radiusPct}%`,
+          border: '2px solid rgba(212,240,0,0.45)',
+          background: 'rgba(212,240,0,0.06)',
+          boxShadow: '0 0 0 1px rgba(212,240,0,0.15)',
+        }}
+      />
+
+      {/* Live pins */}
+      {nearby.map(m => {
+        const { left, top } = project(m.position.lat, m.position.lng, c, z, W, H)
+        if (left < -5 || left > 105 || top < -5 || top > 105) return null
+        const isDp = m.kind === 'bike' || m.kind === 'dp'
+        const isUser = m.kind === 'user'
+        return (
+          <div
+            key={m.id}
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${left}%`, top: `${top}%` }}
+          >
+            {isDp ? (
+              <img
+                src={Images.bikeMarker}
+                alt=""
+                className="h-9 w-9 object-contain drop-shadow-lg"
+                draggable={false}
+                onError={(e) => {
+                  ;(e.target as HTMLImageElement).style.display = 'none'
+                }}
+              />
+            ) : (
+              <div
+                className="flex h-4 w-4 items-center justify-center rounded-full"
+                style={{
+                  background: isUser ? pg.lime : m.kind === 'pickup' ? '#F5A524' : '#3B82F6',
+                  boxShadow: '0 0 0 4px rgba(0,0,0,0.35)',
+                }}
+              />
+            )}
+            {m.label && (
+              <p
+                className="mt-0.5 max-w-[88px] truncate rounded-md px-1.5 py-0.5 text-[9px] font-bold"
+                style={{ background: 'rgba(5,5,5,0.85)', color: '#fff' }}
+              >
+                {m.label}
+              </p>
+            )}
+          </div>
+        )
+      })}
+
+      <div
+        className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-[11px] font-bold"
+        style={{
+          background: 'rgba(11,11,11,0.9)',
+          color: pg.lime,
+          border: '1px solid rgba(212,240,0,0.4)',
+        }}
+      >
+        Google Maps · Live
+        {center ? ' · GPS on' : ''}
+        {` · ${Math.round(radiusMeters / 1000)} km`}
+        {dpCount > 0 ? ` · ${dpCount} DP` : ''}
+      </div>
+    </div>
   )
 }

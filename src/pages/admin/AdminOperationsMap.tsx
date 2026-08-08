@@ -5,6 +5,7 @@ import { useTheme } from '../../context'
 import { normalizeVehicle, vehicleLabel, formatDistance, formatSpeed, formatBattery } from '../../lib/mapUtils'
 import { STATUS_LABELS } from '../../lib/utils'
 import { ArrowLeft, Bike, Star, Phone, Battery, Clock, Activity, Package, XCircle, CheckCircle2, MapPin } from 'lucide-react'
+import { pg } from '../../design/tokens'
 
 type OnlineDp = {
   user_id: string
@@ -41,8 +42,8 @@ const STATUS_COLORS: Record<string, string> = {
   confirmed: '#3b82f6',
   shopping: '#8b5cf6',
   purchased: '#8b5cf6',
-  on_the_way: '#808000',
-  arrived: '#808000',
+  on_the_way: '#D4F000',
+  arrived: '#D4F000',
   delivered: '#22c55e',
   completed: '#22c55e',
   cancelled: '#ef4444',
@@ -105,20 +106,19 @@ export default function AdminOperationsMap() {
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      {/* Top bar */}
-      <div className="px-4 pt-12 pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: pg.bg }}>
+      <div className="px-4 pt-12 pb-3" style={{ borderBottom: `1px solid ${pg.line}`, background: 'rgba(5,5,5,0.92)', backdropFilter: 'blur(16px)' }}>
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/admin')} className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-90 transition-transform" style={{ background: 'rgba(255,255,255,0.08)' }}>
-            <ArrowLeft size={18} className="text-white/70" />
+          <button onClick={() => navigate('/admin')} className="flex h-11 w-11 items-center justify-center rounded-2xl active:scale-90 transition-transform" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+            <ArrowLeft size={18} style={{ color: pg.text2 }} />
           </button>
           <div className="flex-1">
-            <p className="text-xs text-white/50">Live Operations</p>
-            <p className="text-sm font-bold text-white">Operations Dashboard</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>Live Operations</p>
+            <p className="text-sm font-extrabold text-white">Operations Dashboard</p>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.25)' }}>
             <Activity size={14} className="text-green-400" />
-            <span className="text-xs text-white/50">Live</span>
+            <span className="text-xs font-bold text-green-300">Live</span>
           </div>
         </div>
 

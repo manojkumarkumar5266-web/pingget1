@@ -1,54 +1,82 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ArrowRight } from 'lucide-react'
 import { Images } from '../lib/customImages'
 import { isDpApp } from '../lib/appTarget'
-import { ArrowRight } from 'lucide-react'
+import Brand from '../components/Brand'
+import { CTA } from '../design/primitives'
+import { pg } from '../design/tokens'
 
+const LANDING_DONE_USER = 'pingget_landing_done'
+const LANDING_DONE_DP = 'pingget_dp_landing_done'
+
+export function landingDoneKey(dp: boolean) {
+  return dp ? LANDING_DONE_DP : LANDING_DONE_USER
+}
+
+/** Get Started once — after this, signed-out users go straight to auth (no welcome again). */
 export default function LandingPage() {
   const navigate = useNavigate()
-  const [mounted, setMounted] = useState(false)
+  const [ready, setReady] = useState(false)
   const dp = isDpApp()
 
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => { setReady(true) }, [])
+
+  const goAuth = () => {
+    localStorage.setItem(landingDoneKey(dp), '1')
+    navigate('/auth', { replace: true })
+  }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0B0B0B]">
+    <div className="relative min-h-[100dvh] overflow-hidden" style={{ background: pg.bg }}>
       <div className="absolute inset-0">
-        <img
-          src={Images.landingBackground}
-          alt=""
-          className="h-full w-full object-cover opacity-40"
-          draggable={false}
+        <img src={Images.landingBackground} alt="" className="h-full w-full object-cover opacity-30" draggable={false} />
+        <div
+          className="absolute inset-0"
+          style={{ background: `linear-gradient(180deg, rgba(5,5,5,0.2) 0%, ${pg.bg} 72%)` }}
         />
       </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col px-4 py-4">
-        <div className={`flex flex-1 flex-col items-center justify-center max-w-md mx-auto w-full transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div
+        className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pb-8 pt-10"
+        style={{
+          opacity: ready ? 1 : 0,
+          transform: ready ? 'none' : 'translateY(16px)',
+          transition: 'all 0.45s ease',
+        }}
+      >
+        <div className="flex justify-center">
+          <Brand size="md" />
+        </div>
+
+        <div className="flex flex-1 flex-col items-center justify-center py-6">
           <img
-            src={dp ? Images.welcomeDp : Images.landingHero}
+            src={dp ? Images.welcomeDp : Images.welcome}
             alt=""
-            className="mb-8 w-full max-w-xs object-contain"
+            className="mb-8 w-full max-h-[46vh] object-contain"
+            style={{ background: 'transparent' }}
             draggable={false}
           />
-
-          <p className="mb-6 text-center text-sm text-white/55">
+          <h1 className="mb-3 text-center text-[34px] font-extrabold leading-[1.05] tracking-tight">
+            {dp ? (
+              <>Deliver nearby.<br />Earn daily.</>
+            ) : (
+              <>Ask anything.<br />Get it fast.</>
+            )}
+          </h1>
+          <p className="mb-8 max-w-sm text-center text-[15px] leading-relaxed" style={{ color: pg.text3 }}>
             {dp
-              ? 'Earn by delivering in your neighbourhood.'
-              : 'Order groceries, medicines, parcels and more.'}
+              ? 'Go online, accept requests around you, and track every delivery in one place.'
+              : 'Instant or scheduled delivery from local partners — groceries, meds, parcels and more.'}
           </p>
-
-          <button
-            onClick={() => navigate('/auth')}
-            className="w-full rounded-2xl py-4 text-base font-bold shadow-lg transition-all active:scale-95"
-            style={{ backgroundColor: '#A6B300', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(166,179,0,0.35)' }}
-          >
-            Get Started <ArrowRight size={18} className="inline" />
-          </button>
+          <CTA className="w-full text-base" onClick={goAuth}>
+            Get Started <ArrowRight size={18} />
+          </CTA>
         </div>
 
-        <div className="mt-4 text-center text-xs text-white/40">
-          By continuing you agree to our Terms &amp; Privacy Policy
-        </div>
+        <p className="text-center text-[11px]" style={{ color: pg.text4 }}>
+          By continuing you agree to Terms & Privacy
+        </p>
       </div>
     </div>
   )

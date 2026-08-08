@@ -1,4 +1,4 @@
-/** Map helpers without Leaflet — MapLibre FreeStreetMap is the map renderer. */
+/** Map helpers — Google Maps live tracking via FreeStreetMap embed + overlays. */
 
 export const DEFAULT_CENTER: [number, number] = [17.385, 78.4867] // Hyderabad fallback
 export const DEFAULT_ZOOM = 14
@@ -35,7 +35,7 @@ export function vehicleLabel(v: VehicleType): string {
 
 export function vehicleColor(v: VehicleType): string {
   const colors: Record<VehicleType, string> = {
-    motorbike: '#808000',
+    motorbike: '#D4F000',
     scooter: '#3b82f6',
     bicycle: '#22c55e',
     car: '#f59e0b',

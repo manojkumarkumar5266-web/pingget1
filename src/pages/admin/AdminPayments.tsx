@@ -4,6 +4,7 @@ import { EmptyState, SkeletonCard, Tabs } from '../../components/ui'
 import { formatTime, formatCurrency } from '../../lib/utils'
 import { CreditCard, Download, IndianRupee, CheckCircle, XCircle, Clock, Settings, ExternalLink, AlertTriangle } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { AdminShell, AdminHeader } from './adminChrome'
 
 type DpEarningRow = {
   dp_id: string
@@ -216,15 +217,15 @@ export default function AdminPayments() {
   }
 
   if (loading) return (
-    <div className="p-4 md:p-8">
+    <AdminShell>
       <div className="mb-6 h-8 w-48 skeleton rounded-xl" />
       <div className="space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
-    </div>
+    </AdminShell>
   )
 
   return (
-    <div className="p-4 md:p-8">
-      <h1 className="mb-4 text-2xl font-bold text-white">Payments</h1>
+    <AdminShell>
+      <AdminHeader title="Payments" />
 
       {/* Admin UPI setting */}
       <div className="mb-5 card p-4">
@@ -505,6 +506,6 @@ export default function AdminPayments() {
           </div>
         </div>
       )}
-    </div>
+    </AdminShell>
   )
 }

@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { ErrorBanner } from './ui'
 import { SELECTED_ADDRESS_KEY } from '../lib/customImages'
 import { MapPin, Home, Plus, X, Edit2, Trash2, Navigation } from 'lucide-react'
+import { pg } from '../design/tokens'
+import { Surface, CTA, IconButton, SectionLabel } from '../design/primitives'
 
 export type SavedAddress = {
   id: string
@@ -32,6 +34,17 @@ export function formatAddress(addr: SavedAddress | null | undefined): string {
 export function formatShortAddress(addr: SavedAddress | null | undefined): string {
   if (!addr) return ''
   return [addr.house_no, addr.flat_no, addr.building_name, addr.area].filter(Boolean).join(', ')
+}
+
+function AddressFormHeader({ title, onClose }: { title: string; onClose: () => void }) {
+  return (
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <h3 className="text-[17px] font-extrabold tracking-tight">{title}</h3>
+      <IconButton onClick={onClose} className="!h-9 !w-9 !rounded-xl">
+        <X size={16} />
+      </IconButton>
+    </div>
+  )
 }
 
 /** Compact address picker for User Home — selection persisted for Instant/Advance requests. */
@@ -170,86 +183,98 @@ export default function AddressPicker({ compact = true }: { compact?: boolean })
 
   if (showForm) {
     return (
-      <div className="mb-4 rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-white">{editingId ? 'Edit Address' : 'New Address'}</h3>
-          <button type="button" onClick={() => { setShowForm(false); resetForm() }} className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} />
-          </button>
+      <Surface className={`${compact ? 'mb-4' : 'mb-5'} p-4`}>
+        <AddressFormHeader title={editingId ? 'Edit Address' : 'New Address'} onClose={() => { setShowForm(false); resetForm() }} />
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div><label className="label">House No.</label><input className="input" value={addrHouse} onChange={e => setAddrHouse(e.target.value)} /></div>
+            <div><label className="label">Flat No.</label><input className="input" value={addrFlat} onChange={e => setAddrFlat(e.target.value)} /></div>
+          </div>
+          <div><label className="label">Building</label><input className="input" value={addrBuilding} onChange={e => setAddrBuilding(e.target.value)} /></div>
+          <div><label className="label">Landmark</label><input className="input" value={addrLandmark} onChange={e => setAddrLandmark(e.target.value)} /></div>
+          <div><label className="label">Street</label><input className="input" value={addrStreet} onChange={e => setAddrStreet(e.target.value)} /></div>
+          <div><label className="label">Area</label><input className="input" value={addrArea} onChange={e => setAddrArea(e.target.value)} /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><label className="label">City</label><input className="input" value={addrCity} onChange={e => setAddrCity(e.target.value)} /></div>
+            <div><label className="label">PIN</label><input className="input" value={addrPincode} onChange={e => setAddrPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} maxLength={6} /></div>
+          </div>
+          <CTA type="button" variant="secondary" onClick={pickLocation} className="w-full !min-h-[48px] border-dashed" style={{ border: `1.5px dashed rgba(212,240,0,0.35)`, color: pg.lime, background: pg.limeDim }}>
+            <Navigation size={15} /> {addrLat ? 'Location set' : 'Use current location'}
+          </CTA>
+          {error && <ErrorBanner message={error} />}
+          <CTA type="button" onClick={saveAddress} disabled={saving} className="w-full">
+            {saving ? 'Saving...' : 'Save Address'}
+          </CTA>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div><label className="label">House No.</label><input className="input" value={addrHouse} onChange={e => setAddrHouse(e.target.value)} /></div>
-          <div><label className="label">Flat No.</label><input className="input" value={addrFlat} onChange={e => setAddrFlat(e.target.value)} /></div>
-        </div>
-        <div><label className="label">Building</label><input className="input" value={addrBuilding} onChange={e => setAddrBuilding(e.target.value)} /></div>
-        <div><label className="label">Landmark</label><input className="input" value={addrLandmark} onChange={e => setAddrLandmark(e.target.value)} /></div>
-        <div><label className="label">Street</label><input className="input" value={addrStreet} onChange={e => setAddrStreet(e.target.value)} /></div>
-        <div><label className="label">Area</label><input className="input" value={addrArea} onChange={e => setAddrArea(e.target.value)} /></div>
-        <div className="grid grid-cols-2 gap-2">
-          <div><label className="label">City</label><input className="input" value={addrCity} onChange={e => setAddrCity(e.target.value)} /></div>
-          <div><label className="label">PIN</label><input className="input" value={addrPincode} onChange={e => setAddrPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} maxLength={6} /></div>
-        </div>
-        <button type="button" onClick={pickLocation} className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm" style={{ border: '1.5px dashed rgba(166,179,0,0.3)', color: '#A6B300' }}>
-          <Navigation size={15} /> {addrLat ? 'Location set' : 'Use current location'}
-        </button>
-        {error && <ErrorBanner message={error} />}
-        <button type="button" onClick={saveAddress} disabled={saving} className="w-full rounded-2xl py-3.5 text-sm font-bold" style={{ background: '#A6B300', color: '#0B0B0B' }}>
-          {saving ? 'Saving...' : 'Save Address'}
-        </button>
-      </div>
+      </Surface>
     )
   }
 
   if (showList) {
     return (
-      <div className="mb-4 rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-white">Select Address</h3>
-          <button type="button" onClick={() => setShowList(false)} className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} />
-          </button>
-        </div>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
+      <Surface className={`${compact ? 'mb-4' : 'mb-5'} p-4`}>
+        <AddressFormHeader title="Select Address" onClose={() => setShowList(false)} />
+        <div className="mb-3 max-h-64 space-y-2 overflow-y-auto">
           {addresses.map(addr => (
-            <div key={addr.id} className="rounded-2xl p-3 flex items-start gap-2" style={selectedAddressId === addr.id ? { background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.3)' } : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <button type="button" className="flex-1 text-left min-w-0" onClick={() => { setSelectedAddressId(addr.id); setShowList(false) }}>
-                <p className="text-sm font-semibold text-white truncate">{addr.label || 'Address'}</p>
-                <p className="text-xs text-white/50 truncate">{formatAddress(addr)}</p>
+            <Surface
+              key={addr.id}
+              accent={selectedAddressId === addr.id}
+              className="!flex items-start gap-2 p-3"
+              style={selectedAddressId !== addr.id ? { background: pg.bgElevated } : undefined}
+            >
+              <button type="button" className="min-w-0 flex-1 text-left" onClick={() => { setSelectedAddressId(addr.id); setShowList(false) }}>
+                <p className="truncate text-sm font-extrabold">{addr.label || 'Address'}</p>
+                <p className="truncate text-xs" style={{ color: pg.text3 }}>{formatAddress(addr)}</p>
               </button>
-              <button type="button" onClick={() => startEdit(addr)} className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}><Edit2 size={12} className="text-white/60" /></button>
-              <button type="button" onClick={() => deleteAddress(addr.id)} className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.1)' }}><Trash2 size={12} className="text-red-400" /></button>
-            </div>
+              <IconButton onClick={() => startEdit(addr)} className="!h-8 !w-8 !rounded-xl">
+                <Edit2 size={12} />
+              </IconButton>
+              <button
+                type="button"
+                onClick={() => deleteAddress(addr.id)}
+                className="flex h-8 w-8 items-center justify-center rounded-xl transition active:scale-90"
+                style={{ background: 'rgba(255,77,79,0.12)', border: '1px solid rgba(255,77,79,0.2)', color: pg.danger }}
+              >
+                <Trash2 size={12} />
+              </button>
+            </Surface>
           ))}
         </div>
         {addresses.length < MAX_ADDRESSES && (
-          <button type="button" onClick={() => { resetForm(); setShowForm(true); setShowList(false) }} className="w-full rounded-2xl py-3 text-sm font-bold" style={{ background: '#A6B300', color: '#0B0B0B' }}>
-            <Plus size={16} className="inline mr-1" /> Add New Address
-          </button>
+          <CTA type="button" onClick={() => { resetForm(); setShowForm(true); setShowList(false) }} className="w-full">
+            <Plus size={16} /> Add New Address
+          </CTA>
         )}
-      </div>
+      </Surface>
     )
   }
 
   return (
     <div className={compact ? 'mb-4' : 'mb-5'}>
-      <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Select Address</p>
+      <SectionLabel title="Select Address" />
       {selected ? (
-        <div className="rounded-2xl p-3.5 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(166,179,0,0.12)' }}>
-            <Home size={18} style={{ color: '#A6B300' }} />
+        <Surface className="flex items-center gap-3 p-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: pg.limeDim }}>
+            <Home size={18} style={{ color: pg.lime }} />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Deliver To</p>
-            <p className="text-sm font-medium text-white truncate">{formatShortAddress(selected) || formatAddress(selected)}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.12em]" style={{ color: pg.text3 }}>Deliver To</p>
+            <p className="truncate text-sm font-bold">{formatShortAddress(selected) || formatAddress(selected)}</p>
           </div>
-          <button type="button" onClick={() => setShowList(true)} className="rounded-xl px-3 py-1.5 text-xs font-bold" style={{ background: '#A6B300', color: '#0B0B0B' }}>
-            <MapPin size={12} className="inline mr-0.5" /> Select
-          </button>
-        </div>
+          <CTA type="button" onClick={() => setShowList(true)} className="!min-h-[36px] !rounded-xl !px-3 !py-1.5 !text-xs">
+            <MapPin size={12} /> Select
+          </CTA>
+        </Surface>
       ) : (
-        <button type="button" onClick={() => setShowForm(true)} className="w-full rounded-2xl py-3.5 text-sm font-bold flex items-center justify-center gap-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(166,179,0,0.35)', color: '#A6B300' }}>
+        <CTA
+          type="button"
+          variant="secondary"
+          onClick={() => setShowForm(true)}
+          className="w-full border-dashed"
+          style={{ border: `1.5px dashed rgba(212,240,0,0.35)`, color: pg.lime, background: pg.limeDim }}
+        >
           <Plus size={16} /> Add delivery address
-        </button>
+        </CTA>
       )}
     </div>
   )

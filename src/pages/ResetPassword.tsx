@@ -4,6 +4,8 @@ import { Lock, Eye, EyeOff, CheckCircle, KeyRound, Loader2, AlertCircle } from '
 import { useAuth } from '../context'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
+import { pg } from '../design/tokens'
+import { CTA } from '../design/primitives'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -15,7 +17,6 @@ export default function ResetPassword() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  // Wait up to 8s for the PASSWORD_RECOVERY event before declaring expired
   const [waited, setWaited] = useState(false)
 
   useEffect(() => {
@@ -45,14 +46,14 @@ export default function ResetPassword() {
   if (success) {
     return (
       <AuthLayout showBrand={false}>
-        <div className="card p-6 text-center animate-bounce-in">
+        <div className="text-center animate-bounce-in">
           <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
-              <CheckCircle size={32} className="text-white" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: pg.lime }}>
+              <CheckCircle size={32} style={{ color: pg.limeText }} />
             </div>
           </div>
-          <h2 className="text-lg font-bold text-white">Password Updated!</h2>
-          <p className="mt-2 text-sm text-white/50">
+          <h2 className="text-lg font-extrabold">Password Updated!</h2>
+          <p className="mt-2 text-sm" style={{ color: pg.text3 }}>
             Your password has been changed successfully. Redirecting to sign in...
           </p>
         </div>
@@ -60,31 +61,29 @@ export default function ResetPassword() {
     )
   }
 
-  // Still waiting for auth state
   if (authLoading || (!passwordRecovery && !waited)) {
     return (
       <AuthLayout showBrand={false}>
-        <div className="card p-8 text-center animate-fade-in">
-          <Loader2 size={32} className="mx-auto mb-4 animate-spin" style={{ color: '#808000' }} />
-          <p className="text-sm text-white/50">Verifying your reset link...</p>
+        <div className="py-4 text-center animate-fade-in">
+          <Loader2 size={32} className="mx-auto mb-4 animate-spin" style={{ color: pg.lime }} />
+          <p className="text-sm" style={{ color: pg.text3 }}>Verifying your reset link...</p>
         </div>
       </AuthLayout>
     )
   }
 
-  // No recovery session found after waiting
   if (!passwordRecovery) {
     return (
       <AuthLayout showBrand={false}>
-        <div className="card p-6 text-center animate-fade-in">
+        <div className="text-center animate-fade-in">
           <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'rgba(239,68,68,0.15)' }}>
-              <AlertCircle size={32} className="text-red-400" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'rgba(255,77,79,0.15)' }}>
+              <AlertCircle size={32} style={{ color: pg.danger }} />
             </div>
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Reset Link Expired</h2>
-          <p className="text-sm text-white/50 mb-6">This password reset link is invalid or has expired. Please request a new one.</p>
-          <button onClick={() => navigate('/auth')} className="btn-primary w-full">Back to Sign In</button>
+          <h2 className="mb-2 text-xl font-extrabold">Reset Link Expired</h2>
+          <p className="mb-6 text-sm" style={{ color: pg.text3 }}>This password reset link is invalid or has expired. Please request a new one.</p>
+          <CTA onClick={() => navigate('/auth')} className="w-full">Back to Sign In</CTA>
         </div>
       </AuthLayout>
     )
@@ -92,14 +91,14 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout showBrand={false}>
-      <div className="card p-6 animate-slide-up">
-        <div className="mb-4 flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: 'rgba(128,128,0,0.15)' }}>
-            <KeyRound size={20} style={{ color: '#808000' }} />
+      <div className="animate-slide-up">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: pg.limeDim }}>
+            <KeyRound size={20} style={{ color: pg.lime }} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Reset Password</h2>
-            <p className="text-sm text-white/50">Enter your new password</p>
+            <h2 className="text-xl font-extrabold tracking-tight">Reset Password</h2>
+            <p className="text-sm" style={{ color: pg.text3 }}>Enter your new password</p>
           </div>
         </div>
 
@@ -115,8 +114,12 @@ export default function ResetPassword() {
                 placeholder="At least 8 characters"
                 required
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                style={{ color: pg.text3 }}
+              >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
@@ -133,15 +136,15 @@ export default function ResetPassword() {
               required
             />
             {confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-xs text-red-400">Passwords do not match</p>
+              <p className="mt-1 text-xs" style={{ color: pg.danger }}>Passwords do not match</p>
             )}
           </div>
 
           {error && <ErrorBanner message={error} />}
 
-          <button type="submit" disabled={loading} className="btn-primary w-full">
+          <CTA type="submit" disabled={loading} className="w-full">
             {loading ? 'Updating...' : 'Update Password'}
-          </button>
+          </CTA>
         </form>
       </div>
     </AuthLayout>
