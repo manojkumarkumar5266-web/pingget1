@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../context'
 import { supabase, Order, DpCommissionReceipt } from '../../lib/supabase'
-import { EmptyState, SkeletonCard } from '../../components/ui'
+import { SkeletonList } from '../../components/ui'
 import { formatCurrency, formatTime } from '../../lib/utils'
+import { Screen, PageTitle, Surface, CTA, Chip, SectionLabel, EmptyBlock, IconButton } from '../../design/primitives'
+import { pg } from '../../design/tokens'
 import {
   Wallet as WalletIcon, TrendingUp, AlertCircle, IndianRupee,
-  Receipt, Copy, CheckCircle, Clock, XCircle, Upload, Camera, X,
+  Receipt, Copy, CheckCircle, Clock, XCircle, Camera, X,
 } from 'lucide-react'
 
 export default function DpWallet() {
@@ -36,7 +38,6 @@ export default function DpWallet() {
     }
     fetchAll()
 
-    // Realtime: listen for receipt status changes (admin confirms/rejects payment)
     const channel = supabase.channel(`dp-wallet-${profile!.id}`)
       .on('postgres_changes', {
         event: '*',
@@ -63,127 +64,158 @@ export default function DpWallet() {
     setShowPay(false)
   }
 
-  if (loading) return <div className="mx-auto max-w-md px-4 py-4 space-y-3">{[1,2,3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
+  if (loading) {
+    return (
+      <Screen className="mx-auto max-w-lg">
+        <SkeletonList count={3} lines={3} />
+      </Screen>
+    )
+  }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-4">
-      <h1 className="mb-4 text-xl font-bold text-white">Wallet</h1>
+    <Screen className="mx-auto max-w-lg animate-fade-in-up">
+      <PageTitle eyebrow="Partner" title="Wallet" />
 
       {outstanding > 0 ? (
-        <div className="mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-warning-500 to-warning-600 p-5 text-white shadow-lg animate-slide-up">
-          <div className="flex items-center justify-between">
+        <Surface accent className="mb-5 overflow-hidden p-5">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm text-warning-100">Commission Due to Admin</p>
-              <p className="mt-1 text-3xl font-bold">{formatCurrency(outstanding)}</p>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: '#FCD34D' }}>
+                Commission due to admin
+              </p>
+              <p className="mt-1 text-[34px] font-extrabold leading-none tracking-tight">{formatCurrency(outstanding)}</p>
             </div>
-            <AlertCircle size={32} className="text-warning-200" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'rgba(245,165,36,0.16)' }}>
+              <AlertCircle size={24} className="text-amber-300" />
+            </div>
           </div>
-          <div className="mt-3 rounded-xl bg-white/10 px-3 py-2 text-xs text-warning-100">
-            Pay via UPI to admin: <span className="font-bold text-white">{adminUpi}</span>
-            <button onClick={() => navigator.clipboard.writeText(adminUpi)} className="ml-2 underline">Copy</button>
+          <div
+            className="mt-4 flex items-center justify-between gap-2 rounded-2xl px-3.5 py-2.5 text-xs"
+            style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}
+          >
+            <span style={{ color: pg.text3 }}>
+              Pay via UPI: <span className="font-extrabold text-white">{adminUpi}</span>
+            </span>
+            <button type="button" onClick={() => navigator.clipboard.writeText(adminUpi)} className="font-extrabold" style={{ color: pg.lime }}>
+              Copy
+            </button>
           </div>
           {hasPendingReceipt ? (
-            <div className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-white/40 py-2.5 text-sm font-semibold text-warning-400 cursor-not-allowed select-none">
-              <Clock size={15} /> Receipt Submitted — Pending Confirmation
+            <div
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-extrabold"
+              style={{ background: 'rgba(245,165,36,0.14)', color: '#FCD34D', border: '1px solid rgba(245,165,36,0.25)' }}
+            >
+              <Clock size={15} /> Receipt submitted — pending confirmation
             </div>
           ) : (
-            <button onClick={() => setShowPay(true)} className="mt-3 w-full rounded-xl bg-white py-2.5 text-sm font-semibold text-warning-700 transition-transform active:scale-95">
-              Submit Payment Receipt
-            </button>
+            <CTA className="mt-3 w-full" onClick={() => setShowPay(true)}>
+              Submit payment receipt
+            </CTA>
           )}
-        </div>
+        </Surface>
       ) : (
-        <div className="mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-success-600 to-success-700 p-5 text-white shadow-lg animate-slide-up">
-          <div className="flex items-center justify-between">
+        <Surface className="mb-5 p-5" style={{ borderColor: 'rgba(34,197,94,0.28)' }}>
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm text-success-100">Commission Status</p>
-              <p className="mt-1 text-xl font-bold">All paid up!</p>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: '#86EFAC' }}>
+                Commission status
+              </p>
+              <p className="mt-1 text-2xl font-extrabold tracking-tight">All paid up!</p>
+              <p className="mt-1.5 text-xs" style={{ color: pg.text3 }}>No outstanding commission. You can go online and accept orders.</p>
             </div>
-            <CheckCircle size={32} className="text-success-200" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'rgba(34,197,94,0.14)' }}>
+              <CheckCircle size={24} className="text-green-400" />
+            </div>
           </div>
-          <p className="mt-2 text-xs text-success-100">No outstanding commission. You can go online and accept orders.</p>
-        </div>
+        </Surface>
       )}
 
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <div className="card p-4">
-          <div className="flex items-center gap-2 text-success-600 dark:text-success-400 mb-1">
-            <TrendingUp size={16} />
-            <span className="text-xs font-medium">Total Earned</span>
+      <div className="mb-5 grid grid-cols-2 gap-3">
+        <Surface className="p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(34,197,94,0.14)' }}>
+              <TrendingUp size={16} className="text-green-400" />
+            </div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>Total earned</span>
           </div>
-          <p className="text-lg font-bold text-white">{formatCurrency(totalEarnings)}</p>
-          <p className="text-xs text-white/40">{orders.length} deliveries</p>
-        </div>
-        <div className="card p-4">
-          <div className="flex items-center gap-2 text-error-600 dark:text-error-400 mb-1">
-            <IndianRupee size={16} />
-            <span className="text-xs font-medium">Commission</span>
+          <p className="text-xl font-extrabold">{formatCurrency(totalEarnings)}</p>
+          <p className="mt-0.5 text-xs" style={{ color: pg.text4 }}>{orders.length} deliveries</p>
+        </Surface>
+        <Surface className="p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(255,77,79,0.12)' }}>
+              <IndianRupee size={16} className="text-red-400" />
+            </div>
+            <span className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>Commission</span>
           </div>
-          <p className="text-lg font-bold text-white">{formatCurrency(totalCommission)}</p>
-          <p className="text-xs text-white/40">{formatCurrency(totalConfirmed)} confirmed paid</p>
-        </div>
+          <p className="text-xl font-extrabold">{formatCurrency(totalCommission)}</p>
+          <p className="mt-0.5 text-xs" style={{ color: pg.text4 }}>{formatCurrency(totalConfirmed)} confirmed paid</p>
+        </Surface>
       </div>
 
-      <div className="mb-4 card p-3 flex items-center gap-3">
-        <div className="flex-1">
-          <p className="text-xs text-gray-500">Admin UPI (for commission payment)</p>
-          <p className="text-sm font-bold text-white">{adminUpi}</p>
+      <Surface className="mb-6 flex items-center gap-3 p-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: pg.limeDim }}>
+          <WalletIcon size={18} style={{ color: pg.lime }} />
         </div>
-        <button onClick={() => navigator.clipboard.writeText(adminUpi)} className="btn-ghost p-2 text-white/40" title="Copy UPI ID">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>Admin UPI</p>
+          <p className="truncate text-sm font-extrabold">{adminUpi}</p>
+        </div>
+        <IconButton onClick={() => navigator.clipboard.writeText(adminUpi)} aria-label="Copy UPI">
           <Copy size={16} />
-        </button>
-      </div>
+        </IconButton>
+      </Surface>
 
-      <h3 className="mb-2 text-sm font-bold text-white">Commission Receipts</h3>
+      <SectionLabel title="Commission receipts" />
       {receipts.length === 0 ? (
-        <EmptyState icon={<Receipt size={36} />} title="No receipts yet" description="After paying admin via UPI, submit your receipt here for confirmation." />
+        <EmptyBlock
+          title="No receipts yet"
+          body="After paying admin via UPI, submit your receipt here for confirmation."
+        />
       ) : (
-        <div className="space-y-2 mb-4">
+        <div className="mb-6 space-y-2">
           {receipts.map(r => (
-            <div key={r.id} className="card p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white">{formatCurrency(r.amount)}</p>
-                  <p className="text-xs text-white/40">UPI Ref: {r.upi_ref} · {formatTime(r.submitted_at)}</p>
-                  {r.reject_reason && <p className="text-xs text-error-600 dark:text-error-400 mt-0.5">Rejected: {r.reject_reason}</p>}
+            <Surface key={r.id} className="p-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-extrabold">{formatCurrency(r.amount)}</p>
+                  <p className="text-xs" style={{ color: pg.text4 }}>UPI ref: {r.upi_ref} · {formatTime(r.submitted_at)}</p>
+                  {r.reject_reason && (
+                    <p className="mt-0.5 text-xs text-red-400">Rejected: {r.reject_reason}</p>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   {r.screenshot_url && (
                     <a href={r.screenshot_url} target="_blank" rel="noreferrer">
-                      <img src={r.screenshot_url} alt="Receipt" className="h-12 w-12 rounded-lg object-cover border border-white/15" />
+                      <img src={r.screenshot_url} alt="Receipt" className="h-12 w-12 rounded-xl object-cover" style={{ border: `1px solid ${pg.line}` }} />
                     </a>
                   )}
-                  <span className={`badge flex items-center gap-1 ${
-                    r.status === 'confirmed' ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300'
-                    : r.status === 'rejected' ? 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300'
-                    : 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300'
-                  }`}>
-                    {r.status === 'confirmed' ? <CheckCircle size={11} /> : r.status === 'rejected' ? <XCircle size={11} /> : <Clock size={11} />}
+                  <Chip tone={r.status === 'confirmed' ? 'success' : r.status === 'rejected' ? 'danger' : 'warn'}>
                     {r.status === 'confirmed' ? 'Confirmed' : r.status === 'rejected' ? 'Rejected' : 'Pending'}
-                  </span>
+                  </Chip>
                 </div>
               </div>
-            </div>
+            </Surface>
           ))}
         </div>
       )}
 
-      <h3 className="mb-2 mt-2 text-sm font-bold text-white">Recent Deliveries</h3>
+      <SectionLabel title="Recent deliveries" />
       {orders.length === 0 ? (
-        <p className="text-sm text-white/40">No completed deliveries yet.</p>
+        <p className="text-sm" style={{ color: pg.text4 }}>No completed deliveries yet.</p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 pb-4">
           {orders.slice(0, 10).map(o => (
-            <div key={o.id} className="card flex items-center justify-between p-3">
-              <div>
-                <p className="text-sm font-medium text-white">{o.items_summary || 'Delivery'}</p>
-                <p className="text-xs text-white/40">{formatTime(o.created_at)}</p>
+            <Surface key={o.id} className="flex items-center justify-between p-3.5">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-extrabold">{o.items_summary || 'Delivery'}</p>
+                <p className="text-xs" style={{ color: pg.text4 }}>{formatTime(o.created_at)}</p>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-bold text-success-600 dark:text-success-400">+{formatCurrency(o.dp_earnings)}</p>
-                <p className="text-xs text-white/40">-{formatCurrency(o.commission_amount)} comm.</p>
+              <div className="shrink-0 text-right">
+                <p className="text-sm font-extrabold text-green-400">+{formatCurrency(o.dp_earnings)}</p>
+                <p className="text-xs" style={{ color: pg.text4 }}>-{formatCurrency(o.commission_amount)} comm.</p>
               </div>
-            </div>
+            </Surface>
           ))}
         </div>
       )}
@@ -196,7 +228,7 @@ export default function DpWallet() {
           adminUpi={adminUpi}
         />
       )}
-    </div>
+    </Screen>
   )
 }
 
@@ -231,53 +263,88 @@ function SubmitReceiptModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 animate-fade-in" onClick={onClose}>
-      <div className="card w-full max-w-md max-h-[90vh] overflow-y-auto p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
-        <h3 className="mb-1 text-lg font-bold text-white">Submit Commission Payment</h3>
-        <p className="mb-4 text-xs text-gray-500">Pay admin via UPI first, then enter your transaction reference and upload screenshot</p>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-md" onClick={e => e.stopPropagation()}>
+      <Surface
+        className="max-h-[90vh] overflow-y-auto p-6"
+        style={{ borderRadius: pg.radius.xl }}
+      >
+        <h3 className="text-lg font-extrabold tracking-tight">Submit commission payment</h3>
+        <p className="mb-5 mt-1 text-xs" style={{ color: pg.text3 }}>
+          Pay admin via UPI first, then enter your transaction reference and upload screenshot
+        </p>
 
-        <div className="mb-4 rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
-          <p className="text-xs text-gray-500 mb-0.5">Pay to Admin UPI</p>
+        <Surface className="mb-4 p-3.5" style={{ background: pg.bgElevated }}>
+          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>Pay to admin UPI</p>
           <div className="flex items-center gap-2">
-            <p className="flex-1 text-sm font-bold text-white">{adminUpi}</p>
-            <button onClick={() => navigator.clipboard.writeText(adminUpi)} className="btn-ghost p-1">
-              <Copy size={14} className="text-white/40" />
-            </button>
+            <p className="flex-1 text-sm font-extrabold">{adminUpi}</p>
+            <IconButton onClick={() => navigator.clipboard.writeText(adminUpi)} aria-label="Copy">
+              <Copy size={14} />
+            </IconButton>
           </div>
-        </div>
+        </Surface>
 
         <div className="space-y-3">
           <div>
-            <label className="label flex items-center gap-1"><IndianRupee size={13} /> Amount</label>
-            <input type="number" className="input" value={amount} onChange={e => setAmount(e.target.value)} />
+            <label className="mb-1.5 flex items-center gap-1 text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.text3 }}>
+              <IndianRupee size={13} /> Amount
+            </label>
+            <input
+              type="number"
+              className="w-full rounded-2xl px-4 py-3 text-sm font-medium outline-none"
+              style={{ background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text }}
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+            />
           </div>
           <div>
-            <label className="label">UPI Transaction Reference *</label>
-            <input className="input" value={upiRef} onChange={e => setUpiRef(e.target.value)} placeholder="e.g. 407123456789" />
+            <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.text3 }}>
+              UPI transaction reference *
+            </label>
+            <input
+              className="w-full rounded-2xl px-4 py-3 text-sm font-medium outline-none"
+              style={{ background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text }}
+              value={upiRef}
+              onChange={e => setUpiRef(e.target.value)}
+              placeholder="e.g. 407123456789"
+            />
           </div>
           <div>
-            <label className="label">Payment Screenshot * (mandatory)</label>
+            <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.text3 }}>
+              Payment screenshot * (mandatory)
+            </label>
             <input ref={fileRef} type="file" className="hidden" accept="image/*" onChange={handleFileSelect} />
             {screenshotPreview ? (
               <div className="relative">
-                <img src={screenshotPreview} alt="Screenshot" className="h-40 w-full rounded-xl object-cover" />
-                <button type="button" onClick={() => { setScreenshot(null); setScreenshotPreview(null) }} className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white"><X size={14} /></button>
+                <img src={screenshotPreview} alt="Screenshot" className="h-40 w-full rounded-2xl object-cover" />
+                <button
+                  type="button"
+                  onClick={() => { setScreenshot(null); setScreenshotPreview(null) }}
+                  className="absolute right-2 top-2 rounded-full bg-black/70 p-1.5 text-white"
+                >
+                  <X size={14} />
+                </button>
               </div>
             ) : (
-              <button type="button" onClick={() => fileRef.current?.click()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/15 py-6 text-sm text-gray-500 dark:border-gray-700">
-                <Camera size={18} /> Upload Payment Screenshot (Required)
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-8 text-sm font-extrabold transition active:scale-[0.99]"
+                style={{ borderColor: 'rgba(212,240,0,0.3)', color: pg.text3 }}
+              >
+                <Camera size={18} /> Upload payment screenshot (required)
               </button>
             )}
           </div>
         </div>
 
-        <div className="mt-4 flex gap-2">
-          <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-          <button onClick={handleSubmit} disabled={submitting || !screenshot} className="btn-primary flex-1">
-            {submitting ? 'Submitting…' : 'Submit Receipt'}
-          </button>
+        <div className="mt-5 flex gap-2">
+          <CTA variant="secondary" className="flex-1" onClick={onClose}>Cancel</CTA>
+          <CTA className="flex-1" onClick={handleSubmit} disabled={submitting || !screenshot}>
+            {submitting ? 'Submitting…' : 'Submit receipt'}
+          </CTA>
         </div>
+      </Surface>
       </div>
     </div>
   )

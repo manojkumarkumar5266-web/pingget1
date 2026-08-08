@@ -2,8 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
-import { SkeletonList, EmptyState } from '../../components/ui'
-import { Bell, Bike, CheckCircle2, AlertCircle, Info, Package, Trash2, BellOff, MessageCircle, Shield, IndianRupee } from 'lucide-react'
+import { SkeletonList } from '../../components/ui'
+import { Screen, PageTitle, Surface, EmptyBlock, IconButton } from '../../design/primitives'
+import { pg } from '../../design/tokens'
+import { Bike, CheckCircle2, AlertCircle, Info, Package, Trash2, MessageCircle, Shield, IndianRupee } from 'lucide-react'
 
 type Notification = {
   id: string; title: string; body: string; type: string; is_read: boolean; created_at: string; related_id?: string | null
@@ -37,14 +39,14 @@ function groupByDate(notifs: Notification[]): { label: string; items: Notificati
 }
 
 function notifIcon(type: string) {
-  if (type === 'request_accepted' || type === 'order_received') return { icon: <Bike size={17} />, bg: 'rgba(166,179,0,0.15)', color: '#A6B300' }
-  if (type === 'order_delivered' || type === 'delivered' || type === 'order_completed' || type === 'order_status') return { icon: <CheckCircle2 size={17} />, bg: 'rgba(16,185,129,0.15)', color: '#34d399' }
-  if (type === 'order_cancelled' || type === 'cancelled' || type === 'order_rejected') return { icon: <AlertCircle size={17} />, bg: 'rgba(239,68,68,0.15)', color: '#f87171' }
-  if (type === 'order_placed' || type === 'shopping' || type === 'on_the_way' || type === 'purchased') return { icon: <Package size={17} />, bg: 'rgba(251,191,36,0.15)', color: '#fbbf24' }
-  if (type === 'chat' || type === 'message') return { icon: <MessageCircle size={17} />, bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' }
-  if (type === 'dp_status') return { icon: <Shield size={17} />, bg: 'rgba(168,85,247,0.15)', color: '#a855f7' }
-  if (type === 'commission' || type === 'payment') return { icon: <IndianRupee size={17} />, bg: 'rgba(34,197,94,0.15)', color: '#22c55e' }
-  return { icon: <Info size={17} />, bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }
+  if (type === 'request_accepted' || type === 'order_received') return { icon: <Bike size={17} />, bg: pg.limeDim, color: pg.lime }
+  if (type === 'order_delivered' || type === 'delivered' || type === 'order_completed' || type === 'order_status') return { icon: <CheckCircle2 size={17} />, bg: 'rgba(34,197,94,0.15)', color: '#86EFAC' }
+  if (type === 'order_cancelled' || type === 'cancelled' || type === 'order_rejected') return { icon: <AlertCircle size={17} />, bg: 'rgba(255,77,79,0.15)', color: '#FCA5A5' }
+  if (type === 'order_placed' || type === 'shopping' || type === 'on_the_way' || type === 'purchased') return { icon: <Package size={17} />, bg: 'rgba(245,165,36,0.15)', color: '#FCD34D' }
+  if (type === 'chat' || type === 'message') return { icon: <MessageCircle size={17} />, bg: 'rgba(59,130,246,0.15)', color: '#93C5FD' }
+  if (type === 'dp_status') return { icon: <Shield size={17} />, bg: 'rgba(168,85,247,0.15)', color: '#C4B5FD' }
+  if (type === 'commission' || type === 'payment') return { icon: <IndianRupee size={17} />, bg: 'rgba(34,197,94,0.15)', color: '#86EFAC' }
+  return { icon: <Info size={17} />, bg: 'rgba(255,255,255,0.08)', color: pg.text3 }
 }
 
 export default function DpNotifications() {
@@ -98,29 +100,39 @@ export default function DpNotifications() {
   const unreadCount = notifs.filter(n => !n.is_read).length
 
   return (
-    <div className="mx-auto max-w-md px-4 pt-5">
-      <div className="mb-5 flex items-center justify-between animate-fade-in-up">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Alerts</h1>
-          {unreadCount > 0 && (
-            <p className="mt-0.5 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>{unreadCount} unread</p>
-          )}
-        </div>
-        {unreadCount > 0 && (
-          <button onClick={markAllRead} className="rounded-2xl px-3.5 py-2 text-xs font-semibold transition-all active:scale-95"
-            style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
-            Mark all read
-          </button>
-        )}
-      </div>
+    <Screen className="mx-auto max-w-lg animate-fade-in-up">
+      <PageTitle
+        eyebrow="Partner"
+        title="Alerts"
+        action={
+          unreadCount > 0 ? (
+            <button
+              type="button"
+              onClick={markAllRead}
+              className="rounded-2xl px-3.5 py-2 text-xs font-extrabold transition active:scale-95"
+              style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)`, color: pg.lime }}
+            >
+              Mark all read
+            </button>
+          ) : undefined
+        }
+      />
 
-      <div className="mb-5 flex gap-2 animate-slide-up">
+      {unreadCount > 0 && (
+        <p className="-mt-3 mb-4 text-sm" style={{ color: pg.text3 }}>{unreadCount} unread</p>
+      )}
+
+      <div className="mb-5 flex gap-2">
         {(['all', 'unread'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className="rounded-full px-4 py-2 text-sm font-semibold capitalize transition-all active:scale-95"
+          <button
+            key={f}
+            type="button"
+            onClick={() => setFilter(f)}
+            className="rounded-full px-4 py-2 text-sm font-extrabold capitalize transition active:scale-95"
             style={filter === f
-              ? { background: 'rgba(166,179,0,0.2)', border: '1px solid rgba(166,179,0,0.4)', color: '#A6B300' }
-              : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
+              ? { background: pg.limeDim, border: `1px solid rgba(212,240,0,0.35)`, color: pg.lime }
+              : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text3 }}
+          >
             {f} {f === 'unread' && unreadCount > 0 ? `(${unreadCount})` : ''}
           </button>
         ))}
@@ -129,43 +141,60 @@ export default function DpNotifications() {
       {loading ? (
         <SkeletonList count={4} lines={3} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<BellOff size={40} />} title="No alerts" description={filter === 'unread' ? 'You\'re all caught up!' : 'Alerts will appear here.'} />
+        <EmptyBlock
+          title="No alerts"
+          body={filter === 'unread' ? "You're all caught up!" : 'Alerts will appear here.'}
+        />
       ) : (
-        <div className="space-y-6 pb-8">
+        <div className="space-y-6 pb-4">
           {groups.map(group => (
-            <div key={group.label} className="animate-fade-in-up">
-              <p className="mb-2.5 text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>{group.label}</p>
+            <div key={group.label}>
+              <p className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.text4 }}>
+                {group.label}
+              </p>
               <div className="space-y-2">
-                {group.items.map((n, i) => {
+                {group.items.map(n => {
                   const { icon, bg, color } = notifIcon(n.type)
                   return (
-                    <div key={n.id} onClick={() => handleTap(n)}
-                      className="group relative flex items-start gap-3.5 rounded-2xl p-3.5 transition-all active:scale-[0.98] cursor-pointer animate-slide-up"
-                      style={{
-                        background: n.is_read ? 'rgba(255,255,255,0.03)' : 'rgba(166,179,0,0.06)',
-                        border: n.is_read ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(166,179,0,0.15)',
-                        animationDelay: `${i * 40}ms`,
-                      }}>
-                      {!n.is_read && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full" style={{ background: '#A6B300' }} />}
-
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: bg }}>
+                    <Surface
+                      key={n.id}
+                      accent={!n.is_read}
+                      onClick={() => handleTap(n)}
+                      className="group relative flex cursor-pointer items-start gap-3.5 p-3.5 active:scale-[0.99]"
+                      style={n.is_read ? { background: pg.bgElevated } : undefined}
+                    >
+                      {!n.is_read && (
+                        <div
+                          className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-full"
+                          style={{ background: pg.lime }}
+                        />
+                      )}
+                      <div
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+                        style={{ background: bg }}
+                      >
                         <span style={{ color }}>{icon}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold ${!n.is_read ? 'text-white' : ''}`} style={n.is_read ? { color: 'rgba(255,255,255,0.7)' } : {}}>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-extrabold" style={{ color: n.is_read ? pg.text2 : pg.text }}>
                           {n.title}
                         </p>
                         {n.body && (
-                          <p className="mt-0.5 text-xs leading-relaxed line-clamp-2" style={{ color: 'rgba(255,255,255,0.45)' }}>{n.body}</p>
+                          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed" style={{ color: pg.text3 }}>{n.body}</p>
                         )}
-                        <p className="mt-1.5 text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.28)' }}>{relativeTime(n.created_at)}</p>
+                        <p className="mt-1.5 text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>
+                          {relativeTime(n.created_at)}
+                        </p>
                       </div>
-                      <button onClick={e => { e.stopPropagation(); deleteNotif(n.id) }}
-                        className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
-                        style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171' }}>
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
+                      <IconButton
+                        className="h-8 w-8 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                        onClick={e => { e.stopPropagation(); deleteNotif(n.id) }}
+                        aria-label="Delete alert"
+                        style={{ background: 'rgba(255,77,79,0.1)', borderColor: 'rgba(255,77,79,0.2)' }}
+                      >
+                        <Trash2 size={12} className="text-red-400" />
+                      </IconButton>
+                    </Surface>
                   )
                 })}
               </div>
@@ -173,6 +202,6 @@ export default function DpNotifications() {
           ))}
         </div>
       )}
-    </div>
+    </Screen>
   )
 }

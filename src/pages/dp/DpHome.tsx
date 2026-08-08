@@ -1,25 +1,23 @@
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context'
+import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
+import { useGps } from '../../hooks/useGps'
+import { ServiceStatusBanner, SkeletonList, CountUp } from '../../components/ui'
+import { formatTime, formatDistance, haversineDistance, formatCurrency, STATUS_LABELS, STATUS_COLORS } from '../../lib/utils'
+import { Images } from '../../lib/customImages'
+import { Screen, Surface, CTA, Chip, SectionLabel, EmptyBlock, IconButton } from '../../design/primitives'
+import { pg } from '../../design/tokens'
+import {
+  Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause,
+  Star, Activity, Wallet, ChevronRight, MapPinOff, Loader2, CalendarClock, TrendingUp,
+} from 'lucide-react'
 
 function getDpGreeting() {
   const h = new Date().getHours()
   if (h < 12) return 'morning'
   if (h < 17) return 'afternoon'
   return 'evening'
-}
-
-import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context'
-import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
-import { useGps } from '../../hooks/useGps'
-import { EmptyState, ServiceStatusBanner, SkeletonList, EarningsCard, CountUp, StatCard } from '../../components/ui'
-import { formatTime, formatDistance, haversineDistance, formatCurrency, STATUS_LABELS, STATUS_COLORS } from '../../lib/utils'
-import { Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause, TrendingUp, Star, Bike, Car, Truck, Activity, Navigation, Wallet, ChevronRight, MapPinOff, Loader2, CalendarClock } from 'lucide-react'
-
-function vehicleIcon(vehicleType: string | null) {
-  const v = (vehicleType || '').toLowerCase()
-  if (v === 'bicycle' || v === 'motorbike' || v === 'scooter' || v === 'auto') return Bike
-  if (v === 'car') return Car
-  return Truck
 }
 
 type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
@@ -37,24 +35,137 @@ function VoicePlayer({ url }: { url: string }) {
     } catch { setPlaying(false); audioRef.current = null }
   }
   return (
-    <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.18)' }}>
-      <button type="button" onClick={toggle} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all active:scale-90"
-        style={{ background: '#A6B300' }}>
-        {playing ? <Pause size={14} className="text-[#0B0B0B]" /> : <Play size={14} className="text-[#0B0B0B]" />}
+    <div
+      className="mt-3 flex items-center gap-3 rounded-2xl px-3.5 py-2.5"
+      style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.22)` }}
+    >
+      <button
+        type="button"
+        onClick={toggle}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition active:scale-90"
+        style={{ background: pg.lime, color: pg.limeText }}
+      >
+        {playing ? <Pause size={15} /> : <Play size={15} className="ml-0.5" />}
       </button>
-      <div className="flex flex-1 items-center gap-0.5 h-7">
-        {Array.from({ length: 14 }).map((_, i) => (
-          <div key={i} className={`flex-1 rounded-full ${playing ? 'animate-pulse' : ''}`}
-            style={{ height: `${30 + Math.sin(i) * 40}%`, background: 'rgba(166,179,0,0.4)', animationDelay: `${i * 60}ms` }} />
+      <div className="flex h-8 flex-1 items-center gap-0.5">
+        {Array.from({ length: 16 }).map((_, i) => (
+          <div
+            key={i}
+            className={`flex-1 rounded-full ${playing ? 'animate-pulse' : ''}`}
+            style={{
+              height: `${28 + Math.sin(i * 0.8) * 45}%`,
+              background: playing ? pg.lime : 'rgba(212,240,0,0.35)',
+              animationDelay: `${i * 55}ms`,
+            }}
+          />
         ))}
       </div>
-      <p className="text-xs font-medium shrink-0" style={{ color: '#A6B300' }}>{playing ? 'Playing' : 'Voice Note'}</p>
+      <p className="shrink-0 text-[11px] font-extrabold uppercase tracking-wide" style={{ color: pg.lime }}>
+        {playing ? 'Playing' : 'Voice'}
+      </p>
     </div>
   )
 }
 
+function EarningsHero({ today, week, deliveries }: { today: number; week: number; deliveries: number }) {
+  return (
+    <Surface accent className="relative overflow-hidden p-5">
+      <div
+        className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full opacity-25 blur-3xl"
+        style={{ background: pg.lime }}
+      />
+      <div className="relative">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.lime }}>
+              Today's earnings
+            </p>
+            <p className="mt-1 text-[34px] font-extrabold leading-none tracking-tight">
+              <CountUp value={today} prefix="₹" />
+            </p>
+          </div>
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-2xl"
+            style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.25)` }}
+          >
+            <TrendingUp size={22} style={{ color: pg.lime }} />
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
+          <div className="rounded-2xl px-3 py-2.5" style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}>
+            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>This week</p>
+            <p className="mt-0.5 text-sm font-extrabold">₹{week.toLocaleString()}</p>
+          </div>
+          <div className="rounded-2xl px-3 py-2.5" style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}>
+            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>Deliveries</p>
+            <p className="mt-0.5 text-sm font-extrabold">{deliveries} today</p>
+          </div>
+        </div>
+      </div>
+    </Surface>
+  )
+}
+
+function StatsGrid({
+  rating, ratingCount, totalOrders, statusLabel, statusTone,
+}: {
+  rating: number; ratingCount: number; totalOrders: number; statusLabel: string; statusTone: string
+}) {
+  const items = [
+    { label: `Rating${ratingCount > 0 ? ` (${ratingCount})` : ''}`, value: rating > 0 ? rating.toFixed(1) : '—', icon: <Star size={18} />, tone: '#F5A524' },
+    { label: 'Total orders', value: totalOrders, icon: <Package size={18} />, tone: pg.lime },
+    { label: 'Status', value: statusLabel, icon: <Activity size={18} />, tone: statusTone },
+  ]
+  return (
+    <div className="grid grid-cols-3 gap-2.5">
+      {items.map(s => (
+        <div
+          key={s.label}
+          className="rounded-[20px] px-2 py-3.5 text-center"
+          style={{ background: pg.surface, border: `1px solid ${pg.line}` }}
+        >
+          <div
+            className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl"
+            style={{ background: `${s.tone}22`, color: s.tone }}
+          >
+            {s.icon}
+          </div>
+          <p className="text-xl font-extrabold tracking-tight">{s.value}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>{s.label}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function GpsBanner({ gps }: { gps: ReturnType<typeof useGps> }) {
+  if (gps.permissionDenied) {
+    return (
+      <Surface className="mb-4 flex items-center gap-3 p-4" style={{ borderColor: 'rgba(255,77,79,0.28)' }}>
+        <MapPinOff size={20} className="shrink-0 text-red-400" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-extrabold text-red-300">Location access required</p>
+          <p className="text-xs" style={{ color: pg.text3 }}>Allow location to receive requests near you.</p>
+        </div>
+        <CTA variant="danger" className="min-h-0 shrink-0 px-3 py-2 text-xs" onClick={() => gps.requestPermission()}>
+          Allow
+        </CTA>
+      </Surface>
+    )
+  }
+  if (gps.loading) {
+    return (
+      <Surface className="mb-4 flex items-center gap-2.5 p-3.5" style={{ borderColor: 'rgba(59,130,246,0.25)' }}>
+        <Loader2 size={16} className="shrink-0 animate-spin text-blue-400" />
+        <p className="text-sm font-medium text-blue-300">Getting your location…</p>
+      </Surface>
+    )
+  }
+  return null
+}
+
 export default function DpHome() {
-  const { profile, refreshProfile } = useAuth()
+  const { profile } = useAuth()
   const navigate = useNavigate()
   const [requests, setRequests] = useState<RequestWithUser[]>([])
   const [loading, setLoading] = useState(true)
@@ -137,7 +248,6 @@ export default function DpHome() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests' },
         (payload: any) => {
           const newStatus = payload?.new?.status
-          const orderType = payload?.new?.order_type
           if (newStatus === 'pending') showToast('New delivery request nearby!')
           else if (newStatus === 'searching_dp') showToast('New advance booking nearby!')
           else return
@@ -146,7 +256,6 @@ export default function DpHome() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' }, () => fetchRequests())
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, () => fetchRequests())
       .subscribe()
-    // Polling fallback every 10s — ensures DPs never miss a request even if realtime drops
     const pollInterval = setInterval(fetchRequests, 10000)
     return () => { supabase.removeChannel(channel); clearInterval(pollInterval) }
   }, [dp?.is_online, dpLoading, profile])
@@ -181,7 +290,6 @@ export default function DpHome() {
     if (reservingId) return
     setReservingId(req.id)
     try {
-      // For advance bookings in searching_dp status, use the reservation RPC
       if (req.order_type === 'advance' && req.status === 'searching_dp') {
         const { data: reserved, error } = await supabase.rpc(
           'reserve_dp_for_advance',
@@ -192,7 +300,6 @@ export default function DpHome() {
           showToast(row?.error_msg || error?.message || 'Failed to reserve this booking')
           return
         }
-        // Order accepted → tracking (not chat)
         navigate(`/dp/navigate/${req.id}`)
         return
       }
@@ -227,195 +334,151 @@ export default function DpHome() {
   const todayDeliveries = todayOrders.length
   const rating = dp?.rating_avg || 0
   const ratingCount = dp?.rating_count || 0
-
-  if (dpLoading) return <div className="p-4 space-y-3"><SkeletonList count={3} lines={3} /></div>
-
   const dpFirstName = profile?.full_name?.split(' ')[0] || 'Partner'
   const dpGreetWord = getDpGreeting()
+  const rangePct = ((rangeKm - 1) / 19) * 100
 
-  const GpsBanner = () => {
-    if (gps.permissionDenied) {
-      return (
-        <div className="mb-4 flex items-center gap-3 rounded-2xl px-4 py-3.5 animate-slide-down"
-          style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
-          <MapPinOff size={20} className="shrink-0 text-red-400" />
-          <div className="flex-1">
-            <p className="text-sm font-bold text-red-300">Location Access Required</p>
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Please allow location access to receive delivery requests near you.</p>
-          </div>
-          <button onClick={() => gps.requestPermission()} className="shrink-0 rounded-xl px-3 py-2 text-xs font-bold text-white" style={{ background: '#ef4444' }}>
-            Allow
-          </button>
-        </div>
-      )
-    }
-    if (gps.loading) {
-      return (
-        <div className="mb-4 flex items-center gap-2.5 rounded-2xl px-4 py-3 animate-slide-down"
-          style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-          <Loader2 size={16} className="shrink-0 animate-spin text-blue-400" />
-          <p className="text-sm text-blue-300">Getting your location...</p>
-        </div>
-      )
-    }
-    return null
+  if (dpLoading) {
+    return (
+      <Screen className="mx-auto max-w-lg">
+        <SkeletonList count={3} lines={3} />
+      </Screen>
+    )
   }
+
+  const greetingHeader = (
+    <header className="mb-5 flex items-center gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
+          Good {dpGreetWord}
+        </p>
+        <h1 className="truncate text-[30px] font-extrabold leading-none tracking-tight">Hai {dpFirstName}</h1>
+      </div>
+      <img src={Images.haiHand} alt="" className="h-[72px] w-[72px] object-contain" draggable={false} />
+    </header>
+  )
 
   if (!dp?.is_online) {
     return (
-      <div className="mx-auto max-w-md px-4 py-4">
+      <Screen className="mx-auto max-w-lg animate-fade-in-up">
         <ServiceStatusBanner cityName={profile?.city} />
+        <GpsBanner gps={gps} />
+        {greetingHeader}
 
-        <GpsBanner />
-
-        {/* Greeting */}
-        <div className="mb-5 animate-fade-in-up flex items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Good {dpGreetWord},</p>
-            <h1 className="text-2xl font-bold text-white leading-tight truncate">Hai {dpFirstName}</h1>
-          </div>
-          <img src="/images/hai-hand.png" alt="" className="h-14 w-14 object-contain shrink-0" draggable={false} />
+        <div className="mb-5">
+          <EarningsHero today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} />
         </div>
 
-        {/* Offline earnings card */}
-        <div className="mb-5 animate-slide-up">
-          <EarningsCard today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} />
+        <div className="mb-6">
+          <StatsGrid
+            rating={rating}
+            ratingCount={ratingCount}
+            totalOrders={totalOrders}
+            statusLabel="Offline"
+            statusTone={pg.text3}
+          />
         </div>
 
-        {/* Stats */}
-        <div className="mb-5 grid grid-cols-3 gap-2.5 animate-slide-up" style={{ animationDelay: '80ms' }}>
-          <div className="card p-3 text-center">
-            <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(245,158,11,0.15)' }}>
-              <Star size={16} className="text-yellow-400" />
+        <EmptyBlock
+          title="You're offline"
+          body="Tap Go Online in the header to start receiving delivery requests near you."
+          action={
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+              <WifiOff size={32} style={{ color: pg.text4 }} />
             </div>
-            <p className="text-xl font-bold text-white">{rating > 0 ? rating.toFixed(1) : '—'}</p>
-            <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Rating{ratingCount > 0 ? ` (${ratingCount})` : ''}</p>
-          </div>
-          <div className="card p-3 text-center">
-            <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
-              <Package size={16} style={{ color: '#A6B300' }} />
-            </div>
-            <p className="text-xl font-bold text-white">{totalOrders}</p>
-            <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Total Orders</p>
-          </div>
-          <div className="card p-3 text-center">
-            <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(59,130,246,0.15)' }}>
-              <Activity size={16} className="text-blue-400" />
-            </div>
-            <p className="text-xl font-bold text-white">Offline</p>
-            <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Status</p>
-          </div>
-        </div>
-
-        {/* Offline message */}
-        <div className="flex flex-col items-center justify-center gap-4 text-center animate-fade-in-up py-8 px-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-3xl animate-float" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <WifiOff size={36} style={{ color: 'rgba(255,255,255,0.2)' }} />
-          </div>
-          <div>
-            <p className="text-lg font-bold text-white">You're Offline</p>
-            <p className="mt-1.5 max-w-xs text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              Tap <strong className="text-green-400">Go Online</strong> in the header to start receiving requests.
-            </p>
-          </div>
-        </div>
-      </div>
+          }
+        />
+      </Screen>
     )
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-4">
+    <Screen className="mx-auto max-w-lg animate-fade-in-up">
       <ServiceStatusBanner cityName={profile?.city} />
+      <GpsBanner gps={gps} />
+      {greetingHeader}
 
-      <GpsBanner />
-
-      {/* Greeting */}
-      <div className="mb-5 flex items-center gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Good {dpGreetWord},</p>
-          <h1 className="text-2xl font-bold text-white leading-tight truncate">Hai {dpFirstName}</h1>
-        </div>
-        <img src="/images/hai-hand.png" alt="" className="h-14 w-14 object-contain shrink-0" draggable={false} />
-      </div>
-
-      {/* Commission due banner */}
       {pendingCommission > 0 && (
-        <button onClick={() => navigate('/dp/wallet')} className="mb-4 flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left transition-all active:scale-98 animate-slide-up"
-          style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-          <Wallet size={20} className="shrink-0 text-yellow-400" />
-          <div className="flex-1">
-            <p className="text-sm font-bold text-yellow-300">Commission Due: {formatCurrency(pendingCommission)}</p>
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Tap to pay admin via UPI</p>
+        <button
+          type="button"
+          onClick={() => navigate('/dp/wallet')}
+          className="mb-4 flex w-full items-center gap-3 rounded-[22px] px-4 py-3.5 text-left transition active:scale-[0.99]"
+          style={{ background: 'rgba(245,165,36,0.12)', border: '1px solid rgba(245,165,36,0.25)' }}
+        >
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: 'rgba(245,165,36,0.16)' }}>
+            <Wallet size={20} className="text-amber-300" />
           </div>
-          <ChevronRight size={16} className="text-yellow-400/60" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-extrabold text-amber-200">Commission due: {formatCurrency(pendingCommission)}</p>
+            <p className="text-xs" style={{ color: pg.text3 }}>Tap to pay admin via UPI</p>
+          </div>
+          <ChevronRight size={18} style={{ color: pg.text4 }} />
         </button>
       )}
 
-      {/* Toast */}
       {toast && (
-        <div className="mb-3 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium animate-slide-down"
-          style={{ background: 'rgba(166,179,0,0.1)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
-          <Bell size={14} className="shrink-0" /> {toast}
+        <div
+          className="mb-4 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-extrabold"
+          style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)`, color: pg.lime }}
+        >
+          <Bell size={15} className="shrink-0" />
+          {toast}
         </div>
       )}
 
-      {/* Earnings Dashboard */}
-      <div className="mb-4 animate-slide-up">
-        <EarningsCard today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} />
+      <div className="mb-5">
+        <EarningsHero today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} />
       </div>
 
-      {/* Performance Stats */}
-      <div className="mb-4 grid grid-cols-3 gap-2.5 animate-slide-up" style={{ animationDelay: '80ms' }}>
-        <div className="card p-3 text-center">
-          <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(245,158,11,0.15)' }}>
-            <Star size={16} className="text-yellow-400" />
-          </div>
-          <p className="text-xl font-bold text-white">{rating > 0 ? rating.toFixed(1) : '—'}</p>
-          <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Rating{ratingCount > 0 ? ` (${ratingCount})` : ''}</p>
-        </div>
-        <div className="card p-3 text-center">
-          <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
-            <Package size={16} style={{ color: '#A6B300' }} />
-          </div>
-          <p className="text-xl font-bold text-white">{totalOrders}</p>
-          <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Total Orders</p>
-        </div>
-        <div className="card p-3 text-center">
-          <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(16,185,129,0.15)' }}>
-            <Activity size={16} className="text-green-400" />
-          </div>
-          <p className="text-xl font-bold text-white">Active</p>
-          <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>Status</p>
-        </div>
+      <div className="mb-5">
+        <StatsGrid
+          rating={rating}
+          ratingCount={ratingCount}
+          totalOrders={totalOrders}
+          statusLabel="Active"
+          statusTone={pg.success}
+        />
       </div>
 
-      {/* Service Range */}
-      <div className="mb-4 card p-4 animate-slide-up" style={{ animationDelay: '120ms' }}>
+      <Surface className="mb-6 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Sliders size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
-            <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Service Range</span>
+          <div className="flex items-center gap-2">
+            <Sliders size={15} style={{ color: pg.text3 }} />
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>
+              Service range
+            </span>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-2xl font-bold" style={{ color: '#A6B300' }}>{rangeKm}</span>
-            <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>km</span>
-            {savingRange && <span className="ml-1 text-xs animate-pulse" style={{ color: 'rgba(255,255,255,0.3)' }}>saving...</span>}
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-extrabold" style={{ color: pg.lime }}>{rangeKm}</span>
+            <span className="text-sm font-medium" style={{ color: pg.text4 }}>km</span>
+            {savingRange && <span className="ml-1 text-[10px] animate-pulse" style={{ color: pg.text4 }}>saving…</span>}
           </div>
         </div>
-        <input type="range" min={1} max={20} step={1} value={rangeKm}
+        <input
+          type="range"
+          min={1}
+          max={20}
+          step={1}
+          value={rangeKm}
           onChange={e => setRangeKm(Number(e.target.value))}
           onMouseUp={(e: any) => changeRange(Number(e.target.value))}
           onTouchEnd={(e: any) => changeRange(Number(e.target.value))}
-          className="dp-range-slider w-full mb-3"
-          style={{ background: `linear-gradient(to right, #A6B300 0%, #A6B300 ${((rangeKm - 1) / 19) * 100}%, rgba(255,255,255,0.1) ${((rangeKm - 1) / 19) * 100}%, rgba(255,255,255,0.1) 100%)` }}
+          className="dp-range-slider mb-3 w-full"
+          style={{
+            background: `linear-gradient(to right, ${pg.lime} 0%, ${pg.lime} ${rangePct}%, rgba(255,255,255,0.1) ${rangePct}%, rgba(255,255,255,0.1) 100%)`,
+          }}
         />
         <div className="flex flex-wrap gap-1.5">
           {[1, 2, 5, 10, 15, 20].map(km => (
-            <button key={km} type="button" onClick={() => { setRangeKm(km); changeRange(km) }}
-              className="rounded-full px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
+            <button
+              key={km}
+              type="button"
+              onClick={() => { setRangeKm(km); changeRange(km) }}
+              className="rounded-full px-3 py-1.5 text-xs font-extrabold transition active:scale-95"
               style={rangeKm === km
-                ? { background: '#A6B300', color: '#0B0B0B' }
-                : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>
+                ? { background: pg.lime, color: pg.limeText }
+                : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text3 }}
+            >
               {km} km
             </button>
           ))}
@@ -423,148 +486,140 @@ export default function DpHome() {
         {gps.loading && !gps.lat && (
           <div className="mt-2.5 flex items-center gap-1.5 text-xs text-blue-400">
             <Loader2 size={11} className="shrink-0 animate-spin" />
-            <span>Getting your location...</span>
+            <span>Getting your location…</span>
           </div>
         )}
         {gps.permissionDenied && (
-          <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <span className="flex items-center gap-1.5 text-red-300"><MapPinOff size={11} /> Location access denied</span>
-            <button onClick={() => gps.requestPermission()} className="font-bold text-red-400 hover:text-red-300">Allow</button>
+          <div
+            className="mt-2.5 flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs"
+            style={{ background: 'rgba(255,77,79,0.1)', border: '1px solid rgba(255,77,79,0.22)' }}
+          >
+            <span className="flex items-center gap-1.5 text-red-300"><MapPinOff size={11} /> Location denied</span>
+            <button type="button" onClick={() => gps.requestPermission()} className="font-extrabold text-red-400">
+              Allow
+            </button>
           </div>
         )}
-      </div>
+      </Surface>
 
-      {/* Nearby Requests header */}
-      <div className="mb-3 flex items-center justify-between animate-slide-up" style={{ animationDelay: '160ms' }}>
-        <div>
-          <h3 className="text-base font-bold text-white">Nearby Requests</h3>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+      <SectionLabel
+        title="Nearby requests"
+        action={
+          <span className="text-xs font-extrabold" style={{ color: pg.text3 }}>
             {filtered.length} within {rangeKm} km
-          </p>
-        </div>
-      </div>
+          </span>
+        }
+      />
 
       {loading ? (
         <SkeletonList count={3} lines={3} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<Package size={40} />} title="No requests in range"
-          description={gps.loading ? 'Waiting for GPS...' : `No pending requests within ${rangeKm} km. Try increasing your range.`} />
+        <EmptyBlock
+          title="No requests in range"
+          body={gps.loading ? 'Waiting for GPS…' : `No pending requests within ${rangeKm} km. Try increasing your range.`}
+        />
       ) : (
-        <div className="space-y-3 pb-8">
-          {filtered.map((req, i) => {
+        <div className="space-y-3 pb-4">
+          {filtered.map(req => {
             const dist = getDistance(req)
-            const VehicleIcon = vehicleIcon(null)
             return (
-              <div key={req.id} className="card p-4 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <p className="font-semibold text-white leading-snug line-clamp-1 flex-1">
+              <Surface key={req.id} className="p-4">
+                <div className="mb-2.5 flex items-start justify-between gap-2">
+                  <p className="line-clamp-1 flex-1 text-[15px] font-extrabold">
                     {req.description?.split('\n')[0]?.trim() || 'Delivery Request'}
                   </p>
-                  {dist !== null && (
-                    <span className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold" style={{ background: 'rgba(166,179,0,0.15)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.25)' }}>
-                      {formatDistance(dist)}
+                  {dist !== null && <Chip tone="lime">{formatDistance(dist)}</Chip>}
+                </div>
+
+                <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                  <Chip tone={req.order_type === 'advance' ? 'info' : 'lime'}>
+                    {req.order_type === 'advance' ? 'Advance' : 'Instant'}
+                  </Chip>
+                  {req.order_type === 'advance' && req.status !== 'searching_dp' && req.status !== 'pending' && STATUS_LABELS[req.status] && (
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${STATUS_COLORS[req.status] || ''}`}>
+                      {STATUS_LABELS[req.status]}
                     </span>
+                  )}
+                  {req.is_scheduled && req.request_category && (
+                    <Chip tone="neutral">{req.request_category}</Chip>
+                  )}
+                  {req.order_type === 'advance' && req.status === 'searching_dp' && (
+                    <Chip tone="lime">Reserve now</Chip>
                   )}
                 </div>
 
-                {/* Instant vs Advance label */}
-                <div className="mb-2 flex items-center gap-1.5 flex-wrap">
-                  <span className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                    style={req.order_type === 'advance'
-                      ? { background: 'rgba(59,130,246,0.15)', color: '#60A5FA', border: '1px solid rgba(59,130,246,0.3)' }
-                      : { background: 'rgba(166,179,0,0.15)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.3)' }}>
-                    {req.order_type === 'advance' ? 'Advance Request' : 'Instant Request'}
-                  </span>
-                </div>
-
-                {/* V3 Status badge for advance requests */}
-                {req.order_type === 'advance' && req.status !== 'searching_dp' && req.status !== 'pending' && STATUS_LABELS[req.status] && (
-                  <div className="mb-2 flex items-center gap-1.5">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[req.status] || ''}`}>
-                      {STATUS_LABELS[req.status]}
-                    </span>
-                  </div>
+                {req.is_scheduled && req.scheduled_slot && (
+                  <p className="mb-2 text-[11px] font-medium" style={{ color: pg.text3 }}>
+                    Scheduled: {req.scheduled_slot}
+                  </p>
                 )}
 
-                {/* Scheduled badge */}
-                {req.is_scheduled && req.request_category && (
-                  <div className="mb-2 flex items-center gap-1.5">
-                    <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}>
-                      {req.request_category}
-                    </span>
-                    {req.scheduled_slot && (
-                      <span className="text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                        Scheduled: {req.scheduled_slot}
-                      </span>
-                    )}
-                    {req.order_type === 'advance' && req.status === 'searching_dp' && (
-                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold animate-pulse" style={{ background: 'rgba(166,179,0,0.15)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.25)' }}>
-                        Reserve Now
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Items list */}
                 {req.description && (
-                  <ul className="mb-2 space-y-1">
+                  <ul className="mb-2.5 space-y-1">
                     {req.description.split('\n').slice(0, 4).map((line, i) => line.trim() && (
-                      <li key={i} className="flex items-start gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: '#A6B300' }} />
+                      <li key={i} className="flex items-start gap-2 text-xs" style={{ color: pg.text2 }}>
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: pg.lime }} />
                         {line.trim()}
                       </li>
                     ))}
                   </ul>
                 )}
 
-                {/* Photos */}
                 {req.photo_urls && req.photo_urls.length > 0 && (
-                  <div className="mb-2 flex flex-wrap gap-2">
+                  <div className="mb-2.5 flex flex-wrap gap-2">
                     {req.photo_urls.map((url, i) => (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                        <img src={url} alt={`Photo ${i + 1}`} className="h-16 w-16 rounded-xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+                        <img
+                          src={url}
+                          alt={`Photo ${i + 1}`}
+                          className="h-16 w-16 rounded-xl object-cover"
+                          style={{ border: `1px solid ${pg.line}` }}
+                        />
                       </a>
                     ))}
                   </div>
                 )}
 
-                {/* Meta info */}
-                <div className="flex flex-wrap gap-3 text-xs mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <div className="mb-1 flex flex-wrap gap-3 text-xs" style={{ color: pg.text4 }}>
                   <span className="flex items-center gap-1"><Clock size={11} />{formatTime(req.created_at)}</span>
                   {req.preferred_shop && <span className="flex items-center gap-1"><Package size={11} />{req.preferred_shop}</span>}
-                  {req.pickup_address && (
-                    <span className="flex items-start gap-1"><MapPin size={11} className="shrink-0 mt-0.5 text-yellow-400" />{req.pickup_address}</span>
-                  )}
-                  <span className="flex items-start gap-1"><MapPin size={11} className="shrink-0 mt-0.5 text-red-400" />
-                    <span className="text-white/60">{req.delivery_address}</span>
-                  </span>
                 </div>
+                {req.pickup_address && (
+                  <p className="mt-1 flex items-start gap-1.5 text-xs" style={{ color: pg.text3 }}>
+                    <MapPin size={11} className="mt-0.5 shrink-0 text-amber-400" />
+                    <span>{req.pickup_address}</span>
+                  </p>
+                )}
+                <p className="mt-1 flex items-start gap-1.5 text-xs" style={{ color: pg.text2 }}>
+                  <MapPin size={11} className="mt-0.5 shrink-0 text-red-400" />
+                  <span>{req.delivery_address}</span>
+                </p>
 
                 {req.voice_note_url && <VoicePlayer url={req.voice_note_url} />}
 
-                {/* Action buttons */}
-                <div className="mt-3.5 flex gap-2">
-                  <button onClick={() => acceptRequest(req)} disabled={reservingId === req.id}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold transition-all active:scale-95 disabled:opacity-60"
-                    style={{ background: '#A6B300', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.3)' }}>
-                    {reservingId === req.id
-                      ? <><Loader2 size={16} className="animate-spin" /> Reserving...</>
-                      : req.order_type === 'advance' && req.status === 'searching_dp'
-                        ? <><CalendarClock size={16} /> Reserve</>
-                        : <><Check size={16} strokeWidth={3} /> Accept</>}
-                  </button>
-                  <button onClick={() => declineRequest(req)}
-                    className="flex items-center justify-center rounded-2xl px-4 py-3 transition-all active:scale-95"
-                    style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
-                    <X size={18} />
-                  </button>
+                <div className="mt-4 flex gap-2">
+                  <CTA
+                    className="flex-1 min-h-[48px] text-sm"
+                    onClick={() => acceptRequest(req)}
+                    disabled={reservingId === req.id}
+                  >
+                    {reservingId === req.id ? (
+                      <><Loader2 size={16} className="animate-spin" /> Reserving…</>
+                    ) : req.order_type === 'advance' && req.status === 'searching_dp' ? (
+                      <><CalendarClock size={16} /> Reserve</>
+                    ) : (
+                      <><Check size={16} strokeWidth={3} /> Accept</>
+                    )}
+                  </CTA>
+                  <IconButton onClick={() => declineRequest(req)} aria-label="Decline">
+                    <X size={18} className="text-red-400" />
+                  </IconButton>
                 </div>
-              </div>
+              </Surface>
             )
           })}
         </div>
       )}
-    </div>
+    </Screen>
   )
 }
