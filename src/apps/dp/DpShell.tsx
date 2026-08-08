@@ -170,10 +170,7 @@ export default function DpShell() {
   return (
     <>
       <Watermark />
-      <Routes>
-        <Route path="/dp/*" element={<DpApp />} />
-        <Route path="*" element={<Navigate to="/dp" replace />} />
-      </Routes>
+      <DpApp />
     </>
   )
 }

@@ -466,7 +466,10 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
     if (!resetEmail.trim()) { setError('Please enter your email address'); return }
     setLoading(true)
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), { redirectTo: `${window.location.origin}/reset-password` })
+      const resetRedirect = window.location.pathname.startsWith('/dp')
+        ? `${window.location.origin}/dp/reset-password`
+        : `${window.location.origin}/reset-password`
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), { redirectTo: resetRedirect })
       if (resetError) {
         setError(resetError.message)
         setLoading(false)

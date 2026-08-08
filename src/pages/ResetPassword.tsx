@@ -40,7 +40,10 @@ export default function ResetPassword() {
     setLoading(false)
     if (error) { setError(error); return }
     setSuccess(true)
-    setTimeout(() => navigate('/auth'), 2500)
+    setTimeout(() => {
+      const dest = window.location.pathname.startsWith('/dp') ? '/dp/auth' : '/auth'
+      navigate(dest)
+    }, 2500)
   }
 
   if (success) {

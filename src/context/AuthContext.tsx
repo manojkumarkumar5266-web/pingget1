@@ -274,9 +274,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async (role: 'user' | 'dp'): Promise<{ error: string | null }> => {
     console.log('[Auth] signInWithGoogle, role:', role)
     sessionStorage.setItem('pingget_oauth_role', role)
+    // Must return to the matching app path or Partner sessions land on Customer /auth
+    // and get signed out by UserShell's role guard.
+    const redirectTo =
+      role === 'dp'
+        ? `${window.location.origin}/dp/auth`
+        : `${window.location.origin}/auth`
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth` },
+      options: { redirectTo },
     })
     if (error) {
       console.error('[Auth] signInWithGoogle error:', error.message)
