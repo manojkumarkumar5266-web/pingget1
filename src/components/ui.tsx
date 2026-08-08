@@ -1,22 +1,23 @@
 import { ReactNode, useEffect, useState, useCallback, createContext, useContext, useMemo } from 'react'
 import { Loader as Loader2, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, CirclePause as PauseCircle, X, Info, AlertCircle, TrendingUp } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { pg } from '../design/tokens'
 
 // ── Spinner ─────────────────────────────────────
 export function Spinner({ size = 24 }: { size?: number }) {
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <div className="absolute inset-0 rounded-full border-2 border-white/10" />
-      <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: '#D4F000' }} />
+      <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: pg.lime }} />
     </div>
   )
 }
 
 export function FullScreenLoader() {
   return (
-    <div className="flex h-[100dvh] items-center justify-center" style={{ background: '#050505' }}>
+    <div className="flex h-[100dvh] items-center justify-center" style={{ background: pg.bg }}>
       <div className="relative flex h-16 w-16 items-center justify-center">
-        <div className="absolute h-16 w-16 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: '#D4F000', borderRightColor: 'rgba(212,240,0,0.25)' }} />
+        <div className="absolute h-16 w-16 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: pg.lime, borderRightColor: 'rgba(212,240,0,0.25)' }} />
         <Spinner size={28} />
       </div>
     </div>
@@ -94,7 +95,7 @@ export function Avatar({ url, name, size = 40 }: { url?: string | null; name: st
   }
   return (
     <div className="flex items-center justify-center rounded-full font-bold ring-2 ring-white/10"
-      style={{ width: size, height: size, fontSize: size * 0.38, background: 'linear-gradient(135deg,rgba(212,240,0,0.3),rgba(212,240,0,0.15))', color: '#D4F000' }}>
+      style={{ width: size, height: size, fontSize: size * 0.38, background: pg.limeDim, color: pg.lime }}>
       {initials}
     </div>
   )
@@ -111,8 +112,8 @@ export function StatusBadge({ status }: { status: string }) {
   }
   const styles: Record<string, { bg: string; text: string; dot: string }> = {
     pending:      { bg: 'rgba(255,255,255,0.07)', text: 'rgba(255,255,255,0.6)', dot: '#666' },
-    accepted:     { bg: 'rgba(212,240,0,0.15)',   text: '#D4F000',              dot: '#D4F000' },
-    confirmed:    { bg: 'rgba(212,240,0,0.15)',   text: '#D4F000',              dot: '#D4F000' },
+    accepted:     { bg: pg.limeDim,   text: pg.lime,              dot: pg.lime },
+    confirmed:    { bg: pg.limeDim,   text: pg.lime,              dot: pg.lime },
     shopping:     { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24',              dot: '#fbbf24' },
     purchased:    { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24',              dot: '#fbbf24' },
     on_the_way:   { bg: 'rgba(59,130,246,0.15)',  text: '#60a5fa',              dot: '#3b82f6' },
@@ -213,21 +214,23 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
     setItems(prev => [...prev, { id, message, type }])
     setTimeout(() => setItems(prev => prev.filter(i => i.id !== id)), 4000)
   }, [])
-  const iconMap: Record<SnackbarType, { icon: ReactNode; border: string }> = {
-    success: { icon: <CheckCircle size={16} />, border: 'rgba(16,185,129,0.4)' },
-    error:   { icon: <AlertCircle size={16} className="text-red-400" />, border: 'rgba(239,68,68,0.4)' },
-    info:    { icon: <Info size={16} style={{ color: '#A6B300' }} />, border: 'rgba(166,179,0,0.4)' },
-    warning: { icon: <AlertTriangle size={16} className="text-yellow-400" />, border: 'rgba(245,158,11,0.4)' },
+  const iconMap: Record<SnackbarType, { icon: ReactNode; border: string; bg: string }> = {
+    success: { icon: <CheckCircle size={16} style={{ color: pg.success }} />, border: 'rgba(34,197,94,0.35)', bg: 'rgba(34,197,94,0.1)' },
+    error:   { icon: <AlertCircle size={16} style={{ color: pg.danger }} />, border: 'rgba(255,77,79,0.35)', bg: 'rgba(255,77,79,0.1)' },
+    info:    { icon: <Info size={16} style={{ color: pg.lime }} />, border: 'rgba(212,240,0,0.35)', bg: pg.limeDim },
+    warning: { icon: <AlertTriangle size={16} style={{ color: pg.warning }} />, border: 'rgba(245,165,36,0.35)', bg: 'rgba(245,165,36,0.1)' },
   }
   return (
     <SnackbarContext.Provider value={{ show }}>
       {children}
       <div className="fixed bottom-28 left-4 right-4 z-[100] flex flex-col items-center gap-2 pointer-events-none">
         {items.map(item => (
-          <div key={item.id} className="pointer-events-auto flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-medium text-white animate-slide-up shadow-float"
-            style={{ background: 'rgba(24,24,24,0.95)', border: `1px solid ${iconMap[item.type].border}`, backdropFilter: 'blur(16px)', maxWidth: 360, width: '100%' }}>
-            {iconMap[item.type].icon}
-            <span>{item.message}</span>
+          <div key={item.id} className="pointer-events-auto flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-bold animate-slide-up shadow-float"
+            style={{ background: 'rgba(18,18,18,0.96)', border: `1px solid ${iconMap[item.type].border}`, backdropFilter: 'blur(16px)', maxWidth: 360, width: '100%' }}>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: iconMap[item.type].bg }}>
+              {iconMap[item.type].icon}
+            </span>
+            <span style={{ color: pg.text }}>{item.message}</span>
           </div>
         ))}
       </div>
@@ -249,7 +252,7 @@ export function BottomSheet({ open, onClose, title, children }: { open: boolean;
       style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}
       onClick={onClose}>
       <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom"
-        style={{ background: '#181818', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '88vh' }}
+        style={{ background: pg.surface, border: `1px solid ${pg.line}`, maxHeight: '88vh' }}
         onClick={e => e.stopPropagation()}>
         <div className="px-5 pb-1 pt-3">
           <div className="bottom-sheet-handle" />
@@ -289,20 +292,28 @@ export function Dialog({ open, onClose, title, children, footer }: { open: boole
 // ── Tabs ─────────────────────────────────────────
 export function Tabs({ tabs, active, onChange }: { tabs: { key: string; label: string; count?: number }[]; active: string; onChange: (key: string) => void }) {
   return (
-    <div className="flex gap-1 overflow-x-auto pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-      {tabs.map(tab => (
-        <button key={tab.key} onClick={() => onChange(tab.key)}
-          className="relative shrink-0 px-4 py-2 text-sm font-medium transition-colors"
-          style={{ color: active === tab.key ? '#A6B300' : 'rgba(255,255,255,0.4)' }}>
-          {tab.label}
-          {tab.count !== undefined && tab.count > 0 && (
-            <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{tab.count}</span>
-          )}
-          {active === tab.key && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ background: '#A6B300' }} />
-          )}
-        </button>
-      ))}
+    <div className="flex gap-1.5 overflow-x-auto pb-3">
+      {tabs.map(tab => {
+        const isActive = active === tab.key
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => onChange(tab.key)}
+            className="relative shrink-0 rounded-2xl px-4 py-2 text-sm font-extrabold transition-all active:scale-95"
+            style={{
+              background: isActive ? pg.limeDim : pg.surface2,
+              color: isActive ? pg.lime : pg.text3,
+              border: `1px solid ${isActive ? 'rgba(212,240,0,0.28)' : pg.line}`,
+            }}
+          >
+            {tab.label}
+            {tab.count !== undefined && tab.count > 0 && (
+              <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{tab.count}</span>
+            )}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -313,8 +324,8 @@ export function Chip({ label, active, onClick, icon }: { label: string; active?:
     <button onClick={onClick}
       className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
       style={active
-        ? { background: 'rgba(166,179,0,0.2)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.4)' }
-        : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        ? { background: pg.limeDim, color: pg.lime, border: '1px solid rgba(212,240,0,0.35)' }
+        : { background: pg.surface2, color: pg.text3, border: `1px solid ${pg.line}` }}>
       {icon} {label}
     </button>
   )
@@ -324,8 +335,11 @@ export function Chip({ label, active, onClick, icon }: { label: string; active?:
 export function ProgressBar({ value, max = 100 }: { value: number; max?: number; color?: string; height?: string }) {
   const pct = Math.min(100, (value / max) * 100)
   return (
-    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-      <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #A6B300, #BFD400)' }} />
+    <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+      <div
+        className="h-full rounded-full transition-all duration-700 ease-out"
+        style={{ width: `${pct}%`, background: pg.lime, boxShadow: '0 0 12px rgba(212,240,0,0.45)' }}
+      />
     </div>
   )
 }
@@ -373,27 +387,29 @@ export function SectionHeader({ title, action }: { title: string; action?: React
 // ── Earnings Card ────────────────────────────────
 export function EarningsCard({ today, week, deliveries }: { today: number; week: number; deliveries: number }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl p-5 text-white animate-slide-up"
-      style={{ background: 'linear-gradient(135deg, #2a2e00 0%, #181a00 100%)', border: '1px solid rgba(166,179,0,0.2)', boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(166,179,0,0.08)' }}>
-      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-20 blur-3xl" style={{ background: '#A6B300' }} />
+    <div
+      className="relative overflow-hidden rounded-[28px] p-5 text-white animate-slide-up"
+      style={{ background: pg.surface, border: `1px solid rgba(212,240,0,0.22)`, boxShadow: '0 12px 40px rgba(0,0,0,0.45)' }}
+    >
+      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-25 blur-3xl" style={{ background: pg.lime }} />
       <div className="relative z-10">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-medium" style={{ color: 'rgba(166,179,0,0.7)' }}>Today's Earnings</p>
-            <p className="mt-1 text-3xl font-bold text-white"><CountUp value={today} prefix="₹" /></p>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.lime }}>Today&apos;s Earnings</p>
+            <p className="mt-1 text-[34px] font-extrabold leading-none tracking-tight"><CountUp value={today} prefix="₹" /></p>
           </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'rgba(166,179,0,0.15)', border: '1px solid rgba(166,179,0,0.2)' }}>
-            <TrendingUp size={22} style={{ color: '#A6B300' }} />
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: pg.limeDim, border: '1px solid rgba(212,240,0,0.22)' }}>
+            <TrendingUp size={22} style={{ color: pg.lime }} />
           </div>
         </div>
         <div className="mt-4 flex gap-3">
-          <div className="flex-1 rounded-2xl px-3 py-2.5" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>This Week</p>
-            <p className="mt-0.5 text-sm font-bold text-white">₹{week.toLocaleString()}</p>
+          <div className="flex-1 rounded-2xl px-3 py-2.5" style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}>
+            <p className="text-xs" style={{ color: pg.text3 }}>This Week</p>
+            <p className="mt-0.5 text-sm font-extrabold">₹{week.toLocaleString()}</p>
           </div>
-          <div className="flex-1 rounded-2xl px-3 py-2.5" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Deliveries</p>
-            <p className="mt-0.5 text-sm font-bold text-white">{deliveries} today</p>
+          <div className="flex-1 rounded-2xl px-3 py-2.5" style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}>
+            <p className="text-xs" style={{ color: pg.text3 }}>Deliveries</p>
+            <p className="mt-0.5 text-sm font-extrabold">{deliveries} today</p>
           </div>
         </div>
       </div>

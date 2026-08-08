@@ -16,7 +16,7 @@ const sizeMap: Record<BrandSize, string> = {
   xl: 'h-28 w-28',
 }
 
-export const OLIVE_GREEN = '#A6B300'
+export const OLIVE_GREEN = '#D4F000'
 
 /**
  * Brand mark — logo image only (no pinGGet text).

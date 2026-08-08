@@ -41,7 +41,7 @@ export default function RecurringSelector({
   return (
     <div className="rounded-3xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
       <div className="flex items-center gap-2 mb-4">
-        <Repeat size={16} style={{ color: '#A6B300' }} />
+        <Repeat size={16} style={{ color: '#D4F000' }} />
         <span className="text-sm font-semibold text-white">Repeat Request</span>
         <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>(optional)</span>
       </div>
@@ -54,18 +54,18 @@ export default function RecurringSelector({
             <button key={opt.type} onClick={() => onTypeChange(opt.type)}
               className="flex w-full items-center gap-3 rounded-2xl p-3.5 transition-all active:scale-[0.98]"
               style={isSelected
-                ? { background: 'rgba(166,179,0,0.12)', border: '1.5px solid rgba(166,179,0,0.4)' }
+                ? { background: 'rgba(212,240,0,0.12)', border: '1.5px solid rgba(212,240,0,0.4)' }
                 : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                style={isSelected ? { background: 'rgba(166,179,0,0.2)' } : { background: 'rgba(255,255,255,0.05)' }}>
-                <Icon size={16} style={{ color: isSelected ? '#A6B300' : 'rgba(255,255,255,0.4)' }} />
+                style={isSelected ? { background: 'rgba(212,240,0,0.2)' } : { background: 'rgba(255,255,255,0.05)' }}>
+                <Icon size={16} style={{ color: isSelected ? '#D4F000' : 'rgba(255,255,255,0.4)' }} />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold" style={{ color: isSelected ? '#A6B300' : 'rgba(255,255,255,0.7)' }}>{opt.label}</p>
+                <p className="text-sm font-semibold" style={{ color: isSelected ? '#D4F000' : 'rgba(255,255,255,0.7)' }}>{opt.label}</p>
                 <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{opt.desc}</p>
               </div>
               {isSelected && (
-                <div className="flex h-5 w-5 items-center justify-center rounded-full" style={{ background: '#A6B300' }}>
+                <div className="flex h-5 w-5 items-center justify-center rounded-full" style={{ background: '#D4F000' }}>
                   <span className="text-[10px] font-bold text-[#0B0B0B]">✓</span>
                 </div>
               )}
@@ -83,7 +83,7 @@ export default function RecurringSelector({
               <button key={wd.value} onClick={() => onWeekdayChange(wd.value)}
                 className="rounded-xl px-3.5 py-2 text-sm font-semibold transition-all active:scale-95"
                 style={weekday === wd.value
-                  ? { background: '#A6B300', color: '#0B0B0B' }
+                  ? { background: '#D4F000', color: '#0B0B0B' }
                   : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 {wd.label}
               </button>

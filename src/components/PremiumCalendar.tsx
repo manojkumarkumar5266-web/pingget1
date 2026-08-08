@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import { pg } from '../design/tokens'
+import { Surface, IconButton } from '../design/primitives'
 
 type Props = {
   selectedDate: Date | null
@@ -47,35 +49,28 @@ export default function PremiumCalendar({ selectedDate, onSelect, maxDays }: Pro
   while (cells.length % 7 !== 0) cells.push(null)
 
   return (
-    <div className="rounded-3xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <button onClick={prevMonth} disabled={!canGoPrev}
-          className="flex h-10 w-10 items-center justify-center rounded-2xl transition-all active:scale-90 disabled:opacity-20"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <ChevronLeft size={18} style={{ color: '#fff' }} />
-        </button>
+    <Surface className="p-5" style={{ background: pg.bgElevated }}>
+      <div className="mb-5 flex items-center justify-between">
+        <IconButton onClick={prevMonth} disabled={!canGoPrev} className="!h-10 !w-10 disabled:opacity-20">
+          <ChevronLeft size={18} />
+        </IconButton>
         <div className="flex items-center gap-2">
-          <Calendar size={16} style={{ color: '#A6B300' }} />
-          <span className="text-base font-bold text-white">{MONTHS[viewMonth]} {viewYear}</span>
+          <Calendar size={16} style={{ color: pg.lime }} />
+          <span className="text-base font-extrabold tracking-tight">{MONTHS[viewMonth]} {viewYear}</span>
         </div>
-        <button onClick={nextMonth} disabled={!canGoNext}
-          className="flex h-10 w-10 items-center justify-center rounded-2xl transition-all active:scale-90 disabled:opacity-20"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <ChevronRight size={18} style={{ color: '#fff' }} />
-        </button>
+        <IconButton onClick={nextMonth} disabled={!canGoNext} className="!h-10 !w-10 disabled:opacity-20">
+          <ChevronRight size={18} />
+        </IconButton>
       </div>
 
-      {/* Weekday headers */}
       <div className="mb-2 grid grid-cols-7 gap-1">
         {WEEKDAYS.map(wd => (
-          <div key={wd} className="text-center text-[10px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.3)' }}>
+          <div key={wd} className="text-center text-[10px] font-extrabold uppercase tracking-wider" style={{ color: pg.text4 }}>
             {wd}
           </div>
         ))}
       </div>
 
-      {/* Date grid */}
       <div className="grid grid-cols-7 gap-1">
         {cells.map((day, i) => {
           if (day === null) return <div key={i} />
@@ -84,46 +79,49 @@ export default function PremiumCalendar({ selectedDate, onSelect, maxDays }: Pro
           const selected = isSelected(day)
           const dateObj = new Date(viewYear, viewMonth, day)
           return (
-            <button key={i} onClick={() => enabled && onSelect(dateObj)} disabled={!enabled}
-              className="relative flex flex-col items-center justify-center rounded-2xl py-2.5 transition-all active:scale-90"
+            <button
+              key={i}
+              type="button"
+              onClick={() => enabled && onSelect(dateObj)}
+              disabled={!enabled}
+              className="relative flex flex-col items-center justify-center rounded-2xl py-2.5 transition-all active:scale-90 disabled:cursor-not-allowed"
               style={selected
-                ? { background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 4px 16px rgba(166,179,0,0.4)' }
+                ? { background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(212,240,0,0.35)' }
                 : enabled
                   ? todayBadge
-                    ? { background: 'rgba(166,179,0,0.08)', border: '1.5px solid rgba(166,179,0,0.25)', color: '#A6B300' }
-                    : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }
-                  : { background: 'transparent', color: 'rgba(255,255,255,0.15)', cursor: 'not-allowed' }}>
-              <span className={`text-sm font-bold ${selected ? 'text-[#0B0B0B]' : ''}`}>{day}</span>
+                    ? { background: pg.limeDim, border: `1.5px solid rgba(212,240,0,0.28)`, color: pg.lime }
+                    : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text2 }
+                  : { background: 'transparent', color: pg.text4, cursor: 'not-allowed' }}
+            >
+              <span className="text-sm font-extrabold">{day}</span>
               {todayBadge && !selected && (
-                <span className="mt-0.5 text-[8px] font-bold uppercase" style={{ color: '#A6B300' }}>Today</span>
+                <span className="mt-0.5 text-[8px] font-extrabold uppercase" style={{ color: pg.lime }}>Today</span>
               )}
               {selected && (
-                <span className="mt-0.5 text-[8px] font-bold uppercase text-[#0B0B0B]/70">Selected</span>
+                <span className="mt-0.5 text-[8px] font-extrabold uppercase" style={{ color: 'rgba(10,10,10,0.65)' }}>Selected</span>
               )}
             </button>
           )
         })}
       </div>
 
-      {/* Selected date display */}
       {selectedDate && (
-        <div className="mt-4 flex items-center gap-3 rounded-2xl p-3.5 animate-slide-up"
-          style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, #A6B300, #808000)' }}>
-            <Calendar size={18} className="text-[#0B0B0B]" />
+        <Surface accent className="mt-4 flex animate-slide-up items-center gap-3 p-3.5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.lime }}>
+            <Calendar size={18} style={{ color: pg.limeText }} />
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>Selected Date</p>
-            <p className="text-sm font-bold text-white">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: pg.text3 }}>Selected Date</p>
+            <p className="text-sm font-extrabold">
               {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
           </div>
-        </div>
+        </Surface>
       )}
 
-      <p className="mt-3 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
+      <p className="mt-3 text-xs" style={{ color: pg.text4 }}>
         Select from today up to {maxDays} days ahead. Past dates are disabled.
       </p>
-    </div>
+    </Surface>
   )
 }

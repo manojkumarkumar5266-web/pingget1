@@ -35,7 +35,7 @@ export function vehicleLabel(v: VehicleType): string {
 
 export function vehicleColor(v: VehicleType): string {
   const colors: Record<VehicleType, string> = {
-    motorbike: '#808000',
+    motorbike: '#D4F000',
     scooter: '#3b82f6',
     bicycle: '#22c55e',
     car: '#f59e0b',

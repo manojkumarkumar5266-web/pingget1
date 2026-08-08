@@ -206,12 +206,13 @@ export function MediaTile({
 
 export function IconButton({
   children,
+  className = '',
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
-      className="flex h-11 w-11 items-center justify-center rounded-2xl transition active:scale-90"
+      className={`flex h-11 w-11 items-center justify-center rounded-2xl transition active:scale-90 ${className}`}
       style={{ background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text2 }}
       {...props}
     >

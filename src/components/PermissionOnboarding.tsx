@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { MapPin, Camera, Bell, CheckCircle, Shield } from 'lucide-react'
+import { MapPin, Camera, Bell, Shield } from 'lucide-react'
+import { pg } from '../design/tokens'
+import { CTA, Surface } from '../design/primitives'
 
 type PermissionStep = 'gps' | 'camera' | 'notifications'
 
@@ -64,54 +66,58 @@ export default function PermissionOnboarding({ onComplete }: { onComplete: () =>
   const isGranted = granted[current.key]
 
   return (
-    <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center px-5 bg-[#0B0B0B]">
-      {/* Ambient glow */}
+    <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center px-5" style={{ background: pg.bg }}>
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 h-64 w-64 rounded-full blur-[80px]" style={{ background: 'rgba(166,179,0,0.08)' }} />
+        <div className="absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full blur-[80px]" style={{ background: pg.limeDim }} />
       </div>
 
       <div className="relative z-10 w-full max-w-sm">
-        {/* Progress indicator */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-3xl"
-            style={{ background: 'rgba(166,179,0,0.15)', border: '1px solid rgba(166,179,0,0.25)' }}>
-            <Shield size={26} style={{ color: '#A6B300' }} />
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-3xl"
+            style={{ background: pg.limeDim, border: '1px solid rgba(212,240,0,0.28)' }}
+          >
+            <Shield size={26} style={{ color: pg.lime }} />
           </div>
-          <div>
-            <h2 className="text-center text-xl font-bold text-white">Quick Setup</h2>
-            <p className="text-center text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Step {stepIdx + 1} of {STEPS.length}</p>
+          <div className="text-center">
+            <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.22em]" style={{ color: pg.lime }}>PingGET</p>
+            <h2 className="text-xl font-extrabold tracking-tight">Quick Setup</h2>
+            <p className="text-sm" style={{ color: pg.text3 }}>Step {stepIdx + 1} of {STEPS.length}</p>
           </div>
           <div className="flex gap-2">
             {STEPS.map((s, i) => (
-              <div key={s.key} className="h-1.5 rounded-full transition-all duration-400"
-                style={{ width: i === stepIdx ? 28 : 10, background: i <= stepIdx ? '#A6B300' : 'rgba(255,255,255,0.12)' }} />
+              <div
+                key={s.key}
+                className="h-1.5 rounded-full transition-all duration-400"
+                style={{ width: i === stepIdx ? 28 : 10, background: i <= stepIdx ? pg.lime : 'rgba(255,255,255,0.12)' }}
+              />
             ))}
           </div>
         </div>
 
-        {/* Card */}
-        <div className="rounded-3xl p-6 animate-slide-up shadow-modal"
-          style={{ background: '#181818', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <Surface className="animate-slide-up p-6">
           <div className="mb-5 flex flex-col items-center gap-3 text-center">
-            <div className={`flex h-20 w-20 items-center justify-center rounded-3xl text-4xl transition-all ${isGranted ? 'animate-bounce-in' : 'animate-float'}`}
+            <div
+              className={`flex h-20 w-20 items-center justify-center rounded-3xl text-4xl transition-all ${isGranted ? 'animate-bounce-in' : 'animate-float'}`}
               style={isGranted
-                ? { background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.25)' }
-                : { background: 'rgba(166,179,0,0.1)', border: '1px solid rgba(166,179,0,0.2)' }}>
+                ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.28)' }
+                : { background: pg.limeDim, border: '1px solid rgba(212,240,0,0.22)' }}
+            >
               {isGranted ? '✅' : current.emoji}
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">{current.title}</h3>
-              {isGranted && <p className="mt-1 text-sm font-semibold text-green-400">Permission Granted!</p>}
+              <h3 className="text-xl font-extrabold tracking-tight">{current.title}</h3>
+              {isGranted && <p className="mt-1 text-sm font-bold" style={{ color: pg.success }}>Permission Granted!</p>}
             </div>
-            <p className="text-sm leading-relaxed text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>{current.desc}</p>
+            <p className="text-sm leading-relaxed" style={{ color: pg.text3 }}>{current.desc}</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleSkip} className="btn-secondary flex-1">Skip</button>
-            <button onClick={handleNext} disabled={requesting} className="flex-1 btn font-bold disabled:opacity-50" style={{ background: '#A6B300', color: '#0B0B0B' }}>
+            <CTA variant="secondary" onClick={handleSkip} className="flex-1">Skip</CTA>
+            <CTA onClick={handleNext} disabled={requesting} className="flex-1">
               {requesting ? 'Requesting...' : isGranted ? 'Continue' : 'Allow'}
-            </button>
+            </CTA>
           </div>
-        </div>
+        </Surface>
       </div>
     </div>
   )

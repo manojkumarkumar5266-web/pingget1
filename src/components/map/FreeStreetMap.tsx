@@ -65,7 +65,7 @@ export default function FreeStreetMap({
       {/* Location detect chip */}
       <div
         className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-[11px] font-bold"
-        style={{ background: 'rgba(11,11,11,0.88)', color: '#C0D900', border: '1px solid rgba(166,179,0,0.4)' }}
+        style={{ background: 'rgba(11,11,11,0.88)', color: '#C0D900', border: '1px solid rgba(212,240,0,0.4)' }}
       >
         {center ? '📍 Live location' : 'Map'}
         {bikeCount > 0 ? ` · ${bikeCount} nearby` : ''}
