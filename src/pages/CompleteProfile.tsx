@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
+import { pg } from '../design/tokens'
+import { CTA } from '../design/primitives'
 import { MapPin } from 'lucide-react'
 
 export default function CompleteProfile() {
@@ -75,25 +77,26 @@ export default function CompleteProfile() {
   }
 
   return (
-    <div className="min-h-screen ">
-      <div className="mx-auto max-w-md px-6 py-8">
-        <h1 className="mb-2 text-2xl font-bold text-white">Complete Your Profile</h1>
-        <p className="mb-6 text-sm text-white/50">Select your city and share your location to get started.</p>
-        <form onSubmit={handleSubmit} className="card space-y-4 p-6">
+    <div className="flex min-h-[100dvh] flex-col px-5 py-10" style={{ background: pg.bg }}>
+      <div className="mx-auto w-full max-w-md">
+        <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.22em]" style={{ color: pg.lime }}>PingGET</p>
+        <h1 className="mb-2 text-[28px] font-extrabold tracking-tight">Complete Your Profile</h1>
+        <p className="mb-6 text-sm" style={{ color: pg.text3 }}>Select your city and share your location to get started.</p>
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-[28px] p-5" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
           <div>
             <label className="label">City</label>
             <input className="input" value={city} onChange={e => setCity(e.target.value)} placeholder="Your city" required />
           </div>
           <div>
             <label className="label">GPS Location</label>
-            <button type="button" onClick={getLocation} disabled={gpsLoading} className="btn-secondary w-full">
+            <CTA type="button" variant="secondary" onClick={getLocation} disabled={gpsLoading} className="w-full">
               <MapPin size={18} /> {gpsLoading ? 'Getting location...' : gpsLat ? `${gpsLat.toFixed(4)}, ${gpsLng!.toFixed(4)}` : 'Get My Location'}
-            </button>
+            </CTA>
           </div>
           {error && <ErrorBanner message={error} />}
-          <button type="submit" disabled={loading} className="btn-primary w-full">
+          <CTA type="submit" disabled={loading} className="w-full">
             {loading ? 'Saving...' : 'Continue'}
-          </button>
+          </CTA>
         </form>
       </div>
     </div>

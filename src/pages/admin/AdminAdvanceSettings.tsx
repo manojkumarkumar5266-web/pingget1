@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type AdvanceSettings } from '../../lib/supabase'
 import { Settings, Save, Check, AlertCircle } from 'lucide-react'
+import { AdminShell, AdminHeader } from './adminChrome'
 
 const DEFAULT_SETTINGS: Omit<AdvanceSettings, 'id' | 'created_at' | 'updated_at'> = {
   enabled: true,
@@ -105,20 +106,17 @@ export default function AdminAdvanceSettings() {
   }
 
   if (loading) return (
-    <div className="p-4 md:p-8">
+    <AdminShell>
       <div className="mb-6 h-8 w-48 skeleton rounded-xl" />
       <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="skeleton h-32 rounded-2xl" />)}</div>
-    </div>
+    </AdminShell>
   )
 
   const s = settings || ({ ...DEFAULT_SETTINGS, id: '' } as AdvanceSettings)
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl">
-      <div className="flex items-center gap-2 mb-6">
-        <Settings size={24} style={{ color: '#A6B300' }} />
-        <h1 className="text-2xl font-bold text-white">Advance Request Settings</h1>
-      </div>
+    <AdminShell>
+      <AdminHeader title="Advance Request Settings" />
 
       {error && (
         <div className="mb-4 flex items-center gap-2 rounded-2xl p-3" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
@@ -324,7 +322,7 @@ export default function AdminAdvanceSettings() {
       <div className="sticky bottom-0 z-10 pb-4">
         <button onClick={handleSave} disabled={saving}
           className="w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold transition-all active:scale-[0.97] disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(166,179,0,0.35)' }}>
+          style={{ background: 'linear-gradient(135deg, #D4F000, #D4F000)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(212,240,0,0.35)' }}>
           {saving ? (
             <span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0B0B0B]/30" style={{ borderTopColor: '#0B0B0B' }} />Saving...</span>
           ) : saved ? (
@@ -334,7 +332,7 @@ export default function AdminAdvanceSettings() {
           )}
         </button>
       </div>
-    </div>
+    </AdminShell>
   )
 }
 
@@ -355,7 +353,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
   return (
     <button onClick={() => onChange(!value)}
       className="relative h-7 w-12 rounded-full transition-all"
-      style={{ background: value ? '#A6B300' : 'rgba(255,255,255,0.15)' }}>
+      style={{ background: value ? '#D4F000' : 'rgba(255,255,255,0.15)' }}>
       <div className="absolute top-1 h-5 w-5 rounded-full bg-white transition-all" style={{ left: value ? 24 : 4 }} />
     </button>
   )
@@ -365,7 +363,7 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
   return (
     <button onClick={onClick}
       className="rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-95"
-      style={active ? { background: '#A6B300', color: '#0B0B0B' } : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>
+      style={active ? { background: '#D4F000', color: '#0B0B0B' } : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>
       {children}
     </button>
   )

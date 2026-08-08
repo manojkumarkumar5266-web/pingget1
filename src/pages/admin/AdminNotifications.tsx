@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useSnackbar } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
 import { Send, Users, Bike, UserCheck, Megaphone, Clock, CheckCircle, XCircle, Loader2, Image, X, Search } from 'lucide-react'
+import { AdminShell, AdminHeader } from './adminChrome'
 
 type DeliveryLog = {
   id: string
@@ -153,8 +154,8 @@ export default function AdminNotifications() {
   ]
 
   return (
-    <div className="p-4 md:p-8">
-      <h1 className="mb-6 text-2xl font-bold text-white">Notification Center</h1>
+    <AdminShell>
+      <AdminHeader title="Notification Center" />
 
       {/* Compose */}
       <div className="card mb-6 p-5">
@@ -289,6 +290,6 @@ export default function AdminNotifications() {
           </div>
         )}
       </div>
-    </div>
+    </AdminShell>
   )
 }

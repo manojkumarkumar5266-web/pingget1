@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Plus, Trash2, X, ChevronDown, ChevronRight, Package } from 'lucide-react'
+import { AdminShell, AdminHeader } from './adminChrome'
+import { pg } from '../../design/tokens'
 
 type Category = {
   id: string
@@ -89,15 +91,14 @@ export default function AdminCategories() {
   }
 
   return (
-    <div className="min-h-screen bg-black pb-20">
-      <div className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <h1 className="text-lg font-bold text-white">Categories & Items</h1>
-        <button onClick={() => setShowAddCat(true)} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-black" style={{ background: '#facc15' }}>
+    <AdminShell>
+      <AdminHeader title="Categories & Items" action={
+        <button onClick={() => setShowAddCat(true)} className="btn-primary text-sm flex items-center gap-1.5">
           <Plus size={16} /> Add Category
         </button>
-      </div>
+      } />
 
-      <div className="mx-auto max-w-2xl px-4 py-4">
+      <div className="mx-auto max-w-2xl">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
@@ -198,6 +199,6 @@ export default function AdminCategories() {
           </div>
         </div>
       )}
-    </div>
+    </AdminShell>
   )
 }

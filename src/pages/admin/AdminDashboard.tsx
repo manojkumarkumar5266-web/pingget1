@@ -118,10 +118,10 @@ export default function AdminDashboard() {
 
   const kpiCards = [
     { label: 'Total Users',     value: stats.totalUsers,       icon: Users,        bg: 'rgba(59,130,246,0.15)',   color: '#60a5fa' },
-    { label: 'Total Partners',  value: stats.totalDps,         icon: Bike,         bg: 'rgba(166,179,0,0.15)',    color: '#A6B300' },
+    { label: 'Total Partners',  value: stats.totalDps,         icon: Bike,         bg: 'rgba(212,240,0,0.15)',    color: '#D4F000' },
     { label: "Today Requests",  value: stats.todayRequests,    icon: Package,      bg: 'rgba(245,158,11,0.15)',   color: '#fbbf24' },
     { label: "Today Delivered", value: stats.todayDeliveries,  icon: CheckCircle,  bg: 'rgba(16,185,129,0.15)',   color: '#34d399' },
-    { label: 'Live Orders',     value: stats.liveOrders,       icon: Activity,     bg: 'rgba(166,179,0,0.15)',    color: '#A6B300' },
+    { label: 'Live Orders',     value: stats.liveOrders,       icon: Activity,     bg: 'rgba(212,240,0,0.15)',    color: '#D4F000' },
     { label: 'Completed',       value: stats.completedOrders,  icon: TrendingUp,   bg: 'rgba(16,185,129,0.15)',   color: '#34d399' },
     { label: 'Cancelled',       value: stats.cancelledOrders,  icon: XCircle,      bg: 'rgba(239,68,68,0.15)',    color: '#f87171' },
     { label: 'Online DPs',      value: stats.onlineDps,        icon: Bike,         bg: 'rgba(16,185,129,0.15)',   color: '#34d399' },
@@ -154,7 +154,7 @@ export default function AdminDashboard() {
           </button>
           <button onClick={exportReport}
             className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-sm font-semibold transition-all active:scale-95"
-            style={{ background: 'rgba(166,179,0,0.15)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
+            style={{ background: 'rgba(212,240,0,0.15)', border: '1px solid rgba(212,240,0,0.25)', color: '#D4F000' }}>
             <Download size={16} /> Export
           </button>
         </div>
@@ -196,10 +196,10 @@ export default function AdminDashboard() {
           <p className="text-3xl font-bold text-white"><CountUp value={stats.todayRevenue} prefix="₹" /></p>
         </div>
         <div className="relative overflow-hidden rounded-3xl p-5 animate-slide-up"
-          style={{ background: 'linear-gradient(135deg,rgba(166,179,0,0.15),rgba(166,179,0,0.07))', border: '1px solid rgba(166,179,0,0.2)', animationDelay: '360ms' }}>
+          style={{ background: 'linear-gradient(135deg,rgba(212,240,0,0.15),rgba(212,240,0,0.07))', border: '1px solid rgba(212,240,0,0.2)', animationDelay: '360ms' }}>
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={16} style={{ color: '#A6B300' }} />
-            <p className="text-xs font-semibold" style={{ color: '#A6B300' }}>Month Revenue</p>
+            <TrendingUp size={16} style={{ color: '#D4F000' }} />
+            <p className="text-xs font-semibold" style={{ color: '#D4F000' }}>Month Revenue</p>
           </div>
           <p className="text-3xl font-bold text-white"><CountUp value={stats.monthRevenue} prefix="₹" /></p>
         </div>
@@ -242,15 +242,15 @@ export default function AdminDashboard() {
             <div className="space-y-2">
               {topDps.map((dp, i) => (
                 <div key={i} className="flex items-center justify-between rounded-2xl px-3 py-2.5"
-                  style={{ background: i === 0 ? 'rgba(166,179,0,0.08)' : 'rgba(255,255,255,0.03)' }}>
+                  style={{ background: i === 0 ? 'rgba(212,240,0,0.08)' : 'rgba(255,255,255,0.03)' }}>
                   <div className="flex items-center gap-2.5">
                     <span className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
-                      style={i === 0 ? { background: '#A6B300', color: '#0B0B0B' } : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
+                      style={i === 0 ? { background: '#D4F000', color: '#0B0B0B' } : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
                       {i + 1}
                     </span>
                     <span className="text-sm font-medium text-white">{dp.name}</span>
                   </div>
-                  <span className="text-sm font-bold" style={{ color: '#A6B300' }}>{dp.deliveries} <span className="text-xs font-normal" style={{ color: 'rgba(255,255,255,0.4)' }}>orders</span></span>
+                  <span className="text-sm font-bold" style={{ color: '#D4F000' }}>{dp.deliveries} <span className="text-xs font-normal" style={{ color: 'rgba(255,255,255,0.4)' }}>orders</span></span>
                 </div>
               ))}
             </div>
@@ -259,7 +259,7 @@ export default function AdminDashboard() {
 
         <div className="card p-5 animate-slide-up" style={{ animationDelay: '520ms' }}>
           <div className="mb-4 flex items-center gap-2">
-            <Zap size={15} style={{ color: '#A6B300' }} />
+            <Zap size={15} style={{ color: '#D4F000' }} />
             <h3 className="text-sm font-bold text-white">Recent Orders</h3>
           </div>
           {recentOrders.length === 0 ? (
@@ -289,12 +289,12 @@ export default function AdminDashboard() {
             <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4"
               style={{ background: 'rgba(18,18,18,0.95)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               <div className="flex items-center gap-2">
-                <Bell size={18} style={{ color: '#A6B300' }} />
+                <Bell size={18} style={{ color: '#D4F000' }} />
                 <h2 className="text-base font-bold text-white">Notifications</h2>
                 {unreadCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">{unreadCount}</span>}
               </div>
               <div className="flex items-center gap-2">
-                {unreadCount > 0 && <button onClick={markAllRead} className="text-xs font-semibold" style={{ color: '#A6B300' }}>Mark all read</button>}
+                {unreadCount > 0 && <button onClick={markAllRead} className="text-xs font-semibold" style={{ color: '#D4F000' }}>Mark all read</button>}
                 <button onClick={() => setShowNotifPanel(false)} className="btn-icon h-8 w-8 rounded-xl"><X size={15} style={{ color: 'rgba(255,255,255,0.5)' }} /></button>
               </div>
             </div>
@@ -310,10 +310,10 @@ export default function AdminDashboard() {
                   <div key={n.id} onClick={() => markRead(n.id)} className="flex gap-3 rounded-2xl p-3.5 cursor-pointer transition-all"
                     style={n.is_read
                       ? { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }
-                      : { background: 'rgba(166,179,0,0.07)', border: '1px solid rgba(166,179,0,0.18)' }}>
+                      : { background: 'rgba(212,240,0,0.07)', border: '1px solid rgba(212,240,0,0.18)' }}>
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
-                      style={n.is_read ? { background: 'rgba(255,255,255,0.06)' } : { background: 'rgba(166,179,0,0.15)' }}>
-                      <Icon size={16} style={{ color: n.is_read ? 'rgba(255,255,255,0.35)' : '#A6B300' }} />
+                      style={n.is_read ? { background: 'rgba(255,255,255,0.06)' } : { background: 'rgba(212,240,0,0.15)' }}>
+                      <Icon size={16} style={{ color: n.is_read ? 'rgba(255,255,255,0.35)' : '#D4F000' }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold" style={{ color: n.is_read ? 'rgba(255,255,255,0.55)' : '#fff' }}>{n.title}</p>
@@ -382,18 +382,18 @@ function AdvanceAnalytics() {
   if (loadingAdv || !advanceStats) return null
 
   const cards = [
-    { label: "Today's Scheduled", value: advanceStats.todayCount, icon: CalendarClock, color: '#A6B300' },
+    { label: "Today's Scheduled", value: advanceStats.todayCount, icon: CalendarClock, color: '#D4F000' },
     { label: 'Tomorrow', value: advanceStats.tomorrowCount, icon: CalendarClock, color: '#818cf8' },
     { label: 'Next 7 Days', value: advanceStats.next7Count, icon: CalendarClock, color: '#60a5fa' },
     { label: 'Waiting', value: advanceStats.waiting, icon: Clock, color: '#fbbf24' },
     { label: 'Accepted', value: advanceStats.accepted, icon: CheckCircle, color: '#34d399' },
-    { label: 'Completed', value: advanceStats.completed, icon: CheckCircle, color: '#A6B300' },
+    { label: 'Completed', value: advanceStats.completed, icon: CheckCircle, color: '#D4F000' },
     { label: 'Expired', value: advanceStats.expired, icon: XCircle, color: '#6b7280' },
     { label: 'Recurring', value: advanceStats.recurring, icon: Repeat, color: '#c084fc' },
   ]
 
   const revenueCards = [
-    { label: 'Advance Revenue', value: advanceStats.revenue, icon: IndianRupee, color: '#A6B300' },
+    { label: 'Advance Revenue', value: advanceStats.revenue, icon: IndianRupee, color: '#D4F000' },
     { label: 'Booking Revenue', value: advanceStats.bookingRevenue, icon: TrendingUp, color: '#60a5fa' },
     { label: 'Cancellation Revenue', value: advanceStats.cancellationRevenue, icon: XCircle, color: '#f87171' },
   ]
@@ -401,7 +401,7 @@ function AdvanceAnalytics() {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-4">
-        <BarChart3 size={20} style={{ color: '#A6B300' }} />
+        <BarChart3 size={20} style={{ color: '#D4F000' }} />
         <h2 className="text-lg font-bold text-white">Advance Request Analytics</h2>
       </div>
 
@@ -450,7 +450,7 @@ function AdvanceAnalytics() {
           {[
             { label: 'Waiting', count: advanceStats.waiting, color: '#fbbf24' },
             { label: 'Accepted', count: advanceStats.accepted, color: '#34d399' },
-            { label: 'Completed', count: advanceStats.completed, color: '#A6B300' },
+            { label: 'Completed', count: advanceStats.completed, color: '#D4F000' },
             { label: 'Expired', count: advanceStats.expired, color: '#6b7280' },
             { label: 'Recurring', count: advanceStats.recurring, color: '#c084fc' },
           ].map((bar, i) => {

@@ -4,6 +4,7 @@ import { formatCurrency, formatTime } from '../../lib/utils'
 import { StatusBadge, EmptyState, SkeletonCard, Avatar } from '../../components/ui'
 import { ClipboardList, Search, Download, X, User, Bike, MapPin, Package, IndianRupee, MessageCircle, Star, Phone, Clock } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { AdminShell, AdminHeader, FilterPills } from './adminChrome'
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([])
@@ -105,34 +106,30 @@ export default function AdminOrders() {
   }
 
   if (loading) return (
-    <div className="p-4 md:p-8">
+    <AdminShell>
       <div className="mb-6 h-8 w-48 skeleton rounded-xl" />
       <div className="space-y-3">{[1, 2, 3].map(i => <SkeletonCard key={i} lines={3} />)}</div>
-    </div>
+    </AdminShell>
   )
 
   return (
-    <div className="p-4 md:p-8">
-      <h1 className="mb-4 text-2xl font-bold text-white">All Orders</h1>
+    <AdminShell>
+      <AdminHeader title="All Orders" action={
+        <button onClick={exportOrders} className="btn-secondary shrink-0 text-sm flex items-center gap-1.5">
+          <Download size={16} /> Export
+        </button>
+      } />
 
-      <div className="mb-4 flex items-center gap-3">
-        <div className="relative flex-1">
+      <div className="mb-4">
+        <div className="relative">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by description or order ID..." className="input pl-10" />
         </div>
-        <button onClick={exportOrders} className="btn-secondary shrink-0 text-sm flex items-center gap-1.5">
-          <Download size={16} /> Export
-        </button>
       </div>
 
-      <div className="mb-4 flex gap-2 overflow-x-auto">
-        {(['all', 'active', 'pending', 'completed', 'cancelled'] as const).map(f => (
-          <button key={f} onClick={() => setStatusFilter(f)}
-            className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition-all ${statusFilter === f ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-white/40'}`}>
-            {f === 'all' ? 'All Orders' : f}
-          </button>
-        ))}
+      <div className="mb-4">
+        <FilterPills options={['all', 'active', 'pending', 'completed', 'cancelled']} value={statusFilter} onChange={setStatusFilter} />
       </div>
 
       {filtered.length === 0 ? (
@@ -173,7 +170,7 @@ export default function AdminOrders() {
       )}
 
       {selected && <OrderDetailDrawer order={selected} onClose={() => setSelected(null)} />}
-    </div>
+    </AdminShell>
   )
 }
 

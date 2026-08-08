@@ -4,6 +4,8 @@ import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
+import { pg } from '../design/tokens'
+import { CTA } from '../design/primitives'
 import {
   User, Phone, MapPin, Mail, Lock, Eye, EyeOff,
   CircleCheck as CheckCircle, Circle as XCircle, ArrowRight, KeyRound,
@@ -483,22 +485,22 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
     <div className="relative">
       <button type="button" onClick={() => setRoleDropdownOpen(!roleDropdownOpen)} className="input flex items-center justify-between w-full">
         <span className="flex items-center gap-2">
-          {role === 'user' ? <User size={16} /> : <Bike size={16} />}
+          {role === 'user' ? <User size={16} style={{ color: pg.lime }} /> : <Bike size={16} style={{ color: pg.lime }} />}
           {role === 'user' ? 'User' : 'Delivery Partner'}
         </span>
-        <ChevronDown size={16} className={`transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`} style={{ color: 'rgba(255,255,255,0.5)' }} />
+        <ChevronDown size={16} className={`transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`} style={{ color: pg.text3 }} />
       </button>
       {roleDropdownOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setRoleDropdownOpen(false)} />
-          <div className="absolute z-20 mt-1 w-full rounded-xl border border-white/10 overflow-hidden animate-fade-in" style={{ background: '#1c2a14' }}>
-            <button type="button" onClick={() => { setRole('user'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors">
-              <User size={18} className="mt-0.5 shrink-0" style={{ color: '#808000' }} />
-              <div><p className="text-sm font-semibold text-white">User</p><p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Order groceries, medicines, parcels & more</p></div>
+          <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl animate-fade-in" style={{ background: pg.surface2, border: `1px solid ${pg.lineStrong}` }}>
+            <button type="button" onClick={() => { setRole('user'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/5">
+              <User size={18} className="mt-0.5 shrink-0" style={{ color: pg.lime }} />
+              <div><p className="text-sm font-extrabold text-white">User</p><p className="text-xs" style={{ color: pg.text3 }}>Order groceries, medicines, parcels & more</p></div>
             </button>
-            <button type="button" onClick={() => { setRole('dp'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-t border-white/5">
-              <Bike size={18} className="mt-0.5 shrink-0" style={{ color: '#808000' }} />
-              <div><p className="text-sm font-semibold text-white">Delivery Partner</p><p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>Earn money delivering in your area</p></div>
+            <button type="button" onClick={() => { setRole('dp'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 border-t px-4 py-3.5 text-left transition-colors hover:bg-white/5" style={{ borderColor: pg.line }}>
+              <Bike size={18} className="mt-0.5 shrink-0" style={{ color: pg.lime }} />
+              <div><p className="text-sm font-extrabold text-white">Delivery Partner</p><p className="text-xs" style={{ color: pg.text3 }}>Earn money delivering in your area</p></div>
             </button>
           </div>
         </>
@@ -508,7 +510,9 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
 
   // ── Google button ──
   const GoogleButton = ({ label }: { label: string }) => (
-    <button type="button" onClick={handleGoogle} disabled={loading} className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-white/15 bg-white/5 py-3 text-sm font-semibold text-white transition-all active:scale-95 hover:bg-white/10">
+    <button type="button" onClick={handleGoogle} disabled={loading}
+      className="w-full flex items-center justify-center gap-2.5 rounded-2xl py-3.5 text-sm font-extrabold transition-all active:scale-95"
+      style={{ background: pg.surface2, border: `1px solid ${pg.lineStrong}`, color: pg.text }}>
       <svg width="18" height="18" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -521,11 +525,11 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
 
   // ── Pincode status badge ──
   const PincodeBadge = () => {
-    if (pincodeChecking) return <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Checking service area...</p>
+    if (pincodeChecking) return <p className="mt-1.5 text-xs" style={{ color: pg.text3 }}>Checking service area...</p>
     if (!pincodeStatus) return null
     return (
-      <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${pincodeStatus.served ? 'text-green-300' : 'text-red-300'}`}
-        style={{ background: pincodeStatus.served ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${pincodeStatus.served ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
+      <div className={`mt-2 flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold ${pincodeStatus.served ? 'text-green-300' : 'text-red-300'}`}
+        style={{ background: pincodeStatus.served ? 'rgba(34,197,94,0.12)' : 'rgba(255,77,79,0.12)', border: `1px solid ${pincodeStatus.served ? 'rgba(34,197,94,0.25)' : 'rgba(255,77,79,0.25)'}` }}>
         {pincodeStatus.served
           ? <><CheckCircle size={13} /> We serve {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!</>
           : <><XCircle size={13} /> Sorry, we don't serve this area yet.</>}
@@ -538,26 +542,22 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
   // ═══════════════════════════════════════════════
   if (mode === 'forgot') {
     return (
-      <AuthLayout showBrand={false}>
-        <div className="card p-6 animate-fade-in">
-          <button onClick={() => { setMode('signin'); setError(null); setResetSent(false) }} className="text-sm mb-4 flex items-center gap-1" style={{ color: '#808000' }}>← Back to Sign In</button>
-          <h2 className="text-xl font-bold text-white mb-1">Forgot Password</h2>
-          <p className="text-sm mb-5" style={{ color: 'rgba(255,255,255,0.55)' }}>Enter your email and we'll send a reset link.</p>
-          {resetSent ? (
-            <div className="rounded-xl px-4 py-3 text-sm text-white glass-dark">
-              <div className="flex items-center gap-2"><CheckCircle size={16} className="shrink-0 text-green-400" /> Reset link sent! Check your inbox.</div>
+      <AuthLayout title="Forgot Password" subtitle="Enter your email and we'll send a reset link.">
+        <button type="button" onClick={() => { setMode('signin'); setError(null); setResetSent(false) }} className="mb-5 flex items-center gap-1 text-sm font-bold" style={{ color: pg.lime }}>← Back to Sign In</button>
+        {resetSent ? (
+          <div className="rounded-2xl px-4 py-4 text-sm" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+            <div className="flex items-center gap-2 text-white"><CheckCircle size={16} className="shrink-0 text-green-400" /> Reset link sent! Check your inbox.</div>
+          </div>
+        ) : (
+          <form onSubmit={handleForgot} className="space-y-4">
+            <div>
+              <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
+              <input type="email" className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="you@example.com" required />
             </div>
-          ) : (
-            <form onSubmit={handleForgot} className="space-y-4">
-              <div>
-                <label className="label flex items-center gap-1.5"><Mail size={14} /> Email</label>
-                <input type="email" className="input" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="you@example.com" required />
-              </div>
-              {error && <ErrorBanner message={error} />}
-              <button type="submit" disabled={loading} className="btn-primary w-full"><KeyRound size={16} /> {loading ? 'Sending...' : 'Send Reset Link'}</button>
-            </form>
-          )}
-        </div>
+            {error && <ErrorBanner message={error} />}
+            <CTA type="submit" disabled={loading} className="w-full"><KeyRound size={16} /> {loading ? 'Sending...' : 'Send Reset Link'}</CTA>
+          </form>
+        )}
       </AuthLayout>
     )
   }
@@ -567,14 +567,12 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
   // ═══════════════════════════════════════════════
   if (mode === 'signup_success') {
     return (
-      <AuthLayout showBrand={false}>
-        <div className="card p-8 text-center animate-fade-in">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
-            <CheckCircle size={32} className="text-white" />
+      <AuthLayout title="Welcome aboard!" subtitle="Your account is ready. Sign in to start ordering.">
+        <div className="flex flex-col items-center py-2 text-center">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: pg.lime, boxShadow: '0 12px 32px rgba(212,240,0,0.35)' }}>
+            <CheckCircle size={32} style={{ color: pg.limeText }} />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Welcome aboard!</h2>
-          <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.6)' }}>Your account is ready. Sign in to start ordering.</p>
-          <button onClick={() => { setMode('signin'); setRole('user') }} className="btn-primary w-full">Sign In Now <ArrowRight size={16} /></button>
+          <CTA onClick={() => { setMode('signin'); setRole('user') }} className="w-full">Sign In Now <ArrowRight size={16} /></CTA>
         </div>
       </AuthLayout>
     )
@@ -591,26 +589,19 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
   // SIGN UP PAGE
   // ═══════════════════════════════════════════════
   if (mode === 'signup') {
+    const signupSubtitle = roleLocked
+      ? (fixedRole === 'dp' ? 'Register as a delivery partner' : 'Register as a customer')
+      : 'Select your role and fill in your details'
     return (
-      <AuthLayout>
-        <div className="mb-3 text-center animate-fade-in">
-          <h2 className="text-xl font-bold text-white">Create New Account</h2>
-          <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            {roleLocked
-              ? (fixedRole === 'dp' ? 'Register as a delivery partner' : 'Register as a customer')
-              : 'Select your role and fill in your details'}
-          </p>
-        </div>
-
-        <div className="card p-5">
+      <AuthLayout title="Create Account" subtitle={signupSubtitle}>
+        <div className="space-y-4">
           {!roleLocked && (
-            <div className="mb-4">
+            <div>
               <label className="label flex items-center gap-1.5"><Shield size={13} /> I am a...</label>
               <RoleDropdown />
             </div>
           )}
 
-          {/* ── User signup form ── */}
           {role === 'user' && (
             <form onSubmit={handleUserSignUp} className="space-y-3">
               <div><label className="label flex items-center gap-1.5"><User size={13} /> Full Name *</label><input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required /></div>
@@ -636,28 +627,27 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
                 {confirmPassword && password !== confirmPassword && <p className="mt-1 text-xs text-red-400">Passwords do not match</p>}
               </div>
               {error && <ErrorBanner message={error} />}
-              <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Creating account...' : 'Create Account'} <ArrowRight size={16} /></button>
+              <CTA type="submit" disabled={loading} className="w-full">{loading ? 'Creating account...' : 'Create Account'} <ArrowRight size={16} /></CTA>
             </form>
           )}
 
-          {/* ── DP signup multi-step ── */}
           {role === 'dp' && (
             <div>
-              {/* Progress */}
-              <div className="mb-4 flex items-center gap-2">
+              <div className="mb-5 flex items-center gap-2">
                 {[1, 2, 3].map(s => (
                   <div key={s} className="flex flex-1 items-center gap-2">
-                    <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${s <= dpStep ? 'text-white' : 'bg-white/20 text-white/60'}`} style={s <= dpStep ? { backgroundColor: '#808000' } : {}}>
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-extrabold transition-all ${s <= dpStep ? '' : ''}`}
+                      style={s <= dpStep ? { background: pg.lime, color: pg.limeText } : { background: pg.surface2, color: pg.text3 }}>
                       {s < dpStep ? <CheckCircle size={14} /> : s}
                     </div>
-                    {s < 3 && <div className="flex-1 h-0.5 rounded-full" style={{ background: s < dpStep ? '#808000' : 'rgba(255,255,255,0.2)' }} />}
+                    {s < 3 && <div className="h-0.5 flex-1 rounded-full" style={{ background: s < dpStep ? pg.lime : pg.line }} />}
                   </div>
                 ))}
               </div>
 
               {dpStep === 1 && (
                 <form onSubmit={handleDpStep1} className="space-y-3">
-                  <h3 className="text-sm font-bold text-white">Basic Information</h3>
+                  <h3 className="text-sm font-extrabold text-white">Basic Information</h3>
                   <div><label className="label flex items-center gap-1.5"><User size={13} /> Full Name *</label><input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required /></div>
                   <div><label className="label flex items-center gap-1.5"><Phone size={13} /> Phone Number *</label><input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required /></div>
                   <div>
@@ -681,18 +671,24 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
                     {confirmPassword && password !== confirmPassword && <p className="mt-1 text-xs text-red-400">Passwords do not match</p>}
                   </div>
                   {error && <ErrorBanner message={error} />}
-                  <button type="submit" className="btn-primary w-full">Continue <ArrowRight size={16} /></button>
+                  <CTA type="submit" className="w-full">Continue <ArrowRight size={16} /></CTA>
                 </form>
               )}
 
               {dpStep === 2 && (
                 <form onSubmit={handleDpStep2} className="space-y-3">
-                  <h3 className="text-sm font-bold text-white">Vehicle & Identity</h3>
+                  <h3 className="text-sm font-extrabold text-white">Vehicle & Identity</h3>
                   <div>
                     <label className="label flex items-center gap-1.5"><Truck size={13} /> Vehicle Type *</label>
                     <div className="grid grid-cols-3 gap-2">
                       {VEHICLE_TYPES.map(v => (
-                        <button key={v} type="button" onClick={() => setVehicleType(v)} className={`rounded-xl border-2 py-2.5 text-sm font-medium transition-all ${vehicleType === v ? 'text-white' : 'border-white/15 text-white/40'}`} style={vehicleType === v ? { backgroundColor: '#808000', borderColor: '#808000' } : {}}>{v}</button>
+                        <button key={v} type="button" onClick={() => setVehicleType(v)}
+                          className="rounded-2xl border-2 py-2.5 text-sm font-bold transition-all active:scale-95"
+                          style={vehicleType === v
+                            ? { background: pg.lime, borderColor: pg.lime, color: pg.limeText }
+                            : { borderColor: pg.line, color: pg.text3 }}>
+                          {v}
+                        </button>
                       ))}
                     </div>
                     {vehicleType && <p className={`mt-2 text-xs font-medium ${needsLicense ? 'text-yellow-400' : 'text-green-400'}`}>{needsLicense ? 'Driving licence required for this vehicle type' : 'No driving licence required for bicycle'}</p>}
@@ -705,26 +701,26 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
                   <div><label className="label flex items-center gap-1.5"><Phone size={13} /> Emergency Contact *</label><input className="input" value={emergencyContact} onChange={e => setEmergencyContact(e.target.value)} placeholder="+91 98765 43210" required /></div>
                   {error && <ErrorBanner message={error} />}
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => { setDpStep(1); setError(null) }} className="btn-ghost flex-1">Back</button>
-                    <button type="submit" className="btn-primary flex-1">Continue <ArrowRight size={16} /></button>
+                    <CTA type="button" variant="secondary" onClick={() => { setDpStep(1); setError(null) }} className="flex-1">Back</CTA>
+                    <CTA type="submit" className="flex-1">Continue <ArrowRight size={16} /></CTA>
                   </div>
                 </form>
               )}
 
               {dpStep === 3 && (
                 <form onSubmit={handleDpStep3} className="space-y-4">
-                  <h3 className="text-sm font-bold text-white">Documents & Photo</h3>
+                  <h3 className="text-sm font-extrabold text-white">Documents & Photo</h3>
                   <div>
                     <label className="label flex items-center gap-1.5"><Camera size={13} /> Profile Photo *</label>
                     <input ref={photoInputRef} type="file" className="hidden" accept="image/*" capture="user" onChange={e => e.target.files?.[0] && pickDpFile(e.target.files[0], 'photo')} />
                     {photoPreview ? (
                       <div className="relative">
                         <img src={photoPreview} alt="Profile" className="h-28 w-28 rounded-2xl object-cover" />
-                        <button type="button" onClick={() => photoInputRef.current?.click()} className="absolute bottom-1 right-1 rounded-full p-1.5 text-white shadow" style={{ backgroundColor: '#808000' }}><Camera size={14} /></button>
+                        <button type="button" onClick={() => photoInputRef.current?.click()} className="absolute bottom-1 right-1 rounded-full p-1.5 shadow" style={{ background: pg.lime, color: pg.limeText }}><Camera size={14} /></button>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => photoInputRef.current?.click()} className="flex w-full flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-white/15 py-6 text-white/50">
-                        <Camera size={28} style={{ color: '#808000' }} />
+                      <button type="button" onClick={() => photoInputRef.current?.click()} className="flex w-full flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed py-6" style={{ borderColor: pg.line, color: pg.text3 }}>
+                        <Camera size={28} style={{ color: pg.lime }} />
                         <span className="text-sm font-medium">Take Live Photo *</span>
                         <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Camera only — uploads not allowed</span>
                       </button>
@@ -734,13 +730,13 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
                     <label className="label flex items-center gap-1.5"><Upload size={13} /> Aadhaar Proof *</label>
                     <input ref={aadhaarInputRef} type="file" className="hidden" accept="image/*,application/pdf" onChange={e => e.target.files?.[0] && pickDpFile(e.target.files[0], 'aadhaar')} />
                     {aadhaarPreview ? (
-                      <div className="flex items-center gap-3 rounded-xl border p-3">
+                      <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
                         {aadhaarFile?.type.startsWith('image') ? <img src={aadhaarPreview} alt="Aadhaar" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg"><FileText size={24} className="text-green-400" /></div>}
                         <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-white">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
                         <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 text-white/50"><Upload size={20} style={{ color: '#808000' }} /> Upload Aadhaar *</button>
+                      <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-4" style={{ borderColor: pg.line, color: pg.text3 }}><Upload size={20} style={{ color: pg.lime }} /> Upload Aadhaar *</button>
                     )}
                   </div>
                   {needsLicense && (
@@ -748,30 +744,29 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
                       <label className="label flex items-center gap-1.5"><FileText size={13} /> Driving Licence *</label>
                       <input ref={licenseInputRef} type="file" className="hidden" accept="image/*,application/pdf" onChange={e => e.target.files?.[0] && pickDpFile(e.target.files[0], 'license')} />
                       {licensePreview ? (
-                        <div className="flex items-center gap-3 rounded-xl border p-3">
+                        <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
                           {licenseFile?.type.startsWith('image') ? <img src={licensePreview} alt="Licence" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg"><FileText size={24} className="text-green-400" /></div>}
                           <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-white">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
                           <button type="button" onClick={() => licenseInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                         </div>
                       ) : (
-                        <button type="button" onClick={() => licenseInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 text-white/50"><Upload size={20} className="text-yellow-400" /> Upload Driving Licence *</button>
+                        <button type="button" onClick={() => licenseInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-4" style={{ borderColor: pg.line, color: pg.text3 }}><Upload size={20} className="text-yellow-400" /> Upload Driving Licence *</button>
                       )}
                     </div>
                   )}
                   {error && <ErrorBanner message={error} />}
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => { setDpStep(2); setError(null) }} className="btn-ghost flex-1">Back</button>
-                    <button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? 'Submitting...' : 'Submit Application'}</button>
+                    <CTA type="button" variant="secondary" onClick={() => { setDpStep(2); setError(null) }} className="flex-1">Back</CTA>
+                    <CTA type="submit" disabled={loading} className="flex-1">{loading ? 'Submitting...' : 'Submit Application'}</CTA>
                   </div>
                 </form>
               )}
             </div>
           )}
 
-          {/* Create account / Sign in link */}
-          <p className="mt-4 text-center text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
+          <p className="text-center text-sm" style={{ color: pg.text3 }}>
             Already have an account?{' '}
-            <button onClick={switchToSignIn} className="font-semibold hover:underline" style={{ color: '#808000' }}>Sign in here</button>
+            <button type="button" onClick={switchToSignIn} className="font-extrabold hover:underline" style={{ color: pg.lime }}>Sign in here</button>
           </p>
         </div>
       </AuthLayout>
@@ -781,19 +776,12 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
   // ═══════════════════════════════════════════════
   // SIGN IN PAGE (default)
   // ═══════════════════════════════════════════════
+  const signInSubtitle = roleLocked
+    ? (fixedRole === 'dp' ? 'Delivery partner sign in' : 'Customer sign in')
+    : 'Enter your credentials'
   return (
-    <AuthLayout>
-      <div className="mb-3 text-center animate-fade-in">
-        <h2 className="text-xl font-bold text-white">Sign In</h2>
-        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
-          {roleLocked
-            ? (fixedRole === 'dp' ? 'Delivery partner sign in' : 'Customer sign in')
-            : 'Enter your credentials'}
-        </p>
-      </div>
-
-      <div className="card p-5">
-        <form onSubmit={handleSignIn} className="space-y-4">
+    <AuthLayout title="Sign In" subtitle={signInSubtitle}>
+      <form onSubmit={handleSignIn} className="space-y-4">
           <div>
             <label className="label flex items-center gap-1.5"><Mail size={13} /> Email</label>
             <input type="email" className="input" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required />
@@ -805,41 +793,37 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.45)' }}>{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
             </div>
             <div className="mt-1.5 text-right">
-              <button type="button" onClick={() => { setMode('forgot'); setError(null) }} className="text-xs hover:underline" style={{ color: '#808000' }}>Forgot password?</button>
+              <button type="button" onClick={() => { setMode('forgot'); setError(null) }} className="text-xs font-bold hover:underline" style={{ color: pg.lime }}>Forgot password?</button>
             </div>
           </div>
           {roleLocked && (
-            <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium" style={{ background: 'rgba(166,179,0,0.1)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
+            <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold" style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)`, color: pg.lime }}>
               {fixedRole === 'dp' ? <Bike size={13} /> : <User size={13} />}
               {fixedRole === 'dp' ? 'Partner app' : 'Customer app'}
             </div>
           )}
           {!roleLocked && detectedRole && (
-            <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium" style={{ background: 'rgba(166,179,0,0.1)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
+            <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold" style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)`, color: pg.lime }}>
               {detectedRole === 'dp' ? <Bike size={13} /> : <User size={13} />}
               Signing in as <strong>{detectedRole === 'dp' ? 'Delivery Partner' : 'User'}</strong>
             </div>
           )}
           {error && <ErrorBanner message={error} />}
-          <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Signing in...' : 'Sign In'} <ArrowRight size={16} /></button>
+          <CTA type="submit" disabled={loading} className="w-full">{loading ? 'Signing in...' : 'Sign In'} <ArrowRight size={16} /></CTA>
         </form>
 
-        {/* Divider */}
-        <div className="my-4 flex items-center gap-3">
-          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.1)' }} />
-          <span className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>or</span>
-          <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.1)' }} />
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1" style={{ background: pg.line }} />
+          <span className="text-xs font-bold" style={{ color: pg.text4 }}>or</span>
+          <div className="h-px flex-1" style={{ background: pg.line }} />
         </div>
 
         <GoogleButton label="Sign in with Google" />
 
-        {/* Create account link */}
-        <p className="mt-4 text-center text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>
+        <p className="mt-5 text-center text-sm" style={{ color: pg.text3 }}>
           Don't have an account?{' '}
-          <button onClick={switchToSignUp} className="font-semibold hover:underline" style={{ color: '#808000' }}>Create new account</button>
+          <button type="button" onClick={switchToSignUp} className="font-extrabold hover:underline" style={{ color: pg.lime }}>Create new account</button>
         </p>
-
-      </div>
     </AuthLayout>
   )
 }
@@ -853,18 +837,16 @@ function DpSuccessScreen({ onContinue }: { onContinue: () => void }) {
   }, [countdown, onContinue])
 
   return (
-    <AuthLayout showBrand={false}>
-      <div className="card p-8 text-center animate-bounce-in">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'linear-gradient(135deg, #808000, #484800)' }}>
-          <CheckCircle size={32} className="text-white" />
+    <AuthLayout title="Application Submitted!" subtitle="Your delivery partner application is now under review.">
+      <div className="flex flex-col items-center py-2 text-center">
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: pg.lime, boxShadow: '0 12px 32px rgba(212,240,0,0.35)' }}>
+          <CheckCircle size={32} style={{ color: pg.limeText }} />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Application Submitted!</h2>
-        <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>Your delivery partner application is now under review. You'll be notified once an admin approves it.</p>
-        <div className="rounded-xl border p-4 mb-4" style={{ borderColor: 'rgba(143,169,100,0.3)', background: 'rgba(143,169,100,0.08)' }}>
-          <p className="text-sm font-medium" style={{ color: '#808000' }}>Awaiting Admin Approval</p>
-          <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Redirecting to sign in page in {countdown}s...</p>
+        <div className="mb-5 w-full rounded-2xl p-4" style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)` }}>
+          <p className="text-sm font-extrabold" style={{ color: pg.lime }}>Awaiting Admin Approval</p>
+          <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Redirecting to sign in page in {countdown}s...</p>
         </div>
-        <button onClick={onContinue} className="btn-primary w-full">Go to Sign In Now</button>
+        <CTA onClick={onContinue} className="w-full">Go to Sign In Now</CTA>
       </div>
     </AuthLayout>
   )
