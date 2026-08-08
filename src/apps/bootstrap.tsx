@@ -9,7 +9,6 @@ import UserShell from './user/UserShell'
 import DpShell from './dp/DpShell'
 import AdminShell from './admin/AdminShell'
 import '../index.css'
-import 'maplibre-gl/dist/maplibre-gl.css'
 
 document.title = (() => {
   const t = resolveAppTarget()

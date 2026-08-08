@@ -38,10 +38,6 @@ const STEP_LABELS: Record<string, string> = {
   completed: 'Delivered',
 }
 
-/**
- * Image-based tracking sequence:
- * reached store → picked up → on the way → arrived → delivered
- */
 export default function VisualTracking({
   progress,
   status,
@@ -60,42 +56,43 @@ export default function VisualTracking({
   const label = STEP_LABELS[status] || STATUS_ETA[status] || 'In Progress'
 
   return (
-    <div className="relative flex h-full flex-col justify-center overflow-hidden bg-black px-4 py-4">
-      <div className="mx-auto w-full max-w-sm">
-        <div className="overflow-hidden rounded-3xl" style={{ border: '1px solid rgba(166,179,0,0.2)' }}>
+    <div className="relative flex h-full flex-col justify-center overflow-hidden bg-[#0B0B0B] px-3 py-2">
+      <div className="mx-auto w-full max-w-lg">
+        <div className="overflow-hidden rounded-[28px]" style={{ border: '1px solid rgba(166,179,0,0.22)', background: '#121212' }}>
           <img
             src={image}
             alt={label}
-            className="w-full h-48 object-cover"
+            className="w-full object-cover"
+            style={{ height: 'min(48vw, 280px)' }}
             draggable={false}
           />
-          <div className="px-4 py-3 text-center" style={{ background: 'rgba(166,179,0,0.08)' }}>
-            <p className="text-base font-bold" style={{ color: '#C4D600' }}>{label}</p>
+          <div className="px-4 py-3.5 text-center" style={{ background: 'rgba(166,179,0,0.1)' }}>
+            <p className="text-lg font-extrabold tracking-tight" style={{ color: '#C0D900' }}>{label}</p>
           </div>
         </div>
 
         <div className="mt-4 flex items-start justify-between gap-4 px-1">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-white/40">Pickup</p>
-            <p className="text-xs font-medium text-white/70 truncate">{pickupLabel || 'Store'}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Pickup</p>
+            <p className="text-sm font-semibold text-white/80 truncate">{pickupLabel || 'Store'}</p>
           </div>
           <div className="flex-1 min-w-0 text-right">
-            <p className="text-[10px] uppercase tracking-wider text-white/40">Delivery</p>
-            <p className="text-xs font-medium text-white/70 truncate">{deliveryLabel || 'You'}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Delivery</p>
+            <p className="text-sm font-semibold text-white/80 truncate">{deliveryLabel || 'You'}</p>
           </div>
         </div>
 
         <div className="mt-4">
-          <div className="mb-1.5 flex items-center justify-between text-[10px] text-white/40">
+          <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-white/40">
             <span>Progress</span>
             <span>{progress}%</span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/8">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{
                 width: `${progress}%`,
-                background: 'linear-gradient(90deg, #808000, #a8c020)',
+                background: 'linear-gradient(90deg, #808000, #C0D900)',
               }}
             />
           </div>

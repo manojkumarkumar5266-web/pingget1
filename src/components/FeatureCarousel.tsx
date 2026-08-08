@@ -5,38 +5,41 @@ type Feature = {
   title: string
   subtitle: string
   image: string
-  accent: string
 }
 
 const FEATURES: Feature[] = [
-  { title: 'Instant Delivery', subtitle: 'Get items delivered in minutes by local partners', image: Images.feature.card1, accent: '#FBBF24' },
-  { title: 'Advance Booking', subtitle: 'Schedule deliveries up to 7 days ahead', image: Images.feature.card2, accent: '#60A5FA' },
-  { title: 'Order Your Way', subtitle: 'Describe any task — partners handle the rest', image: Images.feature.card3, accent: '#A78BFA' },
-  { title: 'Ask Anything', subtitle: 'Groceries, documents, medicines — just ask', image: Images.feature.card4, accent: '#2DD4BF' },
-  { title: 'Get Everything', subtitle: 'Multiple items, one delivery partner', image: Images.feature.card5, accent: '#FB923C' },
-  { title: 'Local Partners', subtitle: 'Trusted partners from your neighbourhood', image: Images.feature.card6, accent: '#34D399' },
-  { title: 'Track Live', subtitle: 'Real-time GPS with ETA and status updates', image: Images.feature.card7, accent: '#C4D600' },
-  { title: 'Chat & Pay', subtitle: 'WhatsApp-style chat, then pay and rate', image: Images.feature.card8, accent: '#F472B6' },
-  { title: 'Safe & Fast', subtitle: 'Verified partners and clear delivery steps', image: Images.feature.card9, accent: '#A6B300' },
+  { title: 'Instant Delivery', subtitle: 'Get items in minutes', image: Images.feature.card1 },
+  { title: 'Advance Booking', subtitle: 'Schedule up to 7 days ahead', image: Images.feature.card2 },
+  { title: 'Order Your Way', subtitle: 'Describe any task', image: Images.feature.card3 },
+  { title: 'Ask Anything', subtitle: 'Groceries to medicines', image: Images.feature.card4 },
+  { title: 'Get Everything', subtitle: 'One partner, many items', image: Images.feature.card5 },
+  { title: 'Local Partners', subtitle: 'Trusted neighbourhood DPs', image: Images.feature.card6 },
+  { title: 'Track Live', subtitle: 'GPS + ETA updates', image: Images.feature.card7 },
+  { title: 'Chat & Pay', subtitle: 'Chat, pay, rate', image: Images.feature.card8 },
+  { title: 'Safe & Fast', subtitle: 'Verified partners', image: Images.feature.card9 },
 ]
 
-const AUTO_MS = 3200
+const AUTO_MS = 3400
+const CARD_RATIO = 0.88
 
-/**
- * 9-card carousel — auto-loops left→right, pauses while a finger touches a card.
- */
+/** Large full-bleed carousel — Zepto/Blinkit style, pause on touch */
 export default function FeatureCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const pausedRef = useRef(false)
   const indexRef = useRef(0)
 
+  const cardStep = () => {
+    const el = scrollRef.current
+    if (!el) return 0
+    return el.offsetWidth * CARD_RATIO + 12
+  }
+
   const scrollTo = (idx: number, behavior: ScrollBehavior = 'smooth') => {
     const el = scrollRef.current
     if (!el) return
-    const cardWidth = el.offsetWidth * 0.72
     const clamped = ((idx % FEATURES.length) + FEATURES.length) % FEATURES.length
-    el.scrollTo({ left: clamped * cardWidth, behavior })
+    el.scrollTo({ left: clamped * cardStep(), behavior })
     indexRef.current = clamped
     setActiveIndex(clamped)
   }
@@ -45,9 +48,9 @@ export default function FeatureCarousel() {
     const el = scrollRef.current
     if (!el) return
     const handleScroll = () => {
-      const cardWidth = el.offsetWidth * 0.72
-      if (cardWidth <= 0) return
-      const idx = Math.round(el.scrollLeft / cardWidth)
+      const step = cardStep()
+      if (step <= 0) return
+      const idx = Math.round(el.scrollLeft / step)
       const clamped = Math.max(0, Math.min(FEATURES.length - 1, idx))
       indexRef.current = clamped
       setActiveIndex(clamped)
@@ -68,10 +71,16 @@ export default function FeatureCarousel() {
   const resume = () => { pausedRef.current = false }
 
   return (
-    <div className="mb-6">
+    <div className="mb-7 -mx-4">
+      <div className="mb-3 flex items-end justify-between px-4">
+        <div>
+          <h2 className="text-lg font-extrabold text-white tracking-tight">What’s new</h2>
+          <p className="text-xs text-white/45">Swipe · pauses when you hold</p>
+        </div>
+      </div>
       <div
         ref={scrollRef}
-        className="flex gap-3 overflow-x-auto pb-2"
+        className="flex gap-3 overflow-x-auto px-4 pb-1"
         style={{
           scrollSnapType: 'x mandatory',
           scrollbarWidth: 'none',
@@ -80,8 +89,9 @@ export default function FeatureCarousel() {
         }}
       >
         {FEATURES.map((feature, idx) => (
-          <div
+          <button
             key={feature.title}
+            type="button"
             onClick={() => scrollTo(idx)}
             onTouchStart={pause}
             onTouchEnd={resume}
@@ -89,29 +99,31 @@ export default function FeatureCarousel() {
             onMouseDown={pause}
             onMouseUp={resume}
             onMouseLeave={resume}
-            className="shrink-0 rounded-3xl p-4 transition-transform active:scale-[0.97]"
+            className="shrink-0 overflow-hidden rounded-[28px] text-left transition-transform active:scale-[0.98]"
             style={{
-              width: '72%',
+              width: `${CARD_RATIO * 100}%`,
               scrollSnapAlign: 'center',
-              background: 'rgba(255,255,255,0.04)',
+              background: '#141414',
               border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
             }}
           >
-            <div className="mb-3 overflow-hidden rounded-2xl" style={{ background: `${feature.accent}22` }}>
-              <img
-                src={feature.image}
-                alt={feature.title}
-                className="w-full h-28 object-cover"
-                loading="lazy"
-                draggable={false}
-              />
+            <img
+              src={feature.image}
+              alt={feature.title}
+              className="w-full object-cover"
+              style={{ height: 'min(52vw, 260px)' }}
+              loading="lazy"
+              draggable={false}
+            />
+            <div className="px-4 py-3.5">
+              <h3 className="text-[15px] font-extrabold text-white tracking-tight">{feature.title}</h3>
+              <p className="mt-0.5 text-xs text-white/50">{feature.subtitle}</p>
             </div>
-            <h3 className="text-sm font-bold" style={{ color: feature.accent }}>{feature.title}</h3>
-            <p className="mt-1 text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>{feature.subtitle}</p>
-          </div>
+          </button>
         ))}
       </div>
-      <div className="mt-2 flex items-center justify-center gap-1.5">
+      <div className="mt-3 flex items-center justify-center gap-1.5 px-4">
         {FEATURES.map((_, idx) => (
           <button
             key={idx}
@@ -119,9 +131,9 @@ export default function FeatureCarousel() {
             onClick={() => scrollTo(idx)}
             className="rounded-full transition-all"
             style={{
-              width: idx === activeIndex ? 20 : 6,
-              height: 6,
-              background: idx === activeIndex ? '#A6B300' : 'rgba(255,255,255,0.15)',
+              width: idx === activeIndex ? 22 : 7,
+              height: 7,
+              background: idx === activeIndex ? '#C0D900' : 'rgba(255,255,255,0.18)',
             }}
           />
         ))}
