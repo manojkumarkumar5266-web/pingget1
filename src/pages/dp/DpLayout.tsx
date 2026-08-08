@@ -1,14 +1,16 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
-import { Chrome as Home, ClipboardList, Wallet, User, LogOut, TriangleAlert as AlertTriangle, Bell } from 'lucide-react'
+import { Home, ClipboardList, Wallet, User, LogOut, AlertTriangle, Bell } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { FullScreenLoader } from '../../components/ui'
 import { formatCurrency } from '../../lib/utils'
-import Watermark from '../../components/Watermark'
 import { useGps } from '../../hooks/useGps'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
+import { Dock, DockItem, CTA } from '../../design/primitives'
+import { pg } from '../../design/tokens'
 
+/** Completely rebuilt Partner shell */
 export default function DpLayout() {
   const { profile, signOut } = useAuth()
   useGps(profile?.id, !!profile)
@@ -76,69 +78,64 @@ export default function DpLayout() {
   }, [profile])
 
   if (!dpLoaded) return <FullScreenLoader />
-  if (!dp) return <DpSetupNeeded />
-  if (dp.status === 'pending') return <DpPendingApproval />
-  if (dp.status === 'rejected' || dp.status === 'suspended' || dp.status === 'deleted') return <DpBlocked status={dp.status} />
+  if (!dp) return <Blocked title="Setup incomplete" body="Your partner profile is being prepared. Contact admin." onSignOut={signOut} />
+  if (dp.status === 'pending') return <Blocked title="Approval pending" body="An admin will review your partner account shortly." onSignOut={signOut} />
+  if (dp.status === 'rejected' || dp.status === 'suspended' || dp.status === 'deleted') {
+    return <Blocked title={`Account ${dp.status}`} body="Contact support for help with your partner account." onSignOut={signOut} />
+  }
 
-  const navItems = [
-    { path: '/dp',               label: 'Requests', icon: Home },
-    { path: '/dp/orders',        label: 'Orders',   icon: ClipboardList },
-    { path: '/dp/notifications', label: 'Alerts',   icon: Bell, badge: unreadCount },
-    { path: '/dp/wallet',        label: 'Wallet',   icon: Wallet },
-    { path: '/dp/profile',       label: 'Profile',  icon: User },
-  ]
   const isActive = (path: string) => location.pathname === path
+  const hideDock = location.pathname.startsWith('/dp/chat') || location.pathname.startsWith('/dp/navigate')
 
   const handleToggleOnline = async () => {
-    if (!dp) return
     if (!dp.is_online && commissionOwed > 0) { navigate('/dp/wallet'); return }
     const newVal = !dp.is_online
     await supabase.from('delivery_partners').update({ is_online: newVal }).eq('id', dp.id)
     setDp({ ...dp, is_online: newVal })
   }
 
-  const isOnChat = location.pathname.startsWith('/dp/chat')
-  const isOnNav = location.pathname.startsWith('/dp/navigate')
-
   return (
-    <div className="relative flex h-screen flex-col bg-[#0B0B0B]">
-      <Watermark />
-
-      {/* Premium Header */}
-      <header className="z-10 px-4 py-3" style={{ background: 'rgba(11,11,11,0.9)', borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)' }}>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-extrabold tracking-tight" style={{ color: '#C0D900' }}>Partner</p>
+    <div className="relative flex h-[100dvh] flex-col" style={{ background: pg.bg }}>
+      <header
+        className="z-10 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]"
+        style={{ background: 'rgba(5,5,5,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em]" style={{ color: pg.lime }}>Partner</p>
+            <p className="text-sm font-extrabold tracking-tight">{profile?.full_name?.split(' ')[0] || 'Rider'}</p>
+          </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleToggleOnline}
-              title={commissionOwed > 0 ? `Pay ${formatCurrency(commissionOwed)} commission to go online` : undefined}
-              className="flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-bold transition-all active:scale-95"
+            <button
+              type="button"
+              onClick={handleToggleOnline}
+              className="rounded-full px-3.5 py-2 text-xs font-extrabold active:scale-95"
               style={dp.is_online
-                ? { background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399' }
+                ? { background: 'rgba(34,197,94,0.16)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.35)' }
                 : commissionOwed > 0
-                ? { background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.35)', color: '#fbbf24' }
-                : { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.5)' }}>
-              <span className={`h-2 w-2 rounded-full ${dp.is_online ? 'bg-green-400 animate-pulse' : commissionOwed > 0 ? 'bg-yellow-400' : 'bg-white/30'}`} />
-              {dp.is_online ? 'Online' : commissionOwed > 0 ? 'Pay Due' : 'Go Online'}
+                ? { background: 'rgba(245,165,36,0.16)', color: '#FCD34D', border: '1px solid rgba(245,165,36,0.35)' }
+                : { background: pg.surface2, color: pg.text3, border: `1px solid ${pg.line}` }}
+            >
+              <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${dp.is_online ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />
+              {dp.is_online ? 'Online' : commissionOwed > 0 ? 'Pay due' : 'Go online'}
             </button>
-            <button onClick={() => signOut()} className="flex h-9 w-9 items-center justify-center rounded-full transition-colors active:scale-90"
-              style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.45)' }}>
+            <button type="button" onClick={() => signOut()} className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.surface2, color: pg.text3 }}>
               <LogOut size={16} />
             </button>
           </div>
         </div>
 
         {commissionOwed > 0 && !dp.is_online && (
-          <div className="mt-2.5 flex items-start gap-2.5 rounded-2xl px-3.5 py-2.5 text-xs"
-            style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.2)', color: '#fcd34d' }}>
+          <div className="mt-3 flex items-start gap-2 rounded-2xl px-3 py-2.5 text-xs" style={{ background: 'rgba(245,165,36,0.12)', color: '#FCD34D', border: '1px solid rgba(245,165,36,0.25)' }}>
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             <span className="leading-relaxed">
               {receiptRejected
-                ? `Payment receipt rejected. Resubmit for ${formatCurrency(commissionOwed)} to go online.`
+                ? `Receipt rejected. Resubmit ${formatCurrency(commissionOwed)} to go online.`
                 : submittedPending
-                ? `Payment of ${formatCurrency(commissionOwed)} submitted — waiting for admin.`
-                : `You owe ${formatCurrency(commissionOwed)} commission. Pay via UPI to go online.`}
+                ? `${formatCurrency(commissionOwed)} submitted — waiting for admin.`
+                : `Commission due ${formatCurrency(commissionOwed)}.`}
               {!submittedPending && (
-                <button onClick={() => navigate('/dp/wallet')} className="ml-1.5 underline font-bold">
+                <button type="button" onClick={() => navigate('/dp/wallet')} className="ml-1 font-extrabold underline">
                   {receiptRejected ? 'Resubmit' : 'Pay now'}
                 </button>
               )}
@@ -147,79 +144,30 @@ export default function DpLayout() {
         )}
       </header>
 
-      <main className={`flex-1 overflow-y-auto ${!isOnChat && !isOnNav ? 'pb-24' : ''}`}>
+      <main className={`flex-1 overflow-y-auto ${hideDock ? '' : 'pb-28'}`}>
         <Outlet />
       </main>
 
-      {/* Floating Bottom Navigation */}
-      {!isOnChat && !isOnNav && (
-        <nav className="fixed bottom-4 left-0 right-0 z-20 flex justify-center px-4">
-          <div className="flex w-full max-w-sm items-center justify-around rounded-[28px] px-2 py-2 nav-island">
-            {navItems.map(item => {
-              const Icon = item.icon
-              const active = isActive(item.path)
-              const badge = (item as any).badge
-              return (
-                <button key={item.path} onClick={() => navigate(item.path)}
-                  className="relative flex flex-1 flex-col items-center gap-0.5 py-2 rounded-2xl transition-all"
-                  style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)', background: active ? 'rgba(166,179,0,0.12)' : 'transparent' }}>
-                  <Icon size={22} style={{ transform: active ? 'translateY(-1px) scale(1.08)' : 'none', transition: 'transform 0.2s' }} />
-                  <span className="text-[10px] font-semibold">{item.label}</span>
-                  {badge > 0 && (
-                    <span className="absolute top-0.5 right-1/2 translate-x-[14px] flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white ring-2 ring-[#181818]" style={{ background: '#ef4444' }}>
-                      {badge > 9 ? '9+' : badge}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </nav>
+      {!hideDock && (
+        <Dock>
+          <DockItem label="Requests" icon={<Home size={20} />} active={isActive('/dp')} onClick={() => navigate('/dp')} />
+          <DockItem label="Orders" icon={<ClipboardList size={20} />} active={isActive('/dp/orders')} onClick={() => navigate('/dp/orders')} />
+          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/dp/notifications')} badge={unreadCount} onClick={() => navigate('/dp/notifications')} />
+          <DockItem label="Wallet" icon={<Wallet size={20} />} active={isActive('/dp/wallet')} onClick={() => navigate('/dp/wallet')} />
+          <DockItem label="You" icon={<User size={20} />} active={isActive('/dp/profile')} onClick={() => navigate('/dp/profile')} />
+        </Dock>
       )}
     </div>
   )
 }
 
-function DpSetupNeeded() {
-  const { signOut } = useAuth()
+function Blocked({ title, body, onSignOut }: { title: string; body: string; onSignOut: () => void }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-[#0B0B0B]">
-      <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl animate-bounce-in" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <span className="text-4xl">🛠️</span>
-      </div>
-      <h1 className="text-xl font-bold text-white">Setup Incomplete</h1>
-      <p className="mt-2 max-w-xs text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>Your delivery partner profile is being set up. Please contact admin.</p>
-      <button onClick={() => signOut()} className="btn-secondary mt-6">Sign Out</button>
-    </div>
-  )
-}
-
-function DpPendingApproval() {
-  const { signOut } = useAuth()
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-[#0B0B0B]">
-      <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl animate-float" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-        <span className="text-4xl">⏳</span>
-      </div>
-      <h1 className="text-xl font-bold text-white">Approval Pending</h1>
-      <p className="mt-2 max-w-xs text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>Your delivery partner account is under review. An admin will approve it shortly.</p>
-      <button onClick={() => signOut()} className="btn-secondary mt-6">Sign Out</button>
-    </div>
-  )
-}
-
-function DpBlocked({ status }: { status: string }) {
-  const { signOut } = useAuth()
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center bg-[#0B0B0B]">
-      <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl animate-bounce-in" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
-        <span className="text-4xl">🚫</span>
-      </div>
-      <h1 className="text-xl font-bold text-white">Account {status === 'suspended' ? 'Suspended' : 'Rejected'}</h1>
-      <p className="mt-2 max-w-xs text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
-        {status === 'suspended' ? 'Your account has been temporarily suspended. Contact support.' : 'Your application was not approved. Contact support.'}
-      </p>
-      <button onClick={() => signOut()} className="btn-secondary mt-6">Sign Out</button>
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center px-6 text-center" style={{ background: pg.bg }}>
+      <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.18em]" style={{ color: pg.lime }}>Partner</p>
+      <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
+      <p className="mt-2 max-w-xs text-sm" style={{ color: pg.text3 }}>{body}</p>
+      <CTA variant="secondary" className="mt-6" onClick={onSignOut}>Sign out</CTA>
     </div>
   )
 }

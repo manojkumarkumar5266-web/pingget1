@@ -1,143 +1,116 @@
 import { useEffect, useRef, useState } from 'react'
 import { Images } from '../lib/customImages'
+import { pg } from '../design/tokens'
 
-type Feature = {
-  title: string
-  subtitle: string
-  image: string
-}
-
-const FEATURES: Feature[] = [
-  { title: 'Instant Delivery', subtitle: 'Get items in minutes', image: Images.feature.card1 },
-  { title: 'Advance Booking', subtitle: 'Schedule up to 7 days ahead', image: Images.feature.card2 },
-  { title: 'Order Your Way', subtitle: 'Describe any task', image: Images.feature.card3 },
+const FEATURES = [
+  { title: 'Instant Delivery', subtitle: 'Local partners in minutes', image: Images.feature.card1 },
+  { title: 'Advance Booking', subtitle: 'Plan up to 7 days ahead', image: Images.feature.card2 },
+  { title: 'Order Your Way', subtitle: 'Describe any custom task', image: Images.feature.card3 },
   { title: 'Ask Anything', subtitle: 'Groceries to medicines', image: Images.feature.card4 },
-  { title: 'Get Everything', subtitle: 'One partner, many items', image: Images.feature.card5 },
+  { title: 'Get Everything', subtitle: 'Multi-item, one partner', image: Images.feature.card5 },
   { title: 'Local Partners', subtitle: 'Trusted neighbourhood DPs', image: Images.feature.card6 },
-  { title: 'Track Live', subtitle: 'GPS + ETA updates', image: Images.feature.card7 },
-  { title: 'Chat & Pay', subtitle: 'Chat, pay, rate', image: Images.feature.card8 },
-  { title: 'Safe & Fast', subtitle: 'Verified partners', image: Images.feature.card9 },
+  { title: 'Live Tracking', subtitle: 'Street map + status steps', image: Images.feature.card7 },
+  { title: 'Chat & Pay', subtitle: 'Talk, pay, rate in-app', image: Images.feature.card8 },
+  { title: 'Safe & Fast', subtitle: 'Verified delivery partners', image: Images.feature.card9 },
 ]
 
-const AUTO_MS = 3400
-const CARD_RATIO = 0.88
+const WIDTH = 0.9
 
-/** Large full-bleed carousel — Zepto/Blinkit style, pause on touch */
+/** Rebuilt media carousel — full-bleed commerce tiles */
 export default function FeatureCarousel() {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [activeIndex, setActiveIndex] = useState(0)
-  const pausedRef = useRef(false)
-  const indexRef = useRef(0)
+  const ref = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState(0)
+  const paused = useRef(false)
+  const idx = useRef(0)
 
-  const cardStep = () => {
-    const el = scrollRef.current
-    if (!el) return 0
-    return el.offsetWidth * CARD_RATIO + 12
-  }
+  const step = () => (ref.current ? ref.current.offsetWidth * WIDTH + 14 : 0)
 
-  const scrollTo = (idx: number, behavior: ScrollBehavior = 'smooth') => {
-    const el = scrollRef.current
+  const go = (i: number, behavior: ScrollBehavior = 'smooth') => {
+    const el = ref.current
     if (!el) return
-    const clamped = ((idx % FEATURES.length) + FEATURES.length) % FEATURES.length
-    el.scrollTo({ left: clamped * cardStep(), behavior })
-    indexRef.current = clamped
-    setActiveIndex(clamped)
+    const n = ((i % FEATURES.length) + FEATURES.length) % FEATURES.length
+    el.scrollTo({ left: n * step(), behavior })
+    idx.current = n
+    setActive(n)
   }
 
   useEffect(() => {
-    const el = scrollRef.current
+    const el = ref.current
     if (!el) return
-    const handleScroll = () => {
-      const step = cardStep()
-      if (step <= 0) return
-      const idx = Math.round(el.scrollLeft / step)
-      const clamped = Math.max(0, Math.min(FEATURES.length - 1, idx))
-      indexRef.current = clamped
-      setActiveIndex(clamped)
+    const onScroll = () => {
+      const s = step()
+      if (!s) return
+      const n = Math.max(0, Math.min(FEATURES.length - 1, Math.round(el.scrollLeft / s)))
+      idx.current = n
+      setActive(n)
     }
-    el.addEventListener('scroll', handleScroll, { passive: true })
-    return () => el.removeEventListener('scroll', handleScroll)
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (pausedRef.current) return
-      scrollTo(indexRef.current + 1)
-    }, AUTO_MS)
-    return () => clearInterval(timer)
+    const t = setInterval(() => { if (!paused.current) go(idx.current + 1) }, 3400)
+    return () => clearInterval(t)
   }, [])
-
-  const pause = () => { pausedRef.current = true }
-  const resume = () => { pausedRef.current = false }
 
   return (
-    <div className="mb-7 -mx-4">
-      <div className="mb-3 flex items-end justify-between px-4">
+    <section className="mb-8">
+      <div className="mb-3 flex items-end justify-between px-1">
         <div>
-          <h2 className="text-lg font-extrabold text-white tracking-tight">What’s new</h2>
-          <p className="text-xs text-white/45">Swipe · pauses when you hold</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>Discover</p>
+          <h2 className="text-[20px] font-extrabold tracking-tight">What’s on PingGET</h2>
         </div>
       </div>
       <div
-        ref={scrollRef}
-        className="flex gap-3 overflow-x-auto px-4 pb-1"
-        style={{
-          scrollSnapType: 'x mandatory',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-          WebkitOverflowScrolling: 'touch',
-        }}
+        ref={ref}
+        className="-mx-4 flex gap-3.5 overflow-x-auto px-4"
+        style={{ scrollSnapType: 'x mandatory', scrollbarWidth: 'none' }}
+        onTouchStart={() => { paused.current = true }}
+        onTouchEnd={() => { paused.current = false }}
       >
-        {FEATURES.map((feature, idx) => (
+        {FEATURES.map((f, i) => (
           <button
-            key={feature.title}
+            key={f.title}
             type="button"
-            onClick={() => scrollTo(idx)}
-            onTouchStart={pause}
-            onTouchEnd={resume}
-            onTouchCancel={resume}
-            onMouseDown={pause}
-            onMouseUp={resume}
-            onMouseLeave={resume}
-            className="shrink-0 overflow-hidden rounded-[28px] text-left transition-transform active:scale-[0.98]"
+            onClick={() => go(i)}
+            className="shrink-0 overflow-hidden text-left"
             style={{
-              width: `${CARD_RATIO * 100}%`,
+              width: `${WIDTH * 100}%`,
               scrollSnapAlign: 'center',
-              background: '#141414',
-              border: '1px solid rgba(255,255,255,0.08)',
-              boxShadow: '0 8px 28px rgba(0,0,0,0.45)',
+              background: pg.surface,
+              borderRadius: 28,
+              border: `1px solid ${pg.line}`,
             }}
           >
             <img
-              src={feature.image}
-              alt={feature.title}
+              src={f.image}
+              alt={f.title}
               className="w-full object-cover"
-              style={{ height: 'min(52vw, 260px)' }}
-              loading="lazy"
+              style={{ height: 'min(58vw, 300px)' }}
               draggable={false}
             />
             <div className="px-4 py-3.5">
-              <h3 className="text-[15px] font-extrabold text-white tracking-tight">{feature.title}</h3>
-              <p className="mt-0.5 text-xs text-white/50">{feature.subtitle}</p>
+              <p className="text-[16px] font-extrabold tracking-tight">{f.title}</p>
+              <p className="mt-0.5 text-xs" style={{ color: pg.text3 }}>{f.subtitle}</p>
             </div>
           </button>
         ))}
       </div>
-      <div className="mt-3 flex items-center justify-center gap-1.5 px-4">
-        {FEATURES.map((_, idx) => (
+      <div className="mt-3.5 flex justify-center gap-1.5">
+        {FEATURES.map((_, i) => (
           <button
-            key={idx}
+            key={i}
             type="button"
-            onClick={() => scrollTo(idx)}
+            onClick={() => go(i)}
             className="rounded-full transition-all"
             style={{
-              width: idx === activeIndex ? 22 : 7,
+              width: i === active ? 22 : 7,
               height: 7,
-              background: idx === activeIndex ? '#C0D900' : 'rgba(255,255,255,0.18)',
+              background: i === active ? pg.lime : 'rgba(255,255,255,0.18)',
             }}
           />
         ))}
       </div>
-    </div>
+    </section>
   )
 }

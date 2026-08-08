@@ -3,13 +3,15 @@ import { useAuth } from '../../context'
 import { Home, ClipboardList, Bell, User, Plus, X, MessageCircle, Zap, CalendarClock } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import Watermark from '../../components/Watermark'
 import { useGps } from '../../hooks/useGps'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { Images } from '../../lib/customImages'
+import { Dock, DockItem } from '../../design/primitives'
+import { pg } from '../../design/tokens'
 
 type AcceptedToast = { requestId: string; body: string }
 
+/** Completely rebuilt Customer app shell + bottom commerce dock */
 export default function UserLayout() {
   const { profile } = useAuth()
   const navigate = useNavigate()
@@ -21,7 +23,6 @@ export default function UserLayout() {
 
   useGps(profile?.id, !!profile)
   usePushNotifications()
-
   useEffect(() => { setShowBookingMenu(false) }, [location.pathname])
 
   const showToast = (toast: AcceptedToast) => {
@@ -60,83 +61,66 @@ export default function UserLayout() {
     return () => { supabase.removeChannel(channel); if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }
   }, [profile?.id])
 
-  const navItems = [
-    { path: '/app', label: 'Home', icon: Home },
-    { path: '/app/orders', label: 'Orders', icon: ClipboardList },
-    { path: '/app/notifications', label: 'Alerts', icon: Bell, badge: unreadCount },
-    { path: '/app/profile', label: 'Profile', icon: User },
-  ]
-
-  const isActive = (path: string) => {
-    if (path === '/app') return location.pathname === '/app'
-    return location.pathname.startsWith(path)
-  }
-
-  const isOnChat = location.pathname.startsWith('/app/chat')
-  const isOnCreate = location.pathname.startsWith('/app/create')
-  const isOnScanning = location.pathname.startsWith('/app/scanning')
-  const isOnTrack = location.pathname.startsWith('/app/track')
-  const hideNav = isOnChat || isOnCreate || isOnScanning || isOnTrack
+  const isActive = (path: string) => path === '/app' ? location.pathname === '/app' : location.pathname.startsWith(path)
+  const hideNav =
+    location.pathname.startsWith('/app/chat') ||
+    location.pathname.startsWith('/app/create') ||
+    location.pathname.startsWith('/app/scanning') ||
+    location.pathname.startsWith('/app/track')
 
   return (
-    <div className="relative flex h-screen flex-col bg-[#0B0B0B]">
-      <Watermark />
-
+    <div className="relative flex h-[100dvh] flex-col" style={{ background: pg.bg }}>
       {acceptedToast && (
-        <div className="fixed top-4 left-4 right-4 z-50">
-          <div className="mx-auto max-w-md rounded-2xl p-4" style={{ background: 'rgba(20,20,20,0.97)', border: '1px solid rgba(166,179,0,0.25)' }}>
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(16,185,129,0.2)' }}>
-                <MessageCircle size={18} className="text-green-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-white text-sm">Partner Accepted!</p>
-                <p className="mt-0.5 text-xs line-clamp-2" style={{ color: 'rgba(255,255,255,0.55)' }}>{acceptedToast.body}</p>
-                <button type="button" onClick={() => openChatFromToast(acceptedToast.requestId)}
-                  className="mt-2 rounded-xl px-4 py-1.5 text-xs font-bold text-white"
-                  style={{ background: '#10b981' }}>
-                  Open Chat
-                </button>
-              </div>
-              <button type="button" onClick={() => setAcceptedToast(null)} style={{ color: 'rgba(255,255,255,0.35)' }}><X size={16} /></button>
+        <div className="fixed left-4 right-4 top-4 z-50 mx-auto max-w-lg">
+          <div className="flex items-start gap-3 rounded-[22px] p-4" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(34,197,94,0.16)' }}>
+              <MessageCircle size={18} className="text-green-400" />
             </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-extrabold">Partner accepted</p>
+              <p className="mt-0.5 line-clamp-2 text-xs" style={{ color: pg.text3 }}>{acceptedToast.body}</p>
+              <button
+                type="button"
+                onClick={() => openChatFromToast(acceptedToast.requestId)}
+                className="mt-2 rounded-xl px-3 py-1.5 text-xs font-extrabold"
+                style={{ background: pg.lime, color: pg.limeText }}
+              >
+                Open Chat
+              </button>
+            </div>
+            <button type="button" onClick={() => setAcceptedToast(null)} style={{ color: pg.text4 }}><X size={16} /></button>
           </div>
         </div>
       )}
 
-      {/* FAB booking popup */}
       {showBookingMenu && !hideNav && (
-        <div className="fixed inset-0 z-30" onClick={() => setShowBookingMenu(false)}>
-          <div className="absolute inset-0 bg-black/50" />
+        <div className="fixed inset-0 z-40" onClick={() => setShowBookingMenu(false)}>
+          <div className="absolute inset-0 bg-black/70" />
           <div
-            className="absolute bottom-28 left-1/2 w-[min(92vw,360px)] -translate-x-1/2 rounded-3xl p-4"
-            style={{ background: '#181818', border: '1px solid rgba(166,179,0,0.25)' }}
+            className="absolute bottom-28 left-1/2 w-[min(92vw,400px)] -translate-x-1/2 animate-slide-in-bottom rounded-[28px] p-4"
+            style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}
             onClick={e => e.stopPropagation()}
           >
-            <p className="mb-3 text-center text-base font-extrabold text-white">Choose booking type</p>
+            <p className="mb-4 text-center text-base font-extrabold">What do you need?</p>
             <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => { setShowBookingMenu(false); navigate('/app/create') }}
-                className="overflow-hidden rounded-[22px] text-left active:scale-95"
-                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                <img src={Images.feature.instantBooking} alt="" className="h-32 w-full object-cover" />
-                <div className="flex items-center gap-1.5 px-3 py-3" style={{ background: 'rgba(166,179,0,0.14)' }}>
-                  <Zap size={15} style={{ color: '#C0D900' }} />
-                  <span className="text-xs font-extrabold" style={{ color: '#C0D900' }}>Instant</span>
+              <button type="button" onClick={() => { setShowBookingMenu(false); navigate('/app/create') }} className="overflow-hidden rounded-[24px] text-left" style={{ border: `1px solid ${pg.line}` }}>
+                <img src={Images.feature.instantBooking} alt="" className="h-36 w-full object-cover" />
+                <div className="flex items-center gap-2 px-3 py-3" style={{ background: pg.limeDim }}>
+                  <Zap size={16} style={{ color: pg.lime }} />
+                  <div>
+                    <p className="text-sm font-extrabold" style={{ color: pg.lime }}>Instant</p>
+                    <p className="text-[10px]" style={{ color: pg.text3 }}>Now</p>
+                  </div>
                 </div>
               </button>
-              <button
-                type="button"
-                onClick={() => { setShowBookingMenu(false); navigate('/app/create-advance') }}
-                className="overflow-hidden rounded-[22px] text-left active:scale-95"
-                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
-              >
-                <img src={Images.feature.advanceBooking} alt="" className="h-32 w-full object-cover" />
-                <div className="flex items-center gap-1.5 px-3 py-3" style={{ background: 'rgba(59,130,246,0.14)' }}>
-                  <CalendarClock size={15} style={{ color: '#60A5FA' }} />
-                  <span className="text-xs font-extrabold" style={{ color: '#60A5FA' }}>Advance</span>
+              <button type="button" onClick={() => { setShowBookingMenu(false); navigate('/app/create-advance') }} className="overflow-hidden rounded-[24px] text-left" style={{ border: `1px solid ${pg.line}` }}>
+                <img src={Images.feature.advanceBooking} alt="" className="h-36 w-full object-cover" />
+                <div className="flex items-center gap-2 px-3 py-3" style={{ background: 'rgba(59,130,246,0.12)' }}>
+                  <CalendarClock size={16} className="text-sky-400" />
+                  <div>
+                    <p className="text-sm font-extrabold text-sky-400">Advance</p>
+                    <p className="text-[10px]" style={{ color: pg.text3 }}>Schedule</p>
+                  </div>
                 </div>
               </button>
             </div>
@@ -144,56 +128,18 @@ export default function UserLayout() {
         </div>
       )}
 
-      <main className={`flex-1 overflow-y-auto ${!hideNav ? 'pb-24' : ''}`}>
+      <main className={`flex-1 overflow-y-auto ${hideNav ? '' : 'pb-28'}`}>
         <Outlet />
       </main>
 
       {!hideNav && (
-        <nav className="fixed bottom-4 left-0 right-0 z-20 flex justify-center px-4">
-          <div className="flex w-full max-w-xs items-center justify-between rounded-[28px] px-2 py-2 nav-island relative">
-            {navItems.slice(0, 2).map(item => {
-              const Icon = item.icon
-              const active = isActive(item.path)
-              return (
-                <button key={item.path} type="button" onClick={() => navigate(item.path)}
-                  className="relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl"
-                  style={{ minWidth: 56, background: active ? 'rgba(166,179,0,0.12)' : 'transparent' }}>
-                  <Icon size={22} style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)' }} />
-                  <span className="text-[10px] font-semibold" style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.35)' }}>{item.label}</span>
-                </button>
-              )
-            })}
-
-            <button
-              type="button"
-              onClick={() => setShowBookingMenu(v => !v)}
-              className="relative -mt-6 flex h-14 w-14 items-center justify-center rounded-2xl active:scale-90"
-              style={{ background: 'linear-gradient(135deg,#C0D900,#A6B300)', boxShadow: '0 6px 24px rgba(166,179,0,0.55)' }}
-            >
-              {showBookingMenu ? <X size={24} className="text-[#0B0B0B]" strokeWidth={3} /> : <Plus size={26} className="text-[#0B0B0B]" strokeWidth={3} />}
-            </button>
-
-            {navItems.slice(2, 4).map(item => {
-              const Icon = item.icon
-              const active = isActive(item.path)
-              return (
-                <button key={item.path} type="button" onClick={() => navigate(item.path)}
-                  className="relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl"
-                  style={{ minWidth: 56, background: active ? 'rgba(166,179,0,0.12)' : 'transparent' }}>
-                  <div className="relative">
-                    <Icon size={22} style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.4)' }} />
-                    {item.badge && item.badge > 0 && (
-                      <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                        {item.badge > 9 ? '9+' : item.badge}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] font-semibold" style={{ color: active ? '#A6B300' : 'rgba(255,255,255,0.35)' }}>{item.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        </nav>
+        <Dock>
+          <DockItem label="Home" icon={<Home size={20} />} active={isActive('/app')} onClick={() => navigate('/app')} />
+          <DockItem label="Orders" icon={<ClipboardList size={20} />} active={isActive('/app/orders')} onClick={() => navigate('/app/orders')} />
+          <DockItem label="New" icon={<Plus size={28} strokeWidth={2.5} />} center onClick={() => setShowBookingMenu(true)} />
+          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/app/notifications')} badge={unreadCount} onClick={() => navigate('/app/notifications')} />
+          <DockItem label="You" icon={<User size={20} />} active={isActive('/app/profile')} onClick={() => navigate('/app/profile')} />
+        </Dock>
       )}
     </div>
   )

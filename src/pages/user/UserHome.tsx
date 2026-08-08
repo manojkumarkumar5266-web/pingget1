@@ -2,18 +2,21 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
-import { EmptyState, StatusBadge, ServiceStatusBanner, SkeletonList, SectionHeader } from '../../components/ui'
+import { StatusBadge, ServiceStatusBanner, SkeletonList } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
-import { Package, Clock, MapPin, CheckCircle2, Bike, ChevronRight, Zap, CalendarClock } from 'lucide-react'
+import { Clock, MapPin, CheckCircle2, ChevronRight, Zap, CalendarClock, Package, Bike } from 'lucide-react'
 import { Images } from '../../lib/customImages'
 import FeatureCarousel from '../../components/FeatureCarousel'
 import AddressPicker from '../../components/AddressPicker'
+import { Screen, SectionLabel, Surface, EmptyBlock, Chip } from '../../design/primitives'
+import { pg } from '../../design/tokens'
 
 const STATUS_STEPS: Record<string, number> = {
   pending: 0, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
   on_the_way: 5, arrived: 6, delivered: 7, cash_received: 8, completed: 8,
 }
 
+/** Rebuilt Customer Home — commerce hero hierarchy */
 export default function UserHome() {
   const { profile } = useAuth()
   const navigate = useNavigate()
@@ -36,7 +39,6 @@ export default function UserHome() {
       if (cancelled) return
       setActiveOrders((activeRes.data as DeliveryRequest[]) || [])
       setRecentCompleted((completedRes.data as DeliveryRequest[]) || [])
-
       const [total, completedCount, activeCount] = await Promise.all([
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('status','completed'),
@@ -57,80 +59,72 @@ export default function UserHome() {
   const firstName = profile?.full_name?.split(' ')[0] || 'there'
 
   return (
-    <div className="mx-auto max-w-lg px-4 pt-4 pb-6">
+    <Screen className="mx-auto max-w-lg animate-fade-in-up">
       <ServiceStatusBanner cityName={profile?.city} />
 
-      <div className="mb-5 flex items-center gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Good {getGreeting()}</p>
-          <h1 className="text-[28px] font-extrabold text-white leading-tight truncate tracking-tight">Hai {firstName}</h1>
+      <header className="mb-5 flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
+            Good {getGreeting()}
+          </p>
+          <h1 className="truncate text-[30px] font-extrabold leading-none tracking-tight">Hai {firstName}</h1>
         </div>
-        <img src={Images.haiHand} alt="" className="h-16 w-16 object-contain shrink-0" draggable={false} />
+        <img src={Images.haiHand} alt="" className="h-[72px] w-[72px] object-contain" draggable={false} />
+      </header>
+
+      <div className="mb-5">
+        <AddressPicker />
       </div>
 
-      <AddressPicker />
-
-      <div className="mb-6 grid grid-cols-3 gap-2.5">
+      <div className="mb-7 grid grid-cols-3 gap-2.5">
         {[
-          { label: 'Total', value: stats.total, icon: <Package size={18} />, color: 'rgba(166,179,0,0.18)', tColor: '#C0D900' },
-          { label: 'Active', value: stats.active, icon: <Bike size={18} />, color: 'rgba(251,191,36,0.16)', tColor: '#fbbf24' },
-          { label: 'Done', value: stats.completed, icon: <CheckCircle2 size={18} />, color: 'rgba(16,185,129,0.16)', tColor: '#34d399' },
+          { label: 'Orders', value: stats.total, icon: <Package size={18} />, tone: pg.lime },
+          { label: 'Live', value: stats.active, icon: <Bike size={18} />, tone: '#F5A524' },
+          { label: 'Done', value: stats.completed, icon: <CheckCircle2 size={18} />, tone: '#22C55E' },
         ].map(s => (
-          <div key={s.label} className="rounded-2xl p-3.5 text-center" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: s.color }}>
-              <span style={{ color: s.tColor }}>{s.icon}</span>
+          <div key={s.label} className="rounded-[20px] px-2 py-3.5 text-center" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${s.tone}22`, color: s.tone }}>
+              {s.icon}
             </div>
-            <p className="text-2xl font-extrabold text-white tracking-tight">{s.value}</p>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40">{s.label}</p>
+            <p className="text-2xl font-extrabold tracking-tight">{s.value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>{s.label}</p>
           </div>
         ))}
       </div>
 
       <FeatureCarousel />
 
-      {/* Large Instant / Advance — Blinkit-style promo tiles */}
-      <div className="mb-7">
-        <h2 className="mb-3 text-lg font-extrabold text-white tracking-tight">Get Things Done</h2>
+      <section className="mb-8">
+        <SectionLabel title="Book now" />
         <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/app/create')}
-            className="overflow-hidden rounded-[24px] text-left active:scale-[0.98] transition-transform"
-            style={{ background: '#141414', border: '1px solid rgba(166,179,0,0.25)' }}
-          >
-            <img src={Images.feature.instantBooking} alt="Instant" className="h-40 w-full object-cover" draggable={false} />
-            <div className="flex items-center gap-2 px-3 py-3" style={{ background: 'rgba(166,179,0,0.12)' }}>
-              <Zap size={16} style={{ color: '#C0D900' }} />
+          <button type="button" onClick={() => navigate('/app/create')} className="overflow-hidden text-left transition active:scale-[0.98]" style={{ background: pg.surface, borderRadius: 26, border: `1px solid rgba(212,240,0,0.3)` }}>
+            <img src={Images.feature.instantBooking} alt="" className="h-44 w-full object-cover" draggable={false} />
+            <div className="flex items-center gap-2 px-3 py-3.5" style={{ background: pg.limeDim }}>
+              <Zap size={18} style={{ color: pg.lime }} />
               <div>
-                <p className="text-sm font-extrabold" style={{ color: '#C0D900' }}>Instant</p>
-                <p className="text-[10px] text-white/45">~10 min delivery</p>
+                <p className="text-sm font-extrabold" style={{ color: pg.lime }}>Instant</p>
+                <p className="text-[10px]" style={{ color: pg.text3 }}>~10 min</p>
               </div>
             </div>
           </button>
-          <button
-            type="button"
-            onClick={() => navigate('/app/create-advance')}
-            className="overflow-hidden rounded-[24px] text-left active:scale-[0.98] transition-transform"
-            style={{ background: '#141414', border: '1px solid rgba(96,165,250,0.25)' }}
-          >
-            <img src={Images.feature.advanceBooking} alt="Advance" className="h-40 w-full object-cover" draggable={false} />
-            <div className="flex items-center gap-2 px-3 py-3" style={{ background: 'rgba(59,130,246,0.12)' }}>
-              <CalendarClock size={16} style={{ color: '#60A5FA' }} />
+          <button type="button" onClick={() => navigate('/app/create-advance')} className="overflow-hidden text-left transition active:scale-[0.98]" style={{ background: pg.surface, borderRadius: 26, border: `1px solid rgba(59,130,246,0.3)` }}>
+            <img src={Images.feature.advanceBooking} alt="" className="h-44 w-full object-cover" draggable={false} />
+            <div className="flex items-center gap-2 px-3 py-3.5" style={{ background: 'rgba(59,130,246,0.12)' }}>
+              <CalendarClock size={18} className="text-sky-400" />
               <div>
-                <p className="text-sm font-extrabold" style={{ color: '#60A5FA' }}>Advance</p>
-                <p className="text-[10px] text-white/45">Schedule ahead</p>
+                <p className="text-sm font-extrabold text-sky-400">Advance</p>
+                <p className="text-[10px]" style={{ color: pg.text3 }}>Schedule</p>
               </div>
             </div>
           </button>
         </div>
-        <p className="mt-2.5 text-center text-[11px] text-white/40">Or tap + below to book</p>
-      </div>
+      </section>
 
-      <SectionHeader
-        title="Active Orders"
+      <SectionLabel
+        title="Active orders"
         action={
-          <button type="button" onClick={() => navigate('/app/orders')} className="flex items-center gap-0.5 text-sm font-bold" style={{ color: '#C0D900' }}>
-            See All <ChevronRight size={14} />
+          <button type="button" onClick={() => navigate('/app/orders')} className="flex items-center gap-0.5 text-sm font-extrabold" style={{ color: pg.lime }}>
+            All <ChevronRight size={14} />
           </button>
         }
       />
@@ -138,10 +132,10 @@ export default function UserHome() {
       {loading ? (
         <SkeletonList count={2} lines={3} />
       ) : activeOrders.length === 0 ? (
-        <EmptyState
-          illustration={<img src={Images.emptyState} alt="" className="w-36 h-36 object-contain" />}
-          title="No active orders"
-          description="Tap Instant or Advance to get started."
+        <EmptyBlock
+          image={Images.emptyState}
+          title="Nothing live yet"
+          body="Book Instant or Advance to get your first delivery moving."
         />
       ) : (
         <div className="space-y-3">
@@ -149,63 +143,58 @@ export default function UserHome() {
             const step = STATUS_STEPS[req.status] ?? 0
             const progress = (step / 8) * 100
             return (
-              <button key={req.id} type="button" onClick={() => navigateToOrder(navigate, req)}
-                className="w-full overflow-hidden rounded-[22px] p-4 text-left active:scale-[0.98] transition-transform"
-                style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <Surface key={req.id} onClick={() => navigateToOrder(navigate, req)} className="p-4 active:scale-[0.99]">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-bold text-white text-[15px] line-clamp-1 flex-1">
+                  <p className="line-clamp-1 flex-1 text-[15px] font-extrabold">
                     {req.description?.split('\n')[0]?.trim() || 'Delivery Request'}
                   </p>
                   <StatusBadge status={req.status} />
                 </div>
                 {(req as any).order_type === 'advance' && (
-                  <span className="mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(59,130,246,0.15)', color: '#60A5FA' }}>
-                    Advance
-                  </span>
+                  <div className="mt-2"><Chip tone="info">Advance</Chip></div>
                 )}
                 {req.delivery_address && (
-                  <div className="mt-2 flex items-center gap-1.5 text-xs text-white/45">
+                  <div className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: pg.text3 }}>
                     <MapPin size={12} /> <span className="line-clamp-1">{req.delivery_address}</span>
                   </div>
                 )}
                 {req.status !== 'pending' && req.status !== 'searching_dp' && (
-                  <div className="mt-3 w-full h-2 rounded-full overflow-hidden bg-white/8">
-                    <div className="h-full rounded-full" style={{ width: `${progress}%`, background: 'linear-gradient(90deg,#A6B300,#C0D900)' }} />
+                  <div className="mt-3 h-2 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                    <div className="h-full rounded-full" style={{ width: `${progress}%`, background: `linear-gradient(90deg,#8fa300,${pg.lime})` }} />
                   </div>
                 )}
-                <div className="mt-2.5 flex items-center gap-3 text-xs text-white/35">
-                  <span className="flex items-center gap-1"><Clock size={12} /> {formatTime(req.created_at)}</span>
+                <div className="mt-2.5 flex items-center gap-2 text-xs" style={{ color: pg.text4 }}>
+                  <Clock size={12} /> {formatTime(req.created_at)}
                 </div>
-              </button>
+              </Surface>
             )
           })}
         </div>
       )}
 
       {!loading && recentCompleted.length > 0 && (
-        <div className="mt-8">
-          <SectionHeader title="Recently Completed" action={
-            <button type="button" onClick={() => navigate('/app/orders')} className="text-sm font-bold" style={{ color: '#C0D900' }}>View All</button>
-          } />
+        <div className="mt-9">
+          <SectionLabel
+            title="Recently completed"
+            action={<button type="button" onClick={() => navigate('/app/orders')} className="text-sm font-extrabold" style={{ color: pg.lime }}>View</button>}
+          />
           <div className="space-y-2">
             {recentCompleted.map(req => (
-              <button key={req.id} type="button" onClick={() => navigate('/app/orders')}
-                className="flex w-full items-center gap-3 rounded-[20px] p-3.5 text-left active:scale-[0.98]"
-                style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(16,185,129,0.15)' }}>
+              <Surface key={req.id} onClick={() => navigate('/app/orders')} className="flex items-center gap-3 p-3.5">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(34,197,94,0.14)' }}>
                   <CheckCircle2 size={20} className="text-green-400" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-white text-sm truncate">{req.description?.split('\n')[0]?.trim() || 'Delivery'}</p>
-                  <p className="text-xs mt-0.5 text-white/35">{formatTime(req.created_at)}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-extrabold">{req.description?.split('\n')[0]?.trim() || 'Delivery'}</p>
+                  <p className="mt-0.5 text-xs" style={{ color: pg.text4 }}>{formatTime(req.created_at)}</p>
                 </div>
-                <ChevronRight size={16} className="text-white/25" />
-              </button>
+                <ChevronRight size={16} style={{ color: pg.text4 }} />
+              </Surface>
             ))}
           </div>
         </div>
       )}
-    </div>
+    </Screen>
   )
 }
 

@@ -14,12 +14,10 @@ export function Spinner({ size = 24 }: { size?: number }) {
 
 export function FullScreenLoader() {
   return (
-    <div className="flex h-screen items-center justify-center bg-[#0B0B0B]">
-      <div className="flex flex-col items-center gap-5">
-        <div className="relative flex h-16 w-16 items-center justify-center">
-          <div className="absolute h-16 w-16 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: '#A6B300', borderRightColor: 'rgba(166,179,0,0.3)' }} />
-          <Spinner size={28} />
-        </div>
+    <div className="flex h-[100dvh] items-center justify-center" style={{ background: '#050505' }}>
+      <div className="relative flex h-16 w-16 items-center justify-center">
+        <div className="absolute h-16 w-16 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: '#D4F000', borderRightColor: 'rgba(212,240,0,0.25)' }} />
+        <Spinner size={28} />
       </div>
     </div>
   )

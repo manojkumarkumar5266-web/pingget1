@@ -219,18 +219,20 @@ export default function LiveTrackingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black">
-      {/* Minimal top — no ribbon */}
+    <div className="min-h-screen flex flex-col" style={{ background: '#050505' }}>
       <div className="flex-shrink-0 px-4 pt-12 pb-2">
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => navigate('/app')} className="map-control-btn map-control-dark">
             <ArrowLeft size={18} />
           </button>
-          <p className="text-sm font-semibold text-white/80">Order tracking</p>
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: '#D4F000' }}>Live</p>
+            <p className="text-sm font-extrabold text-white">Order tracking</p>
+          </div>
         </div>
       </div>
 
-      <div className="relative flex-shrink-0" style={{ height: '44vh', minHeight: '280px' }}>
+      <div className="relative flex-shrink-0" style={{ height: '46vh', minHeight: '300px' }}>
         {isPending ? (
           <div className="flex h-full flex-col items-center justify-center bg-black px-6">
             <img src={Images.userWaiting} alt="" className="w-40 h-40 object-contain mb-3" />

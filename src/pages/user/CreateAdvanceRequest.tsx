@@ -619,7 +619,7 @@ export default function CreateAdvanceRequest() {
                         ? { background: 'rgba(166,179,0,0.12)', border: '1.5px solid rgba(166,179,0,0.4)' }
                         : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                       <img src={getCategoryImage(cat.name)} alt={cat.name} className="h-20 w-20 rounded-2xl object-cover" draggable={false} />
-                      <span className="text-center text-[10px] font-semibold leading-tight" style={{ color: saved || category === cat.name ? '#A6B300' : 'rgba(255,255,255,0.55)' }}>
+                      <span className="text-center text-[11px] font-bold leading-tight" style={{ color: saved || category === cat.name ? '#C0D900' : 'rgba(255,255,255,0.6)' }}>
                         {cat.name}
                       </span>
                       {saved && (

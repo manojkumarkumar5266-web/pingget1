@@ -216,14 +216,15 @@ export default function ScanningPage() {
 
   if (partnerFound) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0B0B0B] px-6">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6" style={{ background: '#050505' }}>
         <img
           src={Images.orderAccepted}
           alt="Order accepted"
-          className="w-full max-w-md object-contain rounded-[28px]"
+          className="w-full max-w-md object-contain"
+          style={{ borderRadius: 28 }}
           draggable={false}
         />
-        <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Opening order tracking...</p>
+        <p className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.45)' }}>Opening order tracking…</p>
       </div>
     )
   }
@@ -251,28 +252,27 @@ export default function ScanningPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#0B0B0B]">
-      <div className="flex items-center justify-between px-5 pt-12 pb-2 shrink-0">
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ background: '#050505' }}>
+      <div className="flex items-center justify-between px-5 pb-2 pt-12 shrink-0">
         <div>
-          <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: '#D4F000' }}>
             {waitingForAccept ? 'Waiting' : 'Scanning'}
           </p>
-          <h1 className="text-xl font-bold text-white">
-            {waitingForAccept ? 'Partner Found' : 'Finding Partners'}
+          <h1 className="text-2xl font-extrabold tracking-tight text-white">
+            {waitingForAccept ? 'Partner nearby' : 'Finding partners'}
           </h1>
         </div>
         <button
           onClick={cancelRequest}
           disabled={requestCancelled}
-          className="flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-90"
-          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+          className="flex h-11 w-11 items-center justify-center rounded-2xl active:scale-90"
+          style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.1)' }}
         >
           <X size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
         </button>
       </div>
 
-      {/* Map — Google street map with live GPS */}
-      <div className="relative mx-3 h-[46vh] min-h-[260px] overflow-hidden rounded-[28px] shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div className="relative mx-3 h-[46vh] min-h-[260px] overflow-hidden shrink-0" style={{ borderRadius: 28, border: '1px solid rgba(255,255,255,0.1)' }}>
         {center ? (
           <FreeStreetMap
             center={center}
@@ -280,20 +280,20 @@ export default function ScanningPage() {
             markers={markers}
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-[#121212] text-sm text-white/40">
+          <div className="flex h-full items-center justify-center text-sm" style={{ background: '#121212', color: 'rgba(255,255,255,0.4)' }}>
             Detecting your location…
           </div>
         )}
         <div
-          className="pointer-events-none absolute right-3 top-3 rounded-full px-3 py-1.5 text-xs font-bold"
-          style={{ background: 'rgba(11,11,11,0.85)', color: '#C0D900', border: '1px solid rgba(166,179,0,0.35)' }}
+          className="pointer-events-none absolute right-3 top-3 rounded-full px-3 py-1.5 text-xs font-extrabold"
+          style={{ background: 'rgba(5,5,5,0.9)', color: '#D4F000', border: '1px solid rgba(212,240,0,0.35)' }}
         >
           Radius {radiusLabel}
         </div>
       </div>
 
       <div className="flex items-center gap-4 px-5 py-4 shrink-0">
-        <img src={Images.userWaiting} alt="" className="h-32 w-28 object-contain" draggable={false} />
+        <img src={Images.userWaiting} alt="" className="h-36 w-32 object-contain" draggable={false} />
         <div className="flex-1">
           <h2 className="text-lg font-bold text-white">
             {waitingForAccept
