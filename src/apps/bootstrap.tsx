@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, useLocation } from 'react-router-dom'
 import { App as CapacitorApp } from '@capacitor/app'
 import { supabase } from '../lib/supabase'
 import { AuthProvider, ThemeProvider } from '../context'
@@ -10,12 +10,11 @@ import DpShell from './dp/DpShell'
 import AdminShell from './admin/AdminShell'
 import '../index.css'
 
-document.title = (() => {
-  const t = resolveAppTarget()
-  if (t === 'dp') return `${APP_DISPLAY_NAME} — Deliver & Earn`
-  if (t === 'admin') return `${APP_DISPLAY_NAME} — Console`
-  return `${APP_DISPLAY_NAME} — Ask Anything. Get Anything.`
-})()
+function syncDocumentTitle(target: 'user' | 'dp' | 'admin') {
+  if (target === 'dp') document.title = `${APP_DISPLAY_NAME} — Deliver & Earn`
+  else if (target === 'admin') document.title = `${APP_DISPLAY_NAME} — Console`
+  else document.title = `${APP_DISPLAY_NAME} — Ask Anything. Get Anything.`
+}
 
 CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
   if (!url.includes('#')) return
@@ -39,8 +38,18 @@ CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
   /* web — Capacitor plugins may be unavailable */
 })
 
+/**
+ * Pick shell from the current URL (unified web) or from the build target (Capacitor).
+ * Must subscribe to location so /dp and /admin remount the correct shell.
+ */
 function Root() {
+  const location = useLocation()
   const target = resolveAppTarget()
+
+  useEffect(() => {
+    syncDocumentTitle(target)
+  }, [target, location.pathname])
+
   if (target === 'dp') return <DpShell />
   if (target === 'admin') return <AdminShell />
   return <UserShell />
@@ -48,6 +57,7 @@ function Root() {
 
 // Keep APP_TARGET referenced so dedicated builds still tree-shake cleanly
 void APP_TARGET
+syncDocumentTitle(resolveAppTarget())
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

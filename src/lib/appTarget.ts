@@ -13,6 +13,8 @@ function fromDefine(): AppTarget {
 /** Path-based target when running the unified web build. */
 export function resolveAppTarget(): 'user' | 'dp' | 'admin' {
   const defined = fromDefine()
+  // Dedicated Capacitor builds are locked to one app.
+  // Unified web (`web`) always selects the shell from the URL path.
   if (defined === 'user' || defined === 'dp' || defined === 'admin') return defined
   if (typeof window === 'undefined') return 'user'
   const p = window.location.pathname

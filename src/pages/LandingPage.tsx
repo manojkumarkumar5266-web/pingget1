@@ -24,7 +24,7 @@ export default function LandingPage() {
 
   const goAuth = () => {
     localStorage.setItem(landingDoneKey(dp), '1')
-    navigate('/auth', { replace: true })
+    navigate(dp ? '/dp/auth' : '/auth', { replace: true })
   }
 
   return (
