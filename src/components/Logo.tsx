@@ -1,22 +1,12 @@
-import { Images } from '../lib/customImages'
+import Brand from './Brand'
 
-type LogoProps = {
+/** Alias — always use official pinGGet logo artwork */
+export default function PingGetLogo({
+  size = 'sm',
+}: {
   size?: 'sm' | 'md' | 'lg'
   showText?: boolean
-}
-
-export default function PingGetLogo({ size = 'sm' }: LogoProps) {
-  const iconSize =
-    size === 'sm' ? 'h-12 w-12' : size === 'lg' ? 'h-24 w-24' : 'h-16 w-16'
-
-  return (
-    <div className="flex flex-col items-center">
-      <img
-        src={Images.logo}
-        alt=""
-        className={`${iconSize} object-contain`}
-        draggable={false}
-      />
-    </div>
-  )
+}) {
+  const map = { sm: 'sm' as const, md: 'md' as const, lg: 'lg' as const }
+  return <Brand size={map[size]} />
 }

@@ -216,7 +216,7 @@ export default function DpNavigationPage() {
 
       {mapCenter && (
         <div className="mx-4 mb-3 h-44 overflow-hidden rounded-[24px] shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          <FreeStreetMap center={mapCenter} zoom={14} markers={mapMarkers} />
+          <FreeStreetMap center={mapCenter} zoom={14} markers={mapMarkers} radiusMeters={10_000} />
         </div>
       )}
 

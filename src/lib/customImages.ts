@@ -11,7 +11,6 @@ export const Images = {
   landingBackground: '/images/landing-background.png',
 
   homeHero: '/images/home-hero.png',
-  haiHand: '/images/hai-hand.png',
 
   scanning: '/images/scanning.png',
   tracking: '/images/tracking.png',

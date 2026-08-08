@@ -103,25 +103,29 @@ export default function UserLayout() {
           >
             <p className="mb-4 text-center text-base font-extrabold">What do you need?</p>
             <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => { setShowBookingMenu(false); navigate('/app/create') }} className="overflow-hidden rounded-[24px] text-left" style={{ border: `1px solid ${pg.line}` }}>
-                <img src={Images.feature.instantBooking} alt="" className="h-36 w-full object-cover" />
-                <div className="flex items-center gap-2 px-3 py-3" style={{ background: pg.limeDim }}>
-                  <Zap size={16} style={{ color: pg.lime }} />
-                  <div>
-                    <p className="text-sm font-extrabold" style={{ color: pg.lime }}>Instant</p>
-                    <p className="text-[10px]" style={{ color: pg.text3 }}>Now</p>
-                  </div>
-                </div>
+              <button type="button" onClick={() => { setShowBookingMenu(false); navigate('/app/create') }} className="text-left">
+                <img
+                  src={Images.feature.instantBooking}
+                  alt="Instant"
+                  className="w-full object-contain"
+                  style={{ background: 'transparent', display: 'block' }}
+                  draggable={false}
+                />
+                <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold" style={{ color: pg.lime }}>
+                  <Zap size={16} /> Instant
+                </p>
               </button>
-              <button type="button" onClick={() => { setShowBookingMenu(false); navigate('/app/create-advance') }} className="overflow-hidden rounded-[24px] text-left" style={{ border: `1px solid ${pg.line}` }}>
-                <img src={Images.feature.advanceBooking} alt="" className="h-36 w-full object-cover" />
-                <div className="flex items-center gap-2 px-3 py-3" style={{ background: 'rgba(59,130,246,0.12)' }}>
-                  <CalendarClock size={16} className="text-sky-400" />
-                  <div>
-                    <p className="text-sm font-extrabold text-sky-400">Advance</p>
-                    <p className="text-[10px]" style={{ color: pg.text3 }}>Schedule</p>
-                  </div>
-                </div>
+              <button type="button" onClick={() => { setShowBookingMenu(false); navigate('/app/create-advance') }} className="text-left">
+                <img
+                  src={Images.feature.advanceBooking}
+                  alt="Advance"
+                  className="w-full object-contain"
+                  style={{ background: 'transparent', display: 'block' }}
+                  draggable={false}
+                />
+                <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold text-sky-400">
+                  <CalendarClock size={16} /> Advance
+                </p>
               </button>
             </div>
           </div>

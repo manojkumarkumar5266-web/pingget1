@@ -90,25 +90,43 @@ export default function UserHome() {
       <section className="mb-8">
         <SectionLabel title="Book now" />
         <div className="grid grid-cols-2 gap-3">
-          <button type="button" onClick={() => navigate('/app/create')} className="overflow-hidden text-left transition active:scale-[0.98]" style={{ background: pg.surface, borderRadius: 26, border: `1px solid rgba(212,240,0,0.3)` }}>
-            <img src={Images.feature.instantBooking} alt="" className="h-44 w-full object-cover" draggable={false} />
-            <div className="flex items-center gap-2 px-3 py-3.5" style={{ background: pg.limeDim }}>
-              <Zap size={18} style={{ color: pg.lime }} />
-              <div>
-                <p className="text-sm font-extrabold" style={{ color: pg.lime }}>Instant</p>
-                <p className="text-[10px]" style={{ color: pg.text3 }}>~10 min</p>
-              </div>
-            </div>
+          <button
+            type="button"
+            onClick={() => navigate('/app/create')}
+            className="text-left transition active:scale-[0.98]"
+          >
+            <img
+              src={Images.feature.instantBooking}
+              alt="Instant Booking"
+              className="w-full object-contain"
+              style={{ background: 'transparent', display: 'block' }}
+              loading="eager"
+              decoding="async"
+              draggable={false}
+            />
+            <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold" style={{ color: pg.lime }}>
+              <Zap size={16} /> Instant
+            </p>
+            <p className="text-[10px]" style={{ color: pg.text3 }}>~10 min</p>
           </button>
-          <button type="button" onClick={() => navigate('/app/create-advance')} className="overflow-hidden text-left transition active:scale-[0.98]" style={{ background: pg.surface, borderRadius: 26, border: `1px solid rgba(59,130,246,0.3)` }}>
-            <img src={Images.feature.advanceBooking} alt="" className="h-44 w-full object-cover" draggable={false} />
-            <div className="flex items-center gap-2 px-3 py-3.5" style={{ background: 'rgba(59,130,246,0.12)' }}>
-              <CalendarClock size={18} className="text-sky-400" />
-              <div>
-                <p className="text-sm font-extrabold text-sky-400">Advance</p>
-                <p className="text-[10px]" style={{ color: pg.text3 }}>Schedule</p>
-              </div>
-            </div>
+          <button
+            type="button"
+            onClick={() => navigate('/app/create-advance')}
+            className="text-left transition active:scale-[0.98]"
+          >
+            <img
+              src={Images.feature.advanceBooking}
+              alt="Advance Booking"
+              className="w-full object-contain"
+              style={{ background: 'transparent', display: 'block' }}
+              loading="eager"
+              decoding="async"
+              draggable={false}
+            />
+            <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold text-sky-400">
+              <CalendarClock size={16} /> Advance
+            </p>
+            <p className="text-[10px]" style={{ color: pg.text3 }}>Schedule</p>
           </button>
         </div>
       </section>

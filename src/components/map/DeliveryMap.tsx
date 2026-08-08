@@ -27,13 +27,13 @@ type Props = {
   radiusMeters?: number
 }
 
-/** Free OSM street map (MapLibre) — replaces Leaflet DeliveryMap. */
+/** Google street map live tracking — User + DP pins within radius. */
 export default function DeliveryMap({
   userLocation,
   dpMarkers = [],
   routeEndpoints,
   className = '',
-  radiusMeters,
+  radiusMeters = 10_000,
 }: Props) {
   const markers: MapMarker[] = []
   if (userLocation) markers.push({ id: 'user', position: userLocation, kind: 'user' })

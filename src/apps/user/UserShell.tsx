@@ -5,15 +5,16 @@ import { FullScreenLoader } from '../../components/ui'
 import AuthScreen from '../../pages/AuthScreen'
 import ResetPassword from '../../pages/ResetPassword'
 import UserApp from '../../pages/user/UserApp'
-import LandingPage from '../../pages/LandingPage'
+import LandingPage, { landingDoneKey } from '../../pages/LandingPage'
 import PermissionOnboarding from '../../components/PermissionOnboarding'
 import Watermark from '../../components/Watermark'
 
 const ONBOARDING_KEY = 'pingget_permissions_done'
 
 /**
- * Customer mobile app shell.
- * First open: permissions → Get Started. Signed-in: go straight to app (no welcome splash).
+ * Customer shell.
+ * First open: permissions → Get Started (once).
+ * After Get Started or any sign-in: never show welcome again — auth or app only.
  */
 export default function UserShell() {
   const { session, profile, loading, passwordRecovery, oauthResolving, signOut } = useAuth()
@@ -23,6 +24,7 @@ export default function UserShell() {
     return !localStorage.getItem(ONBOARDING_KEY)
   })
   const [roleError, setRoleError] = useState<string | null>(null)
+  const landingDone = typeof window !== 'undefined' && !!localStorage.getItem(landingDoneKey(false))
 
   useEffect(() => {
     if (!loading && session && !profile && !passwordRecovery && !oauthResolving) {
@@ -37,10 +39,11 @@ export default function UserShell() {
     }
   }, [loading, profile, signOut])
 
-  // Returning signed-in users skip first-launch flow permanently
+  // Signed-in users never see welcome/landing again
   useEffect(() => {
-    if (session && !localStorage.getItem(ONBOARDING_KEY)) {
+    if (session) {
       localStorage.setItem(ONBOARDING_KEY, '1')
+      localStorage.setItem(landingDoneKey(false), '1')
       setShowPermissions(false)
     }
   }, [session])
@@ -59,7 +62,6 @@ export default function UserShell() {
 
   if (loading) return <FullScreenLoader />
 
-  // First launch only (signed out): permissions → Get Started. Signed-in skips entirely.
   if (showPermissions && !session) {
     return (
       <PermissionOnboarding
@@ -72,6 +74,7 @@ export default function UserShell() {
   }
 
   if (!session) {
+    const defaultPath = landingDone ? '/auth' : '/landing'
     return (
       <>
         <Watermark />
@@ -82,18 +85,15 @@ export default function UserShell() {
         )}
         <Routes>
           <Route path="/auth" element={<AuthScreen fixedRole="user" />} />
-          <Route path="/landing" element={<LandingPage />} />
-          <Route path="*" element={<Navigate to="/landing" replace />} />
+          <Route path="/landing" element={landingDone ? <Navigate to="/auth" replace /> : <LandingPage />} />
+          <Route path="*" element={<Navigate to={defaultPath} replace />} />
         </Routes>
       </>
     )
   }
 
   if (!profile) return <FullScreenLoader />
-
-  if (profile.role !== 'user') {
-    return <FullScreenLoader />
-  }
+  if (profile.role !== 'user') return <FullScreenLoader />
 
   return (
     <>

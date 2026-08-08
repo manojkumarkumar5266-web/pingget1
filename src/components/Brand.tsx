@@ -1,47 +1,52 @@
 import { Images } from '../lib/customImages'
 
-type BrandSize = 'sm' | 'md' | 'lg' | 'xl'
+type BrandSize = 'sm' | 'md' | 'lg' | 'xl' | 'hero'
 
 type BrandProps = {
   size?: BrandSize
-  showTagline?: boolean
-  variant?: 'light' | 'dark'
+  /** Show the official pinGGet wordmark image (includes tagline) */
   className?: string
+  /** Inline compact mark for headers */
+  compact?: boolean
 }
 
 const sizeMap: Record<BrandSize, string> = {
-  sm: 'h-10 w-10',
-  md: 'h-14 w-14',
-  lg: 'h-20 w-20',
-  xl: 'h-28 w-28',
+  sm: 'h-8 w-auto max-w-[140px]',
+  md: 'h-12 w-auto max-w-[200px]',
+  lg: 'h-16 w-auto max-w-[260px]',
+  xl: 'h-24 w-auto max-w-[320px]',
+  hero: 'h-28 w-auto max-w-[360px] sm:h-32',
 }
 
-export const OLIVE_GREEN = '#D4F000'
-
 /**
- * Brand mark — logo image only (no pinGGet text).
- * Replace public/images/logo.png to update everywhere.
+ * Official pinGGet logo — replace public/images/logo.png to update everywhere.
+ * Renders the full wordmark + “boy next door” artwork (no plain “PingGET” text).
  */
 export default function Brand({
   size = 'md',
-  showTagline = true,
   className = '',
+  compact = false,
 }: BrandProps) {
   return (
-    <div className={`flex flex-col items-center leading-none ${className}`}>
-      <img
-        src={Images.logo}
-        alt=""
-        className={`${sizeMap[size]} object-contain`}
-        draggable={false}
-      />
-      {showTagline && (
-        <span
-          className="mt-2 text-[10px] font-semibold tracking-[0.15em] text-white/70"
-        >
-          CHAT . ORDER . GET IT
-        </span>
-      )}
-    </div>
+    <img
+      src={Images.logo}
+      alt="pinGGet"
+      className={`${compact ? 'h-7 w-auto max-w-[120px]' : sizeMap[size]} object-contain ${className}`}
+      draggable={false}
+    />
   )
 }
+
+/** Colored wordmark fallback when only text is needed (matches logo palette) */
+export function BrandWordmark({ className = '' }: { className?: string }) {
+  return (
+    <span className={`inline-flex items-baseline font-extrabold tracking-tight ${className}`} aria-label="pinGGet">
+      <span style={{ color: '#FFFFFF' }}>pin</span>
+      <span style={{ color: '#A3B168' }}>G</span>
+      <span style={{ color: '#FFFFFF' }}>G</span>
+      <span style={{ color: '#A3B168' }}>et</span>
+    </span>
+  )
+}
+
+export const OLIVE_GREEN = '#A3B168'

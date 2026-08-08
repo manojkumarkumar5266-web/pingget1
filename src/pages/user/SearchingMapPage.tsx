@@ -8,7 +8,7 @@ import { X, Bike, CheckCircle2, ChevronRight, Clock, Search, Loader2 } from 'luc
 import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
 import { Images } from '../../lib/customImages'
 
-const SCAN_RADIUS_KM = 5
+const SCAN_RADIUS_KM = 10
 const MAX_SCANS = 6
 
 export default function SearchingMapPage() {

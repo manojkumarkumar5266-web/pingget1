@@ -1,4 +1,4 @@
-/** Map helpers — Google street maps used via FreeStreetMap embed. */
+/** Map helpers — Google Maps live tracking via FreeStreetMap embed + overlays. */
 
 export const DEFAULT_CENTER: [number, number] = [17.385, 78.4867] // Hyderabad fallback
 export const DEFAULT_ZOOM = 14

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { MapPin, Camera, Bell, Shield } from 'lucide-react'
+import { MapPin, Camera, Bell } from 'lucide-react'
+import Brand from './Brand'
 import { pg } from '../design/tokens'
 import { CTA, Surface } from '../design/primitives'
 
@@ -73,14 +74,8 @@ export default function PermissionOnboarding({ onComplete }: { onComplete: () =>
 
       <div className="relative z-10 w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div
-            className="flex h-14 w-14 items-center justify-center rounded-3xl"
-            style={{ background: pg.limeDim, border: '1px solid rgba(212,240,0,0.28)' }}
-          >
-            <Shield size={26} style={{ color: pg.lime }} />
-          </div>
+          <Brand size="md" />
           <div className="text-center">
-            <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.22em]" style={{ color: pg.lime }}>PingGET</p>
             <h2 className="text-xl font-extrabold tracking-tight">Quick Setup</h2>
             <p className="text-sm" style={{ color: pg.text3 }}>Step {stepIdx + 1} of {STEPS.length}</p>
           </div>

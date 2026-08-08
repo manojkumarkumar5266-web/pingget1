@@ -19,9 +19,10 @@ type DpSpot = {
   full_name: string
 }
 
-const RADIUS_STEPS_M = [500, 1000, 2000, 5000, 10000]
+const RADIUS_STEPS_M = [2000, 5000, 10000]
 const RADIUS_STEP_INTERVAL_MS = 8000
 const SCAN_INTERVAL_MS = 3500
+const DEFAULT_MAP_RADIUS_M = 10_000
 
 /** Offset a point roughly by distance/bearing for map display when RPC omits coords */
 function offsetFromCenter(lat: number, lng: number, distM: number, angleDeg: number): { lat: number; lng: number } {
@@ -271,8 +272,9 @@ export default function ScanningPage() {
         {center ? (
           <FreeStreetMap
             center={center}
-            zoom={radiusStepIndex <= 1 ? 15 : radiusStepIndex <= 3 ? 14 : 13}
+            zoom={radiusStepIndex === 0 ? 14 : radiusStepIndex === 1 ? 13 : 12}
             markers={markers}
+            radiusMeters={DEFAULT_MAP_RADIUS_M}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm" style={{ background: pg.surface, color: pg.text3 }}>

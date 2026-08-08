@@ -3,16 +3,29 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { Images } from '../lib/customImages'
 import { isDpApp } from '../lib/appTarget'
+import Brand from '../components/Brand'
 import { CTA } from '../design/primitives'
 import { pg } from '../design/tokens'
 
-/** Rebuilt Get Started / landing — commerce hero, not old card stack */
+const LANDING_DONE_USER = 'pingget_landing_done'
+const LANDING_DONE_DP = 'pingget_dp_landing_done'
+
+export function landingDoneKey(dp: boolean) {
+  return dp ? LANDING_DONE_DP : LANDING_DONE_USER
+}
+
+/** Get Started once — after this, signed-out users go straight to auth (no welcome again). */
 export default function LandingPage() {
   const navigate = useNavigate()
   const [ready, setReady] = useState(false)
   const dp = isDpApp()
 
   useEffect(() => { setReady(true) }, [])
+
+  const goAuth = () => {
+    localStorage.setItem(landingDoneKey(dp), '1')
+    navigate('/auth', { replace: true })
+  }
 
   return (
     <div className="relative min-h-[100dvh] overflow-hidden" style={{ background: pg.bg }}>
@@ -32,9 +45,9 @@ export default function LandingPage() {
           transition: 'all 0.45s ease',
         }}
       >
-        <p className="text-center text-[11px] font-extrabold uppercase tracking-[0.2em]" style={{ color: pg.lime }}>
-          {dp ? 'Partner' : 'Customer'}
-        </p>
+        <div className="flex justify-center">
+          <Brand size="md" />
+        </div>
 
         <div className="flex flex-1 flex-col items-center justify-center py-6">
           <img
@@ -56,7 +69,7 @@ export default function LandingPage() {
               ? 'Go online, accept requests around you, and track every delivery in one place.'
               : 'Instant or scheduled delivery from local partners — groceries, meds, parcels and more.'}
           </p>
-          <CTA className="w-full text-base" onClick={() => navigate('/auth')}>
+          <CTA className="w-full text-base" onClick={goAuth}>
             Get Started <ArrowRight size={18} />
           </CTA>
         </div>

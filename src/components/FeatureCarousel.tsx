@@ -1,3 +1,4 @@
+import Brand from './Brand'
 import { Images } from '../lib/customImages'
 import { pg } from '../design/tokens'
 
@@ -13,37 +14,38 @@ const FEATURES = [
   { title: 'Safe & Fast', subtitle: 'Verified delivery partners', image: Images.feature.card9 },
 ]
 
-/** Full feature cards — no carousel, each card shown completely */
+/** Full HD feature images — stacked, no carousel, no cropping borders */
 export default function FeatureCarousel() {
   return (
     <section className="mb-8">
-      <div className="mb-3 px-1">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>Discover</p>
-        <h2 className="text-[20px] font-extrabold tracking-tight">What’s on PingGET</h2>
+      <div className="mb-4 flex items-center gap-3 px-0.5">
+        <Brand size="sm" />
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
+            Discover
+          </p>
+          <h2 className="text-[18px] font-extrabold tracking-tight" style={{ color: pg.text2 }}>
+            What’s on offer
+          </h2>
+        </div>
       </div>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         {FEATURES.map((f) => (
-          <div
-            key={f.title}
-            className="w-full overflow-hidden"
-            style={{
-              background: pg.surface,
-              borderRadius: 28,
-              border: `1px solid ${pg.line}`,
-            }}
-          >
+          <article key={f.title} className="w-full">
             <img
               src={f.image}
               alt={f.title}
-              className="w-full object-cover"
-              style={{ aspectRatio: '16 / 10', maxHeight: 280 }}
+              className="w-full object-contain"
+              style={{ background: 'transparent', display: 'block' }}
+              loading="lazy"
+              decoding="async"
               draggable={false}
             />
-            <div className="px-4 py-3.5">
+            <div className="mt-2.5 px-0.5">
               <p className="text-[16px] font-extrabold tracking-tight">{f.title}</p>
               <p className="mt-0.5 text-xs" style={{ color: pg.text3 }}>{f.subtitle}</p>
             </div>
-          </div>
+          </article>
         ))}
       </div>
     </section>

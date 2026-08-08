@@ -5,7 +5,7 @@ import { FullScreenLoader } from '../../components/ui'
 import AuthScreen from '../../pages/AuthScreen'
 import ResetPassword from '../../pages/ResetPassword'
 import DpApp from '../../pages/dp/DpApp'
-import LandingPage from '../../pages/LandingPage'
+import LandingPage, { landingDoneKey } from '../../pages/LandingPage'
 import PermissionOnboarding from '../../components/PermissionOnboarding'
 import Watermark from '../../components/Watermark'
 import { Clock, XCircle, ArrowLeft } from 'lucide-react'
@@ -59,8 +59,9 @@ function DpRejectedScreen() {
 }
 
 /**
- * Delivery Partner mobile app shell.
- * First open: permissions → Get Started. Signed-in: go straight to app (no welcome splash).
+ * Partner shell.
+ * First open: permissions → Get Started (once).
+ * After Get Started or any sign-in: never show welcome again.
  */
 export default function DpShell() {
   const { session, profile, loading, passwordRecovery, oauthResolving, signOut } = useAuth()
@@ -70,6 +71,7 @@ export default function DpShell() {
     return !localStorage.getItem(ONBOARDING_KEY)
   })
   const [roleError, setRoleError] = useState<string | null>(null)
+  const landingDone = typeof window !== 'undefined' && !!localStorage.getItem(landingDoneKey(true))
 
   useEffect(() => {
     if (!loading && session && !profile && !passwordRecovery && !oauthResolving) {
@@ -84,10 +86,10 @@ export default function DpShell() {
     }
   }, [loading, profile, signOut])
 
-  // Returning signed-in users skip first-launch flow permanently
   useEffect(() => {
-    if (session && !localStorage.getItem(ONBOARDING_KEY)) {
+    if (session) {
       localStorage.setItem(ONBOARDING_KEY, '1')
+      localStorage.setItem(landingDoneKey(true), '1')
       setShowPermissions(false)
     }
   }, [session])
@@ -106,7 +108,6 @@ export default function DpShell() {
 
   if (loading) return <FullScreenLoader />
 
-  // First launch only (signed out): permissions → Get Started. Signed-in skips entirely.
   if (showPermissions && !session) {
     return (
       <PermissionOnboarding
@@ -119,6 +120,7 @@ export default function DpShell() {
   }
 
   if (!session) {
+    const defaultPath = landingDone ? '/auth' : '/landing'
     return (
       <>
         <Watermark />
@@ -129,15 +131,14 @@ export default function DpShell() {
         )}
         <Routes>
           <Route path="/auth" element={<AuthScreen fixedRole="dp" />} />
-          <Route path="/landing" element={<LandingPage />} />
-          <Route path="*" element={<Navigate to="/landing" replace />} />
+          <Route path="/landing" element={landingDone ? <Navigate to="/auth" replace /> : <LandingPage />} />
+          <Route path="*" element={<Navigate to={defaultPath} replace />} />
         </Routes>
       </>
     )
   }
 
   if (!profile) return <FullScreenLoader />
-
   if (profile.role !== 'dp') return <FullScreenLoader />
 
   if (profile.status === 'pending') {
