@@ -8,6 +8,7 @@ import { Clock, MapPin, CheckCircle2, ChevronRight, Zap, CalendarClock, Package,
 import { Images } from '../../lib/customImages'
 import FeatureCarousel from '../../components/FeatureCarousel'
 import AddressPicker from '../../components/AddressPicker'
+import GreetingHeader from '../../components/GreetingHeader'
 import { Screen, SectionLabel, Surface, EmptyBlock, Chip } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 
@@ -62,15 +63,7 @@ export default function UserHome() {
     <Screen className="mx-auto max-w-lg animate-fade-in-up">
       <ServiceStatusBanner cityName={profile?.city} />
 
-      <header className="mb-5 flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
-            Good {getGreeting()}
-          </p>
-          <h1 className="truncate text-[30px] font-extrabold leading-none tracking-tight">Hai {firstName}</h1>
-        </div>
-        <img src={Images.haiHand} alt="" className="h-[72px] w-[72px] object-contain" draggable={false} />
-      </header>
+      <GreetingHeader firstName={firstName} />
 
       <div className="mb-5">
         <AddressPicker />
@@ -196,13 +189,6 @@ export default function UserHome() {
       )}
     </Screen>
   )
-}
-
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 17) return 'afternoon'
-  return 'evening'
 }
 
 async function navigateToOrder(navigate: (path: string) => void, req: DeliveryRequest) {

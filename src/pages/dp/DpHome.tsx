@@ -5,20 +5,13 @@ import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../.
 import { useGps } from '../../hooks/useGps'
 import { ServiceStatusBanner, SkeletonList, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency, STATUS_LABELS, STATUS_COLORS } from '../../lib/utils'
-import { Images } from '../../lib/customImages'
+import GreetingHeader from '../../components/GreetingHeader'
 import { Screen, Surface, CTA, Chip, SectionLabel, EmptyBlock, IconButton } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import {
   Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause,
   Star, Activity, Wallet, ChevronRight, MapPinOff, Loader2, CalendarClock, TrendingUp,
 } from 'lucide-react'
-
-function getDpGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 17) return 'afternoon'
-  return 'evening'
-}
 
 type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
 
@@ -335,7 +328,6 @@ export default function DpHome() {
   const rating = dp?.rating_avg || 0
   const ratingCount = dp?.rating_count || 0
   const dpFirstName = profile?.full_name?.split(' ')[0] || 'Partner'
-  const dpGreetWord = getDpGreeting()
   const rangePct = ((rangeKm - 1) / 19) * 100
 
   if (dpLoading) {
@@ -346,17 +338,7 @@ export default function DpHome() {
     )
   }
 
-  const greetingHeader = (
-    <header className="mb-5 flex items-center gap-3">
-      <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
-          Good {dpGreetWord}
-        </p>
-        <h1 className="truncate text-[30px] font-extrabold leading-none tracking-tight">Hai {dpFirstName}</h1>
-      </div>
-      <img src={Images.haiHand} alt="" className="h-[72px] w-[72px] object-contain" draggable={false} />
-    </header>
-  )
+  const greetingHeader = <GreetingHeader firstName={dpFirstName} />
 
   if (!dp?.is_online) {
     return (
