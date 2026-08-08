@@ -107,7 +107,7 @@ export default function DpLayout() {
       {/* Premium Header */}
       <header className="z-10 px-4 py-3" style={{ background: 'rgba(11,11,11,0.9)', borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)' }}>
         <div className="flex items-center justify-between">
-          <p className="text-sm font-bold" style={{ color: '#C4D600' }}>Partner</p>
+          <p className="text-sm font-extrabold tracking-tight" style={{ color: '#C0D900' }}>Partner</p>
           <div className="flex items-center gap-2">
             <button onClick={handleToggleOnline}
               title={commissionOwed > 0 ? `Pay ${formatCurrency(commissionOwed)} commission to go online` : undefined}

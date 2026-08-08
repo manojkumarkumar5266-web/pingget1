@@ -230,7 +230,7 @@ export default function LiveTrackingPage() {
         </div>
       </div>
 
-      <div className="relative flex-shrink-0" style={{ height: '38vh', minHeight: '240px' }}>
+      <div className="relative flex-shrink-0" style={{ height: '44vh', minHeight: '280px' }}>
         {isPending ? (
           <div className="flex h-full flex-col items-center justify-center bg-black px-6">
             <img src={Images.userWaiting} alt="" className="w-40 h-40 object-contain mb-3" />

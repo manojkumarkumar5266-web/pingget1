@@ -202,8 +202,8 @@ export default function DpNavigationPage() {
         </div>
       </div>
 
-      {/* Progress store → user + synced step images */}
-      <div className="flex-shrink-0 px-4 pb-2" style={{ height: '34vh', minHeight: 220 }}>
+      {/* Progress store → user + large synced step images */}
+      <div className="flex-shrink-0 px-2 pb-2" style={{ height: '42vh', minHeight: 260 }}>
         <VisualTracking
           progress={progress}
           status={request.status}
@@ -213,8 +213,8 @@ export default function DpNavigationPage() {
       </div>
 
       {mapCenter && (
-        <div className="mx-4 mb-3 h-36 overflow-hidden rounded-2xl shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          <FreeStreetMap center={mapCenter} zoom={13} markers={mapMarkers} interactive={false} />
+        <div className="mx-4 mb-3 h-44 overflow-hidden rounded-[24px] shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+          <FreeStreetMap center={mapCenter} zoom={14} markers={mapMarkers} />
         </div>
       )}
 

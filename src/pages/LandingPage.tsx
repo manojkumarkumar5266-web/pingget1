@@ -17,38 +17,43 @@ export default function LandingPage() {
         <img
           src={Images.landingBackground}
           alt=""
-          className="h-full w-full object-cover opacity-40"
+          className="h-full w-full object-cover opacity-35"
           draggable={false}
         />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(11,11,11,0.55) 0%, #0B0B0B 78%)' }} />
       </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col px-4 py-4">
-        <div className={`flex flex-1 flex-col items-center justify-center max-w-md mx-auto w-full transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className="relative z-10 flex min-h-screen flex-col px-5 py-6">
+        <div className={`mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <img
             src={dp ? Images.welcomeDp : Images.landingHero}
             alt=""
-            className="mb-8 w-full max-w-xs object-contain"
+            className="mb-6 w-full max-h-[48vh] object-contain"
+            style={{ background: 'transparent' }}
             draggable={false}
           />
 
-          <p className="mb-6 text-center text-sm text-white/55">
+          <h1 className="mb-2 text-center text-3xl font-extrabold tracking-tight text-white">
+            {dp ? 'Deliver & Earn' : 'Ask. Order. Get it.'}
+          </h1>
+          <p className="mb-8 max-w-sm text-center text-sm leading-relaxed text-white/55">
             {dp
-              ? 'Earn by delivering in your neighbourhood.'
-              : 'Order groceries, medicines, parcels and more.'}
+              ? 'Accept nearby requests and earn in your neighbourhood.'
+              : 'Groceries, medicines, parcels — delivered by local partners.'}
           </p>
 
           <button
+            type="button"
             onClick={() => navigate('/auth')}
-            className="w-full rounded-2xl py-4 text-base font-bold shadow-lg transition-all active:scale-95"
-            style={{ backgroundColor: '#A6B300', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(166,179,0,0.35)' }}
+            className="btn-primary w-full text-base"
           >
             Get Started <ArrowRight size={18} className="inline" />
           </button>
         </div>
 
-        <div className="mt-4 text-center text-xs text-white/40">
+        <p className="mt-4 text-center text-[11px] text-white/35">
           By continuing you agree to our Terms &amp; Privacy Policy
-        </div>
+        </p>
       </div>
     </div>
   )

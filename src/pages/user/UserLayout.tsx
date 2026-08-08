@@ -113,30 +113,30 @@ export default function UserLayout() {
             style={{ background: '#181818', border: '1px solid rgba(166,179,0,0.25)' }}
             onClick={e => e.stopPropagation()}
           >
-            <p className="mb-3 text-center text-sm font-bold text-white">Choose booking type</p>
+            <p className="mb-3 text-center text-base font-extrabold text-white">Choose booking type</p>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => { setShowBookingMenu(false); navigate('/app/create') }}
-                className="overflow-hidden rounded-2xl text-left active:scale-95"
+                className="overflow-hidden rounded-[22px] text-left active:scale-95"
                 style={{ border: '1px solid rgba(255,255,255,0.1)' }}
               >
-                <img src={Images.feature.instantBooking} alt="" className="h-20 w-full object-cover" />
-                <div className="flex items-center gap-1.5 px-3 py-2.5" style={{ background: 'rgba(166,179,0,0.12)' }}>
-                  <Zap size={14} style={{ color: '#A6B300' }} />
-                  <span className="text-xs font-bold" style={{ color: '#A6B300' }}>Instant Booking</span>
+                <img src={Images.feature.instantBooking} alt="" className="h-32 w-full object-cover" />
+                <div className="flex items-center gap-1.5 px-3 py-3" style={{ background: 'rgba(166,179,0,0.14)' }}>
+                  <Zap size={15} style={{ color: '#C0D900' }} />
+                  <span className="text-xs font-extrabold" style={{ color: '#C0D900' }}>Instant</span>
                 </div>
               </button>
               <button
                 type="button"
                 onClick={() => { setShowBookingMenu(false); navigate('/app/create-advance') }}
-                className="overflow-hidden rounded-2xl text-left active:scale-95"
+                className="overflow-hidden rounded-[22px] text-left active:scale-95"
                 style={{ border: '1px solid rgba(255,255,255,0.1)' }}
               >
-                <img src={Images.feature.advanceBooking} alt="" className="h-20 w-full object-cover" />
-                <div className="flex items-center gap-1.5 px-3 py-2.5" style={{ background: 'rgba(59,130,246,0.12)' }}>
-                  <CalendarClock size={14} style={{ color: '#60A5FA' }} />
-                  <span className="text-xs font-bold" style={{ color: '#60A5FA' }}>Advance Booking</span>
+                <img src={Images.feature.advanceBooking} alt="" className="h-32 w-full object-cover" />
+                <div className="flex items-center gap-1.5 px-3 py-3" style={{ background: 'rgba(59,130,246,0.14)' }}>
+                  <CalendarClock size={15} style={{ color: '#60A5FA' }} />
+                  <span className="text-xs font-extrabold" style={{ color: '#60A5FA' }}>Advance</span>
                 </div>
               </button>
             </div>

@@ -111,7 +111,7 @@ export default function AdminLayout() {
   )
 
   return (
-    <div className="flex h-screen bg-[#0B0B0B]" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="flex h-screen bg-[#0B0B0B]">
       <Watermark />
 
       {/* Desktop sidebar */}

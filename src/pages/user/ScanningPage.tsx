@@ -220,7 +220,7 @@ export default function ScanningPage() {
         <img
           src={Images.orderAccepted}
           alt="Order accepted"
-          className="w-full max-w-sm object-contain rounded-3xl"
+          className="w-full max-w-md object-contain rounded-[28px]"
           draggable={false}
         />
         <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Opening order tracking...</p>
@@ -271,29 +271,29 @@ export default function ScanningPage() {
         </button>
       </div>
 
-      <div className="relative mx-3 h-[42vh] min-h-[220px] overflow-hidden rounded-3xl shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+      {/* Map — Google street map with live GPS */}
+      <div className="relative mx-3 h-[46vh] min-h-[260px] overflow-hidden rounded-[28px] shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
         {center ? (
           <FreeStreetMap
             center={center}
-            zoom={radiusStepIndex <= 1 ? 14 : radiusStepIndex <= 3 ? 13 : 12}
+            zoom={radiusStepIndex <= 1 ? 15 : radiusStepIndex <= 3 ? 14 : 13}
             markers={markers}
-            radiusMeters={radiusMeters}
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-[#121212] text-sm text-white/40">
-            Getting your location…
+            Detecting your location…
           </div>
         )}
         <div
-          className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-xs font-bold"
-          style={{ background: 'rgba(11,11,11,0.75)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.35)' }}
+          className="pointer-events-none absolute right-3 top-3 rounded-full px-3 py-1.5 text-xs font-bold"
+          style={{ background: 'rgba(11,11,11,0.85)', color: '#C0D900', border: '1px solid rgba(166,179,0,0.35)' }}
         >
           Radius {radiusLabel}
         </div>
       </div>
 
-      <div className="flex items-center gap-4 px-5 py-3 shrink-0">
-        <img src={Images.userWaiting} alt="" className="h-24 w-20 object-contain" draggable={false} />
+      <div className="flex items-center gap-4 px-5 py-4 shrink-0">
+        <img src={Images.userWaiting} alt="" className="h-32 w-28 object-contain" draggable={false} />
         <div className="flex-1">
           <h2 className="text-lg font-bold text-white">
             {waitingForAccept

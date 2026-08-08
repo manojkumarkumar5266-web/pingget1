@@ -1,4 +1,4 @@
-/** Map helpers without Leaflet — MapLibre FreeStreetMap is the map renderer. */
+/** Map helpers — Google street maps used via FreeStreetMap embed. */
 
 export const DEFAULT_CENTER: [number, number] = [17.385, 78.4867] // Hyderabad fallback
 export const DEFAULT_ZOOM = 14
