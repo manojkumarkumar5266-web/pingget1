@@ -4,18 +4,19 @@ import { BrowserRouter } from 'react-router-dom'
 import { App as CapacitorApp } from '@capacitor/app'
 import { supabase } from '../lib/supabase'
 import { AuthProvider, ThemeProvider } from '../context'
-import { APP_TARGET, APP_DISPLAY_NAME } from '../lib/appTarget'
+import { APP_TARGET, APP_DISPLAY_NAME, resolveAppTarget } from '../lib/appTarget'
 import UserShell from './user/UserShell'
 import DpShell from './dp/DpShell'
 import AdminShell from './admin/AdminShell'
 import '../index.css'
+import 'maplibre-gl/dist/maplibre-gl.css'
 
-document.title =
-  APP_TARGET === 'dp'
-    ? `${APP_DISPLAY_NAME} — Deliver & Earn`
-    : APP_TARGET === 'admin'
-    ? `${APP_DISPLAY_NAME} — Console`
-    : `${APP_DISPLAY_NAME} — Ask Anything. Get Anything.`
+document.title = (() => {
+  const t = resolveAppTarget()
+  if (t === 'dp') return `${APP_DISPLAY_NAME} — Deliver & Earn`
+  if (t === 'admin') return `${APP_DISPLAY_NAME} — Console`
+  return `${APP_DISPLAY_NAME} — Ask Anything. Get Anything.`
+})()
 
 CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
   if (!url.includes('#')) return
@@ -40,10 +41,14 @@ CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
 })
 
 function Root() {
-  if (APP_TARGET === 'dp') return <DpShell />
-  if (APP_TARGET === 'admin') return <AdminShell />
+  const target = resolveAppTarget()
+  if (target === 'dp') return <DpShell />
+  if (target === 'admin') return <AdminShell />
   return <UserShell />
 }
+
+// Keep APP_TARGET referenced so dedicated builds still tree-shake cleanly
+void APP_TARGET
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

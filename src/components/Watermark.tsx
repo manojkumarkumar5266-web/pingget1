@@ -1,12 +1,14 @@
-import { Images } from '../lib/customImages'
-
-/** Lightweight logo watermark — avoids heavy SVG text pattern (faster paint). */
+/** Subtle atmospheric wash — logos removed from chrome. */
 export default function Watermark() {
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
-      <div className="absolute inset-0 flex items-center justify-center" style={{ opacity: 0.03 }}>
-        <img src={Images.logo} alt="" className="h-64 w-64 object-contain -rotate-[25deg]" draggable={false} />
-      </div>
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at 20% 10%, rgba(166,179,0,0.06), transparent 45%), radial-gradient(ellipse at 80% 90%, rgba(166,179,0,0.04), transparent 40%)',
+        }}
+      />
     </div>
   )
 }

@@ -1,21 +1,23 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } from '../../lib/supabase'
+import { supabase, type DeliveryRequest, type Profile } from '../../lib/supabase'
 import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
+import VisualTracking, { STATUS_PROGRESS } from '../../components/VisualTracking'
+import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
+import { Images } from '../../lib/customImages'
 import {
   ArrowLeft, Navigation, MapPin, MessageCircle, Package, CheckCircle2,
-  ShoppingBag, Bike, Phone, Camera, X, Clock, Star, User as UserIcon, Store,
-  TrendingUp, IndianRupee,
+  Bike, Phone, Camera, X, Clock, User as UserIcon, Store,
 } from 'lucide-react'
 
 const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string; notifBody: string; icon: any }[] = [
-  { from: 'accepted', to: 'confirmed', label: 'Confirm Order', notifTitle: 'Order Confirmed', notifBody: 'Your delivery partner confirmed. They will start shopping soon.', icon: CheckCircle2 },
-  { from: 'confirmed', to: 'shopping', label: 'Start Shopping', notifTitle: 'Shopping Started', notifBody: 'Your delivery partner is now shopping for your items.', icon: ShoppingBag },
-  { from: 'shopping', to: 'purchased', label: 'Items Purchased', notifTitle: 'Items Purchased', notifBody: 'Items purchased! Your delivery partner is heading your way soon.', icon: Package },
+  { from: 'accepted', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
+  { from: 'confirmed', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
+  { from: 'shopping', to: 'purchased', label: 'Order Picked Up', notifTitle: 'Order Picked Up', notifBody: 'Items picked up! Partner is heading your way soon.', icon: Package },
   { from: 'purchased', to: 'on_the_way', label: 'On The Way', notifTitle: 'On The Way!', notifBody: 'Your delivery partner is heading to your location.', icon: Bike },
-  { from: 'on_the_way', to: 'arrived', label: 'Mark Arrived', notifTitle: 'Partner Arrived', notifBody: 'Your delivery partner has arrived. Please be ready to receive.', icon: MapPin },
-  { from: 'arrived', to: 'delivered', label: 'Mark Delivered', notifTitle: 'Order Delivered', notifBody: 'Your order has been delivered. Please confirm receipt in the app.', icon: CheckCircle2 },
+  { from: 'on_the_way', to: 'arrived', label: 'Arrived', notifTitle: 'Partner Arrived', notifBody: 'Your delivery partner has arrived. Please be ready to receive.', icon: MapPin },
+  { from: 'arrived', to: 'delivered', label: 'Delivered', notifTitle: 'Order Delivered', notifBody: 'Your order has been delivered. Please confirm receipt in the app.', icon: CheckCircle2 },
 ]
 
 export default function DpNavigationPage() {
@@ -25,14 +27,16 @@ export default function DpNavigationPage() {
 
   const [request, setRequest] = useState<DeliveryRequest | null>(null)
   const [userProfile, setUserProfile] = useState<Profile | null>(null)
-  const [dpData, setDpData] = useState<DeliveryPartner | null>(null)
   const [loading, setLoading] = useState(true)
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null)
   const [updatingEta, setUpdatingEta] = useState(false)
+  const [showAcceptedSplash, setShowAcceptedSplash] = useState(false)
+  const [showThanks, setShowThanks] = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const splashShown = useRef(false)
 
   useEffect(() => {
     if (!requestId) return
@@ -40,13 +44,17 @@ export default function DpNavigationPage() {
       const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
       if (!req) { setLoading(false); return }
       setRequest(req as DeliveryRequest)
+      if (!splashShown.current && (req.status === 'accepted' || req.status === 'confirmed')) {
+        splashShown.current = true
+        setShowAcceptedSplash(true)
+        setTimeout(() => setShowAcceptedSplash(false), 2000)
+      }
       if (req.user_id) {
         const { data: userProf } = await supabase.from('profiles').select('*').eq('id', req.user_id).maybeSingle()
         setUserProfile(userProf as Profile | null)
       }
       if (profile?.id) {
-        const { data: dp } = await supabase.from('delivery_partners').select('*').eq('user_id', profile.id).maybeSingle()
-        setDpData(dp as DeliveryPartner | null)
+        /* profile already available via useAuth */
       }
       const currentEta = (req as any).eta_minutes
       if (currentEta) setEtaMinutes(currentEta)
@@ -67,11 +75,30 @@ export default function DpNavigationPage() {
     return () => { supabase.removeChannel(channel) }
   }, [requestId, profile?.id])
 
+  const mapMarkers: MapMarker[] = useMemo(() => {
+    if (!request) return []
+    const list: MapMarker[] = []
+    if (request.pickup_lat && request.pickup_lng) {
+      list.push({ id: 'pickup', position: { lat: request.pickup_lat, lng: request.pickup_lng }, kind: 'pickup' })
+    }
+    if (request.delivery_lat && request.delivery_lng) {
+      list.push({ id: 'dest', position: { lat: request.delivery_lat, lng: request.delivery_lng }, kind: 'destination' })
+    }
+    return list
+  }, [request])
+
+  const mapCenter =
+    request?.delivery_lat && request?.delivery_lng
+      ? { lat: request.delivery_lat, lng: request.delivery_lng }
+      : request?.pickup_lat && request?.pickup_lng
+      ? { lat: request.pickup_lat, lng: request.pickup_lng }
+      : null
+
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-black text-white/40">Loading...</div>
   if (!request) return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black">
       <p className="text-white/50">Order not found</p>
-      <button onClick={() => navigate('/dp')} className="btn-primary">Back</button>
+      <button type="button" onClick={() => navigate('/dp')} className="btn-primary">Back</button>
     </div>
   )
 
@@ -141,53 +168,82 @@ export default function DpNavigationPage() {
   const isCompleted = request.status === 'completed'
   const currentStep = STATUS_FLOW.find(s => s.from === request.status)
   const stepIndex = STATUS_FLOW.findIndex(s => s.from === request.status)
+  const progress = STATUS_PROGRESS[request.status] ?? 0
+
+  if (showThanks) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6">
+        <img src={Images.customerThankYou} alt="Thank you" className="w-full max-w-sm object-contain mb-4" draggable={false} />
+        <p className="text-sm text-white/50">Returning home...</p>
+      </div>
+    )
+  }
+
+  if (showAcceptedSplash) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0B0B0B] px-6">
+        <img src={Images.orderAccepted} alt="Order accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} />
+        <p className="text-sm text-white/50">Opening order tracking...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-black">
-      {/* Top bar with phone + chat */}
-      <div className="flex-shrink-0 px-4 pt-12 pb-2" style={{ background: 'linear-gradient(180deg, #0B0B0B, transparent)' }}>
+      <div className="flex-shrink-0 px-4 pt-12 pb-2">
         <div className="map-glass-panel flex items-center gap-3 p-3">
-          <button onClick={() => navigate('/dp')} className="map-control-btn map-control-dark">
+          <button type="button" onClick={() => navigate('/dp')} className="map-control-btn map-control-dark">
             <ArrowLeft size={18} />
           </button>
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white/50">Order Tracking</p>
             <p className="truncate text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
           </div>
-
         </div>
       </div>
 
-      {/* Top section: Progress milestones */}
-      <div className="flex-shrink-0 px-4 pb-3" style={{ background: 'linear-gradient(180deg, #0B0B0B, #111)' }}>
+      {/* Progress store → user + synced step images */}
+      <div className="flex-shrink-0 px-4 pb-2" style={{ height: '34vh', minHeight: 220 }}>
+        <VisualTracking
+          progress={progress}
+          status={request.status}
+          pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
+          deliveryLabel={request.delivery_address?.split(',')[0] || 'Customer'}
+        />
+      </div>
+
+      {mapCenter && (
+        <div className="mx-4 mb-3 h-36 overflow-hidden rounded-2xl shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+          <FreeStreetMap center={mapCenter} zoom={13} markers={mapMarkers} interactive={false} />
+        </div>
+      )}
+
+      <div className="flex-shrink-0 px-4 pb-3">
         <div className="mx-auto max-w-md">
-          {/* Horizontal progress steps */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <p className="mb-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#C4D600' }}>Delivery Progress</p>
             <div className="flex items-center justify-between">
-              {STATUS_FLOW.map((step, i) => {
-                const reached = stepIndex > i || isDelivered || isCompleted
-                const isCurrent = step.from === request.status
+              {STATUS_FLOW.filter((s, i, arr) => arr.findIndex(x => x.label === s.label) === i).map((step, i, arr) => {
+                const reached = stepIndex > STATUS_FLOW.indexOf(step) || isDelivered || isCompleted
+                const isCurrent = step.from === request.status || (request.status === 'confirmed' && step.from === 'accepted')
                 const Icon = step.icon
                 return (
-                  <div key={i} className="flex flex-1 flex-col items-center relative">
+                  <div key={`${step.label}-${i}`} className="flex flex-1 flex-col items-center relative">
                     {i > 0 && (
                       <div className="absolute right-1/2 top-3 h-0.5 w-full" style={{
                         background: reached ? '#C4D600' : 'rgba(255,255,255,0.1)',
-                        transition: 'background 0.5s ease',
                       }} />
                     )}
-                    <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full transition-all"
+                    <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full"
                       style={{
                         background: reached ? '#C4D600' : isCurrent ? 'rgba(196,214,0,0.2)' : 'rgba(255,255,255,0.05)',
                         border: isCurrent ? '2px solid #C4D600' : '2px solid transparent',
-                        boxShadow: isCurrent ? '0 0 12px rgba(196,214,0,0.4)' : 'none',
                       }}>
                       {reached ? <Icon size={13} className="text-black" /> : <div className="h-2 w-2 rounded-full bg-white/20" />}
                     </div>
                     <span className="mt-1 text-[8px] font-medium text-center leading-tight"
                       style={{ color: reached || isCurrent ? '#C4D600' : 'rgba(255,255,255,0.25)' }}>
-                      {step.label.replace('Mark ', '').replace('Start ', '').replace('Items ', '')}
+                      {step.label}
                     </span>
                   </div>
                 )
@@ -195,14 +251,13 @@ export default function DpNavigationPage() {
             </div>
           </div>
 
-          {/* ETA update */}
-          {['confirmed', 'shopping', 'purchased', 'on_the_way'].includes(request.status) && (
+          {['confirmed', 'shopping', 'purchased', 'on_the_way', 'accepted'].includes(request.status) && (
             <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: '#C4D600' }}>Update ETA (minutes)</p>
               <div className="flex gap-2">
                 <input type="number" min={1} max={120} value={etaMinutes ?? ''} onChange={e => setEtaMinutes(e.target.value ? parseInt(e.target.value) : null)}
                   placeholder="Enter minutes" className="input flex-1" style={{ borderColor: 'rgba(196,214,0,0.35)' }} />
-                <button onClick={updateEta} disabled={!etaMinutes || updatingEta}
+                <button type="button" onClick={updateEta} disabled={!etaMinutes || updatingEta}
                   className="btn-primary disabled:opacity-40 px-5 font-bold" style={{ background: '#C4D600', color: '#0B0B0B' }}>
                   {updatingEta ? '...' : 'Update'}
                 </button>
@@ -212,10 +267,8 @@ export default function DpNavigationPage() {
         </div>
       </div>
 
-      {/* Bottom section: scrollable - customer + address + status */}
       <div className="flex-1 overflow-y-auto bg-black px-4 py-4 pb-24">
         <div className="mx-auto max-w-md space-y-4">
-          {/* Customer info card */}
           {userProfile && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Customer</div>
@@ -231,13 +284,13 @@ export default function DpNavigationPage() {
                   <p className="font-bold text-white truncate">{userProfile.full_name}</p>
                   <p className="text-xs text-white/40">{userProfile.phone || 'No phone'}</p>
                 </div>
-                <button onClick={() => window.location.href = `tel:${userProfile.phone || ''}`}
+                <button type="button" onClick={() => { window.location.href = `tel:${userProfile.phone || ''}` }}
                   className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0 disabled:opacity-30"
                   style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}
                   disabled={isCompleted}>
                   <Phone size={16} />
                 </button>
-                <button onClick={async () => {
+                <button type="button" onClick={async () => {
                   const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
                   if (data) navigate(`/dp/chat/${data.id}`)
                 }} className="flex h-10 w-10 items-center justify-center rounded-xl text-black active:scale-95 transition-transform shrink-0 disabled:opacity-30"
@@ -249,21 +302,19 @@ export default function DpNavigationPage() {
             </div>
           )}
 
-          {/* Delivery address with map */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
             <div className="mb-3 flex items-center gap-2">
               <MapPin size={16} className="text-red-400" />
               <p className="text-sm font-bold text-white">Delivery Address</p>
             </div>
             <p className="text-sm text-white/80 mb-3 leading-relaxed">{request.delivery_address || 'Not specified'}</p>
-            <button onClick={openGoogleMaps}
+            <button type="button" onClick={openGoogleMaps}
               className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all active:scale-95"
               style={{ background: '#A6B300', color: '#0B0B0B' }}>
               <Navigation size={18} /> Open in Google Maps
             </button>
           </div>
 
-          {/* Pickup details */}
           {request.pickup_address && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
               <div className="mb-2 flex items-center gap-2">
@@ -274,11 +325,10 @@ export default function DpNavigationPage() {
             </div>
           )}
 
-          {/* Current status action button */}
           {currentStep && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Update Status</p>
-              <button onClick={() => updateStatus(currentStep.to, currentStep.notifTitle, currentStep.notifBody)}
+              <button type="button" onClick={() => updateStatus(currentStep.to, currentStep.notifTitle, currentStep.notifBody)}
                 className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white active:scale-95 transition-transform"
                 style={{
                   background: currentStep.to === 'delivered' ? '#A6B300' : '#808000',
@@ -289,7 +339,6 @@ export default function DpNavigationPage() {
             </div>
           )}
 
-          {/* Delivery Photo Upload */}
           {isDelivered && (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 animate-slide-up">
               <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">Delivery Proof Photos</div>
@@ -299,21 +348,21 @@ export default function DpNavigationPage() {
                   {photoPreviews.map((preview, idx) => (
                     <div key={idx} className="relative">
                       <img src={preview} alt={`Proof ${idx + 1}`} className="h-20 w-20 rounded-xl object-cover" />
-                      <button onClick={() => removePhoto(idx)} className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1 text-white shadow">
+                      <button type="button" onClick={() => removePhoto(idx)} className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1 text-white shadow">
                         <X size={10} />
                       </button>
                     </div>
                   ))}
                 </div>
               )}
-              <button onClick={() => photoInputRef.current?.click()}
+              <button type="button" onClick={() => photoInputRef.current?.click()}
                 className="w-full rounded-xl border-2 border-dashed py-3 text-sm font-medium text-white/50"
                 style={{ borderColor: 'rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.05)' }}>
                 <Camera size={18} className="mx-auto mb-1 text-white/60" />
                 {photoPreviews.length > 0 ? 'Add More Photos' : 'Take Delivery Photos'}
               </button>
               {photoFiles.length > 0 && (
-                <button onClick={uploadDeliveryPhotos} disabled={uploading} className="btn-primary mt-2 w-full disabled:opacity-40">
+                <button type="button" onClick={uploadDeliveryPhotos} disabled={uploading} className="btn-primary mt-2 w-full disabled:opacity-40">
                   {uploading ? 'Uploading...' : `Save ${photoFiles.length} Photo${photoFiles.length === 1 ? '' : 's'}`}
                 </button>
               )}
@@ -324,11 +373,10 @@ export default function DpNavigationPage() {
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center animate-slide-up">
               <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: '#A6B300' }} />
               <p className="font-bold text-white">Waiting for customer to accept delivery</p>
-              <p className="mt-1 text-xs text-white/40">You'll be able to go home once the customer confirms receipt</p>
+              <p className="mt-1 text-xs text-white/40">You'll continue after the customer confirms receipt</p>
             </div>
           )}
 
-          {/* Accept Payment after customer marks Payment Completed */}
           {(request as any).payment_completed_at && !(request as any).payment_accepted_at && (
             <div className="rounded-2xl p-4" style={{ border: '1px solid rgba(196,214,0,0.35)', background: 'rgba(196,214,0,0.08)' }}>
               <p className="mb-3 text-sm font-bold" style={{ color: '#C4D600' }}>Customer marked payment completed</p>
@@ -345,7 +393,8 @@ export default function DpNavigationPage() {
                     type: 'payment_accepted',
                     related_id: requestId,
                   })
-                  navigate('/dp')
+                  setShowThanks(true)
+                  setTimeout(() => navigate('/dp'), 2000)
                 }}
                 className="w-full rounded-2xl py-3.5 text-sm font-bold"
                 style={{ background: '#C4D600', color: '#0B0B0B' }}
@@ -356,7 +405,7 @@ export default function DpNavigationPage() {
           )}
 
           {isCompleted && (
-            <button onClick={() => navigate('/dp')}
+            <button type="button" onClick={() => navigate('/dp')}
               className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold active:scale-95 transition-transform"
               style={{ background: '#A6B300', color: '#0B0B0B' }}>
               <CheckCircle2 size={18} /> Delivery Confirmed — Go Home

@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { FullScreenLoader } from '../../components/ui'
 import { formatCurrency } from '../../lib/utils'
-import Brand from '../../components/Brand'
 import Watermark from '../../components/Watermark'
 import { useGps } from '../../hooks/useGps'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
@@ -108,7 +107,7 @@ export default function DpLayout() {
       {/* Premium Header */}
       <header className="z-10 px-4 py-3" style={{ background: 'rgba(11,11,11,0.9)', borderBottom: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(20px)' }}>
         <div className="flex items-center justify-between">
-          <Brand size="sm" showTagline={false} />
+          <p className="text-sm font-bold" style={{ color: '#C4D600' }}>Partner</p>
           <div className="flex items-center gap-2">
             <button onClick={handleToggleOnline}
               title={commissionOwed > 0 ? `Pay ${formatCurrency(commissionOwed)} commission to go online` : undefined}

@@ -192,15 +192,14 @@ export default function DpHome() {
           showToast(row?.error_msg || error?.message || 'Failed to reserve this booking')
           return
         }
-        // Navigate to the chat room returned by the RPC
-        if (row.chat_room_id) navigate(`/dp/chat/${row.chat_room_id}`)
-        else navigate('/dp/orders')
+        // Order accepted → tracking (not chat)
+        navigate(`/dp/navigate/${req.id}`)
         return
       }
       const { data, error } = await supabase.rpc('accept_request', { p_request_id: req.id, p_dp_user_id: profile!.id })
       const row = Array.isArray(data) ? data[0] : data
       if (error || !row?.success) { showToast(row?.error_msg || error?.message || 'Failed to accept request'); return }
-      navigate(`/dp/chat/${row.chat_room_id}`)
+      navigate(`/dp/navigate/${req.id}`)
     } finally {
       setReservingId(null)
     }

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Images } from '../lib/customImages'
+import { isDpApp } from '../lib/appTarget'
 
 export default function Welcome({ onDone }: { onDone: () => void }) {
   const [fadeOut, setFadeOut] = useState(false)
   const [showContent, setShowContent] = useState(false)
+  const welcomeSrc = isDpApp() ? Images.welcomeDp : Images.welcome
 
   useEffect(() => {
     const t0 = setTimeout(() => setShowContent(true), 80)
@@ -21,8 +23,8 @@ export default function Welcome({ onDone }: { onDone: () => void }) {
         className={`relative z-10 flex w-full max-w-sm flex-col items-center px-6 transition-all duration-500 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
       >
         <img
-          src={Images.welcome}
-          alt="Hello welcome to pinGGet"
+          src={welcomeSrc}
+          alt=""
           className="w-full max-h-[70vh] object-contain"
           draggable={false}
         />

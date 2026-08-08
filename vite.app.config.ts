@@ -2,21 +2,25 @@ import { defineConfig, loadEnv, type UserConfigExport } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
 
+export type BuildTarget = 'user' | 'dp' | 'admin' | 'web'
+
 /**
- * Shared Vite factory:
- * - user  → Capacitor Customer app → dist-user
- * - dp    → Capacitor Partner app  → dist-dp
- * - admin → Web-only console       → dist-admin
- * Same Supabase env for all three.
+ * - user / dp / admin → separate Capacitor bundles (later)
+ * - web → one deploy with path routing: / (user), /dp (partner), /admin (admin)
  */
-export function createAppConfig(target: 'user' | 'dp' | 'admin'): UserConfigExport {
-  const outDir = target === 'user' ? 'dist-user' : target === 'dp' ? 'dist-dp' : 'dist-admin'
+export function createAppConfig(target: BuildTarget): UserConfigExport {
+  const outDir =
+    target === 'user' ? 'dist-user'
+    : target === 'dp' ? 'dist-dp'
+    : target === 'admin' ? 'dist-admin'
+    : 'dist'
 
   return defineConfig(({ mode }) => {
     loadEnv(mode, process.cwd(), '')
     return {
       plugins: [react()],
-      base: './',
+      // Capacitor needs relative asset paths; unified web uses absolute for SPA routes
+      base: target === 'web' ? '/' : './',
       resolve: {
         alias: {
           '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -31,7 +35,7 @@ export function createAppConfig(target: 'user' | 'dp' | 'admin'): UserConfigExpo
       },
       server: {
         host: true,
-        port: target === 'user' ? 5173 : target === 'dp' ? 5174 : 5175,
+        port: target === 'dp' ? 5174 : target === 'admin' ? 5175 : target === 'web' ? 5173 : 5173,
       },
     }
   })

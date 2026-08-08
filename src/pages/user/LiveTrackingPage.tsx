@@ -177,7 +177,7 @@ export default function LiveTrackingPage() {
   if (payPhase === 'thanks') {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6">
-        <img src={Images.thankYouRating} alt="Thank you for rating" className="w-full max-w-sm object-contain mb-4" draggable={false} />
+        <img src={Images.customerThankYou} alt="Thank you" className="w-full max-w-sm object-contain mb-4" draggable={false} />
         <p className="text-sm text-white/50">Returning home...</p>
       </div>
     )

@@ -3,7 +3,6 @@ import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity, Menu, X, CalendarClock, Settings } from 'lucide-react'
 import Watermark from '../../components/Watermark'
-import Brand from '../../components/Brand'
 import { useEffect, useState } from 'react'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 
@@ -66,8 +65,8 @@ export default function AdminLayout() {
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between p-5 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-        <Brand size="sm" showTagline={false} />
-        <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.2)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>Admin</span>
+        <p className="text-sm font-bold text-white">Admin</p>
+        <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(239,68,68,0.2)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>Console</span>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
@@ -137,7 +136,7 @@ export default function AdminLayout() {
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="btn-icon">
             {sidebarOpen ? <X size={18} style={{ color: 'rgba(255,255,255,0.7)' }} /> : <Menu size={18} style={{ color: 'rgba(255,255,255,0.7)' }} />}
           </button>
-          <Brand size="sm" showTagline={false} />
+          <p className="text-sm font-bold text-white">Admin</p>
           {(unreadCount + pendingDps + pendingReceipts) > 0 && (
             <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
               {unreadCount + pendingDps + pendingReceipts}

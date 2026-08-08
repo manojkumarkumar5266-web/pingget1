@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Brand from '../components/Brand'
 import { Images } from '../lib/customImages'
-import { IS_DP_APP } from '../lib/appTarget'
+import { isDpApp } from '../lib/appTarget'
 import { ArrowRight } from 'lucide-react'
 
 export default function LandingPage() {
   const navigate = useNavigate()
   const [mounted, setMounted] = useState(false)
+  const dp = isDpApp()
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -24,17 +24,15 @@ export default function LandingPage() {
 
       <div className="relative z-10 flex min-h-screen flex-col px-4 py-4">
         <div className={`flex flex-1 flex-col items-center justify-center max-w-md mx-auto w-full transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <Brand size="xl" showTagline={false} className="mb-6" />
-
           <img
-            src={Images.landingHero}
+            src={dp ? Images.welcomeDp : Images.landingHero}
             alt=""
             className="mb-8 w-full max-w-xs object-contain"
             draggable={false}
           />
 
           <p className="mb-6 text-center text-sm text-white/55">
-            {IS_DP_APP
+            {dp
               ? 'Earn by delivering in your neighbourhood.'
               : 'Order groceries, medicines, parcels and more.'}
           </p>

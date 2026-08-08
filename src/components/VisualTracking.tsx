@@ -2,12 +2,12 @@ import { getTrackingStepImage, Images } from '../lib/customImages'
 
 export const STATUS_PROGRESS: Record<string, number> = {
   pending: 0,
-  accepted: 8,
-  confirmed: 18,
-  shopping: 35,
-  purchased: 52,
-  on_the_way: 72,
-  arrived: 92,
+  accepted: 12,
+  confirmed: 12,
+  shopping: 28,
+  purchased: 45,
+  on_the_way: 68,
+  arrived: 88,
   delivered: 100,
   cash_received: 100,
   completed: 100,
@@ -15,10 +15,10 @@ export const STATUS_PROGRESS: Record<string, number> = {
 
 export const STATUS_ETA: Record<string, string> = {
   pending: 'Waiting...',
-  accepted: 'Partner assigned',
-  confirmed: 'Confirmed',
-  shopping: 'Shopping',
-  purchased: 'Purchased',
+  accepted: 'Reached store',
+  confirmed: 'Reached store',
+  shopping: 'Reached store',
+  purchased: 'Order picked up',
   on_the_way: 'On the way',
   arrived: 'Arrived',
   delivered: 'Delivered',
@@ -27,20 +27,20 @@ export const STATUS_ETA: Record<string, string> = {
 }
 
 const STEP_LABELS: Record<string, string> = {
-  accepted: 'Order confirmed',
-  confirmed: 'Order confirmed',
-  shopping: 'Started shopping',
-  purchased: 'Items purchased',
+  accepted: 'Reached store',
+  confirmed: 'Reached store',
+  shopping: 'Reached store',
+  purchased: 'Order picked up',
   on_the_way: 'On the way',
-  arrived: 'Arrived at your location',
+  arrived: 'Arrived',
   delivered: 'Delivered',
   cash_received: 'Delivered',
   completed: 'Delivered',
 }
 
 /**
- * Image-based tracking (replaces sine-wave).
- * Admin replaces PNGs under public/images/tracking/.
+ * Image-based tracking sequence:
+ * reached store → picked up → on the way → arrived → delivered
  */
 export default function VisualTracking({
   progress,

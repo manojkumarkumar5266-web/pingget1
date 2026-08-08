@@ -1,16 +1,12 @@
 import { ReactNode } from 'react'
-import Brand from './Brand'
 
 type Props = { children: ReactNode; title?: string; subtitle?: string; showBrand?: boolean }
 
+/** Auth chrome — logos removed; titles come from each screen. */
 export default function AuthLayout({ children, title, subtitle }: Props) {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-start overflow-hidden bg-[#0B0B0B]">
       <div className="relative z-10 flex min-h-screen w-full flex-col items-center justify-start px-5 py-10">
-        <div className="mb-8 flex flex-col items-center">
-          <Brand size="lg" showTagline={false} />
-        </div>
-
         <div className="w-full max-w-md">
           <div
             className="rounded-3xl p-6"
