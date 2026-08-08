@@ -4,6 +4,8 @@ import { Mail, Phone, MapPin, Globe, LogOut, Headphones, Edit2, X, Check, Camera
 import { useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { compressImage } from '../../lib/imageCompress'
+import { Screen, PageTitle, Surface, CTA } from '../../design/primitives'
+import { pg } from '../../design/tokens'
 
 export default function UserProfile() {
   const { profile, signOut, refreshProfile } = useAuth()
@@ -44,102 +46,119 @@ export default function UserProfile() {
     setEditingAddress(false)
   }
 
+  const infoRows = [
+    { icon: Mail, label: 'Email', value: profile?.email || 'Verified account' },
+    { icon: Phone, label: 'Phone', value: profile?.phone || 'Not set' },
+    { icon: Globe, label: 'Language', value: profile?.preferred_language === 'en' ? 'English' : profile?.preferred_language || '—' },
+  ]
+
   return (
-    <div className="mx-auto max-w-md px-4 py-6">
-      <div className="card mb-4 p-6 text-center animate-slide-up">
-        <div className="relative mx-auto mb-3 w-fit">
-          <Avatar url={profile?.photo_url} name={profile?.full_name || 'User'} size={80} />
-          <button
-            onClick={() => cameraRef.current?.click()}
-            disabled={uploadingPhoto}
-            className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-white shadow-md active:scale-90 transition-transform"
-          >
-            <Camera size={14} />
-          </button>
-          <input ref={cameraRef} type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoCapture} />
-        </div>
-        {uploadingPhoto && <p className="text-xs text-white/50 mb-1">Updating photo...</p>}
-        <h2 className="text-xl font-bold text-white">{profile?.full_name}</h2>
-        <p className="text-sm text-white/50 capitalize">{profile?.role} Account</p>
-      </div>
+    <Screen className="mx-auto max-w-lg animate-fade-in-up">
+      <PageTitle eyebrow="Account" title="Profile" />
 
-      <div className="card divide-y divide-gray-100 dark:divide-gray-800">
-        <div className="flex items-center gap-3 p-4">
-          <Mail size={18} className="text-white/40" />
-          <div>
-            <p className="text-xs text-white/40">Email</p>
-            <p className="text-sm font-medium text-white">{profile?.email || 'Verified account'}</p>
+      <Surface className="mb-5 overflow-hidden">
+        <div className="relative px-5 pb-5 pt-8 text-center">
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-24"
+            style={{ background: `linear-gradient(180deg, ${pg.limeDim} 0%, transparent 100%)` }}
+          />
+          <div className="relative mx-auto mb-4 w-fit">
+            <Avatar url={profile?.photo_url} name={profile?.full_name || 'User'} size={88} />
+            <button
+              type="button"
+              onClick={() => cameraRef.current?.click()}
+              disabled={uploadingPhoto}
+              className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full transition active:scale-90"
+              style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(212,240,0,0.35)' }}
+            >
+              <Camera size={16} />
+            </button>
+            <input ref={cameraRef} type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoCapture} />
           </div>
+          {uploadingPhoto && <p className="mb-1 text-xs" style={{ color: pg.text3 }}>Updating photo...</p>}
+          <h2 className="text-2xl font-extrabold tracking-tight">{profile?.full_name}</h2>
+          <p className="mt-1 text-sm capitalize" style={{ color: pg.text3 }}>{profile?.role} account</p>
         </div>
-        <div className="flex items-center gap-3 p-4">
-          <Phone size={18} className="text-white/40" />
-          <div>
-            <p className="text-xs text-white/40">Phone</p>
-            <p className="text-sm font-medium text-white">{profile?.phone || 'Not set'}</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-3 p-4">
-          <MapPin size={18} className="text-white/40 mt-0.5" />
-          <div className="flex-1">
-            {editingAddress ? (
-              <div className="space-y-2">
-                <input className="input text-sm" value={addressValue} onChange={e => setAddressValue(e.target.value)} placeholder="Enter your address" />
-                <input className="input text-sm" value={cityValue} onChange={e => setCityValue(e.target.value)} placeholder="City" />
-                <div className="flex gap-2">
-                  <button onClick={saveAddress} disabled={savingAddress} className="btn-primary text-xs py-2" style={{ background: '#A6B300', color: '#0B0B0B' }}>
-                    <Check size={14} /> {savingAddress ? 'Saving...' : 'Save'}
-                  </button>
-                  <button onClick={() => setEditingAddress(false)} className="btn-secondary text-xs py-2">
-                    <X size={14} /> Cancel
-                  </button>
+      </Surface>
+
+      <div className="mb-5 space-y-2">
+        {infoRows.map(row => (
+          <Surface key={row.label} className="flex items-center gap-3 p-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: pg.surface2 }}>
+              <row.icon size={18} style={{ color: pg.text3 }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>{row.label}</p>
+              <p className="truncate text-sm font-extrabold">{row.value}</p>
+            </div>
+          </Surface>
+        ))}
+
+        <Surface className="p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: pg.surface2 }}>
+              <MapPin size={18} style={{ color: pg.text3 }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              {editingAddress ? (
+                <div className="space-y-2">
+                  <input className="input text-sm" value={addressValue} onChange={e => setAddressValue(e.target.value)} placeholder="Enter your address" />
+                  <input className="input text-sm" value={cityValue} onChange={e => setCityValue(e.target.value)} placeholder="City" />
+                  <div className="flex gap-2">
+                    <CTA className="min-h-0 flex-1 rounded-xl py-2.5 text-xs" onClick={saveAddress} disabled={savingAddress}>
+                      <Check size={14} /> {savingAddress ? 'Saving...' : 'Save'}
+                    </CTA>
+                    <CTA variant="secondary" className="min-h-0 flex-1 rounded-xl py-2.5 text-xs" onClick={() => setEditingAddress(false)}>
+                      <X size={14} /> Cancel
+                    </CTA>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-xs text-white/40">Address</p>
-                <p className="text-sm font-medium text-white">{profile?.address || 'Not set'}</p>
-                <p className="text-xs text-white/40">{profile?.city}</p>
-                <button onClick={() => { setAddressValue(profile?.address || ''); setCityValue(profile?.city || ''); setEditingAddress(true) }}
-                  className="mt-1 flex items-center gap-1 text-xs font-semibold" style={{ color: '#A6B300' }}>
-                  <Edit2 size={11} /> {profile?.address ? 'Edit Address' : 'Add Address'}
-                </button>
-              </>
-            )}
+              ) : (
+                <>
+                  <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>Address</p>
+                  <p className="text-sm font-extrabold">{profile?.address || 'Not set'}</p>
+                  {profile?.city && <p className="text-xs" style={{ color: pg.text3 }}>{profile.city}</p>}
+                  <button
+                    type="button"
+                    onClick={() => { setAddressValue(profile?.address || ''); setCityValue(profile?.city || ''); setEditingAddress(true) }}
+                    className="mt-2 flex items-center gap-1 text-xs font-extrabold"
+                    style={{ color: pg.lime }}
+                  >
+                    <Edit2 size={11} /> {profile?.address ? 'Edit Address' : 'Add Address'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3 p-4">
-          <Globe size={18} className="text-white/40" />
-          <div>
-            <p className="text-xs text-white/40">Language</p>
-            <p className="text-sm font-medium text-white">{profile?.preferred_language === 'en' ? 'English' : profile?.preferred_language}</p>
-          </div>
-        </div>
+        </Surface>
       </div>
 
-      {/* Customer Service */}
-      <div className="card mt-4 p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: '#efefcc' }}>
-            <Headphones size={16} style={{ color: '#808000' }} />
+      <Surface className="mb-5 p-4">
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: pg.limeDim }}>
+            <Headphones size={18} style={{ color: pg.lime }} />
           </div>
-          <h3 className="text-sm font-bold text-white">Customer Service</h3>
+          <div>
+            <h3 className="text-sm font-extrabold">Customer Service</h3>
+            <p className="text-xs" style={{ color: pg.text3 }}>We&apos;ll reach out shortly</p>
+          </div>
         </div>
-        <p className="mb-3 text-xs text-white/50">
-          Send us an email with your request our customer care executive will reach out to you shortly.
+        <p className="mb-3 text-xs leading-relaxed" style={{ color: pg.text3 }}>
+          Send us an email with your request and our customer care executive will reach out to you shortly.
         </p>
         <a
           href="mailto:support@pingget.in"
-          className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors active:scale-[0.98]"
-          style={{ backgroundColor: '#f8f8ec' }}
+          className="flex items-center gap-3 rounded-2xl px-4 py-3.5 transition active:scale-[0.98]"
+          style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}
         >
-          <Mail size={16} style={{ color: '#808000' }} />
-          <span className="text-sm font-semibold" style={{ color: '#606000' }}>support@pingget.in</span>
+          <Mail size={16} style={{ color: pg.lime }} />
+          <span className="text-sm font-extrabold" style={{ color: pg.lime }}>support@pingget.in</span>
         </a>
-      </div>
+      </Surface>
 
-      <button onClick={() => signOut()} className="btn-danger mt-4 w-full">
+      <CTA variant="danger" className="w-full" onClick={() => signOut()}>
         <LogOut size={18} /> Sign Out
-      </button>
-    </div>
+      </CTA>
+    </Screen>
   )
 }

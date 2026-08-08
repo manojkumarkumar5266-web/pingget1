@@ -7,7 +7,7 @@ export function Spinner({ size = 24 }: { size?: number }) {
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <div className="absolute inset-0 rounded-full border-2 border-white/10" />
-      <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: '#A6B300' }} />
+      <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: '#D4F000' }} />
     </div>
   )
 }
@@ -94,7 +94,7 @@ export function Avatar({ url, name, size = 40 }: { url?: string | null; name: st
   }
   return (
     <div className="flex items-center justify-center rounded-full font-bold ring-2 ring-white/10"
-      style={{ width: size, height: size, fontSize: size * 0.38, background: 'linear-gradient(135deg,rgba(166,179,0,0.3),rgba(166,179,0,0.15))', color: '#A6B300' }}>
+      style={{ width: size, height: size, fontSize: size * 0.38, background: 'linear-gradient(135deg,rgba(212,240,0,0.3),rgba(212,240,0,0.15))', color: '#D4F000' }}>
       {initials}
     </div>
   )
@@ -111,8 +111,8 @@ export function StatusBadge({ status }: { status: string }) {
   }
   const styles: Record<string, { bg: string; text: string; dot: string }> = {
     pending:      { bg: 'rgba(255,255,255,0.07)', text: 'rgba(255,255,255,0.6)', dot: '#666' },
-    accepted:     { bg: 'rgba(166,179,0,0.15)',   text: '#A6B300',              dot: '#A6B300' },
-    confirmed:    { bg: 'rgba(166,179,0,0.15)',   text: '#A6B300',              dot: '#A6B300' },
+    accepted:     { bg: 'rgba(212,240,0,0.15)',   text: '#D4F000',              dot: '#D4F000' },
+    confirmed:    { bg: 'rgba(212,240,0,0.15)',   text: '#D4F000',              dot: '#D4F000' },
     shopping:     { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24',              dot: '#fbbf24' },
     purchased:    { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24',              dot: '#fbbf24' },
     on_the_way:   { bg: 'rgba(59,130,246,0.15)',  text: '#60a5fa',              dot: '#3b82f6' },

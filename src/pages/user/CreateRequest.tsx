@@ -5,6 +5,8 @@ import { supabase } from '../../lib/supabase'
 import { ErrorBanner } from '../../components/ui'
 import { getSelectedDeliveryAddress } from '../../components/AddressPicker'
 import { Camera, Mic, MicOff, X, Play, Pause, ArrowLeft } from 'lucide-react'
+import { Screen, TopChrome, Surface, CTA, SectionLabel, IconButton } from '../../design/primitives'
+import { pg } from '../../design/tokens'
 
 const DRAFT_KEY = 'cr_notes_draft'
 
@@ -150,83 +152,92 @@ export default function CreateRequest() {
   const canSubmit = (description.trim().length > 0 || photoFiles.length > 0 || !!voiceBlob) && !loading
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: '#0B0B0B' }}>
-      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-4" style={{ background: '#0B0B0B', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <button type="button" onClick={() => navigate('/app')}
-          className="flex h-10 w-10 items-center justify-center rounded-xl"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <ArrowLeft size={20} style={{ color: '#fff' }} />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-lg font-bold text-white">New Request</h1>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Add photos, voice & notes</p>
-        </div>
-      </div>
+    <div className="flex min-h-screen flex-col" style={{ background: pg.bg }}>
+      <TopChrome
+        left={
+          <IconButton onClick={() => navigate('/app')}>
+            <ArrowLeft size={20} />
+          </IconButton>
+        }
+        center={
+          <div>
+            <p className="text-base font-extrabold">Instant Request</p>
+            <p className="text-[10px]" style={{ color: pg.text3 }}>Photos, voice & notes</p>
+          </div>
+        }
+      />
 
-      <div className="flex-1 overflow-y-auto px-4 pt-5 pb-32 space-y-4">
-        {/* Photos */}
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>
-            Add Photos (items, shopping list, prescription)
-          </p>
+      <Screen pad className="flex-1 overflow-y-auto pb-28 pt-0">
+        <section className="mb-5">
+          <SectionLabel title="Photos" />
           <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
           <div className="flex flex-wrap gap-2">
             {photoPreviews.map((preview, idx) => (
               <div key={idx} className="relative">
-                <img src={preview} alt="" className="h-20 w-20 rounded-2xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
-                <button type="button" onClick={() => removePhoto(idx)}
-                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white">
+                <img
+                  src={preview}
+                  alt=""
+                  className="h-20 w-20 rounded-2xl object-cover"
+                  style={{ border: `1px solid ${pg.line}` }}
+                  draggable={false}
+                />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(idx)}
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white"
+                >
                   <X size={10} />
                 </button>
               </div>
             ))}
-            <button type="button" onClick={() => photoInputRef.current?.click()}
-              className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-2xl"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1.5px dashed rgba(166,179,0,0.35)', color: '#A6B300' }}>
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-2xl transition active:scale-95"
+              style={{ background: pg.surface, border: `1.5px dashed rgba(212,240,0,0.35)`, color: pg.lime }}
+            >
               <Camera size={20} />
-              <span className="text-[10px] font-semibold">Add</span>
+              <span className="text-[10px] font-extrabold">Add</span>
             </button>
           </div>
-        </div>
+        </section>
 
-        {/* Notes card with voice on top-right */}
-        <div className="rounded-2xl p-4 relative" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Notes</p>
+        <Surface className="relative p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.lime }}>Notes</p>
             <div className="flex items-center gap-2">
               {recording ? (
-                <button type="button" onClick={stopRecording}
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold"
-                  style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
+                <CTA variant="danger" className="min-h-0 rounded-xl px-3 py-1.5 text-xs" onClick={stopRecording}>
                   <MicOff size={14} /> Stop {fmtDur(voiceDuration)}
-                </button>
+                </CTA>
               ) : (
-                <button type="button" onClick={startRecording}
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold"
-                  style={{ background: 'rgba(166,179,0,0.15)', color: '#A6B300' }}>
+                <CTA variant="secondary" className="min-h-0 rounded-xl px-3 py-1.5 text-xs" onClick={startRecording}>
                   <Mic size={14} /> Voice
-                </button>
+                </CTA>
               )}
             </div>
           </div>
 
-          {/* Reflect photos inside notes */}
           {photoPreviews.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-1.5">
               {photoPreviews.map((p, i) => (
-                <img key={i} src={p} alt="" className="h-12 w-12 rounded-lg object-cover opacity-90" />
+                <img key={i} src={p} alt="" className="h-12 w-12 rounded-xl object-cover opacity-90" draggable={false} />
               ))}
             </div>
           )}
 
-          {/* Reflect voice inside notes */}
           {voiceBlob && voiceUrlRef.current && (
-            <div className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(166,179,0,0.1)', border: '1px solid rgba(166,179,0,0.25)' }}>
-              <button type="button" onClick={playVoice} className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: '#A6B300' }}>
-                {playingVoice ? <Pause size={14} className="text-[#0B0B0B]" /> : <Play size={14} className="text-[#0B0B0B]" />}
+            <div className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.limeDim, border: '1px solid rgba(212,240,0,0.25)' }}>
+              <button
+                type="button"
+                onClick={playVoice}
+                className="flex h-9 w-9 items-center justify-center rounded-full"
+                style={{ background: pg.lime, color: pg.limeText }}
+              >
+                {playingVoice ? <Pause size={14} /> : <Play size={14} />}
               </button>
-              <span className="flex-1 text-xs font-medium" style={{ color: '#A6B300' }}>Voice note · {fmtDur(voiceDuration)}</span>
-              <button type="button" onClick={clearVoice}><X size={14} style={{ color: 'rgba(255,255,255,0.4)' }} /></button>
+              <span className="flex-1 text-xs font-extrabold" style={{ color: pg.lime }}>Voice note · {fmtDur(voiceDuration)}</span>
+              <button type="button" onClick={clearVoice}><X size={14} style={{ color: pg.text3 }} /></button>
             </div>
           )}
 
@@ -236,17 +247,18 @@ export default function CreateRequest() {
             onChange={e => setDescription(e.target.value)}
             placeholder="Type what you need… quantities, brands, shop preferences, or extra instructions."
           />
-        </div>
+        </Surface>
 
-        {error && <ErrorBanner message={error} />}
-      </div>
+        {error && <div className="mt-4"><ErrorBanner message={error} /></div>}
+      </Screen>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 px-4 pb-6 pt-3" style={{ background: 'linear-gradient(transparent, #0B0B0B 30%)' }}>
-        <button type="button" onClick={handleSubmit} disabled={!canSubmit}
-          className="mx-auto block w-full max-w-md rounded-2xl py-4 text-base font-bold disabled:opacity-40"
-          style={{ background: '#A6B300', color: '#0B0B0B' }}>
-          {loading ? 'Submitting...' : 'Submit'}
-        </button>
+      <div
+        className="fixed bottom-0 left-0 right-0 z-20 px-4 pb-6 pt-3"
+        style={{ background: `linear-gradient(transparent, ${pg.bg} 35%)` }}
+      >
+        <CTA className="mx-auto w-full max-w-lg" onClick={handleSubmit} disabled={!canSubmit}>
+          {loading ? 'Submitting...' : 'Submit Request'}
+        </CTA>
       </div>
     </div>
   )

@@ -2,8 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
-import { SkeletonList, EmptyState } from '../../components/ui'
-import { Bell, Bike, CheckCircle2, AlertCircle, Info, Package, Trash2, BellOff, MessageCircle } from 'lucide-react'
+import { SkeletonList } from '../../components/ui'
+import { BellOff, Bike, CheckCircle2, AlertCircle, Info, Package, Trash2, MessageCircle } from 'lucide-react'
+import { Screen, PageTitle, Surface, Chip, EmptyBlock, IconButton, SectionLabel, CTA } from '../../design/primitives'
+import { pg } from '../../design/tokens'
 
 type Notification = {
   id: string; title: string; body: string; type: string; is_read: boolean; created_at: string; related_id?: string | null
@@ -37,12 +39,16 @@ function groupByDate(notifs: Notification[]): { label: string; items: Notificati
 }
 
 function notifIcon(type: string) {
-  if (type === 'request_accepted') return { icon: <Bike size={17} />, bg: 'rgba(166,179,0,0.15)', color: '#A6B300' }
-  if (type === 'order_delivered' || type === 'delivered' || type === 'order_completed' || type === 'order_status') return { icon: <CheckCircle2 size={17} />, bg: 'rgba(16,185,129,0.15)', color: '#34d399' }
-  if (type === 'order_cancelled' || type === 'cancelled') return { icon: <AlertCircle size={17} />, bg: 'rgba(239,68,68,0.15)', color: '#f87171' }
-  if (type === 'shopping' || type === 'on_the_way' || type === 'purchased' || type === 'arrived' || type === 'order_confirmed') return { icon: <Package size={17} />, bg: 'rgba(251,191,36,0.15)', color: '#fbbf24' }
-  if (type === 'chat' || type === 'message') return { icon: <MessageCircle size={17} />, bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' }
-  return { icon: <Info size={17} />, bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }
+  if (type === 'request_accepted') return { icon: <Bike size={17} />, bg: pg.limeDim, color: pg.lime }
+  if (type === 'order_delivered' || type === 'delivered' || type === 'order_completed' || type === 'order_status')
+    return { icon: <CheckCircle2 size={17} />, bg: 'rgba(34,197,94,0.14)', color: '#86EFAC' }
+  if (type === 'order_cancelled' || type === 'cancelled')
+    return { icon: <AlertCircle size={17} />, bg: 'rgba(255,77,79,0.14)', color: '#FCA5A5' }
+  if (type === 'shopping' || type === 'on_the_way' || type === 'purchased' || type === 'arrived' || type === 'order_confirmed')
+    return { icon: <Package size={17} />, bg: 'rgba(245,165,36,0.14)', color: '#FCD34D' }
+  if (type === 'chat' || type === 'message')
+    return { icon: <MessageCircle size={17} />, bg: 'rgba(59,130,246,0.14)', color: '#93C5FD' }
+  return { icon: <Info size={17} />, bg: 'rgba(255,255,255,0.06)', color: pg.text3 }
 }
 
 export default function UserNotifications() {
@@ -101,31 +107,38 @@ export default function UserNotifications() {
   const unreadCount = notifs.filter(n => !n.is_read).length
 
   return (
-    <div className="mx-auto max-w-md px-4 pt-5">
-      {/* Header */}
-      <div className="mb-5 flex items-center justify-between animate-fade-in-up">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Notifications</h1>
-          {unreadCount > 0 && (
-            <p className="mt-0.5 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>{unreadCount} unread</p>
-          )}
-        </div>
-        {unreadCount > 0 && (
-          <button onClick={markAllRead} className="rounded-2xl px-3.5 py-2 text-xs font-semibold transition-all active:scale-95"
-            style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
-            Mark all read
-          </button>
-        )}
-      </div>
+    <Screen className="mx-auto max-w-lg animate-fade-in-up">
+      <PageTitle
+        eyebrow="Updates"
+        title="Notifications"
+        action={
+          unreadCount > 0 ? (
+            <CTA variant="secondary" className="min-h-0 rounded-xl px-3 py-2 text-xs" onClick={markAllRead}>
+              Mark all read
+            </CTA>
+          ) : undefined
+        }
+      />
 
-      {/* Filter Tabs */}
-      <div className="mb-5 flex gap-2 animate-slide-up">
+      {unreadCount > 0 && (
+        <div className="mb-4">
+          <Chip tone="lime">{unreadCount} unread</Chip>
+        </div>
+      )}
+
+      <div className="mb-5 flex gap-2">
         {(['all', 'unread'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className="rounded-full px-4 py-2 text-sm font-semibold capitalize transition-all active:scale-95"
-            style={filter === f
-              ? { background: 'rgba(166,179,0,0.2)', border: '1px solid rgba(166,179,0,0.4)', color: '#A6B300' }
-              : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
+          <button
+            key={f}
+            type="button"
+            onClick={() => setFilter(f)}
+            className="rounded-full px-4 py-2.5 text-sm font-extrabold capitalize transition-all active:scale-[0.98]"
+            style={
+              filter === f
+                ? { background: pg.limeDim, border: '1px solid rgba(212,240,0,0.35)', color: pg.lime }
+                : { background: pg.surface, border: `1px solid ${pg.line}`, color: pg.text3 }
+            }
+          >
             {f} {f === 'unread' && unreadCount > 0 ? `(${unreadCount})` : ''}
           </button>
         ))}
@@ -134,44 +147,53 @@ export default function UserNotifications() {
       {loading ? (
         <SkeletonList count={4} lines={3} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<BellOff size={40} />} title="No notifications" description={filter === 'unread' ? 'You\'re all caught up!' : 'Notifications will appear here.'} />
+        <EmptyBlock
+          title="No notifications"
+          body={filter === 'unread' ? "You're all caught up!" : 'Notifications will appear here.'}
+        />
       ) : (
-        <div className="space-y-6 pb-8">
+        <div className="space-y-6 pb-4">
           {groups.map(group => (
             <div key={group.label} className="animate-fade-in-up">
-              <p className="mb-2.5 text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>{group.label}</p>
+              <SectionLabel title={group.label} />
               <div className="space-y-2">
                 {group.items.map((n, i) => {
                   const { icon, bg, color } = notifIcon(n.type)
                   return (
-                    <div key={n.id} onClick={() => handleTap(n)}
-                      className="group relative flex items-start gap-3.5 rounded-2xl p-3.5 transition-all active:scale-[0.98] cursor-pointer animate-slide-up"
-                      style={{
-                        background: n.is_read ? 'rgba(255,255,255,0.03)' : 'rgba(166,179,0,0.06)',
-                        border: n.is_read ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(166,179,0,0.15)',
-                        animationDelay: `${i * 40}ms`,
-                      }}>
-                      {/* Unread indicator */}
-                      {!n.is_read && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full" style={{ background: '#A6B300' }} />}
+                    <Surface
+                      key={n.id}
+                      onClick={() => handleTap(n)}
+                      className="group relative flex items-start gap-3 p-3.5 active:scale-[0.99] animate-slide-up"
+                      accent={!n.is_read}
+                      style={{ animationDelay: `${i * 40}ms` }}
+                    >
+                      {!n.is_read && (
+                        <div
+                          className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-full"
+                          style={{ background: pg.lime }}
+                        />
+                      )}
 
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: bg }}>
                         <span style={{ color }}>{icon}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold ${!n.is_read ? 'text-white' : ''}`} style={n.is_read ? { color: 'rgba(255,255,255,0.7)' } : {}}>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-extrabold" style={{ color: n.is_read ? pg.text2 : pg.text }}>
                           {n.title}
                         </p>
                         {n.body && (
-                          <p className="mt-0.5 text-xs leading-relaxed line-clamp-2" style={{ color: 'rgba(255,255,255,0.45)' }}>{n.body}</p>
+                          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed" style={{ color: pg.text3 }}>{n.body}</p>
                         )}
-                        <p className="mt-1.5 text-[10px] font-medium" style={{ color: 'rgba(255,255,255,0.28)' }}>{relativeTime(n.created_at)}</p>
+                        <p className="mt-1.5 text-[10px] font-bold" style={{ color: pg.text4 }}>{relativeTime(n.created_at)}</p>
                       </div>
-                      <button onClick={e => { e.stopPropagation(); deleteNotif(n.id) }}
-                        className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 transition-opacity active:scale-90"
-                        style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171' }}>
+                      <IconButton
+                        className="h-8 w-8 shrink-0 opacity-60 group-hover:opacity-100"
+                        onClick={e => { e.stopPropagation(); deleteNotif(n.id) }}
+                        style={{ background: 'rgba(255,77,79,0.12)', color: '#FCA5A5' }}
+                      >
                         <Trash2 size={12} />
-                      </button>
-                    </div>
+                      </IconButton>
+                    </Surface>
                   )
                 })}
               </div>
@@ -179,6 +201,6 @@ export default function UserNotifications() {
           ))}
         </div>
       )}
-    </div>
+    </Screen>
   )
 }
