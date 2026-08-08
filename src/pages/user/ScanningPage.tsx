@@ -1,19 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
 import { useGps } from '../../hooks/useGps'
 import { formatDistance } from '../../lib/utils'
-import {
-  CheckCircle2, X, Bike, Car, Truck, MapPin, Clock, RefreshCw,
-  Navigation, Search, MapPinOff, Loader2, Radar,
-} from 'lucide-react'
-import { MascotWaiting } from '../../components/Illustrations'
+import { X, Clock, RefreshCw, MapPinOff, Loader2, Radar, MapPin } from 'lucide-react'
+import { Images } from '../../lib/customImages'
+import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
 
 type DpSpot = {
   id: string
-  angle: number
-  radius: number
+  lat: number
+  lng: number
   dist: number
   vehicle_type: string | null
   full_name: string
@@ -23,11 +21,18 @@ const RADIUS_STEPS_M = [500, 1000, 2000, 5000, 10000]
 const RADIUS_STEP_INTERVAL_MS = 8000
 const SCAN_INTERVAL_MS = 3500
 
-function vehicleIcon(vehicleType: string | null) {
-  const v = (vehicleType || '').toLowerCase()
-  if (v === 'bicycle' || v === 'motorbike' || v === 'scooter' || v === 'auto') return Bike
-  if (v === 'car') return Car
-  return Truck
+/** Offset a point roughly by distance/bearing for map display when RPC omits coords */
+function offsetFromCenter(lat: number, lng: number, distM: number, angleDeg: number): { lat: number; lng: number } {
+  const R = 6371000
+  const br = (angleDeg * Math.PI) / 180
+  const d = Math.max(40, distM)
+  const lat1 = (lat * Math.PI) / 180
+  const lng1 = (lng * Math.PI) / 180
+  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d / R) + Math.cos(lat1) * Math.sin(d / R) * Math.cos(br))
+  const lng2 =
+    lng1 +
+    Math.atan2(Math.sin(br) * Math.sin(d / R) * Math.cos(lat1), Math.cos(d / R) - Math.sin(lat1) * Math.sin(lat2))
+  return { lat: (lat2 * 180) / Math.PI, lng: (lng2 * 180) / Math.PI }
 }
 
 export default function ScanningPage() {
@@ -43,49 +48,24 @@ export default function ScanningPage() {
   const [scanCount, setScanCount] = useState(0)
   const [requestCancelled, setRequestCancelled] = useState(false)
   const [radiusStepIndex, setRadiusStepIndex] = useState(0)
-  const [ringScale, setRingScale] = useState(0.1)
-  const [partnerFound, setPartnerFound] = useState(false)
   const [waitingForAccept, setWaitingForAccept] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [retrying, setRetrying] = useState(false)
-  const [orderType, setOrderType] = useState<'instant' | 'advance' | null>(null)
+  const [partnerFound, setPartnerFound] = useState(false)
 
   const scanRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const scanCountRef = useRef(0)
-  const ringRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const radiusStepRef = useRef(0)
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const radiusMeters = RADIUS_STEPS_M[radiusStepIndex]
+  const centerLat = gps.lat ?? profile?.gps_lat ?? null
+  const centerLng = gps.lng ?? profile?.gps_lng ?? null
+  const center = centerLat != null && centerLng != null ? { lat: centerLat, lng: centerLng } : null
 
   useEffect(() => {
-    if (!requestId) return
-    supabase
-      .from('requests')
-      .select('order_type')
-      .eq('id', requestId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setOrderType(data.order_type as 'instant' | 'advance')
-      })
-  }, [requestId])
-
-  useEffect(() => {
-    if (phase !== 'scanning') return
-    setRingScale(0.1)
-    ringRef.current = setInterval(() => {
-      setRingScale(s => (s >= 1 ? 0.1 : s + 0.015))
-    }, 30)
-    return () => {
-      if (ringRef.current) clearInterval(ringRef.current)
-    }
-  }, [phase])
-
-  useEffect(() => {
-    elapsedRef.current = setInterval(() => {
-      setElapsedSeconds(s => s + 1)
-    }, 1000)
+    elapsedRef.current = setInterval(() => setElapsedSeconds(s => s + 1), 1000)
     return () => {
       if (elapsedRef.current) clearInterval(elapsedRef.current)
     }
@@ -113,13 +93,11 @@ export default function ScanningPage() {
 
   useEffect(() => {
     const doScan = async () => {
-      const lat = gps.lat ?? profile?.gps_lat ?? null
-      const lng = gps.lng ?? profile?.gps_lng ?? null
-      if (lat == null || lng == null) return
+      if (centerLat == null || centerLng == null) return
       try {
         const { data } = await supabase.rpc('scan_nearby_dps', {
-          p_user_lat: lat,
-          p_user_lng: lng,
+          p_user_lat: centerLat,
+          p_user_lng: centerLng,
           p_radius_meters: radiusMeters,
           p_request_id: requestId,
         })
@@ -135,11 +113,14 @@ export default function ScanningPage() {
           setSpots(
             dps.slice(0, 8).map((d, i) => {
               const dist = Number(d.distance_meters || 0)
-              const radiusPct = radiusMeters > 0 ? 35 + Math.min(55, (dist / radiusMeters) * 55) : 50
+              const hasCoords = d.gps_lat != null && d.gps_lng != null
+              const pos = hasCoords
+                ? { lat: Number(d.gps_lat), lng: Number(d.gps_lng) }
+                : offsetFromCenter(centerLat, centerLng, dist || 200 + i * 80, i * (360 / Math.min(count, 8)))
               return {
                 id: d.dp_user_id || `dp-${i}`,
-                angle: (i * (360 / Math.min(count, 8)) + (dist % 30)) % 360,
-                radius: radiusPct,
+                lat: pos.lat,
+                lng: pos.lng,
                 dist,
                 vehicle_type: d.vehicle_type || null,
                 full_name: d.full_name || 'Partner',
@@ -148,9 +129,7 @@ export default function ScanningPage() {
           )
         } else {
           setSpots([])
-          if (scanCountRef.current > 0 && scanCountRef.current % 3 === 0) {
-            triggerRetry()
-          }
+          if (scanCountRef.current > 0 && scanCountRef.current % 3 === 0) triggerRetry()
         }
       } catch (e) {
         console.error('scan_nearby_dps failed', e)
@@ -161,7 +140,7 @@ export default function ScanningPage() {
     return () => {
       if (scanRef.current) clearInterval(scanRef.current)
     }
-  }, [gps.lat, gps.lng, profile, requestId, radiusMeters])
+  }, [centerLat, centerLng, requestId, radiusMeters])
 
   useEffect(() => {
     if (!requestId) return
@@ -179,20 +158,11 @@ export default function ScanningPage() {
           const hasDp = next?.accepted_dp_id || next?.reserved_dp_id
           if (reservedStatus && hasDp) {
             if (scanRef.current) clearInterval(scanRef.current)
-            if (ringRef.current) clearInterval(ringRef.current)
             if (elapsedRef.current) clearInterval(elapsedRef.current)
             setPartnerFound(true)
             setTimeout(() => {
-              supabase
-                .from('chat_rooms')
-                .select('id')
-                .eq('request_id', requestId)
-                .maybeSingle()
-                .then(({ data }) => {
-                  if (data) navigate(`/app/chat/${data.id}`)
-                  else navigate('/app')
-                })
-            }, 1800)
+              navigate(`/app/track/${requestId}`, { replace: true })
+            }, 2000)
           }
           if (next?.status === 'cancelled' || next?.status === 'expired') {
             navigate('/app')
@@ -217,6 +187,7 @@ export default function ScanningPage() {
     await supabase.from('requests').update({ status: 'cancelled' }).eq('id', requestId)
     navigate('/app')
   }
+
   const scanAgain = () => {
     scanCountRef.current = 0
     setScanCount(0)
@@ -227,55 +198,32 @@ export default function ScanningPage() {
     setPhase('scanning')
   }
 
-  const SIZE = 260
-  const CX = SIZE / 2
-  const CY = SIZE / 2
-  const R = SIZE / 2 - 12
   const radiusLabel = formatDistance(radiusMeters)
-
   const estimatedWaitSeconds = (() => {
     if (dpCount > 0) return 30 + Math.max(0, 60 - dpCount * 8)
-    const base = 60 + radiusStepIndex * 45
-    return Math.min(base, 300)
+    return Math.min(60 + radiusStepIndex * 45, 300)
   })()
-  const fmtWait = (s: number) => {
-    if (s < 60) return `${s}s`
-    return `${Math.floor(s / 60)}m ${s % 60}s`
-  }
+  const fmtWait = (s: number) => (s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`)
+
+  const markers: MapMarker[] = useMemo(() => {
+    const list: MapMarker[] = []
+    if (center) list.push({ id: 'user', position: center, kind: 'user' })
+    spots.forEach(s => {
+      list.push({ id: s.id, position: { lat: s.lat, lng: s.lng }, kind: 'bike', label: s.full_name })
+    })
+    return list
+  }, [center, spots])
 
   if (partnerFound) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-[#0B0B0B] animate-fade-in">
-        <div className="relative flex items-center justify-center">
-          {[1, 2, 3].map(i => (
-            <div
-              key={i}
-              className="absolute rounded-full border-2 animate-ping"
-              style={{
-                width: 60 + i * 50,
-                height: 60 + i * 50,
-                borderColor: 'rgba(166,179,0,0.3)',
-                animationDelay: `${i * 0.2}s`,
-                animationDuration: '1.5s',
-              }}
-            />
-          ))}
-          <div
-            className="relative flex h-24 w-24 items-center justify-center rounded-full animate-success-pop"
-            style={{
-              background: 'linear-gradient(135deg, #A6B300, #BFD400)',
-              boxShadow: '0 0 40px rgba(166,179,0,0.6)',
-            }}
-          >
-            <CheckCircle2 size={44} className="text-[#0B0B0B]" strokeWidth={2.5} />
-          </div>
-        </div>
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-white">Partner Found!</h2>
-          <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Opening chat...
-          </p>
-        </div>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0B0B0B] px-6">
+        <img
+          src={Images.orderAccepted}
+          alt="Order accepted"
+          className="w-full max-w-sm object-contain rounded-3xl"
+          draggable={false}
+        />
+        <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Opening order tracking...</p>
       </div>
     )
   }
@@ -304,8 +252,7 @@ export default function ScanningPage() {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#0B0B0B]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-12 pb-2">
+      <div className="flex items-center justify-between px-5 pt-12 pb-2 shrink-0">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>
             {waitingForAccept ? 'Waiting' : 'Scanning'}
@@ -324,105 +271,48 @@ export default function ScanningPage() {
         </button>
       </div>
 
-      {/* Radar */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ maxHeight: '48vh' }}>
-        {/* Customer waiting illustration */}
-        <div className="absolute right-3 top-3 z-10 opacity-90">
-          <MascotWaiting className="w-24 h-24" />
-        </div>
-        {/* Ambient glow */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div
-            className="h-64 w-64 rounded-full blur-3xl"
-            style={{
-              background: dpCount > 0 ? 'rgba(166,179,0,0.06)' : 'transparent',
-              transition: 'background 0.8s',
-            }}
+      <div className="relative mx-3 h-[42vh] min-h-[220px] overflow-hidden rounded-3xl shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+        {center ? (
+          <FreeStreetMap
+            center={center}
+            zoom={radiusStepIndex <= 1 ? 14 : radiusStepIndex <= 3 ? 13 : 12}
+            markers={markers}
+            radiusMeters={radiusMeters}
           />
-        </div>
-
-        {/* Pulsing background rings */}
-        {phase === 'scanning' &&
-          [1, 2, 3].map(i => (
-            <div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                width: SIZE * (0.3 + i * 0.25),
-                height: SIZE * (0.3 + i * 0.25),
-                border: '1px solid rgba(166,179,0,0.06)',
-                animation: `radarPing ${1.8 + i * 0.4}s ease-out infinite`,
-                animationDelay: `${i * 0.5}s`,
-              }}
-            />
-          ))}
-
-        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ position: 'relative', zIndex: 1 }}>
-          {/* Background rings */}
-          {[0.25, 0.5, 0.75, 1].map((pct, i) => (
-            <circle key={i} cx={CX} cy={CY} r={R * pct} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
-          ))}
-
-          {/* Accent ring at 50% */}
-          <circle cx={CX} cy={CY} r={R * 0.5} fill="none" stroke="rgba(166,179,0,0.12)" strokeWidth={1.5} />
-
-          {/* Expanding scan circle */}
-          {phase === 'scanning' && (
-            <>
-              <circle cx={CX} cy={CY} r={R * ringScale} fill="none" stroke="#A6B300" strokeWidth={2} opacity={1.2 - ringScale * 1.2} />
-              <circle cx={CX} cy={CY} r={R * ringScale * 0.75} fill={`rgba(166,179,0,${0.03 * (1 - ringScale)})`} stroke="none" />
-            </>
-          )}
-
-          {/* DP markers */}
-          {spots.map(spot => {
-            const rad = (spot.angle * Math.PI) / 180
-            const dr = (spot.radius / 100) * R
-            const dx = CX + dr * Math.cos(rad)
-            const dy = CY + dr * Math.sin(rad)
-            const Icon = vehicleIcon(spot.vehicle_type)
-            return (
-              <g key={spot.id}>
-                <circle cx={dx} cy={dy} r={18} fill="rgba(166,179,0,0.08)" stroke="rgba(166,179,0,0.3)" strokeWidth={1.5} />
-                <circle cx={dx} cy={dy} r={13} fill="#A6B300" />
-                <g transform={`translate(${dx - 9}, ${dy - 9}) scale(0.75)`}>
-                  <Icon size={24} style={{ color: '#0B0B0B' }} strokeWidth={2.5} />
-                </g>
-              </g>
-            )
-          })}
-
-          {/* User dot — center */}
-          <circle cx={CX} cy={CY} r={22} fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.2)" strokeWidth={1.5} />
-          <circle cx={CX} cy={CY} r={10} fill="#3b82f6" />
-          <circle cx={CX} cy={CY} r={16} fill="none" stroke="#3b82f6" strokeWidth={1.5} opacity={0.5} />
-        </svg>
-
-        <div className="absolute flex flex-col items-center" style={{ top: '50%', transform: 'translateY(30px)', pointerEvents: 'none' }}>
-          <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>You</p>
+        ) : (
+          <div className="flex h-full items-center justify-center bg-[#121212] text-sm text-white/40">
+            Getting your location…
+          </div>
+        )}
+        <div
+          className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-xs font-bold"
+          style={{ background: 'rgba(11,11,11,0.75)', color: '#A6B300', border: '1px solid rgba(166,179,0,0.35)' }}
+        >
+          Radius {radiusLabel}
         </div>
       </div>
 
-      {/* Status */}
-      <div className="px-5 py-2 text-center">
-        <h2 className="text-lg font-bold text-white">
-          {waitingForAccept
-            ? 'Waiting for Partner to Accept...'
-            : retrying
-            ? 'Retrying search...'
-            : dpCount > 0
-            ? `${dpCount} Partner${dpCount > 1 ? 's' : ''} Nearby`
-            : 'Searching nearby Delivery Partners...'}
-        </h2>
-        <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-          {retrying
-            ? 'Expanding search radius and retrying...'
-            : `Search radius: ${radiusLabel} · Scan #${scanCount} · ${fmtWait(elapsedSeconds)} elapsed`}
-        </p>
+      <div className="flex items-center gap-4 px-5 py-3 shrink-0">
+        <img src={Images.userWaiting} alt="" className="h-24 w-20 object-contain" draggable={false} />
+        <div className="flex-1">
+          <h2 className="text-lg font-bold text-white">
+            {waitingForAccept
+              ? 'Waiting for Partner to Accept...'
+              : retrying
+              ? 'Retrying search...'
+              : dpCount > 0
+              ? `${dpCount} Partner${dpCount > 1 ? 's' : ''} Nearby`
+              : 'Searching nearby Delivery Partners...'}
+          </h2>
+          <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            {retrying
+              ? 'Expanding search radius and retrying...'
+              : `Scan #${scanCount} · ${fmtWait(elapsedSeconds)} elapsed`}
+          </p>
+        </div>
       </div>
 
-      {/* Radius stepper */}
-      <div className="px-6 py-1.5">
+      <div className="px-6 py-1.5 shrink-0">
         <div className="flex items-center justify-between gap-1">
           {RADIUS_STEPS_M.map((step, i) => (
             <div
@@ -440,23 +330,24 @@ export default function ScanningPage() {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-5 pb-1">
-        <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
-          <div className="h-2.5 w-2.5 rounded-full bg-blue-500" /> You
-        </div>
-        <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
-          <div className="h-2.5 w-2.5 rounded-full" style={{ background: '#A6B300' }} /> Partner
-        </div>
-      </div>
-
-      {/* Bottom Panel */}
-      <div className="px-4 pb-10">
-        {waitingForAccept ? (
-          <div className="rounded-3xl p-4" style={{ background: 'rgba(166,179,0,0.08)', border: '1px solid rgba(166,179,0,0.2)' }}>
+      <div className="flex-1 overflow-y-auto px-4 pb-10">
+        {waitingForAccept || phase === 'scanning' ? (
+          <div
+            className="rounded-3xl p-4"
+            style={{
+              background: waitingForAccept ? 'rgba(166,179,0,0.08)' : 'rgba(255,255,255,0.04)',
+              border: waitingForAccept ? '1px solid rgba(166,179,0,0.2)' : '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
             <div className="flex items-center gap-3 mb-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
-                <Loader2 size={18} style={{ color: '#A6B300' }} className="animate-spin" />
+                {waitingForAccept ? (
+                  <Loader2 size={18} style={{ color: '#A6B300' }} className="animate-spin" />
+                ) : retrying ? (
+                  <RefreshCw size={18} style={{ color: '#A6B300' }} className="animate-spin" />
+                ) : (
+                  <Radar size={18} style={{ color: '#A6B300' }} className="animate-pulse" />
+                )}
               </div>
               <div className="flex-1">
                 <p className="text-sm font-bold text-white">
@@ -475,37 +366,7 @@ export default function ScanningPage() {
               <p className="text-xs font-bold" style={{ color: '#A6B300' }}>{fmtWait(estimatedWaitSeconds)}</p>
             </div>
             <p className="mt-2 text-center text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              Chat opens automatically when a partner accepts
-            </p>
-          </div>
-        ) : phase === 'scanning' ? (
-          <div className="rounded-3xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: 'rgba(166,179,0,0.15)' }}>
-                {retrying ? (
-                  <RefreshCw size={18} style={{ color: '#A6B300' }} className="animate-spin" />
-                ) : (
-                  <Radar size={18} style={{ color: '#A6B300' }} className="animate-pulse" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-white">
-                  {retrying ? 'Retrying...' : dpCount > 0 ? `${dpCount} partner${dpCount > 1 ? 's' : ''} online` : 'Searching...'}
-                </p>
-                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  {dpCount > 0 && avgDist > 0 ? `Avg ${formatDistance(avgDist)} away` : 'Your request is live — partners can see it'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-2 rounded-2xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
-              <div className="flex items-center gap-1.5">
-                <Clock size={13} style={{ color: 'rgba(255,255,255,0.5)' }} />
-                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Est. wait</p>
-              </div>
-              <p className="text-xs font-bold" style={{ color: '#A6B300' }}>{fmtWait(estimatedWaitSeconds)}</p>
-            </div>
-            <p className="mt-2 text-center text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              Chat opens automatically when a partner accepts
+              Order tracking opens automatically when a partner accepts
             </p>
           </div>
         ) : (

@@ -1,2 +1,2 @@
-// Illustrations are imported directly from @/components/Illustrations
-// This file is kept for backward compatibility — no photo URLs are used.
+// Re-export centralized images for backward compatibility
+export { Images, getCategoryImage, getTrackingStepImage, SELECTED_ADDRESS_KEY } from './customImages'

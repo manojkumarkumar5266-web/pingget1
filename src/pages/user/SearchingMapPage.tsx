@@ -1,14 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { useNearbyDps } from '../../hooks/useNearbyDps'
-import { useLeafletMap } from '../../hooks/useLeafletMap'
-import { createVehicleIcon, createUserLocationIcon, type VehicleType } from '../../lib/mapUtils'
 import { formatDistance } from '../../lib/utils'
-import L from 'leaflet'
 import { supabase } from '../../lib/supabase'
-import { X, Bike, CheckCircle2, ChevronRight, Clock, Package, Search, MapPin, Loader2 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { X, Bike, CheckCircle2, ChevronRight, Clock, Search, Loader2 } from 'lucide-react'
+import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
+import { Images } from '../../lib/customImages'
 
 const SCAN_RADIUS_KM = 5
 const MAX_SCANS = 6
@@ -17,18 +15,14 @@ export default function SearchingMapPage() {
   const { requestId } = useParams<{ requestId: string }>()
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const [partnerFound, setPartnerFound] = useState(false)
 
   const userLocation = profile?.gps_lat && profile?.gps_lng
     ? { lat: profile.gps_lat, lng: profile.gps_lng }
     : null
 
   const { dps, scanning, scanCount } = useNearbyDps(userLocation, requestId, SCAN_RADIUS_KM * 1000, 4000, MAX_SCANS)
-
-  const { map, ready } = useLeafletMap('searching-map', userLocation ? [userLocation.lat, userLocation.lng] : undefined, 15)
-  const dpMarkerRefs = useRef<Map<string, L.Marker>>(new Map())
-  const userMarkerRef = useRef<L.Marker | null>(null)
-  const radiusCircleRef = useRef<L.Circle | null>(null)
-  const [phase, setPhase] = useState<'scanning' | 'found' | 'none' | 'retrying'>('scanning')
+  const [phase, setPhase] = useState<'scanning' | 'found' | 'none'>('scanning')
   const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
@@ -37,7 +31,6 @@ export default function SearchingMapPage() {
     }
   }, [scanning, scanCount, dps.length])
 
-  // Auto-retry: when no DP found, wait a few seconds then reset scan
   useEffect(() => {
     if (phase !== 'none' || !requestId) return
     const timer = setTimeout(() => {
@@ -47,57 +40,6 @@ export default function SearchingMapPage() {
     return () => clearTimeout(timer)
   }, [phase, requestId])
 
-  // User marker + search radius circle
-  useEffect(() => {
-    if (!map || !ready || !userLocation) return
-    if (!userMarkerRef.current) {
-      userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
-        icon: createUserLocationIcon(),
-        zIndexOffset: 1000,
-      }).addTo(map)
-    }
-    if (!radiusCircleRef.current) {
-      radiusCircleRef.current = L.circle([userLocation.lat, userLocation.lng], {
-        radius: SCAN_RADIUS_KM * 1000,
-        color: '#808000',
-        weight: 2,
-        opacity: 0.6,
-        fillColor: '#808000',
-        fillOpacity: 0.06,
-        dashArray: '8 6',
-      }).addTo(map)
-    }
-  }, [map, ready, userLocation])
-
-  // DP markers
-  useEffect(() => {
-    if (!map || !ready) return
-    const refs = dpMarkerRefs.current
-    const currentIds = new Set(dps.map(d => d.dp_user_id))
-
-    refs.forEach((marker, id) => {
-      if (!currentIds.has(id)) {
-        map.removeLayer(marker)
-        refs.delete(id)
-      }
-    })
-
-    dps.forEach(dp => {
-      if (!dp.current_lat || !dp.current_lng) return
-      const existing = refs.get(dp.dp_user_id)
-      const pos: L.LatLngExpression = [dp.current_lat, dp.current_lng]
-      if (!existing) {
-        const marker = L.marker(pos, {
-          icon: createVehicleIcon(dp.vehicle_type as VehicleType, 0, true),
-        }).addTo(map)
-        refs.set(dp.dp_user_id, marker)
-      } else {
-        existing.setLatLng(pos)
-      }
-    })
-  }, [map, ready, dps])
-
-  // Listen for acceptance or reservation — auto navigate to chat
   useEffect(() => {
     if (!requestId) return
     const channel = supabase
@@ -109,23 +51,12 @@ export default function SearchingMapPage() {
         filter: `id=eq.${requestId}`,
       }, (payload: any) => {
         const next = payload.new as any
-        // Instant request: DP accepts → status 'accepted' + accepted_dp_id
-        // Advance request: DP reserves → status 'dp_reserved' + reserved_dp_id
         if ((next?.status === 'accepted' && next?.accepted_dp_id) ||
             (next?.status === 'dp_reserved' && next?.reserved_dp_id)) {
-          supabase
-            .from('chat_rooms')
-            .select('id')
-            .eq('request_id', requestId)
-            .maybeSingle()
-            .then(({ data }) => {
-              if (data) navigate(`/app/chat/${data.id}`)
-            })
+          setPartnerFound(true)
+          setTimeout(() => navigate(`/app/track/${requestId}`, { replace: true }), 2000)
         }
-        // If no DP found, stay on searching and let the scheduler retry
-        if (next?.status === 'no_dp_found') {
-          setPhase('none')
-        }
+        if (next?.status === 'no_dp_found') setPhase('none')
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -137,56 +68,76 @@ export default function SearchingMapPage() {
     navigate('/app')
   }
 
+  const markers: MapMarker[] = useMemo(() => {
+    const list: MapMarker[] = []
+    if (userLocation) list.push({ id: 'user', position: userLocation, kind: 'user' })
+    dps.forEach(dp => {
+      if (dp.current_lat == null || dp.current_lng == null) return
+      list.push({
+        id: dp.dp_user_id,
+        position: { lat: dp.current_lat, lng: dp.current_lng },
+        kind: 'bike',
+      })
+    })
+    return list
+  }, [userLocation, dps])
+
+  if (partnerFound) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0B0B0B] px-6">
+        <img src={Images.orderAccepted} alt="Order accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} />
+        <p className="text-sm text-white/50">Opening order tracking...</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="fixed inset-0 z-50 bg-black">
-      {/* Full screen map */}
-      <div id="searching-map" className="absolute inset-0" />
+    <div className="fixed inset-0 z-50 flex flex-col bg-black">
+      <div className="relative flex-1 min-h-0">
+        {userLocation ? (
+          <FreeStreetMap
+            center={userLocation}
+            zoom={14}
+            markers={markers}
+            radiusMeters={SCAN_RADIUS_KM * 1000}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-white/40 text-sm">Getting location…</div>
+        )}
 
-      {/* Ripple overlay while scanning */}
-      {phase === 'scanning' && userLocation && map && (
-        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[500] -translate-x-1/2 -translate-y-1/2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="searching-ripple absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-              style={{ width: 120, height: 120, animationDelay: `${i * 0.6}s` }} />
-          ))}
-        </div>
-      )}
-
-      {/* Top overlay bar */}
-      <div className="absolute left-0 right-0 top-0 z-[1000] px-4 pt-12">
-        <div className="map-glass-panel p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-widest text-white/50">
-                {phase === 'scanning' ? 'Scanning...' : phase === 'found' ? 'Partners Found' : 'Search Complete'}
-              </p>
-              <h2 className="text-base font-bold text-white mt-0.5">
-                {phase === 'scanning'
-                  ? 'Finding nearby partners'
-                  : phase === 'found'
-                  ? `${dps.length} partner${dps.length === 1 ? '' : 's'} nearby`
-                  : 'No partners in range'}
-              </h2>
-              <p className="text-[10px] text-white/40 mt-0.5">Search radius: {SCAN_RADIUS_KM} km</p>
+        <div className="absolute left-0 right-0 top-0 z-10 px-4 pt-12 pointer-events-none">
+          <div className="map-glass-panel p-3 pointer-events-auto">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-widest text-white/50">
+                  {phase === 'scanning' ? 'Scanning...' : phase === 'found' ? 'Partners Found' : 'Search Complete'}
+                </p>
+                <h2 className="text-base font-bold text-white mt-0.5">
+                  {phase === 'scanning'
+                    ? 'Finding nearby partners'
+                    : phase === 'found'
+                    ? `${dps.length} partner${dps.length === 1 ? '' : 's'} nearby`
+                    : 'No partners in range'}
+                </h2>
+                <p className="text-[10px] text-white/40 mt-0.5">Search radius: {SCAN_RADIUS_KM} km</p>
+              </div>
+              {phase === 'scanning' && (
+                <button type="button" onClick={cancelRequest} className="map-control-btn map-control-dark">
+                  <X size={18} />
+                </button>
+              )}
             </div>
-            {phase === 'scanning' && (
-              <button onClick={cancelRequest} className="map-control-btn map-control-dark">
-                <X size={18} />
-              </button>
-            )}
-          </div>
-          {/* Scan progress dots */}
-          <div className="mt-2.5 flex items-center gap-1.5">
-            {Array.from({ length: MAX_SCANS }).map((_, i) => (
-              <div key={i} className="h-1.5 rounded-full transition-all duration-500"
-                style={{ width: i < scanCount ? 24 : 8, background: i < scanCount ? '#808000' : 'rgba(255,255,255,0.15)' }} />
-            ))}
+            <div className="mt-2.5 flex items-center gap-1.5">
+              {Array.from({ length: MAX_SCANS }).map((_, i) => (
+                <div key={i} className="h-1.5 rounded-full transition-all duration-500"
+                  style={{ width: i < scanCount ? 24 : 8, background: i < scanCount ? '#808000' : 'rgba(255,255,255,0.15)' }} />
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom overlay panel */}
-      <div className="absolute bottom-0 left-0 right-0 z-[1000] px-4 pb-8">
+      <div className="px-4 pb-8 pt-3 shrink-0">
         <div className="mx-auto max-w-md space-y-3">
           {phase === 'scanning' && (
             <div className="map-glass-panel p-4 animate-slide-up">
@@ -205,7 +156,7 @@ export default function SearchingMapPage() {
               </div>
               <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
                 <Clock size={14} className="text-white/60 shrink-0" />
-                <p className="text-xs text-white/70">Chat opens automatically when a partner accepts</p>
+                <p className="text-xs text-white/70">Tracking opens when a partner accepts</p>
               </div>
             </div>
           )}
@@ -229,7 +180,7 @@ export default function SearchingMapPage() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => navigate('/app/orders')}
+              <button type="button" onClick={() => navigate('/app/orders')}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-white active:scale-95"
                 style={{ background: 'linear-gradient(135deg,#808000,#606000)' }}>
                 Track My Request <ChevronRight size={16} />
@@ -244,13 +195,11 @@ export default function SearchingMapPage() {
                 <p className="font-semibold text-white">Still searching for a delivery partner...</p>
                 <p className="mt-1 text-xs text-white/60">Retrying automatically in a few seconds (attempt {retryCount + 1})</p>
               </div>
-              <div className="flex gap-3">
-                <button onClick={cancelRequest}
-                  className="flex-1 rounded-2xl py-3 text-sm font-semibold text-white/80 active:scale-95"
-                  style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
-                  Cancel
-                </button>
-              </div>
+              <button type="button" onClick={cancelRequest}
+                className="w-full rounded-2xl py-3 text-sm font-semibold text-white/80 active:scale-95"
+                style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                Cancel
+              </button>
             </div>
           )}
         </div>

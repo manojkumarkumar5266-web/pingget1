@@ -1,16 +1,22 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from '@capacitor/cli'
 
+/**
+ * Customer mobile app — packages dist-user.
+ * applicationId remains com.pingget.app until Firebase/google-services is updated.
+ * Partner app uses capacitor.dp.config.ts (com.pingget.dp) in a separate native project.
+ * Both share one Supabase project.
+ */
 const config: CapacitorConfig = {
   appId: 'com.pingget.app',
   appName: 'PingGET',
-  webDir: 'dist',
+  webDir: 'dist-user',
   server: {
     androidScheme: 'https',
   },
   plugins: {
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#ffffff',
+      backgroundColor: '#0B0B0B',
     },
     Keyboard: {
       resize: 'body',
@@ -18,7 +24,7 @@ const config: CapacitorConfig = {
     },
     SplashScreen: {
       launchShowDuration: 2000,
-      backgroundColor: '#ffffff',
+      backgroundColor: '#0B0B0B',
       showSpinner: false,
     },
   },
@@ -30,6 +36,6 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'automatic',
   },
-};
+}
 
-export default config;
+export default config

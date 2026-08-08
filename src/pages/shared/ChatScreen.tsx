@@ -136,17 +136,10 @@ export default function ChatScreen() {
     init()
   }, [roomId, isUser, profile])
 
+  // Auto-generated greetings disabled — only typed messages appear
   useEffect(() => {
-    if (!room || !profile || greetingSentRef.current || messages.length > 0) return
     greetingSentRef.current = true
-    const otherName = otherUser?.full_name?.split(' ')[0] || 'there'
-    const myName = profile.full_name?.split(' ')[0] || 'there'
-    if (isUser) {
-      sendMessage(`Hi ${otherName}. Thank you for accepting my request.`)
-    } else {
-      sendMessage(`Hi ${otherName}, I'm ${myName}. I'll be delivering your order today.`)
-    }
-  }, [room, profile, messages.length, isUser, otherUser])
+  }, [])
 
   useEffect(() => {
     if (!roomId) return
@@ -679,7 +672,7 @@ export default function ChatScreen() {
         </div>
       )}
 
-      {/* Input area */}
+      {/* Input area — WhatsApp style: Photo | Voice | Type message */}
       {chatLocked ? (
         <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-4" style={{ background: '#0B0B0B', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>
@@ -690,62 +683,48 @@ export default function ChatScreen() {
         <div className="shrink-0 px-4 py-3" style={{ background: '#0B0B0B', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <input ref={imageInputRef} type="file" className="hidden" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) sendImage(f); e.target.value = '' }} />
 
-          {showAttachMenu && (
-            <div className="mb-3 flex flex-wrap gap-2 animate-slide-up">
-              <button onClick={() => { imageInputRef.current?.click(); setShowAttachMenu(false) }}
-                className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
-                <Camera size={14} /> Photo
+          {!isUser && order && ['confirmed','shopping','purchased','on_the_way','arrived'].includes(order.status) && (
+            <div className="mb-2 flex justify-start">
+              <button type="button" onClick={() => setShowPickupPhoto(true)}
+                className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium"
+                style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
+                <PackageCheck size={14} /> Pickup Proof
               </button>
-              {recording ? (
-                <button onClick={stopVoiceRecord} className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium"
-                  style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
-                  <MicOff size={14} /> Stop ({fmtDur(voiceDuration)})
-                </button>
-              ) : (
-                <button onClick={startVoiceRecord} className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
-                  <Mic size={14} /> Voice
-                </button>
-              )}
-              {!isUser && order && ['confirmed','shopping','purchased','on_the_way','arrived'].includes(order.status) && (
-                <button onClick={() => { setShowPickupPhoto(true); setShowAttachMenu(false) }}
-                  className="flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-medium"
-                  style={{ background: 'rgba(166,179,0,0.12)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
-                  <PackageCheck size={14} /> Pickup Proof
-                </button>
-              )}
-              <button onClick={() => setShowAttachMenu(false)} style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 'auto' }}><X size={16} /></button>
             </div>
           )}
 
           <div className="mx-auto flex max-w-md items-center gap-2">
-            <button onClick={() => setShowAttachMenu(!showAttachMenu)}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all active:scale-90"
-              style={showAttachMenu
-                ? { background: '#A6B300' }
-                : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <Paperclip size={18} style={{ color: showAttachMenu ? '#0B0B0B' : 'rgba(255,255,255,0.5)' }} />
+            <button type="button" onClick={() => imageInputRef.current?.click()}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl active:scale-90"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <Camera size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
             </button>
 
             {recording ? (
               <div className="flex flex-1 items-center gap-2.5 rounded-2xl px-3.5 py-2.5" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
                 <div className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
                 <span className="flex-1 text-sm font-medium text-red-400">Recording {fmtDur(voiceDuration)}</span>
-                <button onClick={stopVoiceRecord} className="text-xs font-bold text-red-400">Send</button>
+                <button type="button" onClick={stopVoiceRecord} className="text-xs font-bold text-red-400">Send</button>
               </div>
             ) : (
-              <input value={input} onChange={handleInputChange}
-                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                placeholder="Type a message..."
-                className="flex-1 rounded-xl py-3 px-4 text-sm text-white outline-none"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
-              />
+              <>
+                <button type="button" onClick={startVoiceRecord}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl active:scale-90"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Mic size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
+                </button>
+                <input value={input} onChange={handleInputChange}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                  placeholder="Type a message..."
+                  className="flex-1 rounded-xl py-3 px-4 text-sm text-white outline-none"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                />
+              </>
             )}
 
             {!recording && (
-              <button onClick={handleSend}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all active:scale-90"
+              <button type="button" onClick={handleSend}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl active:scale-90"
                 style={input.trim()
                   ? { background: '#A6B300' }
                   : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -777,19 +756,19 @@ export default function ChatScreen() {
             style={{ background: '#A6B300', color: '#0B0B0B' }}>
             <ClipboardList size={14} /> View Full Order
           </button>
-          {!isUser && !order && (
+          {!isUser && !order && fullOrderData?.order_type !== 'advance' && (
             <button onClick={() => setShowQuotation(true)}
               className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95"
               style={{ background: '#808000', color: '#fff' }}>
               <FileText size={14} /> Send Quotation
             </button>
           )}
-          {/* V3: DP Request Advance Payment button for advance bookings */}
-          {!isUser && fullOrderData?.order_type === 'advance' && ['dp_reserved'].includes(fullOrderData.status) && !advancePaymentData && (
+          {/* Advance: prefer Advance Payment instead of quotation */}
+          {!isUser && fullOrderData?.order_type === 'advance' && ['dp_reserved', 'accepted', 'searching_dp'].includes(fullOrderData.status) && !advancePaymentData && (
             <button onClick={() => setShowAdvancePayment(true)}
               className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95"
               style={{ background: 'linear-gradient(135deg, #A6B300, #808000)', color: '#0B0B0B' }}>
-              <CreditCard size={14} /> Request Advance Payment
+              <CreditCard size={14} /> Advance Payment
             </button>
           )}
         </div>

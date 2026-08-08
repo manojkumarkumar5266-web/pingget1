@@ -51,17 +51,27 @@ async function autoDetectPincode(setPin: (v: string) => void, setError: (e: stri
   )
 }
 
-export default function AuthScreen() {
+type AuthScreenProps = {
+  /** When set, this screen is locked to one app (User or DP). No role switcher. */
+  fixedRole?: Role
+}
+
+export default function AuthScreen({ fixedRole }: AuthScreenProps) {
   const { signInWithEmail, signInWithGoogle, refreshProfile, oauthError, clearOauthError } = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<Mode>('signin')
-  const [role, setRole] = useState<Role>('user')
+  const [role, setRole] = useState<Role>(fixedRole || 'user')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const submittingRef = useRef(false)
   const [showPassword, setShowPassword] = useState(false)
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false)
+  const roleLocked = !!fixedRole
+
+  useEffect(() => {
+    if (fixedRole) setRole(fixedRole)
+  }, [fixedRole])
 
   useEffect(() => {
     if (oauthError) { setError(oauthError); clearOauthError() }
@@ -181,8 +191,12 @@ export default function AuthScreen() {
     else { setLicenseFile(file); setLicensePreview(url) }
   }
 
-  // Detect role from email as user types on sign-in
+  // Detect role from email as user types on sign-in (skip when app is role-locked)
   useEffect(() => {
+    if (roleLocked) {
+      setDetectedRole(fixedRole || null)
+      return
+    }
     if (mode !== 'signin' || signInEmail.length < 5 || !signInEmail.includes('@')) return
     const timer = setTimeout(async () => {
       const { data } = await supabase.from('profiles').select('role').ilike('email', signInEmail.trim()).maybeSingle()
@@ -191,7 +205,7 @@ export default function AuthScreen() {
       else { setDetectedRole(null) }
     }, 600)
     return () => clearTimeout(timer)
-  }, [signInEmail, mode])
+  }, [signInEmail, mode, roleLocked, fixedRole])
 
   // ── Sign In ──
   const handleSignIn = async (e: React.FormEvent) => {
@@ -219,9 +233,18 @@ export default function AuthScreen() {
       setError(`Your account is ${userProfile.status}. Please contact support.`)
       setSignInEmail(''); setSignInPassword(''); setLoading(false); return
     }
-    // Route based on actual profile role — the local `role` dropdown is just
-    // a hint for UI. The database is the source of truth.
-    if (userProfile.role === 'admin') {
+    // Separate apps: reject wrong role for this build
+    if (fixedRole && userProfile.role !== fixedRole) {
+      await supabase.auth.signOut()
+      const msg =
+        fixedRole === 'user'
+          ? 'This is the Customer app. Delivery partners should use the Partner app.'
+          : 'This is the Partner app. Customers should use the Customer app.'
+      setError(msg)
+      setSignInEmail(''); setSignInPassword(''); setLoading(false)
+      return
+    }
+    if (userProfile.role === 'admin' && !fixedRole) {
       await refreshProfile()
       setLoading(false)
       return
@@ -572,15 +595,20 @@ export default function AuthScreen() {
       <AuthLayout>
         <div className="mb-3 text-center animate-fade-in">
           <h2 className="text-xl font-bold text-white">Create New Account</h2>
-          <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Select your role and fill in your details</p>
+          <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            {roleLocked
+              ? (fixedRole === 'dp' ? 'Register as a delivery partner' : 'Register as a customer')
+              : 'Select your role and fill in your details'}
+          </p>
         </div>
 
         <div className="card p-5">
-          {/* Role dropdown */}
-          <div className="mb-4">
-            <label className="label flex items-center gap-1.5"><Shield size={13} /> I am a...</label>
-            <RoleDropdown />
-          </div>
+          {!roleLocked && (
+            <div className="mb-4">
+              <label className="label flex items-center gap-1.5"><Shield size={13} /> I am a...</label>
+              <RoleDropdown />
+            </div>
+          )}
 
           {/* ── User signup form ── */}
           {role === 'user' && (
@@ -757,12 +785,15 @@ export default function AuthScreen() {
     <AuthLayout>
       <div className="mb-3 text-center animate-fade-in">
         <h2 className="text-xl font-bold text-white">Sign In</h2>
-        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Select your role and enter your credentials</p>
+        <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
+          {roleLocked
+            ? (fixedRole === 'dp' ? 'Delivery partner sign in' : 'Customer sign in')
+            : 'Enter your credentials'}
+        </p>
       </div>
 
       <div className="card p-5">
         <form onSubmit={handleSignIn} className="space-y-4">
-          {/* Role dropdown */}
           <div>
             <label className="label flex items-center gap-1.5"><Mail size={13} /> Email</label>
             <input type="email" className="input" value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required />
@@ -777,7 +808,13 @@ export default function AuthScreen() {
               <button type="button" onClick={() => { setMode('forgot'); setError(null) }} className="text-xs hover:underline" style={{ color: '#808000' }}>Forgot password?</button>
             </div>
           </div>
-          {detectedRole && (
+          {roleLocked && (
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium" style={{ background: 'rgba(166,179,0,0.1)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
+              {fixedRole === 'dp' ? <Bike size={13} /> : <User size={13} />}
+              {fixedRole === 'dp' ? 'Partner app' : 'Customer app'}
+            </div>
+          )}
+          {!roleLocked && detectedRole && (
             <div className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium" style={{ background: 'rgba(166,179,0,0.1)', border: '1px solid rgba(166,179,0,0.25)', color: '#A6B300' }}>
               {detectedRole === 'dp' ? <Bike size={13} /> : <User size={13} />}
               Signing in as <strong>{detectedRole === 'dp' ? 'Delivery Partner' : 'User'}</strong>

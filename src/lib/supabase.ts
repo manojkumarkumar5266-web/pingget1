@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase env vars. Check .env file.')
+  console.warn('[PingGET] Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY — set them in .env (shared by User, DP, and Admin apps).')
 }
 
 // Capture the initial URL hash/search BEFORE the Supabase client processes
@@ -14,7 +14,10 @@ export const initialAuthUrl = typeof window !== 'undefined'
   ? { hash: window.location.hash, search: window.location.search }
   : { hash: '', search: '' }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder',
+  {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

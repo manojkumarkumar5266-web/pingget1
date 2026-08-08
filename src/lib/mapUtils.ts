@@ -1,12 +1,7 @@
-import L from 'leaflet'
+/** Map helpers without Leaflet — MapLibre FreeStreetMap is the map renderer. */
 
 export const DEFAULT_CENTER: [number, number] = [17.385, 78.4867] // Hyderabad fallback
 export const DEFAULT_ZOOM = 14
-
-export const TILE_URL_DARK = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
-export const TILE_URL_LIGHT = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
-export const TILE_ATTR_LIGHT = '&copy; OpenStreetMap contributors'
-export const TILE_ATTR_DARK = '&copy; OpenStreetMap contributors &copy; CARTO'
 
 export const OSRM_BASE = 'https://router.project-osrm.org'
 
@@ -49,103 +44,6 @@ export function vehicleColor(v: VehicleType): string {
     truck: '#6b7280',
   }
   return colors[v]
-}
-
-export function createVehicleIcon(vehicle: VehicleType, heading: number, isOnline: boolean): L.DivIcon {
-  const color = vehicleColor(vehicle)
-  const svgPaths: Record<VehicleType, string> = {
-    motorbike: '<path d="M5 17h14M8 17a3 3 0 1 0 6 0M10 17V8h4v9M12 5l3 3" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>',
-    scooter: '<path d="M5 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0M15 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0M7 17V7h6l2 10" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>',
-    bicycle: '<circle cx="6" cy="17" r="3" stroke="white" stroke-width="2" fill="none"/><circle cx="18" cy="17" r="3" stroke="white" stroke-width="2" fill="none"/><path d="M6 17l4-8h6l-3 8M10 9h4" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>',
-    car: '<path d="M3 14l2-6h14l2 6v4h-2v-2H5v2H3v-4z" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="7" cy="16" r="1.5" fill="white"/><circle cx="17" cy="16" r="1.5" fill="white"/>',
-    auto: '<path d="M4 16v-4l3-4h10l3 4v4M4 16h16M7 16a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0M14 16a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>',
-    walking: '<circle cx="12" cy="4" r="2" fill="white"/><path d="M10 8l2 3v6M12 11l3 2M10 11l-3 2" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>',
-    truck: '<path d="M1 14h14V8H1v6zM15 14h4v-3l-2-3h-2v6z" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="5" cy="16" r="1.5" fill="white"/><circle cx="17" cy="16" r="1.5" fill="white"/>',
-  }
-
-  const pulse = isOnline
-    ? `<div class="dp-marker-pulse" style="border-color:${color}"></div>`
-    : ''
-
-  const html = `
-    <div class="dp-marker-wrapper">
-      ${pulse}
-      <div class="dp-marker-body" style="transform:rotate(${heading}deg);background:${color}">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-          ${svgPaths[vehicle]}
-        </svg>
-      </div>
-      <div class="dp-marker-arrow" style="border-bottom-color:${color};transform:rotate(${heading}deg)"></div>
-    </div>`
-
-  return L.divIcon({
-    html,
-    className: 'dp-vehicle-marker',
-    iconSize: [52, 52],
-    iconAnchor: [26, 26],
-  })
-}
-
-export const ROUTE_COLOR = '#ef4444'
-export const ROUTE_CASING_COLOR = '#7f1d1d'
-
-export function createRoutePolyline(map: L.Map, coordinates: [number, number][]): L.Polyline {
-  const casing = L.polyline(coordinates, {
-    color: ROUTE_CASING_COLOR,
-    weight: 12,
-    opacity: 0.9,
-    lineCap: 'round',
-    lineJoin: 'round',
-  }).addTo(map)
-  const line = L.polyline(coordinates, {
-    color: ROUTE_COLOR,
-    weight: 7,
-    opacity: 1,
-    lineCap: 'round',
-    lineJoin: 'round',
-    className: 'route-line-animated',
-  }).addTo(map)
-  // Stash casing on the line so callers can remove both together.
-  ;(line as any)._casing = casing
-  return line
-}
-
-export function removeRoutePolyline(map: L.Map, line: L.Polyline | null) {
-  if (!line) return
-  const casing = (line as any)._casing as L.Polyline | undefined
-  if (casing) map.removeLayer(casing)
-  map.removeLayer(line)
-}
-
-export function createUserLocationIcon(): L.DivIcon {
-  return L.divIcon({
-    html: `
-      <div class="user-location-marker">
-        <div class="user-location-dot"></div>
-        <div class="user-location-pulse"></div>
-      </div>`,
-    className: 'user-location-icon',
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-  })
-}
-
-export function createPickupIcon(): L.DivIcon {
-  return L.divIcon({
-    html: `<div class="pickup-marker"><div class="pickup-marker-inner">P</div></div>`,
-    className: 'pickup-icon',
-    iconSize: [32, 40],
-    iconAnchor: [16, 40],
-  })
-}
-
-export function createDestinationIcon(): L.DivIcon {
-  return L.divIcon({
-    html: `<div class="destination-marker"><div class="destination-marker-inner">D</div></div>`,
-    className: 'destination-icon',
-    iconSize: [32, 40],
-    iconAnchor: [16, 40],
-  })
 }
 
 export type RouteInfo = {
@@ -203,11 +101,7 @@ export function formatBattery(level: number | null | undefined): string {
   return `${level}%`
 }
 
-export function interpolatePosition(
-  from: LatLng,
-  to: LatLng,
-  fraction: number
-): LatLng {
+export function interpolatePosition(from: LatLng, to: LatLng, fraction: number): LatLng {
   return {
     lat: from.lat + (to.lat - from.lat) * fraction,
     lng: from.lng + (to.lng - from.lng) * fraction,
@@ -215,10 +109,10 @@ export function interpolatePosition(
 }
 
 export function bearingBetween(from: LatLng, to: LatLng): number {
-  const dLng = (to.lng - from.lng) * Math.PI / 180
-  const lat1 = from.lat * Math.PI / 180
-  const lat2 = to.lat * Math.PI / 180
+  const dLng = ((to.lng - from.lng) * Math.PI) / 180
+  const lat1 = (from.lat * Math.PI) / 180
+  const lat2 = (to.lat * Math.PI) / 180
   const y = Math.sin(dLng) * Math.cos(lat2)
   const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
-  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
 }
