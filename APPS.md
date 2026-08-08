@@ -1,115 +1,40 @@
 # PingGET — Three products, one Supabase
 
-| Product | Platform | Package / deploy | Build |
-|---------|----------|------------------|-------|
-| **Customer (User)** | Android / iOS Capacitor | `com.pingget.app` (existing) | `npm run build:user` → `dist-user/` |
-| **Partner (DP)** | Android / iOS Capacitor | `com.pingget.dp` (new native project) | `npm run build:dp` → `dist-dp/` |
-| **Admin** | Web only (Vercel/browser) | — | `npm run build:admin` → `dist-admin/` |
+| Product | Platform (now) | URL / package | Build |
+|---------|----------------|---------------|-------|
+| **Customer (User)** | Web (Android later) | `/` | part of `build:web` |
+| **Partner (DP)** | Web (Android later) | `/dp` | part of `build:web` |
+| **Admin** | Web | `/admin` | part of `build:web` |
 
 All three use the **same** Supabase project (`VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` in `.env`).
 
-```
-┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│  PingGET        │  │  PingGET Partner│  │  PingGET Admin  │
-│  (Customer app) │  │  (DP app)       │  │  (Web console)  │
-└────────┬────────┘  └────────┬────────┘  └────────┬────────┘
-         │                    │                    │
-         └────────────────────┼────────────────────┘
-                              ▼
-                    ┌──────────────────┐
-                    │  One Supabase    │
-                    │  Auth + DB + RLS │
-                    └──────────────────┘
-```
-
-## Dev
+## Unified web (recommended deploy)
 
 ```bash
 npm install
-
-# Customer app (port 5173)
-npm run dev:user
-
-# Partner app (port 5174)
-npm run dev:dp
-
-# Admin web (port 5175)
-npm run dev:admin
+npm run dev          # one server — open /, /dp, /admin
+npm run build:web    # → dist/  (Vercel)
 ```
 
-## Build
+Vercel: `buildCommand = npm run build:web`, `outputDirectory = dist`.
+
+## Separate targets (Capacitor later)
 
 ```bash
-npm run build:user    # → dist-user/
-npm run build:dp      # → dist-dp/
-npm run build:admin   # → dist-admin/  (deploy this to Vercel)
-npm run build:all
+npm run dev:user     # :5173
+npm run dev:dp       # :5174
+npm run dev:admin    # :5175
+
+npm run build:user   # → dist-user/
+npm run build:dp     # → dist-dp/
+npm run build:admin  # → dist-admin/
 ```
 
-## Capacitor — Customer app
+## Images
 
-Default `capacitor.config.ts` points at `dist-user` / `com.pingget.user`.
+Replace PNGs under `public/images/` with the same filenames. See `public/images/README.md`.
+When your art zip is ready, unpack there — screens pick up assets automatically.
 
-```bash
-npm run build:user
-npx cap sync android   # uses existing android/ project
-npx cap open android
-```
+## Maps
 
-Update `android/app/src/main/res/values/strings.xml` package to `com.pingget.user` if migrating from the old single-app id.
-
-## Capacitor — Partner app (separate native project)
-
-Use a **second** Android/iOS folder so both apps can be installed on one device:
-
-```bash
-# 1. Build DP web assets
-npm run build:dp
-
-# 2. First time only — add a dedicated native project
-#    Copy capacitor.dp.config.ts over capacitor.config.ts temporarily, OR:
-npx cap add android --config capacitor.dp.config.ts
-# Prefer: create android-dp/ by copying android/ then:
-#   - change applicationId to com.pingget.dp
-#   - set app_name to "PingGET Partner"
-#   - point Capacitor to webDir dist-dp
-
-# 3. Sync
-npx cap sync android --config capacitor.dp.config.ts
-```
-
-Recommended layout after setup:
-
-```
-android/       → Customer (com.pingget.user, webDir dist-user)
-android-dp/    → Partner  (com.pingget.dp,   webDir dist-dp)
-```
-
-## Admin web deploy
-
-Deploy **`dist-admin`** only (not the mobile bundles):
-
-```bash
-npm run build:admin
-# Point Vercel/Netlify output directory to dist-admin
-```
-
-Set the same `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the host env.
-
-## Role locking
-
-- Customer build (`VITE_APP_TARGET=user`) only signs in `role=user`
-- Partner build (`VITE_APP_TARGET=dp`) only signs in `role=dp`
-- Admin build only signs in `role=admin`
-
-Wrong-role accounts are signed out with a clear message.
-
-## Shared code
-
-```
-src/lib/supabase.ts     # one client / one project
-src/lib/customImages.ts  # shared image paths
-src/pages/user|dp|admin  # role UIs
-src/apps/*/…Shell.tsx    # product entry shells
-src/pages/shared/        # chat, order details
-```
+Leaflet removed. Scanning + tracking use **MapLibre** + **OpenFreeMap** (free OSM tiles, no API key).
