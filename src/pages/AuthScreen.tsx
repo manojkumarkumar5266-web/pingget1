@@ -94,6 +94,9 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
   const [pincode, setPincode] = useState('')
   const [pincodeStatus, setPincodeStatus] = useState<PincodeStatus>(null)
   const [pincodeChecking, setPincodeChecking] = useState(false)
+  const [waitlistBusy, setWaitlistBusy] = useState(false)
+  const [waitlistDone, setWaitlistDone] = useState(false)
+  const [waitlistErr, setWaitlistErr] = useState<string | null>(null)
   const [detectedRole, setDetectedRole] = useState<Role | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -123,7 +126,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
 
   // ── Pincode check (shared by user signup) ──
   useEffect(() => {
-    if (pincode.length !== 6) { setPincodeStatus(null); return }
+    if (pincode.length !== 6) { setPincodeStatus(null); setWaitlistDone(false); return }
     if (pinDebounceRef.current) clearTimeout(pinDebounceRef.current)
     pinDebounceRef.current = setTimeout(async () => {
       setPincodeChecking(true)
@@ -281,7 +284,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
     const phoneDigits = phone.replace(/\D/g, '')
     if (phoneDigits.length < 10) { setError('Please enter a valid 10-digit mobile number'); return }
     if (pincode.length !== 6) { setError('Please enter a 6-digit pincode'); return }
-    if (!pincodeStatus?.served) { setError('Sorry, we do not operate in this area yet.'); return }
+    if (!pincodeStatus?.served) { setError('We will serve in your area soon. Thanks for your patience. You can tap Notify me by email below.'); return }
     if (!email.trim() || !email.includes('@')) { setError('Please enter a valid email address'); return }
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     if (password !== confirmPassword) { setError('Passwords do not match'); return }
@@ -351,7 +354,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
     const phoneDigits = phone.replace(/\D/g, '')
     if (phoneDigits.length < 10) { setError('Please enter a valid 10-digit phone number'); return }
     if (pincode.length !== 6) { setError('Please enter a 6-digit pincode'); return }
-    if (!pincodeStatus?.served) { setError('Sorry, we do not operate in this area yet.'); return }
+    if (!pincodeStatus?.served) { setError('We will serve in your area soon. Thanks for your patience. You can tap Notify me by email below.'); return }
     if (!email.trim() || !email.includes('@')) { setError('Please enter a valid email'); return }
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     if (password !== confirmPassword) { setError('Passwords do not match'); return }
@@ -530,12 +533,52 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
   const PincodeBadge = () => {
     if (pincodeChecking) return <p className="mt-1.5 text-xs" style={{ color: pg.text3 }}>Checking service area...</p>
     if (!pincodeStatus) return null
+    if (pincodeStatus.served) {
+      return (
+        <div className="mt-2 flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-green-300"
+          style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)' }}>
+          <CheckCircle size={13} /> We serve {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!
+        </div>
+      )
+    }
     return (
-      <div className={`mt-2 flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold ${pincodeStatus.served ? 'text-green-300' : 'text-red-300'}`}
-        style={{ background: pincodeStatus.served ? 'rgba(34,197,94,0.12)' : 'rgba(255,77,79,0.12)', border: `1px solid ${pincodeStatus.served ? 'rgba(34,197,94,0.25)' : 'rgba(255,77,79,0.25)'}` }}>
-        {pincodeStatus.served
-          ? <><CheckCircle size={13} /> We serve {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!</>
-          : <><XCircle size={13} /> Sorry, we don't serve this area yet.</>}
+      <div className="mt-2 space-y-2 rounded-xl px-3 py-2.5 text-xs"
+        style={{ background: 'rgba(255,159,67,0.12)', border: '1px solid rgba(255,159,67,0.25)', color: '#FDBA74' }}>
+        <div className="flex items-start gap-1.5 font-bold">
+          <XCircle size={13} className="mt-0.5 shrink-0" />
+          <span>We will serve in your area soon. Thanks for your patience.</span>
+        </div>
+        {waitlistDone ? (
+          <p className="font-bold text-green-300">You&apos;re on the notify list — we&apos;ll email you when we launch.</p>
+        ) : (
+          <button
+            type="button"
+            disabled={waitlistBusy || !email.trim()}
+            onClick={async () => {
+              setWaitlistErr(null)
+              setWaitlistBusy(true)
+              const { submitServiceAreaWaitlist } = await import('../lib/serviceArea')
+              const res = await submitServiceAreaWaitlist({
+                email: email || signInEmail,
+                pincode,
+                areaName: pincodeStatus.area || null,
+                cityName: pincodeStatus.city || null,
+                source: 'auth_signup',
+              })
+              setWaitlistBusy(false)
+              if (res.error) { setWaitlistErr(res.error); return }
+              setWaitlistDone(true)
+            }}
+            className="rounded-xl px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-50"
+            style={{ background: pg.lime, color: pg.limeText }}
+          >
+            {waitlistBusy ? 'Saving…' : 'Notify me by email'}
+          </button>
+        )}
+        {waitlistErr && <p className="font-bold text-red-300">{waitlistErr}</p>}
+        {!email.trim() && !waitlistDone && (
+          <p style={{ color: pg.text4 }}>Enter your email above, then tap Notify me.</p>
+        )}
       </div>
     )
   }

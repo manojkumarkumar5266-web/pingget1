@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
-import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity, Menu, X, CalendarClock, Settings } from 'lucide-react'
+import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity, Menu, X, CalendarClock, Settings, Inbox } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { BrandWordmark } from '../../components/Brand'
@@ -53,6 +53,7 @@ export default function AdminLayout() {
     { path: '/admin/dps', label: 'Partners', icon: Users, badge: pendingDps },
     { path: '/admin/users', label: 'Users', icon: UserCheck, badge: 0 },
     { path: '/admin/cities', label: 'Cities', icon: MapPin, badge: 0 },
+    { path: '/admin/waitlist', label: 'Waitlist', icon: Inbox, badge: 0 },
     { path: '/admin/orders', label: 'Orders', icon: ClipboardList, badge: 0 },
     { path: '/admin/advance-requests', label: 'Advance', icon: CalendarClock, badge: 0 },
     { path: '/admin/advance-settings', label: 'Adv Settings', icon: Settings, badge: 0 },

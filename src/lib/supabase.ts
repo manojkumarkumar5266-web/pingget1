@@ -276,6 +276,21 @@ export type Pincode = {
   created_at: string
 }
 
+export type ServiceAreaWaitlist = {
+  id: string
+  user_id: string | null
+  email: string
+  pincode: string | null
+  area_name: string | null
+  city_name: string | null
+  lat: number | null
+  lng: number | null
+  source: string | null
+  notified_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type Notification = {
   id: string
   user_id: string

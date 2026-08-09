@@ -157,7 +157,7 @@ export default function DpSignup() {
     const phoneDigits = phone.replace(/\D/g, '')
     if (phoneDigits.length < 10) { setError('Please enter a valid 10-digit phone number'); return }
     if (pincode.length !== 6) { setError('Please enter a 6-digit pincode'); return }
-    if (!pincodeStatus?.served) { setError('Sorry, we do not operate in this area yet.'); return }
+    if (!pincodeStatus?.served) { setError('We will serve in your area soon. Thanks for your patience.'); return }
     if (!email.trim() || !email.includes('@')) { setError('Please enter a valid email'); return }
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     if (password !== confirmPassword) { setError('Passwords do not match'); return }
@@ -242,7 +242,7 @@ export default function DpSignup() {
     setError(null)
     if (!signInEmail.trim() || !signInPassword) { setError('Please enter your email and password'); return }
     if (signInPincode.length === 6 && !signInPincodeStatus?.served) {
-      setError('Sorry, we do not operate in this area yet. Please check back later.')
+      setError('We will serve in your area soon. Thanks for your patience.')
       return
     }
     setLoading(true)
@@ -345,7 +345,7 @@ export default function DpSignup() {
                 <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${signInPincodeStatus.served ? 'text-green-300' : 'text-red-300'}`} style={{ background: signInPincodeStatus.served ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${signInPincodeStatus.served ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
                   {signInPincodeStatus.served
                     ? <><CheckCircle size={13} /> We serve {signInPincodeStatus.area}{signInPincodeStatus.city ? `, ${signInPincodeStatus.city}` : ''}!</>
-                    : <><XCircle size={13} /> Sorry, we don&apos;t serve this area yet.</>}
+                    : <><XCircle size={13} /> We will serve in your area soon. Thanks for your patience.</>}
                 </div>
               )}
             </div>
@@ -412,7 +412,7 @@ export default function DpSignup() {
                 {pincodeChecking && <p className="mt-1.5 text-xs text-white/40">Checking service area...</p>}
                 {!pincodeChecking && pincodeStatus && (
                   <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${pincodeStatus.served ? 'text-green-300' : 'text-red-300'}`}>
-                    {pincodeStatus.served ? <><CheckCircle size={13} /> We operate in {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!</> : <><XCircle size={13} /> We don&apos;t operate in this area yet.</>}
+                    {pincodeStatus.served ? <><CheckCircle size={13} /> We operate in {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!</> : <><XCircle size={13} /> We will serve in your area soon. Thanks for your patience.</>}
                   </div>
                 )}
               </div>

@@ -145,15 +145,15 @@ export function ServiceStatusBanner({ cityName }: { cityName?: string | null }) 
   }, [cityName])
   if (!status) return null
   if (!status.active) return (
-    <div className="mb-3 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm text-red-300 animate-slide-up" style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.2)' }}>
+    <div className="mb-3 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm text-amber-200 animate-slide-up" style={{ background: 'rgba(255,159,67,0.12)', border: '1px solid rgba(255,159,67,0.25)' }}>
       <AlertTriangle size={15} className="shrink-0" />
-      <span><strong>{status.name}</strong> is not serviceable yet. Coming soon.</span>
+      <span>We will serve in your area soon{status.name ? ` (${status.name})` : ''}. Thanks for your patience.</span>
     </div>
   )
   if (status.paused) return (
     <div className="mb-3 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm text-yellow-300 animate-slide-up" style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.2)' }}>
       <PauseCircle size={15} className="shrink-0" />
-      <span>Service in <strong>{status.name}</strong> is temporarily paused.</span>
+      <span>Service in <strong>{status.name}</strong> is temporarily paused. Thanks for your patience.</span>
     </div>
   )
   return null
