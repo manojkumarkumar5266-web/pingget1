@@ -346,7 +346,7 @@ export default function ScanningPage() {
               <p className="text-xs font-extrabold" style={{ color: pg.lime }}>{fmtWait(estimatedWaitSeconds)}</p>
             </div>
             <p className="mt-2 text-center text-xs" style={{ color: pg.text3 }}>
-              Order tracking opens automatically when a partner accepts
+              Chat opens automatically when a partner accepts — tracking starts after you accept the quotation
             </p>
           </Surface>
         ) : (
