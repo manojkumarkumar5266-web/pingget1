@@ -7,6 +7,7 @@ import { FullScreenLoader } from '../../components/ui'
 import { formatCurrency } from '../../lib/utils'
 import { useGps } from '../../hooks/useGps'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
+import { BrandWordmark } from '../../components/Brand'
 import { Dock, DockItem, CTA } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 
@@ -103,14 +104,7 @@ export default function DpLayout() {
         style={{ background: 'rgba(7,8,11,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
       >
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em]" style={{ color: pg.lime }}>
-              Partner
-            </p>
-            <p className="text-xs font-bold" style={{ color: pg.olive }}>
-              pin<span style={{ color: pg.lime }}>G</span><span style={{ color: pg.olive }}>G</span>et
-            </p>
-          </div>
+          <BrandWordmark size="xs" showTagline={false} align="left" />
           <div className="flex items-center gap-2">
             <button
               type="button"

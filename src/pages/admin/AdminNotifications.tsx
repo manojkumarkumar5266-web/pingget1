@@ -2,20 +2,30 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useSnackbar } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
-import { Send, Users, Bike, UserCheck, Megaphone, Clock, CheckCircle, XCircle, Loader2, Image, X, Search } from 'lucide-react'
+import { Send, Users, Bike, UserCheck, Megaphone, Clock, CheckCircle, XCircle, Loader2, Image, X, Search, CalendarClock, Bell } from 'lucide-react'
 import { AdminShell, AdminHeader } from './adminChrome'
 
-type DeliveryLog = {
+type BroadcastRow = {
   id: string
+  title: string
+  body: string
+  target_type: string
+  scheduled_for: string
   status: string
+  recipient_count: number | null
   error_message: string | null
-  token: string | null
   created_at: string
+  sent_at: string | null
 }
 
 type TargetType = 'single' | 'all_dps' | 'all_users' | 'broadcast'
 
 type UserEntry = { id: string; full_name: string; phone: string | null; role: string }
+
+function toLocalInputValue(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 export default function AdminNotifications() {
   const { show } = useSnackbar()
@@ -24,7 +34,7 @@ export default function AdminNotifications() {
   const [targetType, setTargetType] = useState<TargetType>('broadcast')
   const [targetUserId, setTargetUserId] = useState('')
   const [sending, setSending] = useState(false)
-  const [logs, setLogs] = useState<DeliveryLog[]>([])
+  const [broadcasts, setBroadcasts] = useState<BroadcastRow[]>([])
   const [logsLoading, setLogsLoading] = useState(true)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -32,18 +42,20 @@ export default function AdminNotifications() {
   const [userSearch, setUserSearch] = useState('')
   const [userList, setUserList] = useState<UserEntry[]>([])
   const [showUserList, setShowUserList] = useState(false)
+  const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>('now')
+  const [scheduledFor, setScheduledFor] = useState(() => toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)))
 
-  const fetchLogs = useCallback(async () => {
+  const fetchBroadcasts = useCallback(async () => {
     const { data } = await supabase
-      .from('notification_delivery_log')
+      .from('notification_broadcasts')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(50)
-    setLogs((data as DeliveryLog[]) || [])
+      .limit(40)
+    setBroadcasts((data as BroadcastRow[]) || [])
     setLogsLoading(false)
   }, [])
 
-  useEffect(() => { fetchLogs() }, [fetchLogs])
+  useEffect(() => { fetchBroadcasts() }, [fetchBroadcasts])
 
   useEffect(() => {
     if (userSearch.trim().length < 2) { setUserList([]); return }
@@ -73,6 +85,7 @@ export default function AdminNotifications() {
   const handleSend = async () => {
     if (!title.trim() || !body.trim()) { show('Title and message are required', 'error'); return }
     if (targetType === 'single' && !targetUserId.trim()) { show('Select a user for single-user send', 'error'); return }
+    if (scheduleMode === 'later' && !scheduledFor) { show('Pick a notify time', 'error'); return }
     setSending(true)
     try {
       let imageUrl: string | undefined
@@ -85,60 +98,87 @@ export default function AdminNotifications() {
         }
       }
 
-      // Resolve target user IDs
-      let targetUsers: string[] = []
-      if (targetType === 'single' && targetUserId.trim()) {
-        targetUsers = [targetUserId.trim()]
-      } else {
-        const roleFilter = targetType === 'all_dps' ? 'dp' : targetType === 'all_users' ? 'user' : null
-        const q = supabase.from('profiles').select('id')
-        if (roleFilter) q.eq('role', roleFilter)
-        const { data: profiles } = await q
-        targetUsers = (profiles || []).map((p: any) => p.id)
-      }
-
-      if (targetUsers.length === 0) {
-        show('No recipients found for the selected audience', 'error')
-        setSending(false)
-        return
-      }
-
-      // Insert notification records directly into notifications table
-      const inserts = targetUsers.map(uid => ({
-        user_id: uid,
+      const payload = {
         title: title.trim(),
         body: body.trim(),
-        type: 'admin_announcement',
-        image_url: imageUrl || null,
-      }))
-
-      const { error: insertError } = await supabase.from('notifications').insert(inserts)
-
-      if (insertError) {
-        show('Failed to send: ' + insertError.message, 'error')
-        setSending(false)
-        return
+        targetType,
+        targetUserId: targetType === 'single' ? targetUserId.trim() : undefined,
+        notificationType: 'admin_announcement',
+        imageUrl,
+        scheduledFor: scheduleMode === 'later' ? new Date(scheduledFor).toISOString() : undefined,
       }
 
-      // Also try the edge function for push notifications (best effort, don't block on failure)
-      supabase.functions.invoke('notify-broadcast', {
-        body: {
-          title: title.trim(),
-          body: body.trim(),
-          targetType,
-          targetUserId: targetType === 'single' ? targetUserId.trim() : undefined,
-          notificationType: 'admin_announcement',
-          imageUrl,
-        },
-      }).then(() => {}).catch(() => {})
+      const { data, error } = await supabase.functions.invoke('notify-broadcast', { body: payload })
 
-      show(`Notification sent to ${targetUsers.length} recipient(s)`, 'success')
+      if (error) {
+        // Fallback: direct in-app insert if edge function not deployed yet
+        console.warn('notify-broadcast invoke failed, falling back to direct insert', error)
+        let targetUsers: string[] = []
+        if (targetType === 'single' && targetUserId.trim()) {
+          targetUsers = [targetUserId.trim()]
+        } else {
+          const roleFilter = targetType === 'all_dps' ? 'dp' : targetType === 'all_users' ? 'user' : null
+          let q = supabase.from('profiles').select('id')
+          if (roleFilter) q = q.eq('role', roleFilter)
+          else q = q.in('role', ['user', 'dp'])
+          const { data: profiles } = await q
+          targetUsers = (profiles || []).map((p: any) => p.id)
+        }
+        if (targetUsers.length === 0) {
+          show('No recipients found', 'error')
+          setSending(false)
+          return
+        }
+        if (scheduleMode === 'later') {
+          const { error: qErr } = await supabase.from('notification_broadcasts').insert({
+            title: title.trim(),
+            body: body.trim(),
+            image_url: imageUrl || null,
+            target_type: targetType,
+            target_user_id: targetType === 'single' ? targetUserId.trim() : null,
+            scheduled_for: new Date(scheduledFor).toISOString(),
+            status: 'pending',
+          })
+          if (qErr) {
+            show('Schedule failed: ' + qErr.message + ' — apply mutual_cancel_and_scheduled_notify SQL first', 'error')
+            setSending(false)
+            return
+          }
+          show(`Scheduled for ${new Date(scheduledFor).toLocaleString()}`, 'success')
+        } else {
+          const inserts = targetUsers.map(uid => ({
+            user_id: uid,
+            title: title.trim(),
+            body: body.trim(),
+            type: 'admin_announcement',
+            notification_type: 'admin_announcement',
+            image_url: imageUrl || null,
+          }))
+          const { error: insertError } = await supabase.from('notifications').insert(inserts)
+          if (insertError) {
+            show('Failed: ' + insertError.message, 'error')
+            setSending(false)
+            return
+          }
+          show(`Sent to Alerts for ${targetUsers.length} recipient(s)`, 'success')
+        }
+      } else if (data && data.success === false) {
+        show(data.error || 'Notify failed', 'error')
+        setSending(false)
+        return
+      } else if (data?.scheduled) {
+        show(`Scheduled for ${new Date(data.scheduledFor).toLocaleString()} — will hit Alerts + email`, 'success')
+      } else {
+        show(`Sent to ${data?.recipientCount ?? 'audience'} — Alerts + Resend email`, 'success')
+      }
+
       setTitle('')
       setBody('')
       setTargetUserId('')
       setUserSearch('')
       removeImage()
-      fetchLogs()
+      setScheduleMode('now')
+      fetchBroadcasts()
     } catch (err: any) {
       show(err?.message || 'Failed to send notification', 'error')
     } finally {
@@ -150,20 +190,32 @@ export default function AdminNotifications() {
     { value: 'broadcast',  label: 'Everyone',      icon: Megaphone, desc: 'All users & partners' },
     { value: 'all_users',  label: 'All Customers', icon: UserCheck, desc: 'Users only' },
     { value: 'all_dps',    label: 'All Partners',  icon: Bike,      desc: 'Delivery partners only' },
-    { value: 'single',     label: 'Single Person',   icon: Users,     desc: 'One specific user' },
+    { value: 'single',     label: 'Single Person', icon: Users,     desc: 'One specific user' },
   ]
 
   return (
     <AdminShell>
       <AdminHeader title="Notification Center" />
 
-      {/* Compose */}
+      <div className="card mb-4 p-4">
+        <div className="flex items-start gap-3">
+          <Bell size={18} className="mt-0.5 text-primary-400" />
+          <div className="text-sm text-white/70 leading-relaxed">
+            <p className="font-semibold text-white mb-1">Where does Notify go?</p>
+            <p>
+              Messages land in the <span className="text-white">Alerts</span> tab for customers and delivery partners
+              (same inbox as order updates). Email is also sent via <span className="text-white">Resend</span> when the
+              profile has an email. Native push fires when the device is registered for FCM.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="card mb-6 p-5">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
           <Send size={18} className="text-primary-400" /> Compose Notification
         </h2>
 
-        {/* Target */}
         <div className="mb-4">
           <label className="mb-2 block text-sm font-medium text-white/60">Target Audience</label>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -221,14 +273,12 @@ export default function AdminNotifications() {
           </div>
         )}
 
-        {/* Title */}
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium text-white/60">Title *</label>
           <input value={title} onChange={e => setTitle(e.target.value)}
             placeholder="e.g. Weekend Offer!" className="input" maxLength={100} />
         </div>
 
-        {/* Message */}
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium text-white/60">Message *</label>
           <textarea value={body} onChange={e => setBody(e.target.value)}
@@ -236,7 +286,34 @@ export default function AdminNotifications() {
             className="input min-h-[100px]" maxLength={500} />
         </div>
 
-        {/* Image */}
+        <div className="mb-4">
+          <label className="mb-2 block text-sm font-medium text-white/60">When to notify</label>
+          <div className="mb-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setScheduleMode('now')}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'now' ? 'border border-primary-400 bg-primary-500/10 text-white' : 'border border-white/10 text-white/50'}`}
+            >
+              Send now
+            </button>
+            <button
+              type="button"
+              onClick={() => setScheduleMode('later')}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'later' ? 'border border-primary-400 bg-primary-500/10 text-white' : 'border border-white/10 text-white/50'}`}
+            >
+              <CalendarClock size={14} /> Schedule time
+            </button>
+          </div>
+          {scheduleMode === 'later' && (
+            <input
+              type="datetime-local"
+              value={scheduledFor}
+              onChange={e => setScheduledFor(e.target.value)}
+              className="input"
+            />
+          )}
+        </div>
+
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium text-white/60">Attach Image (optional)</label>
           {imagePreview ? (
@@ -258,33 +335,40 @@ export default function AdminNotifications() {
 
         <button onClick={handleSend} disabled={sending} className="btn-primary flex items-center gap-2">
           {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-          {sending ? 'Sending...' : 'Send Notification'}
+          {sending ? 'Sending...' : scheduleMode === 'later' ? 'Schedule Notification' : 'Send Notification'}
         </button>
       </div>
 
-      {/* Delivery Logs */}
       <div className="card p-5">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-          <Clock size={18} className="text-primary-400" /> Delivery Logs
+          <Clock size={18} className="text-primary-400" /> Broadcast history
         </h2>
         {logsLoading ? (
           <p className="text-sm text-white/40">Loading...</p>
-        ) : logs.length === 0 ? (
-          <p className="text-sm text-white/40">No delivery logs yet.</p>
+        ) : broadcasts.length === 0 ? (
+          <p className="text-sm text-white/40">No broadcasts yet. Send or schedule one above.</p>
         ) : (
           <div className="space-y-2">
-            {logs.map(log => (
-              <div key={log.id} className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
-                {log.status === 'sent'
-                  ? <CheckCircle size={16} className="shrink-0 text-success-400" />
-                  : <XCircle size={16} className="shrink-0 text-error-400" />}
+            {broadcasts.map(row => (
+              <div key={row.id} className="flex items-start gap-3 rounded-xl bg-white/5 p-3">
+                {row.status === 'sent'
+                  ? <CheckCircle size={16} className="mt-0.5 shrink-0 text-success-400" />
+                  : row.status === 'pending' || row.status === 'sending'
+                    ? <Clock size={16} className="mt-0.5 shrink-0 text-amber-300" />
+                    : <XCircle size={16} className="mt-0.5 shrink-0 text-error-400" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white">
-                    {log.status === 'sent' ? 'Delivered' : log.status === 'invalid_token' ? 'Invalid token' : 'Failed'}
+                  <p className="text-sm font-medium text-white truncate">{row.title}</p>
+                  <p className="text-xs text-white/50">
+                    {row.target_type} · {row.status}
+                    {row.recipient_count != null ? ` · ${row.recipient_count} recipients` : ''}
                   </p>
-                  {log.error_message && <p className="truncate text-xs text-white/40">{log.error_message}</p>}
+                  {row.error_message && <p className="truncate text-xs text-error-300">{row.error_message}</p>}
+                  <p className="text-[11px] text-white/35 mt-1">
+                    {row.status === 'pending'
+                      ? `Scheduled ${formatTime(row.scheduled_for)}`
+                      : formatTime(row.sent_at || row.created_at)}
+                  </p>
                 </div>
-                <span className="shrink-0 text-xs text-white/40">{formatTime(log.created_at)}</span>
               </div>
             ))}
           </div>

@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity, Menu, X, CalendarClock, Settings } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
-import Brand from '../../components/Brand'
+import { BrandWordmark } from '../../components/Brand'
 import { pg } from '../../design/tokens'
 
 /** Completely rebuilt Admin console chrome */
@@ -67,7 +67,7 @@ export default function AdminLayout() {
     <div className="flex h-full flex-col" style={{ background: pg.surface }}>
       <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: `1px solid ${pg.line}` }}>
         <div>
-          <Brand size="sm" wordmark className="mb-1" />
+          <BrandWordmark size="sm" showTagline={false} align="left" className="mb-1" />
           <p className="text-sm font-extrabold">Admin Console</p>
         </div>
         <span className="rounded-full px-2 py-0.5 text-[10px] font-extrabold" style={{ background: 'rgba(255,77,79,0.16)', color: '#FCA5A5' }}>OPS</span>

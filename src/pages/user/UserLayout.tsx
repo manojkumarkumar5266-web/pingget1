@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase'
 import { useGps } from '../../hooks/useGps'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { Images } from '../../lib/customImages'
+import { BrandWordmark } from '../../components/Brand'
 import { Dock, DockItem } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 
@@ -82,6 +83,15 @@ export default function UserLayout() {
     <div className="relative flex h-[100dvh] flex-col" style={{ background: pg.bg }}>
       {/* Phone-width column — matches Home look on desktop browsers */}
       <div className="relative mx-auto flex h-full w-full max-w-lg flex-col">
+      {!hideNav && (
+        <header
+          className="z-10 flex items-center px-4 pb-2 pt-[max(10px,env(safe-area-inset-top))]"
+          style={{ background: 'rgba(7,8,11,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+        >
+          <BrandWordmark size="xs" showTagline={false} align="left" />
+        </header>
+      )}
+
       {acceptedToast && (
         <div className="fixed left-4 right-4 top-4 z-50 mx-auto max-w-lg">
           <div className="flex items-start gap-3 rounded-[22px] p-4" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
