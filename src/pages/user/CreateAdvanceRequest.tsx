@@ -16,6 +16,7 @@ import { getCategoryImage } from '../../lib/customImages'
 import { getSelectedDeliveryAddress } from '../../components/AddressPicker'
 import { TopChrome, IconButton, CTA, Surface, SectionLabel } from '../../design/primitives'
 import { pg } from '../../design/tokens'
+import { uploadMediaFile } from '../../lib/uploadMedia'
 
 type SavedAddress = {
   id: string
@@ -338,12 +339,6 @@ export default function CreateAdvanceRequest() {
     if (voiceUrlRef.current) { URL.revokeObjectURL(voiceUrlRef.current); voiceUrlRef.current = null }
   }
 
-  const uploadToStorage = async (file: File | Blob, path: string): Promise<string | null> => {
-    const { error } = await supabase.storage.from('media').upload(path, file, { upsert: true })
-    if (error) return null
-    return supabase.storage.from('media').getPublicUrl(path).data.publicUrl
-  }
-
   // Calendar logic — today is now selectable
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -470,11 +465,24 @@ export default function CreateAdvanceRequest() {
       const photoUrls: string[] = []
       const filesToUpload = primary?.photoFiles?.length ? primary.photoFiles : photoFiles
       for (let i = 0; i < filesToUpload.length; i++) {
-        const url = await uploadToStorage(filesToUpload[i], `requests/${profile!.id}/${ts}-photo-${i}`)
-        if (url) photoUrls.push(url)
+        try {
+          photoUrls.push(await uploadMediaFile(filesToUpload[i], `requests/${profile!.id}/${ts}-photo-${i}`))
+        } catch (upErr: any) {
+          throw new Error(upErr?.message || 'Photo upload failed. Please try again.')
+        }
       }
       const voiceSrc = primary?.voiceBlob || voiceBlob
-      const voiceUrl = voiceSrc ? await uploadToStorage(voiceSrc, `requests/${profile!.id}/${ts}-voice.webm`) : null
+      let voiceUrl: string | null = null
+      if (voiceSrc) {
+        try {
+          voiceUrl = await uploadMediaFile(voiceSrc, `requests/${profile!.id}/${ts}-voice`, {
+            compress: false,
+            contentType: voiceSrc.type || 'audio/webm',
+          })
+        } catch (upErr: any) {
+          throw new Error(upErr?.message || 'Voice upload failed. Please try again.')
+        }
+      }
 
       const slotStart = slot.split('-')[0]
       const [sh, sm] = slotStart.split(':').map(Number)

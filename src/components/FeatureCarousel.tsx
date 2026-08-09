@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { X } from 'lucide-react'
 import { Images } from '../lib/customImages'
 import { pg } from '../design/tokens'
 
 const FEATURES = [
-  { title: 'Instant Delivery', subtitle: 'Local partners in minutes', image: Images.feature.card1 },
+  { title: 'Instant Delivery', subtitle: 'Book now — DP acts after accept', image: Images.feature.card1 },
   { title: 'Advance Booking', subtitle: 'Plan up to 7 days ahead', image: Images.feature.card2 },
   { title: 'Order Your Way', subtitle: 'Describe any custom task', image: Images.feature.card3 },
   { title: 'Ask Anything', subtitle: 'Groceries to medicines', image: Images.feature.card4 },
@@ -16,25 +17,33 @@ const FEATURES = [
 
 /**
  * Discover section — auto L→R carousel.
- * Feature art fills the card edge-to-edge (no inner padding / empty gutters).
+ * Tap a card to open full-screen for reading; close resumes auto-move.
  */
 export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: number }) {
   const [index, setIndex] = useState(0)
+  const [expanded, setExpanded] = useState<(typeof FEATURES)[number] | null>(null)
   const pauseUntil = useRef(0)
   const n = FEATURES.length
 
   useEffect(() => {
     if (n <= 1) return
     const id = window.setInterval(() => {
+      if (expanded) return
       if (Date.now() < pauseUntil.current) return
       setIndex((i) => (i + 1) % n)
     }, intervalMs)
     return () => window.clearInterval(id)
-  }, [n, intervalMs])
+  }, [n, intervalMs, expanded])
 
   const go = (next: number) => {
     pauseUntil.current = Date.now() + 5000
     setIndex(((next % n) + n) % n)
+  }
+
+  const closeExpanded = () => {
+    setExpanded(null)
+    // Resume auto-carousel shortly after close
+    pauseUntil.current = Date.now() + 1200
   }
 
   return (
@@ -50,7 +59,7 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
           We serve you
         </h2>
         <p className="mt-0.5 text-xs" style={{ color: pg.text3 }}>
-          Everything you need, delivered nearby
+          Tap a card to read — close to continue
         </p>
       </div>
 
@@ -64,7 +73,15 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
         >
           {FEATURES.map((f) => (
             <article key={f.title} className="relative min-w-full shrink-0 select-none">
-              <div className="relative aspect-[5/4] w-full overflow-hidden sm:aspect-[4/3]">
+              <button
+                type="button"
+                className="relative aspect-[5/4] w-full overflow-hidden text-left sm:aspect-[4/3]"
+                onClick={() => {
+                  pauseUntil.current = Number.MAX_SAFE_INTEGER
+                  setExpanded(f)
+                }}
+                aria-label={`Open ${f.title}`}
+              >
                 <img
                   src={f.image}
                   alt={f.title}
@@ -85,7 +102,7 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
                     {f.subtitle}
                   </p>
                 </div>
-              </div>
+              </button>
             </article>
           ))}
         </div>
@@ -106,6 +123,50 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
           />
         ))}
       </div>
+
+      {expanded && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.88)' }}
+          onClick={closeExpanded}
+          role="dialog"
+          aria-modal="true"
+          aria-label={expanded.title}
+        >
+          <div
+            className="relative w-full max-w-lg overflow-hidden rounded-[1.5rem]"
+            style={{ background: '#0A0C10', border: `1px solid ${pg.lineStrong}` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={closeExpanded}
+              className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full"
+              style={{ background: 'rgba(0,0,0,0.55)', color: '#fff' }}
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+            <div className="relative aspect-[4/5] w-full sm:aspect-[4/3]">
+              <img
+                src={expanded.image}
+                alt={expanded.title}
+                className="absolute inset-0 h-full w-full object-cover"
+                draggable={false}
+              />
+              <div
+                className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-16"
+                style={{ background: 'linear-gradient(180deg, transparent, rgba(7,8,11,0.96) 55%)' }}
+              >
+                <p className="text-[22px] font-extrabold tracking-tight text-white">{expanded.title}</p>
+                <p className="mt-1.5 text-sm leading-relaxed" style={{ color: pg.text2 }}>
+                  {expanded.subtitle}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

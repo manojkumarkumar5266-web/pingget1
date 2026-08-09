@@ -26,9 +26,8 @@ export default function GreetingHeader({
       >
         Good {period}
       </p>
-      <h1 className="truncate text-[34px] font-extrabold leading-[1.05] tracking-[-0.04em]">
-        <span style={{ color: pg.text2 }}>Hai</span>{' '}
-        <span style={{ color: '#fff' }}>{name}</span>
+      <h1 className="truncate text-[34px] font-extrabold leading-[1.05] tracking-[-0.04em]" style={{ color: '#fff' }}>
+        {name}
       </h1>
       <div
         className="mt-3 h-[2px] w-10 rounded-full"

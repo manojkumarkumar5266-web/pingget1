@@ -7,6 +7,7 @@ import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
 import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, CheckCircle, ClipboardList, CreditCard, Upload, ShieldCheck, AlertCircle, CalendarClock, Clock, RotateCcw, Shield, MapPin, Navigation, Tag, Volume2, ChevronDown, ChevronUp } from 'lucide-react'
 import { pg } from '../../design/tokens'
 import { IconButton } from '../../design/primitives'
+import { uploadMediaFile } from '../../lib/uploadMedia'
 
 export default function ChatScreen() {
   const { roomId } = useParams()
@@ -53,15 +54,19 @@ export default function ChatScreen() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const isUser = profile?.role === 'user'
 
-  const uploadToStorage = async (file: File | Blob, path: string): Promise<string | null> => {
-    const { error } = await supabase.storage.from('media').upload(path, file, { upsert: true })
-    if (error) return null
-    return supabase.storage.from('media').getPublicUrl(path).data.publicUrl
+  const uploadToStorage = async (file: File | Blob, path: string, opts?: { compress?: boolean; contentType?: string }): Promise<string | null> => {
+    try {
+      return await uploadMediaFile(file, path.replace(/\.[^/.]+$/, ''), opts)
+    } catch (e: any) {
+      console.error('[Chat] upload failed:', e)
+      setError(e?.message || 'Upload failed')
+      return null
+    }
   }
 
   const sendImage = async (file: File) => {
-    const path = `chat/${roomId}/${Date.now()}-${file.name}`
-    const url = await uploadToStorage(file, path)
+    setError(null)
+    const url = await uploadToStorage(file, `chat/${roomId}/${Date.now()}-image`)
     if (url) await sendMessage('Image', 'image', { attachment_url: url })
   }
 
@@ -77,9 +82,10 @@ export default function ChatScreen() {
       mr.onstop = async () => {
         const blob = new Blob(audioChunksRef.current, { type: mimeType })
         stream.getTracks().forEach(t => t.stop())
-        const path = `chat/${roomId}/${Date.now()}-voice.webm`
-        const url = await uploadToStorage(blob, path)
+        const path = `chat/${roomId}/${Date.now()}-voice`
+        const url = await uploadToStorage(blob, path, { compress: false, contentType: mimeType })
         if (url) await sendMessage('Voice note', 'voice', { attachment_url: url })
+        else setError('Could not upload voice note.')
       }
       mr.start(); setRecording(true); setVoiceDuration(0)
       durationTimerRef.current = setInterval(() => setVoiceDuration(d => d + 1), 1000)
@@ -770,12 +776,13 @@ export default function ChatScreen() {
       {showQuotation && room && <QuotationModal onClose={() => setShowQuotation(false)} onSend={sendQuotation} initialItems={requestDescription} roomId={room.id} senderId={profile!.id} />}
       {showPickupPhoto && (
         <PickupPhotoModal onClose={() => setShowPickupPhoto(false)} onSubmit={async (file) => {
-          const path = `chat/${profile!.id}/pickup-${Date.now()}`
-          const { error } = await supabase.storage.from('media').upload(path, file, { upsert: true })
-          if (error) { alert('Upload failed: ' + error.message); return }
-          const url = supabase.storage.from('media').getPublicUrl(path).data.publicUrl
-          await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'image', attachment_url: url, content: 'Pickup proof photo' })
-          setShowPickupPhoto(false)
+          try {
+            const url = await uploadMediaFile(file, `chat/${profile!.id}/pickup-${Date.now()}`)
+            await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'image', attachment_url: url, content: 'Pickup proof photo' })
+            setShowPickupPhoto(false)
+          } catch (e: any) {
+            alert('Upload failed: ' + (e?.message || 'unknown error'))
+          }
         }} />
       )}
       {showRating && <RatingModal onClose={() => setShowRating(false)} onSubmit={submitRating} targetName={otherUser?.full_name || 'Delivery Partner'} />}
@@ -956,18 +963,21 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
   const handleSend = async () => {
     setUploading(true)
     let photoUrl: string | null = null
-    if (photoFiles.length > 0) {
-      const ts = Date.now()
-      const urls: string[] = []
-      for (let i = 0; i < photoFiles.length; i++) {
-        const path = `quotations/${senderId}/${ts}-proof-${i}`
-        const { error } = await supabase.storage.from('media').upload(path, photoFiles[i], { upsert: true })
-        if (!error) urls.push(supabase.storage.from('media').getPublicUrl(path).data.publicUrl)
+    try {
+      if (photoFiles.length > 0) {
+        const ts = Date.now()
+        const urls: string[] = []
+        for (let i = 0; i < photoFiles.length; i++) {
+          urls.push(await uploadMediaFile(photoFiles[i], `quotations/${senderId}/${ts}-proof-${i}`))
+        }
+        photoUrl = urls.length > 0 ? urls.join(',') : null
       }
-      photoUrl = urls.length > 0 ? urls.join(',') : null
+      onSend(parseFloat(itemCost) || 0, parseFloat(deliveryCharge) || 0, items, photoUrl)
+    } catch (e: any) {
+      alert(e?.message || 'Photo upload failed')
+    } finally {
+      setUploading(false)
     }
-    setUploading(false)
-    onSend(parseFloat(itemCost) || 0, parseFloat(deliveryCharge) || 0, items, photoUrl)
   }
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 animate-fade-in" onClick={onClose}>
@@ -1186,12 +1196,7 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, onSe
     setUploading(true)
     try {
       const ts = Date.now()
-      const ext = file.name.split('.').pop() || 'jpg'
-      const path = `payment-proofs/${customerId}/${ts}-${ext}`
-      const { error: upErr } = await supabase.storage.from('media').upload(path, file)
-      if (upErr) throw upErr
-      const { data: urlData } = supabase.storage.from('media').getPublicUrl(path)
-      const screenshotUrl = urlData.publicUrl
+      const screenshotUrl = await uploadMediaFile(file, `payment-proofs/${customerId}/${ts}`)
 
       await supabase.from('advance_payments').update({
         status: 'proof_uploaded',
