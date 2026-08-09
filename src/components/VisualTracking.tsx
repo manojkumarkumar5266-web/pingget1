@@ -45,21 +45,21 @@ export default function VisualTracking({
       <div className="mx-auto w-full max-w-lg">
         <div
           className="overflow-hidden"
-          style={{ borderRadius: compact ? 22 : 28, border: `1px solid rgba(245,197,66,0.22)`, background: pg.surface }}
+          style={{ borderRadius: compact ? 22 : 28, border: `1px solid rgba(245,197,66,0.22)`, background: '#000' }}
         >
           <div
             className="flex w-full items-center justify-center"
             style={{
               minHeight: compact ? 120 : 200,
               maxHeight: compact ? 160 : 280,
-              background: 'rgba(0,0,0,0.25)',
+              background: '#000',
             }}
           >
             <img
               src={image}
               alt={label}
-              className="h-auto w-full object-contain"
-              style={{ maxHeight: compact ? 160 : 280 }}
+              className="h-auto max-w-full object-contain"
+              style={{ maxHeight: compact ? 160 : 280, background: '#000' }}
               draggable={false}
             />
           </div>

@@ -70,9 +70,29 @@ export default function DpNavigationPage() {
     const channel = supabase
       .channel(`dp-nav-${requestId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `id=eq.${requestId}` },
-        (payload: any) => setRequest(payload.new as DeliveryRequest))
+        (payload: any) => {
+          const next = payload.new as DeliveryRequest
+          setRequest(next)
+          if ((next as any).payment_accepted_at) setEndPhase(prev => (prev === 'thanks_rating' ? prev : 'payment_accepted'))
+        })
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+
+    // Poll payment fields so DP sees Accept Payment as soon as user marks paid
+    const poll = window.setInterval(async () => {
+      const { data: req } = await supabase
+        .from('requests')
+        .select('payment_completed_at,payment_accepted_at,status')
+        .eq('id', requestId)
+        .maybeSingle()
+      if (!req) return
+      setRequest(prev => (prev ? ({ ...prev, ...req } as DeliveryRequest) : prev))
+      if ((req as any).payment_accepted_at) setEndPhase(prev => (prev === 'thanks_rating' ? prev : 'payment_accepted'))
+    }, 3000)
+
+    return () => {
+      supabase.removeChannel(channel)
+      window.clearInterval(poll)
+    }
   }, [requestId, profile?.id])
 
   const dpPos: LatLng | null = useMemo(() => {
@@ -179,12 +199,6 @@ export default function DpNavigationPage() {
     }
   }, [endPhase, requestId, profile?.id, (request as any)?.payment_accepted_at])
 
-  useEffect(() => {
-    if (endPhase !== 'thanks_rating') return
-    const t = window.setTimeout(() => navigate('/dp', { replace: true }), 2500)
-    return () => window.clearTimeout(t)
-  }, [endPhase, navigate])
-
   const mapMarkers: MapMarker[] = useMemo(() => {
     const list: MapMarker[] = []
     if (userPos) list.push({ id: 'user', position: userPos, kind: 'user', label: 'Customer' })
@@ -267,9 +281,12 @@ export default function DpNavigationPage() {
 
   if (endPhase === 'thanks_rating') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6" style={{ background: pg.bg }}>
-        <img src={Images.thankYouRating} alt="Thank you for rating" className="mb-4 w-full max-w-sm object-contain" draggable={false} />
-        <p className="text-sm text-white/50">Returning home...</p>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6" style={{ background: pg.bg }}>
+        <img src={Images.thankYouRating} alt="Thank you for rating" className="w-full max-w-sm object-contain" draggable={false} style={{ background: '#000' }} />
+        <p className="text-center text-base font-extrabold text-white">Customer rated your delivery</p>
+        <CTA type="button" onClick={() => navigate('/dp', { replace: true })} className="w-full max-w-sm">
+          Go Home
+        </CTA>
       </div>
     )
   }
@@ -277,7 +294,7 @@ export default function DpNavigationPage() {
   if (endPhase === 'payment_accepted' || (request as any).payment_accepted_at) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 px-6" style={{ background: pg.bg }}>
-        <img src={Images.paymentReceived} alt="Payment accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} />
+        <img src={Images.paymentReceived} alt="Payment accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: '#000' }} />
         <p className="text-center text-base font-extrabold text-white">Payment accepted</p>
         <p className="text-center text-sm text-white/50">Waiting for customer rating…</p>
       </div>
@@ -349,43 +366,18 @@ export default function DpNavigationPage() {
 
       <div className="flex-1 overflow-y-auto px-4 py-2 pb-24" style={{ background: pg.bg }}>
         <div className="mx-auto max-w-md space-y-4">
-          {/* DP own photo + Customer photo */}
-          <div className="grid grid-cols-2 gap-3">
-            <Surface className="p-3">
-              <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>You</p>
-              <div className="flex items-center gap-2">
-                <div className="h-12 w-12 overflow-hidden rounded-xl bg-white/5 shrink-0">
-                  {profile?.photo_url ? (
-                    <img src={profile.photo_url} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-white/30"><Bike size={18} /></div>
-                  )}
-                </div>
-                <p className="truncate text-sm font-extrabold">{profile?.full_name?.split(' ')[0] || 'Partner'}</p>
-              </div>
-            </Surface>
-            <Surface className="p-3">
-              <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>Customer</p>
-              <div className="flex items-center gap-2">
-                <div className="h-12 w-12 overflow-hidden rounded-xl bg-white/5 shrink-0">
-                  {userProfile?.photo_url ? (
-                    <img src={userProfile.photo_url} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-white/30"><UserIcon size={18} /></div>
-                  )}
-                </div>
-                <p className="truncate text-sm font-extrabold">{userProfile?.full_name?.split(' ')[0] || 'Customer'}</p>
-              </div>
-            </Surface>
-          </div>
-
           {userProfile && (
             <Surface className="p-4">
               <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Customer</div>
               <div className="flex items-center gap-3">
                 <div className="h-14 w-14 overflow-hidden rounded-2xl bg-white/5 shrink-0">
                   {userProfile.photo_url ? (
-                    <img src={userProfile.photo_url} alt={userProfile.full_name} className="h-full w-full object-cover" />
+                    <img
+                      src={userProfile.photo_url}
+                      alt={userProfile.full_name}
+                      className="h-full w-full object-cover"
+                      onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-white/30"><UserIcon size={20} /></div>
                   )}
@@ -472,7 +464,7 @@ export default function DpNavigationPage() {
             </Surface>
           )}
 
-          {isDelivered && !isCompleted && (
+          {isDelivered && !isCompleted && !(request as any).payment_completed_at && (
             <Surface className="p-4 text-center">
               <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: pg.lime }} />
               <p className="font-bold text-white">Waiting for customer to accept delivery</p>
@@ -480,23 +472,26 @@ export default function DpNavigationPage() {
             </Surface>
           )}
 
-          {isCompleted && !(request as any).payment_completed_at && !(request as any).payment_accepted_at && (
+          {(isCompleted || isDelivered) && !(request as any).payment_completed_at && !(request as any).payment_accepted_at && isCompleted && (
             <Surface className="p-4 text-center">
               <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: pg.lime }} />
               <p className="font-bold text-white">Waiting for customer payment</p>
-              <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Stay here until payment and rating are finished</p>
+              <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Stay here until the customer marks payment completed</p>
             </Surface>
           )}
 
-          {(request as any).payment_completed_at && !(request as any).payment_accepted_at && (
+          {!!(request as any).payment_completed_at && !(request as any).payment_accepted_at && (
             <Surface accent className="p-4">
-              <p className="mb-3 text-sm font-extrabold" style={{ color: pg.lime }}>Customer marked payment completed</p>
+              <p className="mb-1 text-sm font-extrabold" style={{ color: pg.lime }}>Payment completed by customer</p>
+              <p className="mb-3 text-xs" style={{ color: pg.text3 }}>Accept payment to continue — customer will rate next</p>
               <CTA
                 type="button"
                 onClick={async () => {
+                  const now = new Date().toISOString()
                   await supabase.from('requests').update({
-                    payment_accepted_at: new Date().toISOString(),
+                    payment_accepted_at: now,
                   } as any).eq('id', requestId)
+                  setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now } as any) : prev)
                   await supabase.from('notifications').insert({
                     user_id: request.user_id,
                     title: 'Payment Accepted',
