@@ -130,7 +130,7 @@ export default function SearchingMapPage() {
             <div className="mt-2.5 flex items-center gap-1.5">
               {Array.from({ length: MAX_SCANS }).map((_, i) => (
                 <div key={i} className="h-1.5 rounded-full transition-all duration-500"
-                  style={{ width: i < scanCount ? 24 : 8, background: i < scanCount ? '#D4F000' : 'rgba(255,255,255,0.15)' }} />
+                  style={{ width: i < scanCount ? 24 : 8, background: i < scanCount ? '#F5C542' : 'rgba(255,255,255,0.15)' }} />
               ))}
             </div>
           </div>
@@ -142,7 +142,7 @@ export default function SearchingMapPage() {
           {phase === 'scanning' && (
             <div className="map-glass-panel p-4 animate-slide-up">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg,#D4F000,#606000)' }}>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg,#F5C542,#606000)' }}>
                   <Search size={20} className="text-white animate-pulse" />
                 </div>
                 <div>
@@ -175,14 +175,14 @@ export default function SearchingMapPage() {
                 </div>
                 {dps.slice(0, 2).map((dp, i) => (
                   <div key={dp.dp_user_id} className="mt-2 flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
-                    <Bike size={14} style={{ color: '#D4F000' }} />
+                    <Bike size={14} style={{ color: '#F5C542' }} />
                     <span className="text-xs text-white/80">Partner {i + 1}{dp.distance_meters ? ` · ${formatDistance(dp.distance_meters)} away` : ''}</span>
                   </div>
                 ))}
               </div>
               <button type="button" onClick={() => navigate('/app/orders')}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-white active:scale-95"
-                style={{ background: 'linear-gradient(135deg,#D4F000,#606000)' }}>
+                style={{ background: 'linear-gradient(135deg,#F5C542,#606000)' }}>
                 Track My Request <ChevronRight size={16} />
               </button>
             </div>
@@ -191,7 +191,7 @@ export default function SearchingMapPage() {
           {phase === 'none' && (
             <div className="space-y-2 animate-slide-up">
               <div className="map-glass-panel p-4 text-center">
-                <Loader2 size={24} className="mx-auto mb-2 animate-spin" style={{ color: '#D4F000' }} />
+                <Loader2 size={24} className="mx-auto mb-2 animate-spin" style={{ color: '#F5C542' }} />
                 <p className="font-semibold text-white">Still searching for a delivery partner...</p>
                 <p className="mt-1 text-xs text-white/60">Retrying automatically in a few seconds (attempt {retryCount + 1})</p>
               </div>

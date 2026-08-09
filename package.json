@@ -10,7 +10,7 @@
     "dev:user": "vite --config vite.user.config.ts",
     "dev:dp": "vite --config vite.dp.config.ts",
     "dev:admin": "vite --config vite.admin.config.ts",
-    "dev:parallel": "npx --yes concurrently -k -n user,dp,admin -c lime,cyan,magenta \"vite --config vite.user.config.ts --port 5173\" \"vite --config vite.dp.config.ts --port 5174\" \"vite --config vite.admin.config.ts --port 5175\"",
+    "dev:parallel": "vite --config vite.web.config.ts --host 0.0.0.0 --port 5173",
     "build": "npm run build:web",
     "build:web": "tsc -b && vite build --config vite.web.config.ts",
     "build:user": "tsc -b && vite build --config vite.user.config.ts",

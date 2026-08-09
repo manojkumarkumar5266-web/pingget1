@@ -322,7 +322,7 @@ export default function AdminAdvanceSettings() {
       <div className="sticky bottom-0 z-10 pb-4">
         <button onClick={handleSave} disabled={saving}
           className="w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold transition-all active:scale-[0.97] disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg, #D4F000, #D4F000)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(212,240,0,0.35)' }}>
+          style={{ background: 'linear-gradient(135deg, #F5C542, #F5C542)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(245,197,66,0.35)' }}>
           {saving ? (
             <span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0B0B0B]/30" style={{ borderTopColor: '#0B0B0B' }} />Saving...</span>
           ) : saved ? (
@@ -353,7 +353,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
   return (
     <button onClick={() => onChange(!value)}
       className="relative h-7 w-12 rounded-full transition-all"
-      style={{ background: value ? '#D4F000' : 'rgba(255,255,255,0.15)' }}>
+      style={{ background: value ? '#F5C542' : 'rgba(255,255,255,0.15)' }}>
       <div className="absolute top-1 h-5 w-5 rounded-full bg-white transition-all" style={{ left: value ? 24 : 4 }} />
     </button>
   )
@@ -363,7 +363,7 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
   return (
     <button onClick={onClick}
       className="rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-95"
-      style={active ? { background: '#D4F000', color: '#0B0B0B' } : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>
+      style={active ? { background: '#F5C542', color: '#0B0B0B' } : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>
       {children}
     </button>
   )

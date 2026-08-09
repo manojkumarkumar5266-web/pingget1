@@ -10,14 +10,27 @@ function fromDefine(): AppTarget {
   return 'web'
 }
 
-/** Path-based target when running the unified web build. */
-export function resolveAppTarget(): 'user' | 'dp' | 'admin' {
-  const defined = fromDefine()
-  if (defined === 'user' || defined === 'dp' || defined === 'admin') return defined
-  if (typeof window === 'undefined') return 'user'
+function fromPathname(): 'user' | 'dp' | 'admin' | null {
+  if (typeof window === 'undefined') return null
   const p = window.location.pathname
   if (p === '/admin' || p.startsWith('/admin/')) return 'admin'
   if (p === '/dp' || p.startsWith('/dp/')) return 'dp'
+  // Only treat explicit customer app paths as user when a dedicated build
+  // might also be involved — bare `/` is handled by callers via define/fallback.
+  return null
+}
+
+/**
+ * Unified web: URL path always wins (/dp → Partner, /admin → Admin).
+ * Dedicated Capacitor builds (define = user|dp|admin) use define when path
+ * does not identify an app (e.g. app opens at `/`).
+ */
+export function resolveAppTarget(): 'user' | 'dp' | 'admin' {
+  const pathTarget = fromPathname()
+  if (pathTarget) return pathTarget
+
+  const defined = fromDefine()
+  if (defined === 'user' || defined === 'dp' || defined === 'admin') return defined
   return 'user'
 }
 

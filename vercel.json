@@ -2,7 +2,9 @@
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/dp", "destination": "/index.html" },
     { "source": "/dp/(.*)", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
     { "source": "/admin/(.*)", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

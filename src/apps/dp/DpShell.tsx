@@ -12,12 +12,17 @@ import { Clock, XCircle, ArrowLeft } from 'lucide-react'
 
 const ONBOARDING_KEY = 'pingget_dp_permissions_done'
 
+/** Keep Partner URLs under /dp/* so resolveAppTarget() stays on the DP shell. */
+const DP_LANDING = '/dp/landing'
+const DP_AUTH = '/dp/auth'
+const DP_RESET = '/dp/reset-password'
+
 function DpPendingScreen() {
   const { signOut } = useAuth()
   const navigate = useNavigate()
   const handleBack = async () => {
     await signOut()
-    navigate('/auth', { replace: true })
+    navigate(DP_AUTH, { replace: true })
   }
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
@@ -40,7 +45,7 @@ function DpRejectedScreen() {
   const navigate = useNavigate()
   const handleBack = async () => {
     await signOut()
-    navigate('/auth', { replace: true })
+    navigate(DP_AUTH, { replace: true })
   }
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
@@ -59,9 +64,8 @@ function DpRejectedScreen() {
 }
 
 /**
- * Partner shell.
- * First open: permissions → Get Started (once).
- * After Get Started or any sign-in: never show welcome again.
+ * Partner shell — all unauthenticated routes stay under /dp/* so the unified
+ * web router keeps resolving this shell (not the Customer app).
  */
 export default function DpShell() {
   const { session, profile, loading, passwordRecovery, oauthResolving, signOut } = useAuth()
@@ -94,13 +98,14 @@ export default function DpShell() {
     }
   }, [session])
 
-  if (passwordRecovery || location.pathname === '/reset-password') {
+  if (passwordRecovery || location.pathname === DP_RESET || location.pathname === '/reset-password') {
     return (
       <>
         <Watermark />
         <Routes>
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="*" element={<Navigate to="/reset-password" replace />} />
+          <Route path={DP_RESET} element={<ResetPassword />} />
+          <Route path="/reset-password" element={<Navigate to={DP_RESET} replace />} />
+          <Route path="*" element={<Navigate to={DP_RESET} replace />} />
         </Routes>
       </>
     )
@@ -120,7 +125,7 @@ export default function DpShell() {
   }
 
   if (!session) {
-    const defaultPath = landingDone ? '/auth' : '/landing'
+    const defaultPath = landingDone ? DP_AUTH : DP_LANDING
     return (
       <>
         <Watermark />
@@ -130,8 +135,11 @@ export default function DpShell() {
           </div>
         )}
         <Routes>
-          <Route path="/auth" element={<AuthScreen fixedRole="dp" />} />
-          <Route path="/landing" element={landingDone ? <Navigate to="/auth" replace /> : <LandingPage />} />
+          <Route path={DP_AUTH} element={<AuthScreen fixedRole="dp" />} />
+          <Route path={DP_LANDING} element={landingDone ? <Navigate to={DP_AUTH} replace /> : <LandingPage />} />
+          {/* Legacy absolute paths → keep under /dp */}
+          <Route path="/auth" element={<Navigate to={DP_AUTH} replace />} />
+          <Route path="/landing" element={<Navigate to={DP_LANDING} replace />} />
           <Route path="*" element={<Navigate to={defaultPath} replace />} />
         </Routes>
       </>
@@ -162,10 +170,7 @@ export default function DpShell() {
   return (
     <>
       <Watermark />
-      <Routes>
-        <Route path="/dp/*" element={<DpApp />} />
-        <Route path="*" element={<Navigate to="/dp" replace />} />
-      </Routes>
+      <DpApp />
     </>
   )
 }

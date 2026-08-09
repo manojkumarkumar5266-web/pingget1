@@ -39,7 +39,7 @@ export default function VisualTracking({
   return (
     <div className="flex h-full flex-col justify-center px-3 py-2" style={{ background: pg.bg }}>
       <div className="mx-auto w-full max-w-lg">
-        <div className="overflow-hidden" style={{ borderRadius: 28, border: `1px solid rgba(212,240,0,0.22)`, background: pg.surface }}>
+        <div className="overflow-hidden" style={{ borderRadius: 28, border: `1px solid rgba(245,197,66,0.22)`, background: pg.surface }}>
           <img
             src={image}
             alt={label}

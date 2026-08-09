@@ -194,7 +194,7 @@ export default function CreateRequest() {
               type="button"
               onClick={() => photoInputRef.current?.click()}
               className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-2xl transition active:scale-95"
-              style={{ background: pg.surface, border: `1.5px dashed rgba(212,240,0,0.35)`, color: pg.lime }}
+              style={{ background: pg.surface, border: `1.5px dashed rgba(245,197,66,0.35)`, color: pg.lime }}
             >
               <Camera size={20} />
               <span className="text-[10px] font-extrabold">Add</span>
@@ -227,7 +227,7 @@ export default function CreateRequest() {
           )}
 
           {voiceBlob && voiceUrlRef.current && (
-            <div className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.limeDim, border: '1px solid rgba(212,240,0,0.25)' }}>
+            <div className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.limeDim, border: '1px solid rgba(245,197,66,0.25)' }}>
               <button
                 type="button"
                 onClick={playVoice}

@@ -30,7 +30,7 @@ function VoicePlayer({ url }: { url: string }) {
   return (
     <div
       className="mt-3 flex items-center gap-3 rounded-2xl px-3.5 py-2.5"
-      style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.22)` }}
+      style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.22)` }}
     >
       <button
         type="button"
@@ -47,7 +47,7 @@ function VoicePlayer({ url }: { url: string }) {
             className={`flex-1 rounded-full ${playing ? 'animate-pulse' : ''}`}
             style={{
               height: `${28 + Math.sin(i * 0.8) * 45}%`,
-              background: playing ? pg.lime : 'rgba(212,240,0,0.35)',
+              background: playing ? pg.lime : 'rgba(245,197,66,0.35)',
               animationDelay: `${i * 55}ms`,
             }}
           />
@@ -79,7 +79,7 @@ function EarningsHero({ today, week, deliveries }: { today: number; week: number
           </div>
           <div
             className="flex h-12 w-12 items-center justify-center rounded-2xl"
-            style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.25)` }}
+            style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.25)` }}
           >
             <TrendingUp size={22} style={{ color: pg.lime }} />
           </div>
@@ -401,7 +401,7 @@ export default function DpHome() {
       {toast && (
         <div
           className="mb-4 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-extrabold"
-          style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)`, color: pg.lime }}
+          style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)`, color: pg.lime }}
         >
           <Bell size={15} className="shrink-0" />
           {toast}

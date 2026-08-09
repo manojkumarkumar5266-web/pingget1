@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { Home, ClipboardList, Bell, User, Plus, X, MessageCircle, Zap, CalendarClock } from 'lucide-react'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, startTransition } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useGps } from '../../hooks/useGps'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
@@ -62,6 +62,7 @@ export default function UserLayout() {
   }, [profile?.id])
 
   const isActive = (path: string) => path === '/app' ? location.pathname === '/app' : location.pathname.startsWith(path)
+  const go = (path: string) => startTransition(() => navigate(path))
   const hideNav =
     location.pathname.startsWith('/app/chat') ||
     location.pathname.startsWith('/app/create') ||
@@ -103,7 +104,7 @@ export default function UserLayout() {
           >
             <p className="mb-4 text-center text-base font-extrabold">What do you need?</p>
             <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={() => { setShowBookingMenu(false); navigate('/app/create') }} className="text-left">
+              <button type="button" onClick={() => { setShowBookingMenu(false); go('/app/create') }} className="text-left">
                 <img
                   src={Images.feature.instantBooking}
                   alt="Instant"
@@ -115,7 +116,7 @@ export default function UserLayout() {
                   <Zap size={16} /> Instant
                 </p>
               </button>
-              <button type="button" onClick={() => { setShowBookingMenu(false); navigate('/app/create-advance') }} className="text-left">
+              <button type="button" onClick={() => { setShowBookingMenu(false); go('/app/create-advance') }} className="text-left">
                 <img
                   src={Images.feature.advanceBooking}
                   alt="Advance"
@@ -123,7 +124,7 @@ export default function UserLayout() {
                   style={{ background: 'transparent', display: 'block' }}
                   draggable={false}
                 />
-                <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold text-sky-400">
+                <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold" style={{ color: pg.info }}>
                   <CalendarClock size={16} /> Advance
                 </p>
               </button>
@@ -138,11 +139,11 @@ export default function UserLayout() {
 
       {!hideNav && (
         <Dock>
-          <DockItem label="Home" icon={<Home size={20} />} active={isActive('/app')} onClick={() => navigate('/app')} />
-          <DockItem label="Orders" icon={<ClipboardList size={20} />} active={isActive('/app/orders')} onClick={() => navigate('/app/orders')} />
+          <DockItem label="Home" icon={<Home size={20} />} active={isActive('/app')} onClick={() => go('/app')} />
+          <DockItem label="Orders" icon={<ClipboardList size={20} />} active={isActive('/app/orders')} onClick={() => go('/app/orders')} />
           <DockItem label="New" icon={<Plus size={28} strokeWidth={2.5} />} center onClick={() => setShowBookingMenu(true)} />
-          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/app/notifications')} badge={unreadCount} onClick={() => navigate('/app/notifications')} />
-          <DockItem label="You" icon={<User size={20} />} active={isActive('/app/profile')} onClick={() => navigate('/app/profile')} />
+          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/app/notifications')} badge={unreadCount} onClick={() => go('/app/notifications')} />
+          <DockItem label="You" icon={<User size={20} />} active={isActive('/app/profile')} onClick={() => go('/app/profile')} />
         </Dock>
       )}
     </div>

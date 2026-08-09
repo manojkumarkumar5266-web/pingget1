@@ -3,15 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --pg-bg: #050505;
-  --pg-surface: #121212;
-  --pg-surface-2: #1A1A1A;
-  --pg-line: rgba(255,255,255,0.08);
-  --pg-lime: #D4F000;
-  --pg-lime-text: #0A0A0A;
-  --pg-text: #FFFFFF;
-  --pg-text-2: rgba(255,255,255,0.72);
-  --pg-text-3: rgba(255,255,255,0.45);
+  --pg-bg: #07080B;
+  --pg-surface: #141821;
+  --pg-surface-2: #1C2230;
+  --pg-line: rgba(255,255,255,0.07);
+  --pg-lime: #F5C542;
+  --pg-lime-text: #140F05;
+  --pg-text: #F7F4EE;
+  --pg-text-2: rgba(247,244,238,0.72);
+  --pg-text-3: rgba(247,244,238,0.48);
 }
 
 @layer base {
@@ -19,19 +19,22 @@
   html, body {
     background: var(--pg-bg);
     color: var(--pg-text);
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'DM Sans', 'Plus Jakarta Sans', system-ui, sans-serif;
     min-height: 100%;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
   }
   #root { min-height: 100vh; background: var(--pg-bg); }
-  h1,h2,h3,h4 { letter-spacing: -0.03em; font-weight: 800; }
+  h1,h2,h3,h4 {
+    letter-spacing: -0.035em;
+    font-weight: 800;
+    font-family: 'Outfit', 'DM Sans', system-ui, sans-serif;
+  }
   ::-webkit-scrollbar { width: 0; height: 0; }
   input, textarea, select { font-family: inherit; }
 }
 
 @layer components {
-  /* Legacy class bridges → new system (so older screens inherit the new look) */
   .btn, .btn-primary, .btn-secondary, .btn-danger, .btn-ghost, .btn-lg {
     display: inline-flex;
     align-items: center;
@@ -42,22 +45,22 @@
     border-radius: 16px;
     font-size: 0.875rem;
     font-weight: 800;
-    transition: transform 0.15s ease, opacity 0.15s ease;
+    transition: transform 0.12s ease, opacity 0.12s ease;
   }
   .btn:active, .btn-primary:active, .btn-secondary:active { transform: scale(0.98); }
   .btn:disabled, .btn-primary:disabled { opacity: 0.4; pointer-events: none; }
   .btn-primary, .btn {
     background: var(--pg-lime);
     color: var(--pg-lime-text);
-    box-shadow: 0 10px 28px rgba(212,240,0,0.28);
+    box-shadow: 0 10px 28px rgba(245,197,66,0.28);
   }
   .btn-secondary {
     background: var(--pg-surface-2);
     color: var(--pg-text);
-    border: 1px solid rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.12);
     box-shadow: none;
   }
-  .btn-danger { background: #FF4D4F; color: #fff; box-shadow: none; }
+  .btn-danger { background: #FF5C5C; color: #fff; box-shadow: none; }
   .btn-ghost { background: transparent; color: var(--pg-text-2); box-shadow: none; }
   .btn-icon {
     display: flex; align-items: center; justify-content: center;
@@ -86,7 +89,7 @@
   }
   .input:focus {
     border-color: var(--pg-lime);
-    box-shadow: 0 0 0 4px rgba(212,240,0,0.12);
+    box-shadow: 0 0 0 4px rgba(245,197,66,0.14);
   }
   .input::placeholder { color: rgba(255,255,255,0.32); }
   .label {
@@ -100,25 +103,25 @@
   }
 
   .glass, .glass-light, .glass-dark, .glass-strong {
-    background: rgba(18,18,18,0.92);
+    background: rgba(20,24,33,0.92);
     border: 1px solid var(--pg-line);
     backdrop-filter: blur(18px);
   }
 
   .nav-island {
-    background: rgba(10,10,10,0.96) !important;
-    border: 1px solid rgba(255,255,255,0.14) !important;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.75) !important;
+    background: rgba(10,12,18,0.96) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.65) !important;
   }
 
   .app-bar {
-    background: rgba(5,5,5,0.92);
+    background: rgba(7,8,11,0.92);
     border-bottom: 1px solid var(--pg-line);
     backdrop-filter: blur(16px);
   }
 
   .map-glass-panel {
-    background: rgba(18,18,18,0.94);
+    background: rgba(20,24,33,0.94);
     border: 1px solid var(--pg-line);
     border-radius: 18px;
     backdrop-filter: blur(16px);
@@ -128,9 +131,22 @@
     width: 40px; height: 40px; border-radius: 14px;
     background: var(--pg-surface-2); color: #fff;
   }
-  .map-control-dark { background: #1A1A1A; }
+  .map-control-dark { background: #1C2230; }
 
-  .free-street-map iframe { filter: none; }
+  /* Light Google map — white base, muted greens, warm yellow street wash */
+  .free-street-map.light-map iframe {
+    filter: grayscale(0.55) brightness(1.28) contrast(1.08) saturate(0.35) sepia(0.12);
+  }
+  .free-street-map.light-map::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.28), transparent 35%),
+      linear-gradient(0deg, rgba(245,197,66,0.14), transparent 55%);
+    mix-blend-mode: soft-light;
+  }
 }
 
 @layer utilities {
@@ -139,16 +155,35 @@
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes slide-in-bottom {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-.animate-fade-in-up { animation: fade-in-up 0.35s ease both; }
-.animate-slide-in-bottom { animation: slide-in-bottom 0.35s ease both; }
-.animate-slide-up { animation: fade-in-up 0.3s ease both; }
-.animate-fade-in { animation: fade-in-up 0.25s ease both; }
-.animate-scale-in { animation: fade-in-up 0.3s ease both; }
-.animate-slide-in-right { animation: fade-in-up 0.3s ease both; }
+@keyframes radar-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.15); opacity: 0.55; }
+  70% { opacity: 0.18; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+.animate-fade-in-up { animation: fade-in-up 0.22s ease both; }
+.animate-slide-in-bottom { animation: slide-in-bottom 0.28s ease both; }
+.animate-slide-up { animation: fade-in-up 0.2s ease both; }
+.animate-fade-in { animation: fade-in-up 0.18s ease both; }
+.animate-scale-in { animation: fade-in-up 0.2s ease both; }
+.animate-slide-in-right { animation: fade-in-up 0.2s ease both; }
+.radar-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  border: 2px solid rgba(245,197,66,0.55);
+  background: radial-gradient(circle, rgba(245,197,66,0.18) 0%, transparent 70%);
+  animation: radar-pulse 2.8s cubic-bezier(0.15, 0.7, 0.25, 1) infinite;
+  pointer-events: none;
+}
+.radar-ring:nth-child(2) { animation-delay: 0.9s; }
+.radar-ring:nth-child(3) { animation-delay: 1.8s; }

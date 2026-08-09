@@ -133,7 +133,7 @@ export default function PremiumTimeSlotSelector({
                 disabled={slotDisabled}
                 className="relative flex flex-col items-start gap-1 rounded-2xl p-3.5 text-left transition-all active:scale-95 disabled:cursor-not-allowed"
                 style={isSelected
-                  ? { background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(212,240,0,0.3)' }
+                  ? { background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(245,197,66,0.3)' }
                   : slotDisabled
                     ? { background: pg.bg, border: `1px solid ${pg.line}`, color: pg.text4 }
                     : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text }}

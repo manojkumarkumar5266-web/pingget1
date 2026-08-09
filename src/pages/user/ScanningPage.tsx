@@ -275,6 +275,8 @@ export default function ScanningPage() {
             zoom={radiusStepIndex === 0 ? 14 : radiusStepIndex === 1 ? 13 : 12}
             markers={markers}
             radiusMeters={DEFAULT_MAP_RADIUS_M}
+            light
+            radar
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm" style={{ background: pg.surface, color: pg.text3 }}>
@@ -283,7 +285,7 @@ export default function ScanningPage() {
         )}
         <div
           className="pointer-events-none absolute right-3 top-3 rounded-full px-3 py-1.5 text-xs font-extrabold"
-          style={{ background: 'rgba(5,5,5,0.9)', color: pg.lime, border: '1px solid rgba(212,240,0,0.35)' }}
+          style={{ background: 'rgba(255,255,255,0.94)', color: '#C62828', border: '1px solid rgba(229,57,53,0.35)' }}
         >
           Radius {radiusLabel}
         </div>
@@ -316,9 +318,9 @@ export default function ScanningPage() {
               key={step}
               className="flex-1 rounded-full py-1 text-center text-[10px] font-bold transition-all"
               style={{
-                background: i <= radiusStepIndex ? 'rgba(212,240,0,0.18)' : 'rgba(255,255,255,0.05)',
+                background: i <= radiusStepIndex ? 'rgba(245,197,66,0.18)' : 'rgba(255,255,255,0.05)',
                 color: i <= radiusStepIndex ? pg.lime : pg.text4,
-                border: i === radiusStepIndex ? '1px solid rgba(212,240,0,0.4)' : '1px solid transparent',
+                border: i === radiusStepIndex ? '1px solid rgba(245,197,66,0.4)' : '1px solid transparent',
               }}
             >
               {formatDistance(step)}

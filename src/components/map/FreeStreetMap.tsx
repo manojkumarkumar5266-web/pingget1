@@ -16,6 +16,10 @@ type Props = {
   markers?: MapMarker[]
   /** Search / visibility radius in meters (default 10 km) */
   radiusMeters?: number
+  /** Light white map with warm street tint (scanning) */
+  light?: boolean
+  /** Pulsing radar rings from center out to radius */
+  radar?: boolean
   className?: string
   style?: React.CSSProperties
   interactive?: boolean
@@ -51,9 +55,21 @@ function haversineM(a: LatLng, b: LatLng) {
   return 2 * R * Math.asin(Math.sqrt(h))
 }
 
+function RedUserPin() {
+  return (
+    <svg width="28" height="36" viewBox="0 0 28 36" fill="none" aria-hidden>
+      <path
+        d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.268 21.732 0 14 0z"
+        fill="#E53935"
+      />
+      <circle cx="14" cy="13.5" r="5.5" fill="#fff" />
+    </svg>
+  )
+}
+
 /**
  * Google Maps live street view + overlay pins for User / DP within radius.
- * No OpenStreetMap / MapLibre / Leaflet.
+ * Scanning mode: light map, red user pin, bike partners, looping radar to ~10 km.
  */
 export default function FreeStreetMap({
   center,
@@ -61,6 +77,8 @@ export default function FreeStreetMap({
   destination,
   markers = [],
   radiusMeters = DEFAULT_RADIUS_M,
+  light = false,
+  radar = false,
   className = '',
   style,
 }: Props) {
@@ -86,7 +104,6 @@ export default function FreeStreetMap({
     src = `https://www.google.com/maps?q=${c.lat},${c.lng}&hl=en&z=${z}&output=embed`
   }
 
-  // Assume map container ~390x520 for overlay math (mobile); CSS % still works reasonably
   const W = 390
   const H = 520
 
@@ -98,15 +115,20 @@ export default function FreeStreetMap({
 
   const dpCount = nearby.filter(m => m.kind === 'bike' || m.kind === 'dp').length
 
-  // Radius ring size as % of map height (approx meters → pixels at zoom)
   const metersPerPx = (156543.03392 * Math.cos((c.lat * Math.PI) / 180)) / Math.pow(2, z)
   const radiusPx = radiusMeters / Math.max(metersPerPx, 0.1)
-  const radiusPct = Math.min(90, (radiusPx / H) * 100 * 2)
+  const radiusPct = Math.min(92, (radiusPx / H) * 100 * 2)
 
   return (
     <div
-      className={`relative overflow-hidden bg-[#0B0B0B] ${className}`}
-      style={{ width: '100%', height: '100%', minHeight: 200, ...style }}
+      className={`free-street-map relative overflow-hidden ${light ? 'light-map' : ''} ${className}`}
+      style={{
+        width: '100%',
+        height: '100%',
+        minHeight: 200,
+        background: light ? '#F4F6F8' : '#0B0B0B',
+        ...style,
+      }}
     >
       <iframe
         title="Google Maps live tracking"
@@ -117,35 +139,61 @@ export default function FreeStreetMap({
         allowFullScreen
       />
 
-      {/* 10 km (or configured) range ring */}
+      {/* Soft white + yellow street wash over satellite greens */}
+      {light && (
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,236,160,0.18) 45%, rgba(255,255,255,0.22) 100%)',
+            mixBlendMode: 'soft-light',
+          }}
+        />
+      )}
+
+      {/* Static range ring */}
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
           width: `${radiusPct}%`,
           height: `${radiusPct}%`,
-          border: '2px solid rgba(212,240,0,0.45)',
-          background: 'rgba(212,240,0,0.06)',
-          boxShadow: '0 0 0 1px rgba(212,240,0,0.15)',
+          border: light ? '1.5px solid rgba(229,57,53,0.28)' : `2px solid rgba(245,197,66,0.4)`,
+          background: light ? 'rgba(229,57,53,0.04)' : 'rgba(245,197,66,0.05)',
         }}
       />
 
-      {/* Live pins */}
+      {/* Radar: expand from user center → ~10 km, loop */}
+      {radar && (
+        <div
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{ width: `${radiusPct}%`, height: `${radiusPct}%` }}
+        >
+          <span className="radar-ring" />
+          <span className="radar-ring" />
+          <span className="radar-ring" />
+        </div>
+      )}
+
       {nearby.map(m => {
         const { left, top } = project(m.position.lat, m.position.lng, c, z, W, H)
-        if (left < -5 || left > 105 || top < -5 || top > 105) return null
+        if (left < -8 || left > 108 || top < -8 || top > 108) return null
         const isDp = m.kind === 'bike' || m.kind === 'dp'
         const isUser = m.kind === 'user'
         return (
           <div
             key={m.id}
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2"
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full"
             style={{ left: `${left}%`, top: `${top}%` }}
           >
-            {isDp ? (
+            {isUser ? (
+              <div className="-mb-1 drop-shadow-md">
+                <RedUserPin />
+              </div>
+            ) : isDp ? (
               <img
                 src={Images.bikeMarker}
                 alt=""
-                className="h-9 w-9 object-contain drop-shadow-lg"
+                className="mb-0 h-11 w-11 translate-y-1/2 object-contain drop-shadow-lg"
                 draggable={false}
                 onError={(e) => {
                   ;(e.target as HTMLImageElement).style.display = 'none'
@@ -153,17 +201,17 @@ export default function FreeStreetMap({
               />
             ) : (
               <div
-                className="flex h-4 w-4 items-center justify-center rounded-full"
+                className="mb-0 flex h-4 w-4 translate-y-1/2 items-center justify-center rounded-full"
                 style={{
-                  background: isUser ? pg.lime : m.kind === 'pickup' ? '#F5A524' : '#3B82F6',
-                  boxShadow: '0 0 0 4px rgba(0,0,0,0.35)',
+                  background: m.kind === 'pickup' ? '#F5A524' : '#3B82F6',
+                  boxShadow: '0 0 0 4px rgba(0,0,0,0.25)',
                 }}
               />
             )}
-            {m.label && (
+            {m.label && !isUser && (
               <p
                 className="mt-0.5 max-w-[88px] truncate rounded-md px-1.5 py-0.5 text-[9px] font-bold"
-                style={{ background: 'rgba(5,5,5,0.85)', color: '#fff' }}
+                style={{ background: 'rgba(7,8,11,0.88)', color: '#fff' }}
               >
                 {m.label}
               </p>
@@ -175,9 +223,9 @@ export default function FreeStreetMap({
       <div
         className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-[11px] font-bold"
         style={{
-          background: 'rgba(11,11,11,0.9)',
-          color: pg.lime,
-          border: '1px solid rgba(212,240,0,0.4)',
+          background: light ? 'rgba(255,255,255,0.92)' : 'rgba(11,11,11,0.9)',
+          color: light ? '#C62828' : pg.lime,
+          border: light ? '1px solid rgba(229,57,53,0.35)' : '1px solid rgba(245,197,66,0.4)',
         }}
       >
         Google Maps · Live

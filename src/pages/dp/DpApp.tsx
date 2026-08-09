@@ -9,19 +9,23 @@ import DpProfile from './DpProfile'
 import DpNavigationPage from './DpNavigationPage'
 import DpNotifications from './DpNotifications'
 
+/**
+ * Partner app routes — absolute /dp/* paths (no splat descendant matching).
+ * Avoids blank screens when nested under /dp/* splat parents.
+ */
 export default function DpApp() {
   return (
     <Routes>
-      <Route element={<DpLayout />}>
-        <Route path="/" element={<DpHome />} />
-        <Route path="/orders" element={<DpOrders />} />
-        <Route path="/wallet" element={<DpWallet />} />
-        <Route path="/profile" element={<DpProfile />} />
-        <Route path="/notifications" element={<DpNotifications />} />
+      <Route path="/dp" element={<DpLayout />}>
+        <Route index element={<DpHome />} />
+        <Route path="orders" element={<DpOrders />} />
+        <Route path="wallet" element={<DpWallet />} />
+        <Route path="profile" element={<DpProfile />} />
+        <Route path="notifications" element={<DpNotifications />} />
       </Route>
-      <Route path="/chat/:roomId" element={<ChatScreen />} />
-      <Route path="/chat/:roomId/order" element={<FullOrderDetails />} />
-      <Route path="/navigate/:requestId" element={<DpNavigationPage />} />
+      <Route path="/dp/chat/:roomId" element={<ChatScreen />} />
+      <Route path="/dp/chat/:roomId/order" element={<FullOrderDetails />} />
+      <Route path="/dp/navigate/:requestId" element={<DpNavigationPage />} />
       <Route path="*" element={<Navigate to="/dp" replace />} />
     </Routes>
   )

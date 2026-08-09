@@ -24,7 +24,7 @@ export default function LandingPage() {
 
   const goAuth = () => {
     localStorage.setItem(landingDoneKey(dp), '1')
-    navigate('/auth', { replace: true })
+    navigate(dp ? '/dp/auth' : '/auth', { replace: true })
   }
 
   return (
@@ -45,15 +45,15 @@ export default function LandingPage() {
           transition: 'all 0.45s ease',
         }}
       >
-        <div className="flex justify-center">
-          <Brand size="md" />
+        <div className="flex justify-center pt-2">
+          <Brand size="hero" wordmark />
         </div>
 
         <div className="flex flex-1 flex-col items-center justify-center py-6">
           <img
             src={dp ? Images.welcomeDp : Images.welcome}
             alt=""
-            className="mb-8 w-full max-h-[46vh] object-contain"
+            className="mb-8 w-full max-h-[42vh] object-contain"
             style={{ background: 'transparent' }}
             draggable={false}
           />
@@ -61,7 +61,7 @@ export default function LandingPage() {
             {dp ? (
               <>Deliver nearby.<br />Earn daily.</>
             ) : (
-              <>Ask anything.<br />Get it fast.</>
+              <>Ask anything.<br />Get everything.</>
             )}
           </h1>
           <p className="mb-8 max-w-sm text-center text-[15px] leading-relaxed" style={{ color: pg.text3 }}>

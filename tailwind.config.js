@@ -6,19 +6,25 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#f7ffe0', 100: '#eefc99', 200: '#e5f855', 300: '#D4F000',
-          400: '#D4F000', 500: '#D4F000', 600: '#B8D400', 700: '#8fa300',
-          800: '#5e6b00', 900: '#3a4200',
+          50: '#FFF8E6', 100: '#FCEEB8', 200: '#F9DD7A', 300: '#F5C542',
+          400: '#F5C542', 500: '#F5C542', 600: '#D4A62E', 700: '#A67E1C',
+          800: '#6B5012', 900: '#3D2E0A',
         },
         ink: {
-          bg: '#050505',
-          surface: '#121212',
-          card: '#1A1A1A',
-          card2: '#222222',
+          bg: '#07080B',
+          surface: '#141821',
+          card: '#1C2230',
+          card2: '#232A3A',
+        },
+        pg: {
+          lime: '#F5C542',
+          panel: '#141821',
+          line: 'rgba(255,255,255,0.07)',
         },
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Outfit"', '"DM Sans"', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         '2xl': '1rem',

@@ -96,7 +96,7 @@ export default function PermissionOnboarding({ onComplete }: { onComplete: () =>
               className={`flex h-20 w-20 items-center justify-center rounded-3xl text-4xl transition-all ${isGranted ? 'animate-bounce-in' : 'animate-float'}`}
               style={isGranted
                 ? { background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.28)' }
-                : { background: pg.limeDim, border: '1px solid rgba(212,240,0,0.22)' }}
+                : { background: pg.limeDim, border: '1px solid rgba(245,197,66,0.22)' }}
             >
               {isGranted ? '✅' : current.emoji}
             </div>
