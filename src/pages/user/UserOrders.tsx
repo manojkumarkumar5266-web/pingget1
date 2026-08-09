@@ -148,8 +148,12 @@ export default function UserOrders() {
   }
 
   const openActiveOrder = async (req: RequestWithDp) => {
-    // Before quotation confirmed → chat; after → tracking
-    if (['accepted', 'dp_reserved', 'waiting_payment'].includes(req.status) || (req.accepted_dp_id && req.status === 'accepted')) {
+    // Waiting for task day after advance payment → stay on orders (already here)
+    if (['booking_confirmed', 'payment_verified'].includes(req.status)) {
+      return
+    }
+    // Before quotation / advance payment confirmed → chat
+    if (['accepted', 'dp_reserved', 'waiting_payment'].includes(req.status)) {
       await openChat(req)
       return
     }
@@ -157,6 +161,7 @@ export default function UserOrders() {
       navigate(`/app/scanning/${req.id}`)
       return
     }
+    // Live fulfillment (instant after quotation, or advance after Start task)
     openTracking(req)
   }
 

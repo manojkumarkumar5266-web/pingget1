@@ -18,13 +18,14 @@ import { CTA, Surface } from '../../design/primitives'
 const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string; notifBody: string; icon: any }[] = [
   { from: 'accepted', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
   { from: 'confirmed', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
+  { from: 'task_started', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
   { from: 'shopping', to: 'purchased', label: 'Order Picked Up', notifTitle: 'Order Picked Up', notifBody: 'Items picked up! Partner is heading your way soon.', icon: Package },
   { from: 'purchased', to: 'on_the_way', label: 'On The Way', notifTitle: 'On The Way!', notifBody: 'Your delivery partner is heading to your location.', icon: Bike },
   { from: 'on_the_way', to: 'arrived', label: 'Arrived', notifTitle: 'Partner Arrived', notifBody: 'Your delivery partner has arrived. Please be ready to receive.', icon: MapPin },
   { from: 'arrived', to: 'delivered', label: 'Delivered', notifTitle: 'Order Delivered', notifBody: 'Your order has been delivered. Please confirm receipt in the app.', icon: CheckCircle2 },
 ]
 
-const ROUTE_STATUSES = new Set(['on_the_way', 'arrived', 'purchased', 'shopping', 'accepted', 'confirmed'])
+const ROUTE_STATUSES = new Set(['on_the_way', 'arrived', 'purchased', 'shopping', 'accepted', 'confirmed', 'task_started'])
 const MAP_LIVE_STATUSES = new Set(['on_the_way', 'arrived'])
 
 export default function DpNavigationPage() {

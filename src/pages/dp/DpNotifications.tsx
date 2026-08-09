@@ -94,6 +94,10 @@ export default function DpNotifications() {
         navigate(`/dp/navigate/${n.related_id}`)
         return
       }
+      if (n.type?.startsWith('advance_reminder_') || n.type === 'payment_verified') {
+        navigate('/dp/orders')
+        return
+      }
       // New request alerts → home
       if (n.type === 'order_received' || n.type === 'order_placed' || n.type === 'new_nearby_request') {
         navigate('/dp')
