@@ -1,4 +1,4 @@
-import FreeStreetMap, { type MapMarker } from './FreeStreetMap'
+import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from './FreeStreetMap'
 import type { LatLng } from '../../lib/mapUtils'
 import OfflineBanner from './OfflineBanner'
 
@@ -33,7 +33,7 @@ export default function DeliveryMap({
   dpMarkers = [],
   routeEndpoints,
   className = '',
-  radiusMeters = 10_000,
+  radiusMeters = MAP_VIEW_RADIUS_M,
 }: Props) {
   const markers: MapMarker[] = []
   if (userLocation) markers.push({ id: 'user', position: userLocation, kind: 'user' })

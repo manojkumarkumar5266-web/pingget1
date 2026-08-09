@@ -4,7 +4,7 @@ import { supabase, type DeliveryRequest, type Profile } from '../../lib/supabase
 import { useAuth } from '../../context'
 import { useGps } from '../../hooks/useGps'
 import { STATUS_LABELS } from '../../lib/utils'
-import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
+import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import VisualTracking, { STATUS_PROGRESS } from '../../components/VisualTracking'
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
@@ -39,7 +39,7 @@ export default function DpNavigationPage() {
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
-  const [showThanks, setShowThanks] = useState(false)
+  const [endPhase, setEndPhase] = useState<'idle' | 'payment_accepted' | 'thanks_rating'>('idle')
   const [liveEtaLabel, setLiveEtaLabel] = useState<string | null>(null)
   const [routeCoords, setRouteCoords] = useState<LatLng[]>([])
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -59,6 +59,9 @@ export default function DpNavigationPage() {
       if (existingPhotos && existingPhotos.length > 0) {
         setPhotoPreviews(existingPhotos)
         setPhotoFiles([])
+      }
+      if ((req as any).payment_accepted_at) {
+        setEndPhase('payment_accepted')
       }
       setLoading(false)
     }
@@ -130,6 +133,57 @@ export default function DpNavigationPage() {
       window.clearInterval(id)
     }
   }, [dpPos?.lat, dpPos?.lng, userPos?.lat, userPos?.lng, request?.status, requestId])
+
+  // Stay on tracking until customer finishes rating — then thank-you → home
+  useEffect(() => {
+    if (!requestId || !profile?.id) return
+    if (endPhase !== 'payment_accepted' && !((request as any)?.payment_accepted_at)) return
+
+    let cancelled = false
+    const goThanks = () => {
+      if (cancelled) return
+      setEndPhase('thanks_rating')
+    }
+
+    const checkRating = async () => {
+      const { data: order } = await supabase.from('orders').select('id').eq('request_id', requestId).maybeSingle()
+      if (!order || cancelled) return
+      const { data: rating } = await supabase
+        .from('ratings')
+        .select('id')
+        .eq('order_id', order.id)
+        .eq('rated_id', profile.id)
+        .maybeSingle()
+      if (rating) goThanks()
+    }
+
+    void checkRating()
+    const poll = window.setInterval(() => void checkRating(), 4000)
+
+    const channel = supabase
+      .channel(`dp-rating-${requestId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` },
+        (payload: any) => {
+          const n = payload.new
+          if (n?.type === 'order_completed' && n?.related_id === requestId) goThanks()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      window.clearInterval(poll)
+      supabase.removeChannel(channel)
+    }
+  }, [endPhase, requestId, profile?.id, (request as any)?.payment_accepted_at])
+
+  useEffect(() => {
+    if (endPhase !== 'thanks_rating') return
+    const t = window.setTimeout(() => navigate('/dp', { replace: true }), 2500)
+    return () => window.clearTimeout(t)
+  }, [endPhase, navigate])
 
   const mapMarkers: MapMarker[] = useMemo(() => {
     const list: MapMarker[] = []
@@ -211,11 +265,21 @@ export default function DpNavigationPage() {
   const isCompleted = request.status === 'completed'
   const currentStep = STATUS_FLOW.find(s => s.from === request.status)
 
-  if (showThanks) {
+  if (endPhase === 'thanks_rating') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6">
-        <img src={Images.customerThankYou} alt="Thank you" className="mb-4 w-full max-w-sm object-contain" draggable={false} />
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6" style={{ background: pg.bg }}>
+        <img src={Images.thankYouRating} alt="Thank you for rating" className="mb-4 w-full max-w-sm object-contain" draggable={false} />
         <p className="text-sm text-white/50">Returning home...</p>
+      </div>
+    )
+  }
+
+  if (endPhase === 'payment_accepted' || (request as any).payment_accepted_at) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 px-6" style={{ background: pg.bg }}>
+        <img src={Images.paymentReceived} alt="Payment accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} />
+        <p className="text-center text-base font-extrabold text-white">Payment accepted</p>
+        <p className="text-center text-sm text-white/50">Waiting for customer rating…</p>
       </div>
     )
   }
@@ -237,10 +301,10 @@ export default function DpNavigationPage() {
         </div>
       </div>
 
-      {/* Match user tracking: step art first; live street map after on_the_way */}
+      {/* Match user tracking: step art first (no crop); live map below after on_the_way */}
       <div className="relative flex-shrink-0">
         {MAP_LIVE_STATUSES.has(request.status) ? (
-          <div>
+          <div className="space-y-2">
             <VisualTracking
               progress={STATUS_PROGRESS[request.status] ?? 0}
               status={request.status}
@@ -249,7 +313,7 @@ export default function DpNavigationPage() {
               hideProgress
               compact
             />
-            <div className="relative mx-3 mb-2 h-[32vh] min-h-[200px] overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="relative mx-3 mb-2 h-[30vh] min-h-[200px] overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
               <FreeStreetMap
                 center={mapCenter || { lat: 17.6868, lng: 83.2185 }}
                 zoom={14}
@@ -258,7 +322,8 @@ export default function DpNavigationPage() {
                 light
                 instant
                 hideRadius
-                radiusMeters={5000}
+                hideBadge
+                radiusMeters={MAP_VIEW_RADIUS_M}
               />
               {liveEtaLabel && (
                 <div
@@ -271,7 +336,7 @@ export default function DpNavigationPage() {
             </div>
           </div>
         ) : (
-          <div className="h-[46vh] min-h-[300px]">
+          <div className="min-h-[240px]">
             <VisualTracking
               progress={STATUS_PROGRESS[request.status] ?? 0}
               status={request.status}
@@ -415,6 +480,14 @@ export default function DpNavigationPage() {
             </Surface>
           )}
 
+          {isCompleted && !(request as any).payment_completed_at && !(request as any).payment_accepted_at && (
+            <Surface className="p-4 text-center">
+              <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: pg.lime }} />
+              <p className="font-bold text-white">Waiting for customer payment</p>
+              <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Stay here until payment and rating are finished</p>
+            </Surface>
+          )}
+
           {(request as any).payment_completed_at && !(request as any).payment_accepted_at && (
             <Surface accent className="p-4">
               <p className="mb-3 text-sm font-extrabold" style={{ color: pg.lime }}>Customer marked payment completed</p>
@@ -431,20 +504,13 @@ export default function DpNavigationPage() {
                     type: 'payment_accepted',
                     related_id: requestId,
                   })
-                  setShowThanks(true)
-                  setTimeout(() => navigate('/dp'), 2000)
+                  setEndPhase('payment_accepted')
                 }}
                 className="w-full"
               >
                 Accept Payment
               </CTA>
             </Surface>
-          )}
-
-          {isCompleted && (
-            <CTA type="button" onClick={() => navigate('/dp')} className="w-full">
-              <CheckCircle2 size={18} /> Delivery Confirmed — Go Home
-            </CTA>
           )}
         </div>
       </div>

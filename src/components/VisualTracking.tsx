@@ -41,18 +41,32 @@ export default function VisualTracking({
   const label = STEP_LABELS[status] || STATUS_ETA[status] || 'In Progress'
 
   return (
-    <div className={`flex flex-col justify-center px-3 ${compact ? 'py-1' : 'h-full py-2'}`} style={{ background: pg.bg }}>
+    <div className={`flex flex-col justify-center px-3 ${compact ? 'py-1.5' : 'py-3'}`} style={{ background: pg.bg }}>
       <div className="mx-auto w-full max-w-lg">
-        <div className="overflow-hidden" style={{ borderRadius: 28, border: `1px solid rgba(245,197,66,0.22)`, background: pg.surface }}>
-          <img
-            src={image}
-            alt={label}
-            className="w-full object-cover"
-            style={{ height: compact ? 'min(36vw, 180px)' : 'min(52vw, 300px)' }}
-            draggable={false}
-          />
-          <div className="px-4 py-3.5 text-center" style={{ background: pg.limeDim }}>
-            <p className="text-lg font-extrabold tracking-tight" style={{ color: pg.lime }}>{label}</p>
+        <div
+          className="overflow-hidden"
+          style={{ borderRadius: compact ? 22 : 28, border: `1px solid rgba(245,197,66,0.22)`, background: pg.surface }}
+        >
+          <div
+            className="flex w-full items-center justify-center"
+            style={{
+              minHeight: compact ? 120 : 200,
+              maxHeight: compact ? 160 : 280,
+              background: 'rgba(0,0,0,0.25)',
+            }}
+          >
+            <img
+              src={image}
+              alt={label}
+              className="h-auto w-full object-contain"
+              style={{ maxHeight: compact ? 160 : 280 }}
+              draggable={false}
+            />
+          </div>
+          <div className="px-4 py-3 text-center" style={{ background: pg.limeDim }}>
+            <p className={`font-extrabold tracking-tight ${compact ? 'text-base' : 'text-lg'}`} style={{ color: pg.lime }}>
+              {label}
+            </p>
           </div>
         </div>
 
