@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
 import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/VisualTracking'
@@ -230,6 +231,7 @@ export default function LiveTrackingPage() {
       type: 'payment_completed',
       related_id: requestId,
     })
+    kickPushDelivery()
     setPayPhase('awaiting_dp_accept')
   }
 
@@ -255,6 +257,7 @@ export default function LiveTrackingPage() {
           type: 'order_completed',
           related_id: requestId,
         })
+        kickPushDelivery()
       }
     } catch { /* ignore */ }
     finally {

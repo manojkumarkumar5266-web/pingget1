@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
+import { sendFcmToUserIds, fcmConfigured } from "../_shared/fcm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,20 +10,28 @@ const corsHeaders = {
 
 type TargetType = "broadcast" | "all_users" | "all_dps" | "single";
 
-/**
- * Admin Notify:
- * - Writes rows into `notifications` (shows in User + DP Alerts tabs)
- * - Emails via Resend (send-email / Resend API) when profile has email
- * - Optionally queues for later when scheduled_for is in the future
- * Push (FCM) is best-effort if device_tokens exist; native apps pick up Alerts + push registration.
- */
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const body = await req.json().catch(() => ({}));
+    const processDueOnly = !!body.processDueOnly;
+
+    // Cron / service-role path (advance-request-scheduler)
     const authHeader = req.headers.get("Authorization") || "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    if (processDueOnly && authHeader.includes(serviceKey) && serviceKey) {
+      const result = await processDueBroadcasts(admin);
+      return json({ success: true, ...result });
+    }
+
     const anon = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -32,11 +41,6 @@ Deno.serve(async (req: Request) => {
     if (userErr || !userData.user) {
       return json({ success: false, error: "Not authenticated" }, 401);
     }
-
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
 
     const { data: profile } = await admin
       .from("profiles")
@@ -48,16 +52,13 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: "Admin only" }, 403);
     }
 
-    const body = await req.json().catch(() => ({}));
     const title = String(body.title || "").trim();
     const message = String(body.body || body.message || "").trim();
     const targetType = (body.targetType || "broadcast") as TargetType;
     const targetUserId = body.targetUserId as string | undefined;
     const imageUrl = body.imageUrl as string | undefined;
     const scheduledForRaw = body.scheduledFor as string | undefined;
-    const processDueOnly = !!body.processDueOnly;
 
-    // Cron / scheduler path: send all due pending broadcasts
     if (processDueOnly) {
       const result = await processDueBroadcasts(admin);
       return json({ success: true, ...result });
@@ -75,29 +76,29 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: "Invalid scheduledFor" }, 400);
     }
 
-    const delayMs = scheduledFor.getTime() - Date.now();
-    const shouldSchedule = delayMs > 60_000; // schedule if more than ~1 min ahead
+    const shouldSchedule = scheduledFor.getTime() - Date.now() > 45_000;
+
+    const { data: broadcast, error: bErr } = await admin.from("notification_broadcasts").insert({
+      title,
+      body: message,
+      image_url: imageUrl || null,
+      target_type: targetType,
+      target_user_id: targetType === "single" ? targetUserId : null,
+      scheduled_for: scheduledFor.toISOString(),
+      status: shouldSchedule ? "pending" : "sending",
+      created_by: profile.id,
+    }).select("id").single();
+
+    if (bErr) return json({ success: false, error: bErr.message }, 500);
 
     if (shouldSchedule) {
-      const { data: row, error } = await admin.from("notification_broadcasts").insert({
-        title,
-        body: message,
-        image_url: imageUrl || null,
-        target_type: targetType,
-        target_user_id: targetType === "single" ? targetUserId : null,
-        scheduled_for: scheduledFor.toISOString(),
-        status: "pending",
-        created_by: profile.id,
-      }).select("id").single();
-
-      if (error) return json({ success: false, error: error.message }, 500);
-
       return json({
         success: true,
         scheduled: true,
-        broadcastId: row.id,
+        broadcastId: broadcast.id,
         scheduledFor: scheduledFor.toISOString(),
-        channels: ["in_app_alerts", "email_resend", "push_when_registered"],
+        channels: ["in_app_alerts", "email_resend", "push_fcm"],
+        fcmConfigured: fcmConfigured(),
       });
     }
 
@@ -107,14 +108,22 @@ Deno.serve(async (req: Request) => {
       imageUrl,
       targetType,
       targetUserId,
-      createdBy: profile.id,
+      broadcastId: broadcast.id,
     });
+
+    await admin.from("notification_broadcasts").update({
+      status: "sent",
+      sent_at: new Date().toISOString(),
+      recipient_count: sendResult.recipientCount || 0,
+    }).eq("id", broadcast.id);
 
     return json({
       success: true,
       scheduled: false,
+      broadcastId: broadcast.id,
       ...sendResult,
-      channels: ["in_app_alerts", "email_resend", "push_when_registered"],
+      channels: ["in_app_alerts", "email_resend", "push_fcm"],
+      fcmConfigured: fcmConfigured(),
     });
   } catch (err: any) {
     console.error("notify-broadcast error:", err);
@@ -144,7 +153,6 @@ async function processDueBroadcasts(admin: ReturnType<typeof createClient>) {
         imageUrl: row.image_url || undefined,
         targetType: row.target_type,
         targetUserId: row.target_user_id || undefined,
-        createdBy: row.created_by || undefined,
         broadcastId: row.id,
       });
       await admin.from("notification_broadcasts").update({
@@ -174,8 +182,7 @@ async function deliverBroadcast(
     imageUrl?: string;
     targetType: TargetType;
     targetUserId?: string;
-    createdBy?: string;
-    broadcastId?: string;
+    broadcastId: string;
   },
 ) {
   let profilesQuery = admin.from("profiles").select("id, full_name, email, role");
@@ -192,29 +199,63 @@ async function deliverBroadcast(
   const { data: recipients, error } = await profilesQuery;
   if (error) throw new Error(error.message);
   if (!recipients || recipients.length === 0) {
-    return { recipientCount: 0, emailsSent: 0, inAppInserted: 0 };
+    return { recipientCount: 0, emailsSent: 0, inAppInserted: 0, pushSent: 0, pushFailed: 0 };
   }
 
-  const inserts = recipients.map((r) => ({
-    user_id: r.id,
-    title: opts.title,
-    body: opts.body,
-    type: "admin_announcement",
-    notification_type: "admin_announcement",
-    image_url: opts.imageUrl || null,
-    related_id: opts.broadcastId || null,
-  }));
-
-  // Chunk inserts
   let inAppInserted = 0;
-  for (let i = 0; i < inserts.length; i += 200) {
-    const chunk = inserts.slice(i, i + 200);
-    const { error: insErr } = await admin.from("notifications").insert(chunk);
+  let pushSent = 0;
+  let pushFailed = 0;
+  const insertedRows: any[] = [];
+
+  for (let i = 0; i < recipients.length; i += 100) {
+    const chunk = recipients.slice(i, i + 100);
+    const inserts = chunk.map((r) => {
+      const base = r.role === "dp" ? "/dp" : "/app";
+      return {
+        user_id: r.id,
+        title: opts.title,
+        body: opts.body,
+        type: "admin_announcement",
+        notification_type: "admin_offer",
+        image_url: opts.imageUrl || null,
+        related_id: opts.broadcastId,
+        route: `${base}/offers/pending`, // updated after insert with real id
+      };
+    });
+    const { data: created, error: insErr } = await admin.from("notifications").insert(inserts).select("id, user_id");
     if (insErr) throw new Error(insErr.message);
-    inAppInserted += chunk.length;
+    for (const row of created || []) {
+      const role = chunk.find((c) => c.id === row.user_id)?.role || "user";
+      const base = role === "dp" ? "/dp" : "/app";
+      const route = `${base}/offers/${row.id}`;
+      await admin.from("notifications").update({ route, entity_id: row.id }).eq("id", row.id);
+      insertedRows.push({ ...row, route, role });
+    }
+    inAppInserted += (created || []).length;
   }
 
-  // Resend emails (best effort, capped)
+  // Push each recipient (batched by identical payload except route/entity)
+  for (const row of insertedRows) {
+    const result = await sendFcmToUserIds(admin, [row.user_id], {
+      title: opts.title,
+      body: opts.body,
+      imageUrl: opts.imageUrl,
+      route: row.route,
+      entityId: row.id,
+      notificationType: "admin_offer",
+      notificationId: row.id,
+    });
+    pushSent += result.sent;
+    pushFailed += result.failed;
+    // Mark outbox rows created by trigger as processed
+    await admin.from("push_outbox").update({
+      status: result.skipped ? "skipped_no_fcm" : (result.sent > 0 ? "sent" : "failed"),
+      processed_at: new Date().toISOString(),
+      route: row.route,
+    }).eq("notification_id", row.id).eq("status", "pending");
+  }
+
+  // Resend emails
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "PingGet <noreply@pingget.com>";
   let emailsSent = 0;
@@ -225,16 +266,15 @@ async function deliverBroadcast(
       try {
         const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0E1016;border-radius:16px;overflow:hidden;color:#F7F4EE">
           <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.08)">
-            <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em">
+            <div style="font-size:22px;font-weight:800">
               <span style="color:#F7F4EE">pin</span><span style="color:#8FAE3E">G</span><span style="color:#C4D600">G</span><span style="color:#F7F4EE">et</span>
             </div>
-            <div style="margin-top:6px;font-size:10px;letter-spacing:0.28em;text-transform:uppercase;color:#C4D600">boy next door</div>
           </div>
           <div style="padding:24px">
-            <h1 style="margin:0 0 12px;font-size:20px;color:#F7F4EE">${escapeHtml(opts.title)}</h1>
+            <h1 style="margin:0 0 12px;font-size:20px">${escapeHtml(opts.title)}</h1>
             <p style="margin:0;font-size:14px;line-height:1.6;color:rgba(247,244,238,0.75)">${escapeHtml(opts.body)}</p>
             ${opts.imageUrl ? `<img src="${escapeHtml(opts.imageUrl)}" style="margin-top:16px;width:100%;border-radius:12px" />` : ""}
-            <p style="margin-top:20px;font-size:12px;color:rgba(247,244,238,0.4)">Also available in your pinGGet Alerts tab.</p>
+            <p style="margin-top:20px;font-size:12px;color:rgba(247,244,238,0.4)">Open Alerts in the app for full offer details.</p>
           </div>
         </div>`;
         const res = await fetch("https://api.resend.com/emails", {
@@ -252,24 +292,11 @@ async function deliverBroadcast(
           }),
         });
         if (res.ok) emailsSent++;
-      } catch (_) {
-        // ignore individual email failures
-      }
+      } catch (_) { /* ignore */ }
     }
   }
 
-  // Log a summary row if delivery log table exists (singular name used by admin UI historically)
-  try {
-    await admin.from("notification_delivery_logs").insert({
-      status: "sent",
-      error_message: `admin broadcast → ${recipients.length} in-app, ${emailsSent} email`,
-      fcm_message_id: null,
-    });
-  } catch (_) {
-    // table may not allow insert without device_token — ignore
-  }
-
-  return { recipientCount: recipients.length, emailsSent, inAppInserted };
+  return { recipientCount: recipients.length, emailsSent, inAppInserted, pushSent, pushFailed };
 }
 
 function escapeHtml(s: string) {

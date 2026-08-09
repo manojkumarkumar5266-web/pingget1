@@ -91,6 +91,12 @@ export function usePushNotifications(): UsePushNotificationsResult {
         return
       }
 
+      // Admin offers / announcements → full offer page with image
+      if ((type === 'admin_announcement' || type === 'admin_offer') && entityId) {
+        navigate(profile.role === 'dp' ? `/dp/offers/${entityId}` : `/app/offers/${entityId}`)
+        return
+      }
+
       const route =
         detail.route ||
         (type ? resolveNotificationRoute(type, entityId, profile.role) : '')

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, Message, ChatRoom, Order, Profile, DeliveryPartner } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { Avatar, StatusBadge, ErrorBanner, FullScreenLoader } from '../../components/ui'
 import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
 import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, CheckCircle, ClipboardList, CreditCard, Upload, ShieldCheck, AlertCircle, CalendarClock, Clock, RotateCcw, Shield, MapPin, Navigation, Tag, Volume2, ChevronDown, ChevronUp } from 'lucide-react'
@@ -343,6 +344,7 @@ export default function ChatScreen() {
         body: 'The user accepted your quotation. Start shopping now.',
         type: 'order_confirmed', related_id: room.request_id,
       })
+      kickPushDelivery()
       // User accepts quotation → both sides move to tracking
       navigate(`/app/track/${room.request_id}`, { replace: true })
     }
@@ -356,6 +358,7 @@ export default function ChatScreen() {
       body: 'The customer rejected your quotation. The order has been cancelled.',
       type: 'order_cancelled', related_id: room.request_id,
     })
+    kickPushDelivery()
     navigate(isUser ? '/app' : '/dp')
   }
 
@@ -585,6 +588,7 @@ export default function ChatScreen() {
                             await supabase.from('requests').update({ status: 'booking_confirmed' }).eq('advance_payment_id', msg.advance_payment_id)
                             await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: 'Advance Confirmation Payment Verified. Your booking has been successfully reserved. See you on the scheduled date and time.' })
                             await supabase.from('notifications').insert({ user_id: fullOrderData?.user_id, title: 'Payment Verified', body: 'Your advance payment has been verified. Booking confirmed!', type: 'payment_verified', related_id: fullOrderData?.id })
+                            kickPushDelivery()
                             fetchMessages()
                             navigate('/dp', { replace: true })
                           }}
@@ -1129,6 +1133,7 @@ function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
         type: 'payment_request',
         related_id: request.id,
       })
+      kickPushDelivery()
 
       onSent()
     } catch (e) {

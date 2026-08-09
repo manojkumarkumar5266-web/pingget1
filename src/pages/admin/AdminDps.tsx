@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context'
 import { supabase, DeliveryPartner, Profile } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { Avatar, EmptyState, SkeletonCard } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
 import { Check, X, Shield, ChevronRight, ArrowLeft, FileText, Phone, Truck, CreditCard, AlertCircle, Download, MapPin } from 'lucide-react'
@@ -59,6 +60,7 @@ export default function AdminDps() {
           : 'Your delivery partner application was not approved. Please contact support.',
         type: 'dp_status',
       })
+      kickPushDelivery()
       try {
         await supabase.functions.invoke('send-email', {
           body: {

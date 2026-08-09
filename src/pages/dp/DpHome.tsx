@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { useGps } from '../../hooks/useGps'
 import { ServiceStatusBanner, SkeletonList, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency, STATUS_LABELS, STATUS_COLORS } from '../../lib/utils'
@@ -466,6 +467,7 @@ export default function DpHome() {
       type: 'dp_reserved',
       related_id: req.id,
     })
+    kickPushDelivery()
 
     return roomId
   }

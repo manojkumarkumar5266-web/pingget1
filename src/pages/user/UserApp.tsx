@@ -10,6 +10,7 @@ import ChatScreen from '../shared/ChatScreen'
 import FullOrderDetails from '../shared/FullOrderDetails'
 import UserProfile from './UserProfile'
 import UserNotifications from './UserNotifications'
+import OfferDetailPage from '../shared/OfferDetailPage'
 
 export default function UserApp() {
   return (
@@ -22,6 +23,7 @@ export default function UserApp() {
         <Route path="/track/:requestId" element={<LiveTrackingPage />} />
         <Route path="/orders" element={<UserOrders />} />
         <Route path="/notifications" element={<UserNotifications />} />
+        <Route path="/offers/:offerId" element={<OfferDetailPage basePath="/app" />} />
         <Route path="/profile" element={<UserProfile />} />
       </Route>
       <Route path="/chat/:roomId" element={<ChatScreen />} />

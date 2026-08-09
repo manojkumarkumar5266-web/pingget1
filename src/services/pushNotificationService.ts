@@ -101,7 +101,10 @@ export function resolveNotificationRoute(
     case 'advance_expired':
       return role === 'dp' ? `/dp/orders` : `/app/orders`
     case NOTIFICATION_TYPES.ADMIN_ANNOUNCEMENT:
-      return `/app/notifications`
+    case 'admin_offer':
+      return id
+        ? (role === 'dp' ? `/dp/offers/${id}` : `/app/offers/${id}`)
+        : (role === 'dp' ? `/dp/notifications` : `/app/notifications`)
     // DP routes
     case NOTIFICATION_TYPES.NEW_NEARBY_REQUEST:
     case NOTIFICATION_TYPES.REQUEST_ASSIGNED:
