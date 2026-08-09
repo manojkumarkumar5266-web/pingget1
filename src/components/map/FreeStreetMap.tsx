@@ -15,8 +15,12 @@ type Props = {
   zoom?: number
   destination?: LatLng | null
   markers?: MapMarker[]
+  /** Polyline points (lat/lng) drawn between DP ↔ user */
+  routeLine?: LatLng[] | null
   /** Search / visibility radius in meters (default 10 km) */
   radiusMeters?: number
+  /** Hide radius ring (use for live tracking) */
+  hideRadius?: boolean
   /** Light white map with warm street tint (scanning) */
   light?: boolean
   /** Pulsing radar rings from center out to radius */
@@ -117,7 +121,9 @@ export default function FreeStreetMap({
   zoom = 13,
   destination,
   markers = [],
+  routeLine = null,
   radiusMeters = DEFAULT_RADIUS_M,
+  hideRadius = false,
   light = false,
   radar = false,
   instant = false,
@@ -139,9 +145,10 @@ export default function FreeStreetMap({
   const lockedZoom = useRef<number | null>(null)
   const zBase = radiusMeters >= 8000 ? Math.min(zoom, 12) : zoom
   if (lockedZoom.current == null) lockedZoom.current = zBase
-  const z = instant || (light && radar) ? lockedZoom.current : zBase
+  // Live tracking with route: allow slightly tighter zoom, still locked
+  const z = instant || light ? lockedZoom.current : zBase
 
-  const useInstant = instant || (light && radar && !dest)
+  const useInstant = instant || light || !!routeLine
   const [tileReady, setTileReady] = useState(false)
 
   const tileSrc = useMemo(() => {
@@ -166,7 +173,7 @@ export default function FreeStreetMap({
   const H = 520
 
   const nearby = markers.filter(m => {
-    if (m.kind === 'user') return true
+    if (m.kind === 'user' || m.kind === 'bike' || m.kind === 'dp') return true
     if (m.kind === 'pickup' || m.kind === 'destination') return true
     return haversineM(c, m.position) <= radiusMeters
   })
@@ -176,6 +183,16 @@ export default function FreeStreetMap({
   const metersPerPx = (156543.03392 * Math.cos((c.lat * Math.PI) / 180)) / Math.pow(2, z)
   const radiusPx = radiusMeters / Math.max(metersPerPx, 0.1)
   const radiusPct = Math.min(92, (radiusPx / H) * 100 * 2)
+
+  const routeSvgPoints = useMemo(() => {
+    if (!routeLine || routeLine.length < 2) return ''
+    return routeLine
+      .map(p => {
+        const { left, top } = project(p.lat, p.lng, c, z, W, H)
+        return `${left},${top}`
+      })
+      .join(' ')
+  }, [routeLine, c.lat, c.lng, z])
 
   return (
     <div
@@ -190,7 +207,6 @@ export default function FreeStreetMap({
     >
       {useInstant ? (
         <>
-          {/* Always instant — never waits on network */}
           <InstantLightBasemap />
           {tileSrc && (
             <img
@@ -232,15 +248,45 @@ export default function FreeStreetMap({
         />
       )}
 
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{
-          width: `${radiusPct}%`,
-          height: `${radiusPct}%`,
-          border: light || useInstant ? '1.5px solid rgba(229,57,53,0.28)' : `2px solid rgba(245,197,66,0.4)`,
-          background: light || useInstant ? 'rgba(229,57,53,0.04)' : 'rgba(245,197,66,0.05)',
-        }}
-      />
+      {/* Route line DP ↔ user */}
+      {routeSvgPoints && (
+        <svg className="pointer-events-none absolute inset-0 z-[5] h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <polyline
+            points={routeSvgPoints}
+            fill="none"
+            stroke="#F5C542"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="0"
+            vectorEffect="non-scaling-stroke"
+            opacity={0.95}
+          />
+          <polyline
+            points={routeSvgPoints}
+            fill="none"
+            stroke="#E53935"
+            strokeWidth="0.55"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="2 1.5"
+            vectorEffect="non-scaling-stroke"
+            opacity={0.85}
+          />
+        </svg>
+      )}
+
+      {!hideRadius && !routeLine && (
+        <div
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{
+            width: `${radiusPct}%`,
+            height: `${radiusPct}%`,
+            border: light || useInstant ? '1.5px solid rgba(229,57,53,0.28)' : `2px solid rgba(245,197,66,0.4)`,
+            background: light || useInstant ? 'rgba(229,57,53,0.04)' : 'rgba(245,197,66,0.05)',
+          }}
+        />
+      )}
 
       {radar && (
         <div
@@ -272,10 +318,16 @@ export default function FreeStreetMap({
               <img
                 src={Images.bikeMarker}
                 alt=""
-                className="mb-0 h-11 w-11 translate-y-1/2 object-contain drop-shadow-lg"
+                className="mb-0 h-9 w-9 translate-y-1/2 object-contain drop-shadow-lg"
                 draggable={false}
                 onError={(e) => {
-                  ;(e.target as HTMLImageElement).style.display = 'none'
+                  const el = e.target as HTMLImageElement
+                  el.onerror = null
+                  el.src =
+                    'data:image/svg+xml,' +
+                    encodeURIComponent(
+                      '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="#F5C542"/><path d="M10 22a4 4 0 1 0 0.01 0zm16 0a4 4 0 1 0 0.01 0zM12 22h8l3-7h-5l-2 4h-2z" fill="#140F05"/></svg>',
+                    )
                 }}
               />
             ) : (
@@ -307,9 +359,8 @@ export default function FreeStreetMap({
           border: light || useInstant ? '1px solid rgba(229,57,53,0.35)' : '1px solid rgba(245,197,66,0.4)',
         }}
       >
-        {useInstant ? 'Live map' : 'Google Maps · Live'}
+        {routeLine ? 'Live tracking' : useInstant ? 'Live map' : 'Google Maps · Live'}
         {center ? ' · GPS on' : ''}
-        {` · ${Math.round(radiusMeters / 1000)} km`}
         {dpCount > 0 ? ` · ${dpCount} DP` : ''}
       </div>
     </div>

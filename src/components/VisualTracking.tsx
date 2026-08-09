@@ -18,12 +18,14 @@ const STEP_LABELS: Record<string, string> = {
   delivered: 'Delivered', cash_received: 'Delivered', completed: 'Delivered',
 }
 
-/** Rebuilt tracking media stage — large step art + progress */
+/** Rebuilt tracking media stage — large step art + optional progress */
 export default function VisualTracking({
   progress,
   status,
   pickupLabel,
   deliveryLabel,
+  hideProgress = false,
+  compact = false,
 }: {
   progress: number
   status: string
@@ -32,19 +34,21 @@ export default function VisualTracking({
   pickupLabel?: string
   deliveryLabel?: string
   eta?: string
+  hideProgress?: boolean
+  compact?: boolean
 }) {
   const image = getTrackingStepImage(status) || Images.tracking
   const label = STEP_LABELS[status] || STATUS_ETA[status] || 'In Progress'
 
   return (
-    <div className="flex h-full flex-col justify-center px-3 py-2" style={{ background: pg.bg }}>
+    <div className={`flex flex-col justify-center px-3 ${compact ? 'py-1' : 'h-full py-2'}`} style={{ background: pg.bg }}>
       <div className="mx-auto w-full max-w-lg">
         <div className="overflow-hidden" style={{ borderRadius: 28, border: `1px solid rgba(245,197,66,0.22)`, background: pg.surface }}>
           <img
             src={image}
             alt={label}
             className="w-full object-cover"
-            style={{ height: 'min(52vw, 300px)' }}
+            style={{ height: compact ? 'min(36vw, 180px)' : 'min(52vw, 300px)' }}
             draggable={false}
           />
           <div className="px-4 py-3.5 text-center" style={{ background: pg.limeDim }}>
@@ -52,28 +56,32 @@ export default function VisualTracking({
           </div>
         </div>
 
-        <div className="mt-4 flex justify-between gap-4 px-1">
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: pg.text4 }}>Pickup</p>
-            <p className="truncate text-sm font-bold" style={{ color: pg.text2 }}>{pickupLabel || 'Store'}</p>
-          </div>
-          <div className="min-w-0 flex-1 text-right">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: pg.text4 }}>Delivery</p>
-            <p className="truncate text-sm font-bold" style={{ color: pg.text2 }}>{deliveryLabel || 'You'}</p>
-          </div>
-        </div>
+        {!hideProgress && (
+          <>
+            <div className="mt-4 flex justify-between gap-4 px-1">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: pg.text4 }}>Pickup</p>
+                <p className="truncate text-sm font-bold" style={{ color: pg.text2 }}>{pickupLabel || 'Store'}</p>
+              </div>
+              <div className="min-w-0 flex-1 text-right">
+                <p className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: pg.text4 }}>Delivery</p>
+                <p className="truncate text-sm font-bold" style={{ color: pg.text2 }}>{deliveryLabel || 'You'}</p>
+              </div>
+            </div>
 
-        <div className="mt-4">
-          <div className="mb-1.5 flex justify-between text-[11px] font-bold" style={{ color: pg.text4 }}>
-            <span>Progress</span><span>{progress}%</span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${progress}%`, background: `linear-gradient(90deg,#8fa300,${pg.lime})` }}
-            />
-          </div>
-        </div>
+            <div className="mt-4">
+              <div className="mb-1.5 flex justify-between text-[11px] font-bold" style={{ color: pg.text4 }}>
+                <span>Progress</span><span>{progress}%</span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${progress}%`, background: `linear-gradient(90deg,#E8B84A,${pg.lime})` }}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

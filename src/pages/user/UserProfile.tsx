@@ -3,7 +3,7 @@ import { Avatar } from '../../components/ui'
 import { Mail, Phone, MapPin, Globe, LogOut, Headphones, Edit2, X, Check, Camera } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import { compressImage } from '../../lib/imageCompress'
+import { uploadProfilePhoto } from '../../lib/uploadProfilePhoto'
 import { Screen, PageTitle, Surface, CTA } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 
@@ -18,20 +18,14 @@ export default function UserProfile() {
 
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !profile?.id) return
     setUploadingPhoto(true)
     try {
-      const compressed = await compressImage(file)
-      const path = `${profile!.id}/avatar-${Date.now()}.jpg`
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' })
-      if (upErr) throw upErr
-      const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
-      const { error: dbErr } = await supabase.from('profiles').update({ photo_url: url }).eq('id', profile!.id)
-      if (dbErr) throw dbErr
+      await uploadProfilePhoto(profile.id, file)
       await refreshProfile()
     } catch (err: any) {
       console.error('Photo upload failed:', err)
-      alert('Failed to update photo. Please try again.')
+      alert(err?.message ? `Photo upload failed: ${err.message}` : 'Failed to update photo. Please try again.')
     }
     setUploadingPhoto(false)
     e.target.value = ''
@@ -73,7 +67,7 @@ export default function UserProfile() {
             >
               <Camera size={16} />
             </button>
-            <input ref={cameraRef} type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoCapture} />
+            <input ref={cameraRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoCapture} />
           </div>
           {uploadingPhoto && <p className="mb-1 text-xs" style={{ color: pg.text3 }}>Updating photo...</p>}
           <h2 className="text-2xl font-extrabold tracking-tight">{profile?.full_name}</h2>

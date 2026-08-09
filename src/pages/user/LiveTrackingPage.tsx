@@ -1,10 +1,12 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } from '../../lib/supabase'
 import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
 import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/VisualTracking'
+import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
 import { Images } from '../../lib/customImages'
+import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
 import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck } from 'lucide-react'
 import { pg } from '../../design/tokens'
 import { CTA, Surface, MobileFrame } from '../../design/primitives'
@@ -18,6 +20,8 @@ function vehicleIcon(v: string | null | undefined) {
 
 type PayPhase = 'idle' | 'awaiting_user_payment' | 'awaiting_dp_accept' | 'rating' | 'thanks'
 
+const LIVE_STATUSES = new Set(['on_the_way', 'arrived'])
+
 export default function LiveTrackingPage() {
   const { requestId } = useParams<{ requestId: string }>()
   const { profile } = useAuth()
@@ -26,14 +30,15 @@ export default function LiveTrackingPage() {
   const [request, setRequest] = useState<DeliveryRequest | null>(null)
   const [dpProfile, setDpProfile] = useState<Profile | null>(null)
   const [dpData, setDpData] = useState<DeliveryPartner | null>(null)
+  const [dpLive, setDpLive] = useState<LatLng | null>(null)
+  const [routeCoords, setRouteCoords] = useState<LatLng[]>([])
+  const [liveEtaLabel, setLiveEtaLabel] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [payPhase, setPayPhase] = useState<PayPhase>('idle')
   const [ratingStars, setRatingStars] = useState(0)
   const [ratingFeedback, setRatingFeedback] = useState('')
   const [ratingSubmitting, setRatingSubmitting] = useState(false)
-  const [liveEta, setLiveEta] = useState<number | null>(null)
-  const etaRef = useRef<number | null>(null)
-  const etaStartRef = useRef<number>(Date.now())
+  const lastEtaWrite = useRef(0)
 
   useEffect(() => {
     if (!requestId) return
@@ -51,6 +56,11 @@ export default function LiveTrackingPage() {
         ])
         setDpProfile(dpProf.data as Profile | null)
         setDpData(dp.data as DeliveryPartner | null)
+        const p = dpProf.data as Profile | null
+        const d = dp.data as DeliveryPartner | null
+        const lat = (req as any).dp_lat ?? d?.current_lat ?? p?.gps_lat
+        const lng = (req as any).dp_lng ?? d?.current_lng ?? p?.gps_lng
+        if (lat != null && lng != null) setDpLive({ lat: Number(lat), lng: Number(lng) })
       }
       setLoading(false)
     }
@@ -62,10 +72,12 @@ export default function LiveTrackingPage() {
         async (payload: any) => {
           const next = payload.new as DeliveryRequest
           setRequest(next)
-          // DP accepted payment → user goes to rating
           if ((next as any).payment_accepted_at && payPhase !== 'rating' && payPhase !== 'thanks') {
             setPayPhase('rating')
           }
+          const lat = (next as any).dp_lat
+          const lng = (next as any).dp_lng
+          if (lat != null && lng != null) setDpLive({ lat: Number(lat), lng: Number(lng) })
           if (payload.new.accepted_dp_id && !dpProfile) {
             const [dpProf, dp] = await Promise.all([
               supabase.from('profiles').select('*').eq('id', payload.new.accepted_dp_id).maybeSingle(),
@@ -79,25 +91,77 @@ export default function LiveTrackingPage() {
     return () => { supabase.removeChannel(channel) }
   }, [requestId])
 
+  // Poll DP GPS from profiles / delivery_partners for live bike
   useEffect(() => {
-    const baseEta = (request as any)?.eta_minutes
-    if (!baseEta || baseEta <= 0) { setLiveEta(null); return }
-    if (etaRef.current !== baseEta) {
-      etaRef.current = baseEta
-      etaStartRef.current = Date.now()
-      setLiveEta(baseEta)
+    const dpId = request?.accepted_dp_id
+    if (!dpId || !request || !LIVE_STATUSES.has(request.status)) return
+
+    const pull = async () => {
+      const [prof, dp] = await Promise.all([
+        supabase.from('profiles').select('gps_lat,gps_lng,photo_url,full_name,phone').eq('id', dpId).maybeSingle(),
+        supabase.from('delivery_partners').select('current_lat,current_lng,vehicle_type,rating_avg,rating_count').eq('user_id', dpId).maybeSingle(),
+      ])
+      if (prof.data) {
+        setDpProfile(prev => ({ ...(prev || {}), ...prof.data } as Profile))
+      }
+      if (dp.data) setDpData(prev => ({ ...(prev || {}), ...dp.data } as DeliveryPartner))
+      const lat = (dp.data as any)?.current_lat ?? prof.data?.gps_lat ?? (request as any).dp_lat
+      const lng = (dp.data as any)?.current_lng ?? prof.data?.gps_lng ?? (request as any).dp_lng
+      if (lat != null && lng != null) setDpLive({ lat: Number(lat), lng: Number(lng) })
     }
-    const status = request?.status
-    if (status === 'arrived' || status === 'delivered' || status === 'completed' || status === 'cash_received') {
-      setLiveEta(0)
-      return
+    pull()
+    const id = window.setInterval(pull, 4000)
+    return () => window.clearInterval(id)
+  }, [request?.accepted_dp_id, request?.status])
+
+  const userPos: LatLng | null = useMemo(() => {
+    if (!request) return null
+    if (request.delivery_lat != null && request.delivery_lng != null) {
+      return { lat: Number(request.delivery_lat), lng: Number(request.delivery_lng) }
     }
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - etaStartRef.current) / 60000)
-      setLiveEta(Math.max(0, baseEta - elapsed))
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [(request as any)?.eta_minutes, request?.status])
+    if (profile?.gps_lat != null && profile?.gps_lng != null) {
+      return { lat: Number(profile.gps_lat), lng: Number(profile.gps_lng) }
+    }
+    return null
+  }, [request, profile?.gps_lat, profile?.gps_lng])
+
+  // Live route + ETA from DP → user
+  useEffect(() => {
+    if (!request || !LIVE_STATUSES.has(request.status) || !dpLive || !userPos) return
+    let cancelled = false
+    const run = async () => {
+      const route = await fetchRoute(dpLive, userPos, 'driving')
+      if (cancelled || !route) {
+        // Straight-line fallback ETA (~22 km/h city bike)
+        const R = 6371000
+        const dLat = ((userPos.lat - dpLive.lat) * Math.PI) / 180
+        const dLng = ((userPos.lng - dpLive.lng) * Math.PI) / 180
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((dpLive.lat * Math.PI) / 180) *
+            Math.cos((userPos.lat * Math.PI) / 180) *
+            Math.sin(dLng / 2) ** 2
+        const meters = 2 * R * Math.asin(Math.sqrt(a))
+        const seconds = (meters / 1000 / 22) * 3600
+        setRouteCoords([dpLive, userPos])
+        setLiveEtaLabel(formatETA(seconds))
+        return
+      }
+      setRouteCoords(route.coordinates.map(([lat, lng]) => ({ lat, lng })))
+      setLiveEtaLabel(formatETA(route.duration_seconds))
+      const mins = Math.max(1, Math.round(route.duration_seconds / 60))
+      if (Date.now() - lastEtaWrite.current > 20000 && requestId) {
+        lastEtaWrite.current = Date.now()
+        await supabase.from('requests').update({ eta_minutes: mins } as any).eq('id', requestId)
+      }
+    }
+    run()
+    const id = window.setInterval(run, 12000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [dpLive?.lat, dpLive?.lng, userPos?.lat, userPos?.lng, request?.status, requestId])
 
   const confirmDelivery = async () => {
     await supabase.from('requests').update({ status: 'completed' }).eq('id', requestId)
@@ -106,7 +170,6 @@ export default function LiveTrackingPage() {
   }
 
   const markPaymentCompleted = async () => {
-    // Soft-flag for DP (column may not exist — ignore error)
     await supabase.from('requests').update({
       payment_completed_at: new Date().toISOString(),
     } as any).eq('id', requestId)
@@ -172,9 +235,24 @@ export default function LiveTrackingPage() {
   const isPending = request.status === 'pending'
   const isCompleted = request.status === 'completed' || request.status === 'delivered' || request.status === 'cash_received'
   const isDelivered = request.status === 'delivered' || request.status === 'cash_received' || request.status === 'completed'
+  const showLiveMap = LIVE_STATUSES.has(request.status)
   const progress = STATUS_PROGRESS[request.status] ?? 0
-  const etaLabel = STATUS_ETA[request.status] ?? '--'
+  const etaLabel = liveEtaLabel || STATUS_ETA[request.status] || '--'
   const VehicleIcon = vehicleIcon(dpData?.vehicle_type)
+
+  const mapMarkers: MapMarker[] = useMemo(() => {
+    const list: MapMarker[] = []
+    if (userPos) list.push({ id: 'user', position: userPos, kind: 'user' })
+    if (dpLive) list.push({ id: 'dp', position: dpLive, kind: 'bike', label: dpProfile?.full_name?.split(' ')[0] })
+    return list
+  }, [userPos, dpLive, dpProfile?.full_name])
+
+  const mapCenter = useMemo(() => {
+    if (dpLive && userPos) {
+      return { lat: (dpLive.lat + userPos.lat) / 2, lng: (dpLive.lng + userPos.lng) / 2 }
+    }
+    return dpLive || userPos
+  }, [dpLive, userPos])
 
   if (payPhase === 'thanks') {
     return (
@@ -226,32 +304,66 @@ export default function LiveTrackingPage() {
           <button type="button" onClick={() => navigate('/app')} className="map-control-btn map-control-dark">
             <ArrowLeft size={18} />
           </button>
-          <div>
+          <div className="flex-1 text-center pr-11">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>Live</p>
             <p className="text-sm font-extrabold text-white">Order tracking</p>
           </div>
         </div>
       </div>
 
-      <div className="relative flex-shrink-0" style={{ height: '46vh', minHeight: '300px' }}>
+      <div className="relative flex-shrink-0">
         {isPending ? (
-          <div className="flex h-full flex-col items-center justify-center bg-black px-6">
-            <img src={Images.userWaiting} alt="" className="w-40 h-40 object-contain mb-3" />
+          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-black px-6">
+            <img src={Images.userWaiting} alt="" className="mb-3 h-40 w-40 object-contain" />
             <p className="text-lg font-bold text-white">Waiting for partner</p>
           </div>
         ) : isCancelled ? (
-          <div className="flex h-full flex-col items-center justify-center bg-black px-6">
+          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-black px-6">
             <p className="text-lg font-bold text-white">Order Cancelled</p>
             <button type="button" onClick={() => navigate('/app')} className="btn-primary mt-4">Back Home</button>
           </div>
+        ) : showLiveMap ? (
+          <div>
+            <VisualTracking
+              progress={progress}
+              status={request.status}
+              dpName={dpProfile?.full_name}
+              pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
+              deliveryLabel={request.delivery_address?.split(',')[0] || 'You'}
+              hideProgress
+              compact
+            />
+            <div className="relative mx-3 mb-2 h-[32vh] min-h-[200px] overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
+              <FreeStreetMap
+                center={mapCenter}
+                zoom={14}
+                markers={mapMarkers}
+                routeLine={routeCoords.length >= 2 ? routeCoords : dpLive && userPos ? [dpLive, userPos] : null}
+                light
+                instant
+                hideRadius
+                radiusMeters={5000}
+              />
+              {liveEtaLabel && (
+                <div
+                  className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
+                  style={{ background: 'rgba(7,8,11,0.88)', color: pg.lime, border: `1px solid rgba(245,197,66,0.35)` }}
+                >
+                  ETA {liveEtaLabel}
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
-          <VisualTracking
-            progress={progress}
-            status={request.status}
-            dpName={dpProfile?.full_name}
-            pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
-            deliveryLabel={request.delivery_address?.split(',')[0] || 'You'}
-          />
+          <div className="h-[46vh] min-h-[300px]">
+            <VisualTracking
+              progress={progress}
+              status={request.status}
+              dpName={dpProfile?.full_name}
+              pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
+              deliveryLabel={request.delivery_address?.split(',')[0] || 'You'}
+            />
+          </div>
         )}
       </div>
 
@@ -278,7 +390,7 @@ export default function LiveTrackingPage() {
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(59,130,246,0.15)' }}>
                     <Clock size={16} style={{ color: pg.lime }} />
                   </div>
-                  <p className="text-base font-bold text-white">{liveEta !== null ? (liveEta === 0 ? '0m' : `${liveEta}m`) : etaLabel}</p>
+                  <p className="text-base font-bold text-white">{etaLabel}</p>
                   <p className="text-[10px]" style={{ color: pg.text3 }}>ETA</p>
                 </Surface>
               </div>

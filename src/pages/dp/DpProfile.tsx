@@ -3,7 +3,7 @@ import { Avatar, StarRating } from '../../components/ui'
 import { Mail, Phone, MapPin, Bike, LogOut, Shield, Headphones, ChevronRight, Edit2, Camera, X, Check } from 'lucide-react'
 import { useEffect, useState, useRef, type ReactNode } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
-import { compressImage } from '../../lib/imageCompress'
+import { uploadProfilePhoto } from '../../lib/uploadProfilePhoto'
 import { Screen, PageTitle, Surface, CTA, Chip } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 
@@ -36,21 +36,15 @@ export default function DpProfile() {
 
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !profile?.id) return
     setUploadingPhoto(true)
     try {
-      const compressed = await compressImage(file)
-      const path = `${profile!.id}/avatar-${Date.now()}.jpg`
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' })
-      if (upErr) throw upErr
-      const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
-      const { error: dbErr } = await supabase.from('profiles').update({ photo_url: url }).eq('id', profile!.id)
-      if (dbErr) throw dbErr
+      await uploadProfilePhoto(profile.id, file)
       await refreshProfile()
       setPhotoRequired(false)
     } catch (err: any) {
       console.error('Photo upload failed:', err)
-      alert('Failed to update photo. Please try again.')
+      alert(err?.message ? `Photo upload failed: ${err.message}` : 'Failed to update photo. Please try again.')
     }
     setUploadingPhoto(false)
     e.target.value = ''
@@ -102,7 +96,7 @@ export default function DpProfile() {
               >
                 <Camera size={14} />
               </button>
-              <input ref={cameraRef} type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoCapture} />
+              <input ref={cameraRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoCapture} />
             </div>
             <Chip tone={dp?.status === 'approved' ? 'success' : 'warn'}>
               <span className="flex items-center gap-1"><Shield size={10} /> {dp?.status || 'pending'}</span>
