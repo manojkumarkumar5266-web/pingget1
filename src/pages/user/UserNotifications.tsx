@@ -113,6 +113,15 @@ export default function UserNotifications() {
         if (data) { navigate(`/app/chat/${data.id}`); return }
         const { data: byId } = await supabase.from('chat_rooms').select('id').eq('id', n.related_id).maybeSingle()
         if (byId) navigate(`/app/chat/${byId.id}`)
+        return
+      }
+      if (
+        n.type === 'payment_verified' ||
+        n.type?.startsWith('advance_reminder_') ||
+        n.type === 'advance_expired'
+      ) {
+        navigate('/app/orders')
+        return
       }
     }
   }

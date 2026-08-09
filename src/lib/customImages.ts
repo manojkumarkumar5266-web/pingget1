@@ -100,6 +100,7 @@ export function getCategoryImage(name: string): string {
 export const STATUS_STEP_IMAGE: Record<string, string> = {
   accepted: Images.trackingStep.reachedStore,
   confirmed: Images.trackingStep.reachedStore,
+  task_started: Images.trackingStep.reachedStore,
   shopping: Images.trackingStep.reachedStore,
   purchased: Images.trackingStep.orderPickedUp,
   on_the_way: Images.trackingStep.onTheWay,

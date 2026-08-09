@@ -198,12 +198,21 @@ export default function ChatScreen() {
           const updated = payload.new as any
           const prev = payload.old as any
           if (updated.status === 'cancelled') navigate(isUser ? '/app' : '/dp')
-          // Quotation accepted → leave chat for tracking on both sides
+          // Advance confirmation payment verified → both sides go home; order stays active until task day
           if (
-            updated.status === 'confirmed' &&
+            updated.status === 'booking_confirmed' &&
             prev?.status &&
-            prev.status !== 'confirmed' &&
-            ['accepted', 'pending', 'dp_reserved', 'waiting_payment'].includes(prev.status)
+            prev.status !== 'booking_confirmed'
+          ) {
+            navigate(isUser ? '/app' : '/dp', { replace: true })
+            return
+          }
+          // Task day started (or instant quotation accepted) → tracking on both sides
+          if (
+            (updated.status === 'confirmed' || updated.status === 'task_started') &&
+            prev?.status &&
+            prev.status !== updated.status &&
+            ['accepted', 'pending', 'dp_reserved', 'waiting_payment', 'booking_confirmed', 'payment_verified'].includes(prev.status)
           ) {
             navigate(
               isUser ? `/app/track/${room.request_id}` : `/dp/navigate/${room.request_id}`,
@@ -571,6 +580,7 @@ export default function ChatScreen() {
                             await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: 'Advance Confirmation Payment Verified. Your booking has been successfully reserved. See you on the scheduled date and time.' })
                             await supabase.from('notifications').insert({ user_id: fullOrderData?.user_id, title: 'Payment Verified', body: 'Your advance payment has been verified. Booking confirmed!', type: 'payment_verified', related_id: fullOrderData?.id })
                             fetchMessages()
+                            navigate('/dp', { replace: true })
                           }}
                             className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
                             style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
@@ -598,6 +608,7 @@ export default function ChatScreen() {
                             await supabase.from('requests').update({ status: 'booking_confirmed' }).eq('advance_payment_id', msg.advance_payment_id)
                             await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: '[Admin Override] Payment verified by admin. Booking confirmed.' })
                             fetchMessages()
+                            navigate(isUser ? '/app' : '/dp', { replace: true })
                           }}
                             className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
                             style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>

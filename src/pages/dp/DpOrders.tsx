@@ -8,7 +8,7 @@ import { Screen, PageTitle, Surface, CTA, Chip, EmptyBlock, IconButton } from '.
 import { pg } from '../../design/tokens'
 import {
   Clock, MessageCircle, Lock, Camera, Wallet, Navigation,
-  XCircle, Play, CalendarClock, CreditCard, CheckCircle2, ChevronRight,
+  XCircle, Play, CalendarClock, CreditCard, ChevronRight,
 } from 'lucide-react'
 import DeliveryProofUploader from '../../components/DeliveryProofUploader'
 
@@ -270,10 +270,43 @@ export default function DpOrders() {
                         className="min-h-[44px] flex-1 text-sm"
                         onClick={async () => {
                           setUpdating(req.id)
-                          await supabase.from('requests').update({ status: 'task_started', task_started_at: new Date().toISOString() }).eq('id', req.id)
-                          await supabase.from('notifications').insert({ user_id: req.user_id, title: 'Task Started', body: 'Your delivery partner has started the task. Live tracking is now enabled.', type: 'task_started', related_id: req.id })
+                          const now = new Date().toISOString()
+                          // Same as instant after quotation: ensure order row, enter confirmed tracking flow
+                          const { data: existingOrder } = await supabase
+                            .from('orders')
+                            .select('id')
+                            .eq('request_id', req.id)
+                            .maybeSingle()
+                          if (!existingOrder) {
+                            const deliveryCharge = Number(req.max_budget || 0)
+                            const commissionPct = 10
+                            const commissionAmount = Math.round(deliveryCharge * commissionPct / 100)
+                            await supabase.from('orders').insert({
+                              request_id: req.id,
+                              user_id: req.user_id,
+                              dp_id: profile!.id,
+                              items_summary: req.description?.split('\n')[0]?.trim() || req.request_category || 'Advance booking',
+                              item_cost: 0,
+                              delivery_charge: deliveryCharge,
+                              commission_pct: commissionPct,
+                              commission_amount: commissionAmount,
+                              dp_earnings: deliveryCharge - commissionAmount,
+                              status: 'confirmed',
+                            })
+                          }
+                          await supabase.from('requests').update({
+                            status: 'confirmed',
+                            task_started_at: now,
+                          }).eq('id', req.id)
+                          await supabase.from('notifications').insert({
+                            user_id: req.user_id,
+                            title: 'Task Started',
+                            body: 'Your delivery partner has started the task. Live tracking is now enabled.',
+                            type: 'task_started',
+                            related_id: req.id,
+                          })
                           setUpdating(null)
-                          fetchOrders()
+                          navigate(`/dp/navigate/${req.id}`, { replace: true })
                         }}
                         disabled={updating === req.id}
                       >
@@ -282,26 +315,9 @@ export default function DpOrders() {
                     )}
 
                     {req.order_type === 'advance' && req.status === 'task_started' && (
-                      <>
-                        <CTA className="min-h-[44px] flex-1 text-sm" onClick={() => navigate(`/dp/navigate/${req.id}`)}>
-                          <Navigation size={15} /> Live tracking
-                        </CTA>
-                        <CTA
-                          variant="secondary"
-                          className="min-h-[44px] flex-1 text-sm"
-                          style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: '#86EFAC' }}
-                          onClick={async () => {
-                            setUpdating(req.id)
-                            await supabase.from('requests').update({ status: 'task_completed', task_completed_at: new Date().toISOString() }).eq('id', req.id)
-                            await supabase.from('notifications').insert({ user_id: req.user_id, title: 'Task Completed', body: 'Your delivery partner has completed the task.', type: 'task_completed', related_id: req.id })
-                            setUpdating(null)
-                            fetchOrders()
-                          }}
-                          disabled={updating === req.id}
-                        >
-                          <CheckCircle2 size={14} /> Complete task
-                        </CTA>
-                      </>
+                      <CTA className="min-h-[44px] flex-1 text-sm" onClick={() => navigate(`/dp/navigate/${req.id}`)}>
+                        <Navigation size={15} /> Live tracking
+                      </CTA>
                     )}
                   </div>
                 )}

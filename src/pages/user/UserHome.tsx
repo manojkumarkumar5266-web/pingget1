@@ -13,7 +13,8 @@ import { Screen, SectionLabel, Surface, EmptyBlock, Chip } from '../../design/pr
 import { pg } from '../../design/tokens'
 
 const STATUS_STEPS: Record<string, number> = {
-  pending: 0, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
+  pending: 0, searching_dp: 0, dp_reserved: 1, waiting_payment: 1, payment_verified: 1,
+  booking_confirmed: 1, task_started: 2, accepted: 1, confirmed: 2, shopping: 3, purchased: 4,
   on_the_way: 5, arrived: 6, delivered: 7, cash_received: 8, completed: 8,
 }
 
@@ -48,7 +49,7 @@ export default function UserHome() {
       if (!silent && !homeCache) setLoading(true)
       const [activeRes, completedRes] = await Promise.all([
         supabase.from('requests').select('*').eq('user_id', profile.id)
-          .in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled','dp_reserved','waiting_payment','searching_dp'])
+          .in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled','dp_reserved','waiting_payment','searching_dp','payment_verified','booking_confirmed','task_started'])
           .order('created_at', { ascending: false }),
         supabase.from('requests').select('*').eq('user_id', profile.id)
           .eq('status','completed').order('created_at', { ascending: false }).limit(3),
@@ -62,7 +63,7 @@ export default function UserHome() {
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('status','completed'),
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id)
-          .in('status',['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','dp_reserved','waiting_payment']),
+          .in('status',['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','dp_reserved','waiting_payment','searching_dp','payment_verified','booking_confirmed','task_started']),
       ])
       if (cancelled) return
       const nextStats = { total: total.count || 0, completed: completedCount.count || 0, active: activeCount.count || 0 }
@@ -231,13 +232,18 @@ export default function UserHome() {
 }
 
 async function navigateToOrder(navigate: (path: string) => void, req: DeliveryRequest) {
-  // After quotation confirmed → tracking
-  if (['on_the_way', 'arrived', 'shopping', 'purchased', 'confirmed', 'delivered', 'cash_received'].includes(req.status)) {
+  // Live task / delivery → tracking (includes advance task day)
+  if (['on_the_way', 'arrived', 'shopping', 'purchased', 'confirmed', 'task_started', 'delivered', 'cash_received'].includes(req.status)) {
     navigate(`/app/track/${req.id}`)
     return
   }
-  // Accepted / reserved → chat for quotation
-  if (req.status === 'accepted' || req.accepted_dp_id || (req as any).reserved_dp_id) {
+  // Confirmed advance booking waiting for task day → orders list
+  if (['booking_confirmed', 'payment_verified'].includes(req.status)) {
+    navigate('/app/orders')
+    return
+  }
+  // Accepted / reserved → chat for quotation / advance payment
+  if (['accepted', 'dp_reserved', 'waiting_payment'].includes(req.status)) {
     const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
     if (room?.id) {
       navigate(`/app/chat/${room.id}`)

@@ -15,6 +15,15 @@ import {
 
 type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
 
+/** Advance bookings may miss order_type from older get_nearby_requests RPCs — detect robustly. */
+function isAdvanceNearbyRequest(req: Pick<DeliveryRequest, 'order_type' | 'status' | 'is_scheduled'> & { description?: string | null }) {
+  if (req.order_type === 'advance') return true
+  if (req.is_scheduled) return true
+  if (req.status === 'searching_dp') return true
+  if ((req.description || '').toLowerCase().includes('scheduled:')) return true
+  return false
+}
+
 function VoicePlayer({ url }: { url: string }) {
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -227,13 +236,32 @@ export default function DpHome() {
       const { data, error } = await supabase.rpc('get_nearby_requests', { p_dp_user_id: profile!.id })
       if (error) { console.error('[DpHome] get_nearby_requests:', error); setLoading(false); return }
       if (!data) { setLoading(false); return }
+      const ids = data.map((r: any) => r.id).filter(Boolean)
+      // Enrich advance fields — older RPC versions omit order_type/status (causes Instant badge + broken Accept)
+      let metaById = new Map<string, Partial<DeliveryRequest>>()
+      if (ids.length > 0) {
+        const { data: metas } = await supabase
+          .from('requests')
+          .select('id, status, order_type, is_scheduled, scheduled_date, scheduled_time, scheduled_slot, scheduled_timestamp, request_category')
+          .in('id', ids)
+        metas?.forEach((m: any) => metaById.set(m.id, m))
+      }
       const userIds = [...new Set(data.map((r: any) => r.user_id))]
       let profileMap = new Map<string, Profile>()
       if (userIds.length > 0) {
         const { data: profiles } = await supabase.from('profiles').select('*').in('id', userIds)
         profiles?.forEach((p: any) => profileMap.set(p.id, p as Profile))
       }
-      setRequests((data as DeliveryRequest[]).map(r => ({ ...r, user_profile: profileMap.get(r.user_id) })))
+      setRequests((data as DeliveryRequest[]).map(r => {
+        const meta = metaById.get(r.id) || {}
+        return {
+          ...r,
+          ...meta,
+          order_type: (meta as any).order_type || r.order_type || 'instant',
+          status: (meta as any).status || r.status,
+          user_profile: profileMap.get(r.user_id),
+        }
+      }))
       setLoading(false)
     }
     fetchRequests()
@@ -283,7 +311,8 @@ export default function DpHome() {
     if (reservingId) return
     setReservingId(req.id)
     try {
-      if (req.order_type === 'advance' && req.status === 'searching_dp') {
+      // Advance → reserve_dp_for_advance (accept_request only accepts pending instant)
+      if (isAdvanceNearbyRequest(req)) {
         const { data: reserved, error } = await supabase.rpc(
           'reserve_dp_for_advance',
           { p_request_id: req.id, p_dp_user_id: profile!.id }
@@ -293,7 +322,6 @@ export default function DpHome() {
           showToast(row?.error_msg || error?.message || 'Failed to reserve this booking')
           return
         }
-        // Accept/reserve → open chat (tracking starts after customer accepts quotation)
         if (row.chat_room_id) navigate(`/dp/chat/${row.chat_room_id}`, { replace: true })
         else {
           const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
@@ -302,10 +330,10 @@ export default function DpHome() {
         }
         return
       }
+
       const { data, error } = await supabase.rpc('accept_request', { p_request_id: req.id, p_dp_user_id: profile!.id })
       const row = Array.isArray(data) ? data[0] : data
       if (error || !row?.success) { showToast(row?.error_msg || error?.message || 'Failed to accept request'); return }
-      // Accept → chat for quotation; tracking opens after user accepts quotation
       if (row.chat_room_id) navigate(`/dp/chat/${row.chat_room_id}`, { replace: true })
       else {
         const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
@@ -516,6 +544,10 @@ export default function DpHome() {
         <div className="space-y-3 pb-4">
           {filtered.map(req => {
             const dist = getDistance(req)
+            const advance = isAdvanceNearbyRequest(req)
+            const scheduleLabel = req.scheduled_slot
+              || (req.scheduled_date && req.scheduled_time ? `${req.scheduled_date} ${req.scheduled_time}` : null)
+              || (req.scheduled_date ? String(req.scheduled_date) : null)
             return (
               <Surface key={req.id} className="p-4">
                 <div className="mb-2.5 flex items-start justify-between gap-2">
@@ -526,25 +558,25 @@ export default function DpHome() {
                 </div>
 
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                  <Chip tone={req.order_type === 'advance' ? 'info' : 'lime'}>
-                    {req.order_type === 'advance' ? 'Advance' : 'Instant'}
+                  <Chip tone={advance ? 'info' : 'lime'}>
+                    {advance ? 'Advance' : 'Instant'}
                   </Chip>
-                  {req.order_type === 'advance' && req.status !== 'searching_dp' && req.status !== 'pending' && STATUS_LABELS[req.status] && (
+                  {advance && req.status !== 'searching_dp' && req.status !== 'pending' && STATUS_LABELS[req.status] && (
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${STATUS_COLORS[req.status] || ''}`}>
                       {STATUS_LABELS[req.status]}
                     </span>
                   )}
-                  {req.is_scheduled && req.request_category && (
+                  {advance && req.request_category && (
                     <Chip tone="neutral">{req.request_category}</Chip>
                   )}
-                  {req.order_type === 'advance' && req.status === 'searching_dp' && (
+                  {advance && (req.status === 'searching_dp' || !req.status) && (
                     <Chip tone="lime">Reserve now</Chip>
                   )}
                 </div>
 
-                {req.is_scheduled && req.scheduled_slot && (
+                {advance && scheduleLabel && (
                   <p className="mb-2 text-[11px] font-medium" style={{ color: pg.text3 }}>
-                    Scheduled: {req.scheduled_slot}
+                    Scheduled: {scheduleLabel}
                   </p>
                 )}
 
@@ -599,8 +631,8 @@ export default function DpHome() {
                   >
                     {reservingId === req.id ? (
                       <><Loader2 size={16} className="animate-spin" /> Reserving…</>
-                    ) : req.order_type === 'advance' && req.status === 'searching_dp' ? (
-                      <><CalendarClock size={16} /> Reserve</>
+                    ) : advance ? (
+                      <><CalendarClock size={16} /> Accept</>
                     ) : (
                       <><Check size={16} strokeWidth={3} /> Accept</>
                     )}

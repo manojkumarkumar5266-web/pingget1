@@ -90,6 +90,16 @@ export function resolveNotificationRoute(
     case NOTIFICATION_TYPES.PAYMENT_COMPLETED:
     case NOTIFICATION_TYPES.REFUND_PROCESSED:
       return `/app/orders`
+    case 'payment_verified':
+    case 'advance_reminder_24h':
+    case 'advance_reminder_12h':
+    case 'advance_reminder_2h':
+    case 'advance_reminder_1h':
+    case 'advance_reminder_30m':
+    case 'advance_reminder_15m':
+    case 'advance_reminder_5m':
+    case 'advance_expired':
+      return role === 'dp' ? `/dp/orders` : `/app/orders`
     case NOTIFICATION_TYPES.ADMIN_ANNOUNCEMENT:
       return `/app/notifications`
     // DP routes

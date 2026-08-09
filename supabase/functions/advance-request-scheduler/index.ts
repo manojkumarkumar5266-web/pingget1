@@ -132,7 +132,7 @@ Deno.serve(async (req: Request) => {
 
       const { data: reminders } = await supabase
         .from("requests")
-        .select("id, user_id, request_category, scheduled_date, scheduled_time")
+        .select("id, user_id, accepted_dp_id, reserved_dp_id, request_category, scheduled_date, scheduled_time")
         .in("status", ["scheduled", "booking_confirmed"])
         .eq("order_type", "advance")
         .not("scheduled_timestamp", "is", null)
@@ -141,22 +141,29 @@ Deno.serve(async (req: Request) => {
 
       if (reminders && reminders.length > 0) {
         for (const req of reminders) {
-          const { data: existing } = await supabase
-            .from("notifications")
-            .select("id")
-            .eq("user_id", req.user_id)
-            .eq("related_id", req.id)
-            .eq("type", r.type)
-            .maybeSingle();
+          const recipients = [req.user_id, req.accepted_dp_id || req.reserved_dp_id].filter(Boolean) as string[];
+          const uniqueRecipients = [...new Set(recipients)];
+          for (const recipientId of uniqueRecipients) {
+            const { data: existing } = await supabase
+              .from("notifications")
+              .select("id")
+              .eq("user_id", recipientId)
+              .eq("related_id", req.id)
+              .eq("type", r.type)
+              .maybeSingle();
 
-          if (!existing) {
-            await supabase.from("notifications").insert({
-              user_id: req.user_id,
-              title: r.title,
-              body: `Your ${req.request_category || "scheduled"} request ${r.body}`,
-              type: r.type,
-              related_id: req.id,
-            });
+            if (!existing) {
+              const isDp = recipientId !== req.user_id;
+              await supabase.from("notifications").insert({
+                user_id: recipientId,
+                title: r.title,
+                body: isDp
+                  ? `Your reserved ${req.request_category || "scheduled"} task ${r.body}`
+                  : `Your ${req.request_category || "scheduled"} request ${r.body}`,
+                type: r.type,
+                related_id: req.id,
+              });
+            }
           }
         }
       }
