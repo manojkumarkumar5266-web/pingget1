@@ -1,3 +1,4 @@
+import { useMemo, useRef, useState } from 'react'
 import type { LatLng } from '../../lib/mapUtils'
 import { Images } from '../../lib/customImages'
 import { pg } from '../../design/tokens'
@@ -20,6 +21,11 @@ type Props = {
   light?: boolean
   /** Pulsing radar rings from center out to radius */
   radar?: boolean
+  /**
+   * Instant map mode for scanning — local light basemap + optional street tiles.
+   * No Google iframe (eliminates scan-page load lag).
+   */
+  instant?: boolean
   className?: string
   style?: React.CSSProperties
   interactive?: boolean
@@ -27,7 +33,11 @@ type Props = {
 
 const DEFAULT_RADIUS_M = 10_000
 
-/** Web Mercator helpers — project lat/lng to overlay % within current viewport */
+function stableCoord(n: number, places = 3) {
+  const f = 10 ** places
+  return Math.round(n * f) / f
+}
+
 function project(lat: number, lng: number, center: LatLng, zoom: number, widthPx: number, heightPx: number) {
   const scale = 256 * Math.pow(2, zoom)
   const world = (la: number, ln: number) => {
@@ -67,9 +77,40 @@ function RedUserPin() {
   )
 }
 
+/** Optional street tiles — never blocks UI; fades in if available */
+function streetTileUrl(lat: number, lng: number, zoom: number) {
+  const clat = stableCoord(lat)
+  const clng = stableCoord(lng)
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${clat},${clng}&zoom=${zoom}&size=640x480&maptype=mapnik`
+}
+
+/** Instant white + yellow street grid — paints in 0ms, no network */
+function InstantLightBasemap() {
+  return (
+    <div
+      className="absolute inset-0"
+      style={{
+        backgroundColor: '#F4F6F8',
+        backgroundImage: [
+          // major yellow streets (horizontal)
+          'repeating-linear-gradient(0deg, transparent 0 46px, rgba(245,197,66,0.55) 46px 49px, transparent 49px 96px)',
+          // major yellow streets (vertical)
+          'repeating-linear-gradient(90deg, transparent 0 52px, rgba(245,197,66,0.5) 52px 55px, transparent 55px 108px)',
+          // minor grey streets
+          'repeating-linear-gradient(0deg, transparent 0 22px, rgba(180,188,198,0.45) 22px 23px, transparent 23px 48px)',
+          'repeating-linear-gradient(90deg, transparent 0 24px, rgba(180,188,198,0.4) 24px 25px, transparent 25px 54px)',
+          // soft blocks
+          'radial-gradient(ellipse at 30% 40%, rgba(220,230,240,0.9), transparent 55%)',
+          'radial-gradient(ellipse at 70% 65%, rgba(210,222,235,0.7), transparent 50%)',
+        ].join(','),
+      }}
+    />
+  )
+}
+
 /**
- * Google Maps live street view + overlay pins for User / DP within radius.
- * Scanning mode: light map, red user pin, bike partners, looping radar to ~10 km.
+ * Street map + overlay pins.
+ * Scanning (`instant` / light+radar): local light basemap — no Google iframe lag.
  */
 export default function FreeStreetMap({
   center,
@@ -79,6 +120,7 @@ export default function FreeStreetMap({
   radiusMeters = DEFAULT_RADIUS_M,
   light = false,
   radar = false,
+  instant = false,
   className = '',
   style,
 }: Props) {
@@ -93,16 +135,32 @@ export default function FreeStreetMap({
     null
   const pickup = markers.find(m => m.kind === 'pickup')?.position || null
 
-  // Keep zoom readable for ~10 km radius
-  const z = radiusMeters >= 8000 ? Math.min(zoom, 12) : zoom
+  // Lock zoom after first paint so the map never reloads mid-scan
+  const lockedZoom = useRef<number | null>(null)
+  const zBase = radiusMeters >= 8000 ? Math.min(zoom, 12) : zoom
+  if (lockedZoom.current == null) lockedZoom.current = zBase
+  const z = instant || (light && radar) ? lockedZoom.current : zBase
 
-  let src: string
-  if (dest) {
-    const from = pickup || c
-    src = `https://www.google.com/maps?saddr=${from.lat},${from.lng}&daddr=${dest.lat},${dest.lng}&hl=en&z=${z}&output=embed`
-  } else {
-    src = `https://www.google.com/maps?q=${c.lat},${c.lng}&hl=en&z=${z}&output=embed`
-  }
+  const useInstant = instant || (light && radar && !dest)
+  const [tileReady, setTileReady] = useState(false)
+
+  const tileSrc = useMemo(() => {
+    if (!useInstant) return null
+    return streetTileUrl(c.lat, c.lng, z)
+  }, [useInstant, c.lat, c.lng, z])
+
+  const googleSrc = useMemo(() => {
+    if (useInstant) return null
+    if (dest) {
+      const from = pickup || c
+      return `https://www.google.com/maps?saddr=${stableCoord(from.lat)},${stableCoord(from.lng)}&daddr=${stableCoord(dest.lat)},${stableCoord(dest.lng)}&hl=en&z=${z}&output=embed`
+    }
+    return `https://www.google.com/maps?q=${stableCoord(c.lat)},${stableCoord(c.lng)}&hl=en&z=${z}&output=embed`
+  }, [useInstant, c.lat, c.lng, dest?.lat, dest?.lng, pickup?.lat, pickup?.lng, z])
+
+  // Stabilize Google iframe src against GPS jitter
+  const lastGoogle = useRef(googleSrc)
+  if (googleSrc) lastGoogle.current = googleSrc
 
   const W = 390
   const H = 520
@@ -121,48 +179,69 @@ export default function FreeStreetMap({
 
   return (
     <div
-      className={`free-street-map relative overflow-hidden ${light ? 'light-map' : ''} ${className}`}
+      className={`free-street-map relative overflow-hidden ${light || useInstant ? 'light-map' : ''} ${className}`}
       style={{
         width: '100%',
         height: '100%',
         minHeight: 200,
-        background: light ? '#F4F6F8' : '#0B0B0B',
+        background: light || useInstant ? '#F4F6F8' : '#0B0B0B',
         ...style,
       }}
     >
-      <iframe
-        title="Google Maps live tracking"
-        src={src}
-        className="absolute inset-0 h-full w-full border-0"
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        allowFullScreen
-      />
+      {useInstant ? (
+        <>
+          {/* Always instant — never waits on network */}
+          <InstantLightBasemap />
+          {tileSrc && (
+            <img
+              src={tileSrc}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
+              style={{
+                opacity: tileReady ? 0.92 : 0,
+                filter: 'grayscale(0.4) brightness(1.25) contrast(1.06) saturate(0.4) sepia(0.1)',
+              }}
+              decoding="async"
+              fetchPriority="low"
+              draggable={false}
+              onLoad={() => setTileReady(true)}
+              onError={() => setTileReady(false)}
+            />
+          )}
+        </>
+      ) : (
+        <iframe
+          key={lastGoogle.current || 'gmap'}
+          title="Google Maps live tracking"
+          src={lastGoogle.current || undefined}
+          className="absolute inset-0 h-full w-full border-0"
+          loading="eager"
+          referrerPolicy="no-referrer-when-downgrade"
+          allowFullScreen
+        />
+      )}
 
-      {/* Soft white + yellow street wash over satellite greens */}
-      {light && (
+      {(light || useInstant) && (
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,236,160,0.18) 45%, rgba(255,255,255,0.22) 100%)',
+              'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,236,160,0.16) 50%, rgba(255,255,255,0.12) 100%)',
             mixBlendMode: 'soft-light',
           }}
         />
       )}
 
-      {/* Static range ring */}
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
           width: `${radiusPct}%`,
           height: `${radiusPct}%`,
-          border: light ? '1.5px solid rgba(229,57,53,0.28)' : `2px solid rgba(245,197,66,0.4)`,
-          background: light ? 'rgba(229,57,53,0.04)' : 'rgba(245,197,66,0.05)',
+          border: light || useInstant ? '1.5px solid rgba(229,57,53,0.28)' : `2px solid rgba(245,197,66,0.4)`,
+          background: light || useInstant ? 'rgba(229,57,53,0.04)' : 'rgba(245,197,66,0.05)',
         }}
       />
 
-      {/* Radar: expand from user center → ~10 km, loop */}
       {radar && (
         <div
           className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -223,12 +302,12 @@ export default function FreeStreetMap({
       <div
         className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-[11px] font-bold"
         style={{
-          background: light ? 'rgba(255,255,255,0.92)' : 'rgba(11,11,11,0.9)',
-          color: light ? '#C62828' : pg.lime,
-          border: light ? '1px solid rgba(229,57,53,0.35)' : '1px solid rgba(245,197,66,0.4)',
+          background: light || useInstant ? 'rgba(255,255,255,0.92)' : 'rgba(11,11,11,0.9)',
+          color: light || useInstant ? '#C62828' : pg.lime,
+          border: light || useInstant ? '1px solid rgba(229,57,53,0.35)' : '1px solid rgba(245,197,66,0.4)',
         }}
       >
-        Google Maps · Live
+        {useInstant ? 'Live map' : 'Google Maps · Live'}
         {center ? ' · GPS on' : ''}
         {` · ${Math.round(radiusMeters / 1000)} km`}
         {dpCount > 0 ? ` · ${dpCount} DP` : ''}
