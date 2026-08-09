@@ -18,7 +18,7 @@ function vehicleIcon(v: string | null | undefined) {
   return Truck
 }
 
-type PayPhase = 'idle' | 'awaiting_user_payment' | 'awaiting_dp_accept' | 'rating' | 'thanks'
+type PayPhase = 'idle' | 'awaiting_user_payment' | 'awaiting_dp_accept' | 'payment_accepted' | 'rating' | 'thanks'
 
 const LIVE_STATUSES = new Set(['on_the_way', 'arrived'])
 
@@ -46,8 +46,13 @@ export default function LiveTrackingPage() {
       const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
       if (!req) { setLoading(false); return }
       setRequest(req as DeliveryRequest)
-      if ((req as any).payment_completed_at && !(req as any).payment_accepted_at) {
+      if ((req as any).payment_accepted_at) {
+        // Already past payment accept — go to rating unless already rated (handled by thanks nav)
+        setPayPhase('rating')
+      } else if ((req as any).payment_completed_at) {
         setPayPhase('awaiting_dp_accept')
+      } else if (req.status === 'completed') {
+        setPayPhase('awaiting_user_payment')
       }
       if (req.accepted_dp_id) {
         const [dpProf, dp] = await Promise.all([
@@ -72,8 +77,10 @@ export default function LiveTrackingPage() {
         async (payload: any) => {
           const next = payload.new as DeliveryRequest
           setRequest(next)
-          if ((next as any).payment_accepted_at && payPhase !== 'rating' && payPhase !== 'thanks') {
-            setPayPhase('rating')
+          if ((next as any).payment_accepted_at) {
+            setPayPhase(prev => (prev === 'rating' || prev === 'thanks' ? prev : 'payment_accepted'))
+          } else if ((next as any).payment_completed_at) {
+            setPayPhase(prev => (prev === 'payment_accepted' || prev === 'rating' || prev === 'thanks' ? prev : 'awaiting_dp_accept'))
           }
           const lat = (next as any).dp_lat
           const lng = (next as any).dp_lng
@@ -176,6 +183,36 @@ export default function LiveTrackingPage() {
     }
   }, [dpLive?.lat, dpLive?.lng, userPos?.lat, userPos?.lng, request?.status, requestId])
 
+  // Poll so payment-accepted from DP is never missed
+  useEffect(() => {
+    if (!requestId) return
+    if (payPhase === 'rating' || payPhase === 'thanks' || payPhase === 'payment_accepted') return
+    const id = window.setInterval(async () => {
+      const { data } = await supabase
+        .from('requests')
+        .select('payment_completed_at,payment_accepted_at,status')
+        .eq('id', requestId)
+        .maybeSingle()
+      if (!data) return
+      setRequest(prev => (prev ? ({ ...prev, ...data } as DeliveryRequest) : prev))
+      if ((data as any).payment_accepted_at) {
+        setPayPhase(prev => (prev === 'rating' || prev === 'thanks' ? prev : 'payment_accepted'))
+      } else if ((data as any).payment_completed_at) {
+        setPayPhase(prev => (
+          prev === 'payment_accepted' || prev === 'rating' || prev === 'thanks' ? prev : 'awaiting_dp_accept'
+        ))
+      }
+    }, 3000)
+    return () => window.clearInterval(id)
+  }, [requestId, payPhase])
+
+  // After DP accepts payment → show payment-accepted image, then rating
+  useEffect(() => {
+    if (payPhase !== 'payment_accepted') return
+    const t = window.setTimeout(() => setPayPhase('rating'), 2200)
+    return () => window.clearTimeout(t)
+  }, [payPhase])
+
   const confirmDelivery = async () => {
     await supabase.from('requests').update({ status: 'completed' }).eq('id', requestId)
     await supabase.from('orders').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('request_id', requestId)
@@ -256,8 +293,18 @@ export default function LiveTrackingPage() {
   if (payPhase === 'thanks') {
     return (
       <MobileFrame overlay className="items-center justify-center overflow-hidden px-6">
-        <img src={Images.thankYouRating} alt="Thank you for rating" className="mb-4 w-full max-w-sm object-contain" draggable={false} />
+        <img src={Images.thankYouRating} alt="Thank you for rating" className="mb-4 w-full max-w-sm object-contain" draggable={false} style={{ background: '#000' }} />
         <p className="text-sm text-white/50">Returning home...</p>
+      </MobileFrame>
+    )
+  }
+
+  if (payPhase === 'payment_accepted') {
+    return (
+      <MobileFrame overlay className="items-center justify-center overflow-hidden px-6">
+        <img src={Images.paymentReceived} alt="Payment accepted" className="mb-4 w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: '#000' }} />
+        <p className="text-base font-extrabold text-white">Payment accepted</p>
+        <p className="mt-1 text-sm text-white/50">Opening rating…</p>
       </MobileFrame>
     )
   }
@@ -266,7 +313,6 @@ export default function LiveTrackingPage() {
     return (
       <MobileFrame overlay className="items-center justify-center overflow-y-auto px-6 py-8">
         <div className="w-full max-w-sm">
-          <img src={Images.paymentReceived} alt="Thank you payment received" className="w-full object-contain mb-4 rounded-2xl" draggable={false} />
           <Surface className="rounded-[28px] p-6 text-center">
             <h2 className="mb-1 text-xl font-bold text-white">Rate Your Delivery</h2>
             <p className="mb-5 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
