@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { pg } from '../../design/tokens'
 import { CTA, Surface } from '../../design/primitives'
+import { uploadMediaFile } from '../../lib/uploadMedia'
 
 const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string; notifBody: string; icon: any }[] = [
   { from: 'accepted', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
@@ -250,20 +251,23 @@ export default function DpNavigationPage() {
   const uploadDeliveryPhotos = async () => {
     if (photoFiles.length === 0) return
     setUploading(true)
-    const ts = Date.now()
-    const urls: string[] = []
-    for (let i = 0; i < photoFiles.length; i++) {
-      const path = `delivery-proof/${requestId}/${ts}-proof-${i}`
-      const { error } = await supabase.storage.from('media').upload(path, photoFiles[i], { upsert: true })
-      if (!error) urls.push(supabase.storage.from('media').getPublicUrl(path).data.publicUrl)
+    try {
+      const ts = Date.now()
+      const urls: string[] = []
+      for (let i = 0; i < photoFiles.length; i++) {
+        urls.push(await uploadMediaFile(photoFiles[i], `delivery-proof/${requestId}/${ts}-proof-${i}`))
+      }
+      if (urls.length > 0) {
+        await supabase.from('requests').update({
+          delivery_proof_photos: urls, delivery_proof_url: urls[0],
+          delivery_proof_by: profile!.id, delivery_proof_at: new Date().toISOString(),
+        }).eq('id', requestId)
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Photo upload failed')
+    } finally {
+      setUploading(false)
     }
-    if (urls.length > 0) {
-      await supabase.from('requests').update({
-        delivery_proof_photos: urls, delivery_proof_url: urls[0],
-        delivery_proof_by: profile!.id, delivery_proof_at: new Date().toISOString(),
-      }).eq('id', requestId)
-    }
-    setUploading(false)
   }
 
   const openGoogleMaps = () => {
