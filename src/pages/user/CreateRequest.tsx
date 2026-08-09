@@ -253,12 +253,14 @@ export default function CreateRequest() {
       </Screen>
 
       <div
-        className="fixed bottom-0 left-0 right-0 z-20 px-4 pb-6 pt-3"
+        className="fixed bottom-0 left-0 right-0 z-20 flex justify-center px-4 pb-6 pt-3"
         style={{ background: `linear-gradient(transparent, ${pg.bg} 35%)` }}
       >
-        <CTA className="mx-auto w-full max-w-lg" onClick={handleSubmit} disabled={!canSubmit}>
-          {loading ? 'Submitting...' : 'Submit Request'}
-        </CTA>
+        <div className="w-full max-w-lg">
+          <CTA className="w-full" onClick={handleSubmit} disabled={!canSubmit}>
+            {loading ? 'Submitting...' : 'Submit Request'}
+          </CTA>
+        </div>
       </div>
     </div>
   )
