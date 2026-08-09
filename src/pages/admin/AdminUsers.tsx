@@ -229,7 +229,7 @@ function UserActionDrawer({
             {user.gps_lat && user.gps_lng ? (
               <div className="space-y-1">
                 <InfoRow label="GPS Location" value={`${user.gps_lat.toFixed(4)}, ${user.gps_lng!.toFixed(4)}`} />
-                <a href={mapUrl!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold" style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)`, color: pg.lime }}>
+                <a href={mapUrl!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold" style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.28)`, color: pg.lime }}>
                   <MapPin size={14} /> View on Google Maps
                 </a>
               </div>

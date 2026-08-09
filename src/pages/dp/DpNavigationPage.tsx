@@ -350,7 +350,7 @@ export default function DpNavigationPage() {
               {liveEtaLabel && (
                 <div
                   className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                  style={{ background: 'rgba(7,8,11,0.88)', color: pg.lime, border: '1px solid rgba(245,197,66,0.35)' }}
+                  style={{ background: 'rgba(7,8,11,0.88)', color: pg.lime, border: '1px solid rgba(196,214,0,0.35)' }}
                 >
                   ETA to customer · {liveEtaLabel}
                 </div>
@@ -393,7 +393,7 @@ export default function DpNavigationPage() {
                 </div>
                 <button type="button" onClick={() => { window.location.href = `tel:${userProfile.phone || ''}` }}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl active:scale-95 disabled:opacity-30"
-                  style={{ background: pg.limeDim, border: '1px solid rgba(245,197,66,0.25)', color: pg.lime }}
+                  style={{ background: pg.limeDim, border: '1px solid rgba(196,214,0,0.25)', color: pg.lime }}
                   disabled={isCompleted}>
                   <Phone size={16} />
                 </button>
@@ -419,6 +419,24 @@ export default function DpNavigationPage() {
               <Navigation size={18} /> Open in Google Maps
             </CTA>
           </Surface>
+
+          {Array.isArray(request.photo_urls) && request.photo_urls.length > 0 && (
+            <Surface className="p-4">
+              <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Order photos</p>
+              <div className="flex flex-wrap gap-2">
+                {request.photo_urls.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={url}
+                      alt={`Order photo ${i + 1}`}
+                      className="h-20 w-20 rounded-xl object-cover"
+                      style={{ border: `1px solid ${pg.line}` }}
+                    />
+                  </a>
+                ))}
+              </div>
+            </Surface>
+          )}
 
           {request.pickup_address && (
             <Surface className="p-4">

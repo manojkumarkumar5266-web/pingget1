@@ -194,7 +194,7 @@ export default function AdminCities() {
                       <span className="text-gray-300">|</span>
                       <button onClick={() => toggleAllPincodes(city, false)} className="text-xs text-error-600 dark:text-error-400 font-medium">Deactivate All</button>
                       <span className="text-gray-300">|</span>
-                      <button onClick={() => setShowAddPincode(city.id)} className="text-xs font-medium" style={{ color: '#F5C542' }}>+ Add</button>
+                      <button onClick={() => setShowAddPincode(city.id)} className="text-xs font-medium" style={{ color: '#C4D600' }}>+ Add</button>
                     </div>
                   </div>
                   {showAddPincode === city.id && (

@@ -67,7 +67,7 @@ export default function AdminLayout() {
     <div className="flex h-full flex-col" style={{ background: pg.surface }}>
       <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: `1px solid ${pg.line}` }}>
         <div>
-          <Brand size="sm" className="mb-1" />
+          <Brand size="sm" wordmark className="mb-1" />
           <p className="text-sm font-extrabold">Admin Console</p>
         </div>
         <span className="rounded-full px-2 py-0.5 text-[10px] font-extrabold" style={{ background: 'rgba(255,77,79,0.16)', color: '#FCA5A5' }}>OPS</span>
@@ -83,7 +83,7 @@ export default function AdminLayout() {
               onClick={() => navigate(item.path)}
               className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left"
               style={active
-                ? { background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)` }
+                ? { background: pg.limeDim, border: `1px solid rgba(196,214,0,0.28)` }
                 : { border: '1px solid transparent' }}
             >
               <Icon size={18} style={{ color: active ? pg.lime : pg.text3 }} />

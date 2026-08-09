@@ -29,7 +29,7 @@ const wordScale: Record<BrandSize, string> = {
   hero: 'text-[3.25rem] sm:text-[3.75rem]',
 }
 
-/** Large CSS wordmark — readable even if logo PNG is tiny. */
+/** Large CSS wordmark — pinGGet with lime + olive GGs + tagline. */
 export function BrandWordmark({
   className = '',
   size = 'lg',
@@ -43,14 +43,14 @@ export function BrandWordmark({
     <div className={`select-none text-center leading-none ${className}`}>
       <div className={`font-extrabold tracking-tight ${wordScale[size]}`} style={{ fontFamily: "'Outfit', 'DM Sans', system-ui, sans-serif" }}>
         <span style={{ color: '#F7F4EE' }}>pin</span>
-        <span style={{ color: '#F5C542' }}>G</span>
-        <span style={{ color: '#F7F4EE' }}>G</span>
+        <span style={{ color: '#C4D600' }}>G</span>
+        <span style={{ color: '#8FAE3E' }}>G</span>
         <span style={{ color: '#F7F4EE' }}>et</span>
       </div>
       {showTagline && (
         <div
           className="mt-2 text-[10px] font-semibold uppercase tracking-[0.28em] sm:text-[11px]"
-          style={{ color: 'rgba(245,197,66,0.85)' }}
+          style={{ color: 'rgba(143,174,62,0.95)' }}
         >
           boy next door
         </div>

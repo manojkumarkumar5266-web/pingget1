@@ -33,7 +33,11 @@ export async function uploadProfilePhoto(userId: string, file: File): Promise<st
   }
 
   const { error: dbErr } = await supabase.from('profiles').update({ photo_url: url }).eq('id', userId)
-  if (dbErr) throw new Error(dbErr.message || 'Could not save photo to profile')
+  if (dbErr) {
+    // Fallback when profiles UPDATE policies recurse
+    const { error: rpcErr } = await supabase.rpc('update_own_photo_url', { p_photo_url: url })
+    if (rpcErr) throw new Error(dbErr.message || rpcErr.message || 'Could not save photo to profile')
+  }
 
   return url
 }

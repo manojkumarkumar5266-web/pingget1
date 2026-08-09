@@ -552,7 +552,7 @@ export default function CreateAdvanceRequest() {
   if (settingsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ background: '#050505' }}>
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20" style={{ borderTopColor: '#F5C542' }} />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20" style={{ borderTopColor: '#C4D600' }} />
       </div>
     )
   }
@@ -613,7 +613,7 @@ export default function CreateAdvanceRequest() {
         {step === 1 && (
           <div className="space-y-5">
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#F5C542' }}>What do you need done?</p>
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>What do you need done?</p>
               <p className="mb-4 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Choose a category for your scheduled task</p>
               <div className="grid grid-cols-3 gap-2">
                 {REQUEST_CATEGORIES.map(cat => {
@@ -635,7 +635,7 @@ export default function CreateAdvanceRequest() {
                     }}
                       className="relative text-left transition active:scale-[0.98]"
                       style={selected
-                        ? { background: 'rgba(245,197,66,0.1)', border: '1.5px solid rgba(245,197,66,0.45)', borderRadius: 14, padding: 6 }
+                        ? { background: 'rgba(196,214,0,0.1)', border: '1.5px solid rgba(196,214,0,0.45)', borderRadius: 14, padding: 6 }
                         : { background: pg.surface, border: `1px solid ${pg.line}`, borderRadius: 14, padding: 6 }}>
                       <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
                         <img
@@ -663,8 +663,8 @@ export default function CreateAdvanceRequest() {
             </div>
 
             {categoryDrafts.length > 0 && (
-              <div className="rounded-2xl p-3" style={{ background: 'rgba(245,197,66,0.08)', border: '1px solid rgba(245,197,66,0.2)' }}>
-                <p className="text-xs font-bold" style={{ color: '#F5C542' }}>{categoryDrafts.length} categor{categoryDrafts.length === 1 ? 'y' : 'ies'} saved</p>
+              <div className="rounded-2xl p-3" style={{ background: 'rgba(196,214,0,0.08)', border: '1px solid rgba(196,214,0,0.2)' }}>
+                <p className="text-xs font-bold" style={{ color: '#C4D600' }}>{categoryDrafts.length} categor{categoryDrafts.length === 1 ? 'y' : 'ies'} saved</p>
                 <p className="text-[11px] text-white/50 mt-0.5">Tap a category again to edit · Final Submit when ready</p>
               </div>
             )}
@@ -686,16 +686,16 @@ export default function CreateAdvanceRequest() {
 
                   <div className="rounded-2xl p-3 relative" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <div className="mb-2 flex items-center justify-between">
-                      <p className="text-xs font-bold" style={{ color: '#F5C542' }}>Notes</p>
+                      <p className="text-xs font-bold" style={{ color: '#C4D600' }}>Notes</p>
                       <div className="flex gap-2">
                         <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
-                        <button type="button" onClick={() => photoInputRef.current?.click()} className="rounded-lg px-2 py-1 text-[11px] font-bold" style={{ background: 'rgba(245,197,66,0.15)', color: '#F5C542' }}>
+                        <button type="button" onClick={() => photoInputRef.current?.click()} className="rounded-lg px-2 py-1 text-[11px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: '#C4D600' }}>
                           <Camera size={12} className="inline mr-1" />Photo
                         </button>
                         {recording ? (
                           <button type="button" onClick={stopRecording} className="rounded-lg px-2 py-1 text-[11px] font-bold text-red-400">Stop</button>
                         ) : (
-                          <button type="button" onClick={startRecording} className="rounded-lg px-2 py-1 text-[11px] font-bold" style={{ background: 'rgba(245,197,66,0.15)', color: '#F5C542' }}>
+                          <button type="button" onClick={startRecording} className="rounded-lg px-2 py-1 text-[11px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: '#C4D600' }}>
                             <Mic size={12} className="inline mr-1" />Voice
                           </button>
                         )}
@@ -712,14 +712,14 @@ export default function CreateAdvanceRequest() {
                       </div>
                     )}
                     {voiceBlob && (
-                      <div className="mb-2 text-xs" style={{ color: '#F5C542' }}>Voice note attached · {Math.floor(voiceDuration / 60)}:{String(voiceDuration % 60).padStart(2, '0')}</div>
+                      <div className="mb-2 text-xs" style={{ color: '#C4D600' }}>Voice note attached · {Math.floor(voiceDuration / 60)}:{String(voiceDuration % 60).padStart(2, '0')}</div>
                     )}
                     <textarea className="input min-h-[100px] resize-none text-sm" value={description} onChange={e => setDescription(e.target.value)}
                       placeholder="Describe this task…" />
                   </div>
 
                   <div>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#F5C542' }}>Select date & time</p>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Select date & time</p>
                     <PremiumCalendar selectedDate={selectedDate} onSelect={setSelectedDate} maxDays={maxDays} />
                     {selectedDate && settings && (
                       <div className="mt-3">
@@ -774,7 +774,7 @@ export default function CreateAdvanceRequest() {
                       setDescription(''); setSelectedDate(null); setSelectedSlot(null)
                     }}
                     className="w-full rounded-2xl py-3.5 text-sm font-bold"
-                    style={{ background: '#F5C542', color: '#050505' }}
+                    style={{ background: '#C4D600', color: '#050505' }}
                   >
                     Save & choose another
                   </button>
@@ -787,7 +787,7 @@ export default function CreateAdvanceRequest() {
         {/* STEP 2: Date & Time */}
         {step === 2 && (
           <div className="space-y-5 animate-slide-up">
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#F5C542' }}>Select Date & Time</p>
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Select Date & Time</p>
             <PremiumCalendar selectedDate={selectedDate} onSelect={setSelectedDate} maxDays={maxDays} />
 
             {selectedDate && settings && (
@@ -825,23 +825,23 @@ export default function CreateAdvanceRequest() {
           <div className="space-y-5 animate-slide-up">
             {/* Shop Details (Optional) */}
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#F5C542' }}>Shop Details <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></p>
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Shop Details <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></p>
               <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div>
-                  <label className="label flex items-center gap-1.5" style={{ color: '#F5C542' }}><Store size={13} /> Shop Name</label>
+                  <label className="label flex items-center gap-1.5" style={{ color: '#C4D600' }}><Store size={13} /> Shop Name</label>
                   <input className="input" value={shopName} onChange={e => setShopName(e.target.value)} placeholder="e.g. Reliance Fresh, D-Mart" />
                 </div>
                 <div>
-                  <label className="label flex items-center gap-1.5" style={{ color: '#F5C542' }}><Phone size={13} /> Shop Phone</label>
+                  <label className="label flex items-center gap-1.5" style={{ color: '#C4D600' }}><Phone size={13} /> Shop Phone</label>
                   <input className="input" value={shopPhone} onChange={e => setShopPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="Shop contact number" maxLength={10} />
                 </div>
                 <div>
-                  <label className="label flex items-center gap-1.5" style={{ color: '#F5C542' }}><MapPin size={13} /> Shop Address</label>
+                  <label className="label flex items-center gap-1.5" style={{ color: '#C4D600' }}><MapPin size={13} /> Shop Address</label>
                   <input className="input" value={shopAddress} onChange={e => setShopAddress(e.target.value)} placeholder="Shop address / landmark" />
                 </div>
                 <button onClick={pickShopLocation}
                   className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-medium transition-all active:scale-95"
-                  style={{ background: shopLat ? 'rgba(245,197,66,0.1)' : 'rgba(255,255,255,0.04)', border: `1.5px dashed ${shopLat ? 'rgba(245,197,66,0.3)' : 'rgba(255,255,255,0.15)'}`, color: shopLat ? '#F5C542' : 'rgba(255,255,255,0.5)' }}>
+                  style={{ background: shopLat ? 'rgba(196,214,0,0.1)' : 'rgba(255,255,255,0.04)', border: `1.5px dashed ${shopLat ? 'rgba(196,214,0,0.3)' : 'rgba(255,255,255,0.15)'}`, color: shopLat ? '#C4D600' : 'rgba(255,255,255,0.5)' }}>
                   <Navigation size={15} />
                   {shopLat ? `Location set (${shopLat.toFixed(4)}, ${shopLng?.toFixed(4)})` : 'Set shop location on map'}
                 </button>
@@ -850,7 +850,7 @@ export default function CreateAdvanceRequest() {
 
             {/* Items / Description */}
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#F5C542' }}>Items & Notes</p>
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Items & Notes</p>
               <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <textarea className="input min-h-[120px] resize-none text-sm leading-relaxed"
                   value={description} onChange={e => setDescription(e.target.value)}
@@ -858,7 +858,7 @@ export default function CreateAdvanceRequest() {
 
                 {/* Photos */}
                 <div className="mt-3">
-                  <p className="mb-2 text-xs font-semibold" style={{ color: '#F5C542' }}>Add Photos</p>
+                  <p className="mb-2 text-xs font-semibold" style={{ color: '#C4D600' }}>Add Photos</p>
                   <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
                   {photoPreviews.length > 0 && (
                     <div className="mb-2 flex flex-wrap gap-2">
@@ -875,7 +875,7 @@ export default function CreateAdvanceRequest() {
                   )}
                   <button onClick={() => photoInputRef.current?.click()}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-medium transition-all active:scale-95"
-                    style={{ background: 'rgba(245,197,66,0.08)', border: '1.5px dashed rgba(245,197,66,0.25)', color: '#F5C542' }}>
+                    style={{ background: 'rgba(196,214,0,0.08)', border: '1.5px dashed rgba(196,214,0,0.25)', color: '#C4D600' }}>
                     <Camera size={16} />
                     {photoPreviews.length > 0 ? 'Add More Photos' : 'Add Photos'}
                   </button>
@@ -883,12 +883,12 @@ export default function CreateAdvanceRequest() {
 
                 {/* Voice Note */}
                 <div className="mt-3">
-                  <p className="mb-2 text-xs font-semibold" style={{ color: '#F5C542' }}>Voice Note</p>
+                  <p className="mb-2 text-xs font-semibold" style={{ color: '#C4D600' }}>Voice Note</p>
                   {voiceBlob ? (
-                    <div className="flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: 'rgba(245,197,66,0.08)', border: '1px solid rgba(245,197,66,0.2)' }}>
+                    <div className="flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: 'rgba(196,214,0,0.08)', border: '1px solid rgba(196,214,0,0.2)' }}>
                       <button onClick={playVoice}
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all active:scale-90"
-                        style={{ background: '#F5C542' }}>
+                        style={{ background: '#C4D600' }}>
                         {playingVoice ? <Pause size={16} className="text-[#050505]" /> : <Play size={16} className="text-[#050505]" />}
                       </button>
                       <div className="flex-1">
@@ -897,7 +897,7 @@ export default function CreateAdvanceRequest() {
                             <div key={i} className="voice-wave-bar" style={{ height: `${12 + Math.random() * 16}px`, opacity: playingVoice ? 1 : 0.4 }} />
                           ))}
                         </div>
-                        <p className="text-xs font-semibold" style={{ color: '#F5C542' }}>Voice Note · {fmtDur(voiceDuration)}</p>
+                        <p className="text-xs font-semibold" style={{ color: '#C4D600' }}>Voice Note · {fmtDur(voiceDuration)}</p>
                       </div>
                       <button onClick={clearVoice} className="p-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
                         <X size={16} />
@@ -917,7 +917,7 @@ export default function CreateAdvanceRequest() {
                   ) : (
                     <button onClick={startRecording}
                       className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-medium transition-all active:scale-95"
-                      style={{ background: 'rgba(245,197,66,0.08)', border: '1.5px dashed rgba(245,197,66,0.25)', color: '#F5C542' }}>
+                      style={{ background: 'rgba(196,214,0,0.08)', border: '1.5px dashed rgba(196,214,0,0.25)', color: '#C4D600' }}>
                       <Mic size={16} /> Record Voice Note
                     </button>
                   )}
@@ -927,16 +927,16 @@ export default function CreateAdvanceRequest() {
 
             {/* Budget */}
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#F5C542' }}>Budget <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></p>
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Budget <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></p>
               <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <label className="label flex items-center gap-1.5" style={{ color: '#F5C542' }}><IndianRupee size={13} /> Max Budget</label>
+                <label className="label flex items-center gap-1.5" style={{ color: '#C4D600' }}><IndianRupee size={13} /> Max Budget</label>
                 <input className="input" type="number" value={maxBudget} onChange={e => setMaxBudget(e.target.value)} placeholder="Estimated maximum budget" />
               </div>
             </div>
 
             {/* Delivery Address */}
             <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#F5C542' }}>Delivery Address</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Delivery Address</p>
               {fullAddressText && !showAddressForm && !showAddressList ? (
                 <div>
                   {addresses.length > 1 && (
@@ -944,7 +944,7 @@ export default function CreateAdvanceRequest() {
                       {addresses.map(addr => (
                         <button key={addr.id} onClick={() => setSelectedAddressId(addr.id)}
                           className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${selectedAddressId === addr.id ? 'text-[#050505]' : 'text-white/50'}`}
-                          style={selectedAddressId === addr.id ? { background: '#F5C542' } : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          style={selectedAddressId === addr.id ? { background: '#C4D600' } : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                           {addr.label || 'Address'}
                         </button>
                       ))}
@@ -952,8 +952,8 @@ export default function CreateAdvanceRequest() {
                   )}
                   <div className="rounded-2xl p-4 flex items-center gap-3 transition-all active:scale-[0.98]"
                     style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(245,197,66,0.12)' }}>
-                      <Home size={18} style={{ color: '#F5C542' }} />
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
+                      <Home size={18} style={{ color: '#C4D600' }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Deliver To</p>
@@ -961,7 +961,7 @@ export default function CreateAdvanceRequest() {
                     </div>
                     <button onClick={() => setShowAddressList(true)}
                       className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
-                      style={{ background: '#F5C542', color: '#050505' }}>
+                      style={{ background: '#C4D600', color: '#050505' }}>
                       <MapPin size={12} /> Select
                     </button>
                   </div>
@@ -987,13 +987,13 @@ export default function CreateAdvanceRequest() {
                         const addrFull = [addr.house_no, addr.flat_no, addr.building_name, addr.landmark, addr.street, addr.area, addr.city, addr.pincode].filter(Boolean).join(', ')
                         return (
                           <div key={addr.id} className={`rounded-2xl p-3 transition-all ${selectedAddressId === addr.id ? 'border-2' : 'border'}`}
-                            style={selectedAddressId === addr.id ? { background: 'rgba(245,197,66,0.08)', borderColor: 'rgba(245,197,66,0.3)' } : { background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
+                            style={selectedAddressId === addr.id ? { background: 'rgba(196,214,0,0.08)', borderColor: 'rgba(196,214,0,0.3)' } : { background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
                             <div className="flex items-start gap-3">
                               <button onClick={() => { setSelectedAddressId(addr.id); setShowAddressList(false) }} className="flex-1 text-left min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
                                   <Home size={14} className="text-white/40 shrink-0" />
                                   <p className="text-sm font-semibold text-white truncate">{addr.label || 'Address'}</p>
-                                  {selectedAddressId === addr.id && <span className="text-[10px] font-bold" style={{ color: '#F5C542' }}>SELECTED</span>}
+                                  {selectedAddressId === addr.id && <span className="text-[10px] font-bold" style={{ color: '#C4D600' }}>SELECTED</span>}
                                 </div>
                                 <p className="text-xs text-white/50 truncate">{addrFull}</p>
                               </button>
@@ -1010,7 +1010,7 @@ export default function CreateAdvanceRequest() {
                   {addresses.length < MAX_ADDRESSES ? (
                     <button onClick={() => { resetAddrForm(); setShowAddressForm(true) }}
                       className="w-full rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95"
-                      style={{ background: '#F5C542', color: '#050505' }}>
+                      style={{ background: '#C4D600', color: '#050505' }}>
                       <Plus size={16} className="inline mr-1" /> Add New Address
                     </button>
                   ) : (
@@ -1024,7 +1024,7 @@ export default function CreateAdvanceRequest() {
                   <p className="text-xs text-white/40 mb-4">Add an address so your partner knows where to deliver</p>
                   <button onClick={() => setShowAddressForm(true)}
                     className="rounded-2xl px-6 py-3 text-sm font-bold transition-all active:scale-95"
-                    style={{ background: '#F5C542', color: '#050505' }}>
+                    style={{ background: '#C4D600', color: '#050505' }}>
                     <Plus size={16} className="inline mr-1" /> Add Address
                   </button>
                 </div>
@@ -1051,14 +1051,14 @@ export default function CreateAdvanceRequest() {
                   </div>
                   <button onClick={pickAddrLocation}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-medium transition-all active:scale-95"
-                    style={{ background: addrLat ? 'rgba(245,197,66,0.1)' : 'rgba(255,255,255,0.04)', border: `1.5px dashed ${addrLat ? 'rgba(245,197,66,0.3)' : 'rgba(255,255,255,0.15)'}`, color: addrLat ? '#F5C542' : 'rgba(255,255,255,0.5)' }}>
+                    style={{ background: addrLat ? 'rgba(196,214,0,0.1)' : 'rgba(255,255,255,0.04)', border: `1.5px dashed ${addrLat ? 'rgba(196,214,0,0.3)' : 'rgba(255,255,255,0.15)'}`, color: addrLat ? '#C4D600' : 'rgba(255,255,255,0.5)' }}>
                     <Navigation size={15} />
                     {addrLat ? `Location set (${addrLat.toFixed(4)}, ${addrLng?.toFixed(4)})` : 'Select exact location on map'}
                   </button>
                   {error && <ErrorBanner message={error} />}
                   <button onClick={saveAddress} disabled={savingAddress}
                     className="w-full rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95"
-                    style={{ background: '#F5C542', color: '#050505' }}>
+                    style={{ background: '#C4D600', color: '#050505' }}>
                     {savingAddress ? 'Saving...' : 'Save Address'}
                   </button>
                 </div>
@@ -1074,11 +1074,11 @@ export default function CreateAdvanceRequest() {
           <div className="space-y-5 animate-slide-up">
             {/* Summary Timeline */}
             <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <p className="mb-4 text-xs font-bold uppercase tracking-widest" style={{ color: '#F5C542' }}>Request Summary</p>
+              <p className="mb-4 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Request Summary</p>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(245,197,66,0.12)' }}>
-                    <Tag size={14} style={{ color: '#F5C542' }} />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
+                    <Tag size={14} style={{ color: '#C4D600' }} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Category</p>
@@ -1086,8 +1086,8 @@ export default function CreateAdvanceRequest() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(245,197,66,0.12)' }}>
-                    <Calendar size={14} style={{ color: '#F5C542' }} />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
+                    <Calendar size={14} style={{ color: '#C4D600' }} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Date</p>
@@ -1097,8 +1097,8 @@ export default function CreateAdvanceRequest() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(245,197,66,0.12)' }}>
-                    <Clock size={14} style={{ color: '#F5C542' }} />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
+                    <Clock size={14} style={{ color: '#C4D600' }} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Time Slot</p>
@@ -1106,8 +1106,8 @@ export default function CreateAdvanceRequest() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(245,197,66,0.12)' }}>
-                    <Home size={14} style={{ color: '#F5C542' }} />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
+                    <Home size={14} style={{ color: '#C4D600' }} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Delivery Address</p>
@@ -1116,8 +1116,8 @@ export default function CreateAdvanceRequest() {
                 </div>
                 {shopName && (
                   <div className="flex items-start gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(245,197,66,0.12)' }}>
-                      <Store size={14} style={{ color: '#F5C542' }} />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
+                      <Store size={14} style={{ color: '#C4D600' }} />
                     </div>
                     <div className="flex-1">
                       <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Shop</p>
@@ -1126,8 +1126,8 @@ export default function CreateAdvanceRequest() {
                   </div>
                 )}
                 <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(245,197,66,0.12)' }}>
-                    <Clock size={14} style={{ color: '#F5C542' }} />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
+                    <Clock size={14} style={{ color: '#C4D600' }} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Estimated Duration</p>
@@ -1155,8 +1155,8 @@ export default function CreateAdvanceRequest() {
                 </p>
               </div>
             )}
-            <div className="rounded-2xl p-4" style={{ background: 'rgba(245,197,66,0.06)', border: '1px solid rgba(245,197,66,0.2)' }}>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#F5C542' }}>Estimated Charges</p>
+            <div className="rounded-2xl p-4" style={{ background: 'rgba(196,214,0,0.06)', border: '1px solid rgba(196,214,0,0.2)' }}>
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#C4D600' }}>Estimated Charges</p>
               <div className="space-y-2">
                 {Object.entries(charges.breakdown).map(([key, val]) => (
                   val !== 0 && (
@@ -1166,9 +1166,9 @@ export default function CreateAdvanceRequest() {
                     </div>
                   )
                 ))}
-                <div className="flex justify-between pt-2 mt-2" style={{ borderTop: '1px solid rgba(245,197,66,0.2)' }}>
+                <div className="flex justify-between pt-2 mt-2" style={{ borderTop: '1px solid rgba(196,214,0,0.2)' }}>
                   <span className="text-sm font-bold text-white">Estimated Total</span>
-                  <span className="text-lg font-bold" style={{ color: '#F5C542' }}>₹{charges.total.toFixed(2)}</span>
+                  <span className="text-lg font-bold" style={{ color: '#C4D600' }}>₹{charges.total.toFixed(2)}</span>
                 </div>
               </div>
               <p className="mt-3 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>

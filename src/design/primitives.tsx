@@ -69,7 +69,7 @@ export function Surface({
       className={`w-full text-left ${className}`}
       style={{
         background: pg.surface,
-        border: `1px solid ${accent ? 'rgba(245,197,66,0.28)' : pg.line}`,
+        border: `1px solid ${accent ? 'rgba(196,214,0,0.35)' : pg.line}`,
         borderRadius: pg.radius.lg,
         ...style,
       }}
@@ -91,12 +91,12 @@ export function CTA({
     primary: {
       background: pg.lime,
       color: pg.limeText,
-      boxShadow: '0 10px 28px rgba(245,197,66,0.28)',
+      boxShadow: '0 10px 28px rgba(196,214,0,0.28)',
     },
     secondary: {
-      background: pg.surface2,
-      color: pg.text,
-      border: `1px solid ${pg.lineStrong}`,
+      background: pg.oliveDim,
+      color: pg.olive,
+      border: `1px solid rgba(143,174,62,0.35)`,
     },
     danger: {
       background: pg.danger,
@@ -129,7 +129,7 @@ export function Chip({
   const map: Record<string, { bg: string; color: string }> = {
     neutral: { bg: 'rgba(255,255,255,0.06)', color: pg.text2 },
     lime: { bg: pg.limeDim, color: pg.lime },
-    info: { bg: 'rgba(59,130,246,0.15)', color: '#93C5FD' },
+    info: { bg: pg.oliveDim, color: pg.olive },
     danger: { bg: 'rgba(255,77,79,0.15)', color: '#FCA5A5' },
     success: { bg: 'rgba(34,197,94,0.15)', color: '#86EFAC' },
     warn: { bg: 'rgba(245,165,36,0.15)', color: '#FCD34D' },
@@ -264,7 +264,7 @@ export function DockItem({
         style={{
           background: pg.lime,
           color: pg.limeText,
-          boxShadow: '0 12px 32px rgba(245,197,66,0.4)',
+          boxShadow: '0 12px 32px rgba(196,214,0,0.35)',
         }}
         aria-label={label}
       >

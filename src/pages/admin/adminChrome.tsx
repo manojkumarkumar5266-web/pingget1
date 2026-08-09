@@ -137,7 +137,7 @@ export function ActionBtn({
   disabled?: boolean
 }) {
   const map = {
-    lime: { bg: pg.limeDim, border: 'rgba(245,197,66,0.28)', color: pg.lime },
+    lime: { bg: pg.limeDim, border: 'rgba(196,214,0,0.28)', color: pg.lime },
     success: { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.25)', color: '#86EFAC' },
     warn: { bg: 'rgba(245,165,36,0.12)', border: 'rgba(245,165,36,0.25)', color: '#FCD34D' },
     danger: { bg: 'rgba(255,77,79,0.12)', border: 'rgba(255,77,79,0.25)', color: '#FCA5A5' },

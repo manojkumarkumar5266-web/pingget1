@@ -39,7 +39,7 @@ function VoicePlayer({ url }: { url: string }) {
   return (
     <div
       className="mt-3 flex items-center gap-3 rounded-2xl px-3.5 py-2.5"
-      style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.22)` }}
+      style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.22)` }}
     >
       <button
         type="button"
@@ -56,7 +56,7 @@ function VoicePlayer({ url }: { url: string }) {
             className={`flex-1 rounded-full ${playing ? 'animate-pulse' : ''}`}
             style={{
               height: `${28 + Math.sin(i * 0.8) * 45}%`,
-              background: playing ? pg.lime : 'rgba(245,197,66,0.35)',
+              background: playing ? pg.lime : 'rgba(196,214,0,0.35)',
               animationDelay: `${i * 55}ms`,
             }}
           />
@@ -88,7 +88,7 @@ function EarningsHero({ today, week, deliveries }: { today: number; week: number
           </div>
           <div
             className="flex h-12 w-12 items-center justify-center rounded-2xl"
-            style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.25)` }}
+            style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.25)` }}
           >
             <TrendingUp size={22} style={{ color: pg.lime }} />
           </div>
@@ -309,49 +309,55 @@ export default function DpHome() {
 
   const acceptRequest = async (req: RequestWithUser) => {
     if (reservingId) return
+    if (!profile?.id) {
+      showToast('Not signed in')
+      return
+    }
     setReservingId(req.id)
     try {
-      // Advance → reserve_dp_for_advance (accept_request only accepts pending instant)
-      if (isAdvanceNearbyRequest(req)) {
-        const { data: reserved, error } = await supabase.rpc(
-          'reserve_dp_for_advance',
-          { p_request_id: req.id, p_dp_user_id: profile!.id }
-        )
-        const row = Array.isArray(reserved) ? reserved[0] : reserved
-        if (!error && row?.success) {
-          const roomId = row.chat_room_id
-            || (await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()).data?.id
-          if (roomId) {
-            navigate(`/dp/chat/${roomId}`, { replace: true })
-            return
-          }
-        }
+      const advance = isAdvanceNearbyRequest(req)
+      const rpcName = advance ? 'reserve_dp_for_advance' : 'accept_request'
+      const { data, error } = await supabase.rpc(rpcName, {
+        p_request_id: req.id,
+        p_dp_user_id: profile.id,
+      })
+      const row = Array.isArray(data) ? data[0] : data
 
-        // Client fallback when RPC fails (often missing advance_payment message_type in DB)
-        console.warn('[DpHome] reserve RPC failed, trying client fallback:', error || row)
+      if (!error && row?.success) {
+        const roomId = row.chat_room_id
+          || (await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()).data?.id
+        if (roomId) {
+          navigate(`/dp/chat/${roomId}`, { replace: true })
+          return
+        }
+        // Reserved but room missing — still leave nearby list
+        showToast('Accepted. Opening orders…')
+        navigate('/dp/orders', { replace: true })
+        return
+      }
+
+      // If RPC missing / failed, try the other RPC once for advance mis-tagged as instant
+      if (advance && error) {
+        console.warn('[DpHome] reserve failed, retry client-visible error:', error)
+      }
+
+      if (advance) {
         const fallbackRoomId = await reserveAdvanceClientSide(req)
         if (fallbackRoomId) {
           navigate(`/dp/chat/${fallbackRoomId}`, { replace: true })
           return
         }
-        showToast(row?.error_msg || error?.message || 'Failed to reserve this booking')
-        return
       }
 
-      const { data, error } = await supabase.rpc('accept_request', { p_request_id: req.id, p_dp_user_id: profile!.id })
-      const row = Array.isArray(data) ? data[0] : data
-      if (error || !row?.success) {
-        console.error('[DpHome] accept_request failed:', error || row)
-        showToast(row?.error_msg || error?.message || 'Failed to accept request')
-        return
-      }
-      const roomId = row.chat_room_id
-        || (await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()).data?.id
-      if (roomId) navigate(`/dp/chat/${roomId}`, { replace: true })
-      else navigate(`/dp/navigate/${req.id}`, { replace: true })
+      const detail = row?.error_msg || error?.message || 'Failed to accept request'
+      console.error('[DpHome] accept failed:', error || row)
+      showToast(detail)
+      // Visible on mobile webviews where toast can be missed
+      window.alert(`Accept failed: ${detail}`)
     } catch (e: any) {
       console.error('[DpHome] acceptRequest exception:', e)
       showToast(e?.message || 'Could not accept request')
+      window.alert(`Accept failed: ${e?.message || 'unknown error'}`)
     } finally {
       setReservingId(null)
     }
@@ -550,7 +556,7 @@ export default function DpHome() {
       {toast && (
         <div
           className="mb-4 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-extrabold"
-          style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)`, color: pg.lime }}
+          style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.28)`, color: pg.lime }}
         >
           <Bell size={15} className="shrink-0" />
           {toast}

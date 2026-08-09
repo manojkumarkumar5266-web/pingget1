@@ -1,7 +1,7 @@
 import type { SVGProps } from 'react'
 
-const OLIVE = '#F5C542'
-const OLIVE_DARK = '#F5C542'
+const OLIVE = '#C4D600'
+const OLIVE_DARK = '#C4D600'
 const OLIVE_LIGHT = '#C4D600'
 const DARK_BG = '#0B0B0B'
 const CARD_BG = '#181818'

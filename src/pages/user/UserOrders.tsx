@@ -43,7 +43,7 @@ function OrderTimeline({ status }: { status: string }) {
                     ? {
                         background: pg.lime,
                         border: `2px solid ${pg.lime}`,
-                        boxShadow: active ? '0 0 0 4px rgba(245,197,66,0.2)' : 'none',
+                        boxShadow: active ? '0 0 0 4px rgba(196,214,0,0.2)' : 'none',
                       }
                     : { background: 'transparent', border: '2px solid rgba(255,255,255,0.12)' }
                 }
@@ -184,7 +184,7 @@ export default function UserOrders() {
             className="flex-1 rounded-2xl py-3 text-sm font-extrabold transition-all active:scale-[0.98]"
             style={
               tab === t.key
-                ? { background: pg.limeDim, border: `1px solid rgba(245,197,66,0.35)`, color: pg.lime }
+                ? { background: pg.limeDim, border: `1px solid rgba(196,214,0,0.35)`, color: pg.lime }
                 : { background: pg.surface, border: `1px solid ${pg.line}`, color: pg.text3 }
             }
           >
@@ -238,13 +238,13 @@ export default function UserOrders() {
                   </div>
                 )}
                 {req.status === 'searching_dp' && (
-                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.limeDim, border: '1px solid rgba(245,197,66,0.2)' }}>
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.limeDim, border: '1px solid rgba(196,214,0,0.2)' }}>
                     <div className="h-2 w-2 animate-pulse rounded-full" style={{ background: pg.lime }} />
                     <p className="text-xs" style={{ color: pg.text2 }}>Searching for a delivery partner...</p>
                   </div>
                 )}
                 {req.status === 'dp_reserved' && (
-                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.limeDim, border: '1px solid rgba(245,197,66,0.25)' }}>
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.limeDim, border: '1px solid rgba(196,214,0,0.25)' }}>
                     <CheckCircle2 size={14} style={{ color: pg.lime }} />
                     <p className="text-xs font-bold" style={{ color: pg.lime }}>Delivery partner reserved! Waiting for payment confirmation.</p>
                   </div>
