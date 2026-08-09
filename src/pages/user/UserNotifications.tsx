@@ -135,7 +135,7 @@ export default function UserNotifications() {
             className="rounded-full px-4 py-2.5 text-sm font-extrabold capitalize transition-all active:scale-[0.98]"
             style={
               filter === f
-                ? { background: pg.limeDim, border: '1px solid rgba(212,240,0,0.35)', color: pg.lime }
+                ? { background: pg.limeDim, border: '1px solid rgba(245,197,66,0.35)', color: pg.lime }
                 : { background: pg.surface, border: `1px solid ${pg.line}`, color: pg.text3 }
             }
           >

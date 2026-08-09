@@ -69,7 +69,7 @@ export function Surface({
       className={`w-full text-left ${className}`}
       style={{
         background: pg.surface,
-        border: `1px solid ${accent ? 'rgba(212,240,0,0.28)' : pg.line}`,
+        border: `1px solid ${accent ? 'rgba(245,197,66,0.28)' : pg.line}`,
         borderRadius: pg.radius.lg,
         ...style,
       }}
@@ -91,7 +91,7 @@ export function CTA({
     primary: {
       background: pg.lime,
       color: pg.limeText,
-      boxShadow: '0 10px 28px rgba(212,240,0,0.28)',
+      boxShadow: '0 10px 28px rgba(245,197,66,0.28)',
     },
     secondary: {
       background: pg.surface2,
@@ -227,7 +227,7 @@ export function Dock({ children }: { children: ReactNode }) {
       <div
         className="mx-auto flex max-w-lg items-center justify-between gap-1 px-2 py-2"
         style={{
-          background: 'rgba(10,10,10,0.96)',
+          background: 'rgba(10,12,18,0.96)',
           border: `1px solid ${pg.lineStrong}`,
           borderRadius: 28,
           boxShadow: '0 16px 48px rgba(0,0,0,0.75)',
@@ -264,7 +264,7 @@ export function DockItem({
         style={{
           background: pg.lime,
           color: pg.limeText,
-          boxShadow: '0 12px 32px rgba(212,240,0,0.4)',
+          boxShadow: '0 12px 32px rgba(245,197,66,0.4)',
         }}
         aria-label={label}
       >

@@ -110,7 +110,7 @@ export default function DpNotifications() {
               type="button"
               onClick={markAllRead}
               className="rounded-2xl px-3.5 py-2 text-xs font-extrabold transition active:scale-95"
-              style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)`, color: pg.lime }}
+              style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)`, color: pg.lime }}
             >
               Mark all read
             </button>
@@ -130,7 +130,7 @@ export default function DpNotifications() {
             onClick={() => setFilter(f)}
             className="rounded-full px-4 py-2 text-sm font-extrabold capitalize transition active:scale-95"
             style={filter === f
-              ? { background: pg.limeDim, border: `1px solid rgba(212,240,0,0.35)`, color: pg.lime }
+              ? { background: pg.limeDim, border: `1px solid rgba(245,197,66,0.35)`, color: pg.lime }
               : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text3 }}
           >
             {f} {f === 'unread' && unreadCount > 0 ? `(${unreadCount})` : ''}

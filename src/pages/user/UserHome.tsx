@@ -17,19 +17,35 @@ const STATUS_STEPS: Record<string, number> = {
   on_the_way: 5, arrived: 6, delivered: 7, cash_received: 8, completed: 8,
 }
 
+/** Short-lived cache so back-navigation does not flash / refetch cold */
+type HomeCache = {
+  userId: string
+  activeOrders: DeliveryRequest[]
+  recentCompleted: DeliveryRequest[]
+  stats: { total: number; completed: number; active: number }
+  at: number
+}
+let homeCache: HomeCache | null = null
+const HOME_CACHE_MS = 45_000
+
 /** Rebuilt Customer Home — commerce hero hierarchy */
 export default function UserHome() {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const [activeOrders, setActiveOrders] = useState<DeliveryRequest[]>([])
-  const [recentCompleted, setRecentCompleted] = useState<DeliveryRequest[]>([])
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ total: 0, completed: 0, active: 0 })
+  const cached =
+    homeCache && homeCache.userId === profile?.id && Date.now() - homeCache.at < HOME_CACHE_MS
+      ? homeCache
+      : null
+  const [activeOrders, setActiveOrders] = useState<DeliveryRequest[]>(cached?.activeOrders ?? [])
+  const [recentCompleted, setRecentCompleted] = useState<DeliveryRequest[]>(cached?.recentCompleted ?? [])
+  const [loading, setLoading] = useState(!cached)
+  const [stats, setStats] = useState(cached?.stats ?? { total: 0, completed: 0, active: 0 })
 
   useEffect(() => {
     if (!profile?.id) return
     let cancelled = false
-    const fetchOrders = async () => {
+    const fetchOrders = async (silent = false) => {
+      if (!silent && !homeCache) setLoading(true)
       const [activeRes, completedRes] = await Promise.all([
         supabase.from('requests').select('*').eq('user_id', profile.id)
           .in('status', ['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','rescheduled','dp_reserved','waiting_payment','searching_dp'])
@@ -38,8 +54,10 @@ export default function UserHome() {
           .eq('status','completed').order('created_at', { ascending: false }).limit(3),
       ])
       if (cancelled) return
-      setActiveOrders((activeRes.data as DeliveryRequest[]) || [])
-      setRecentCompleted((completedRes.data as DeliveryRequest[]) || [])
+      const nextActive = (activeRes.data as DeliveryRequest[]) || []
+      const nextCompleted = (completedRes.data as DeliveryRequest[]) || []
+      setActiveOrders(nextActive)
+      setRecentCompleted(nextCompleted)
       const [total, completedCount, activeCount] = await Promise.all([
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('status','completed'),
@@ -47,12 +65,20 @@ export default function UserHome() {
           .in('status',['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','dp_reserved','waiting_payment']),
       ])
       if (cancelled) return
-      setStats({ total: total.count || 0, completed: completedCount.count || 0, active: activeCount.count || 0 })
+      const nextStats = { total: total.count || 0, completed: completedCount.count || 0, active: activeCount.count || 0 }
+      setStats(nextStats)
+      homeCache = {
+        userId: profile.id,
+        activeOrders: nextActive,
+        recentCompleted: nextCompleted,
+        stats: nextStats,
+        at: Date.now(),
+      }
       setLoading(false)
     }
-    fetchOrders()
+    fetchOrders(!!cached)
     const channel = supabase.channel('user-home-requests')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `user_id=eq.${profile.id}` }, () => { fetchOrders() })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `user_id=eq.${profile.id}` }, () => { fetchOrders(true) })
       .subscribe()
     return () => { cancelled = true; supabase.removeChannel(channel) }
   }, [profile?.id])
@@ -72,8 +98,8 @@ export default function UserHome() {
       <div className="mb-7 grid grid-cols-3 gap-2.5">
         {[
           { label: 'Orders', value: stats.total, icon: <Package size={18} />, tone: pg.lime },
-          { label: 'Live', value: stats.active, icon: <Bike size={18} />, tone: '#F5A524' },
-          { label: 'Done', value: stats.completed, icon: <CheckCircle2 size={18} />, tone: '#22C55E' },
+          { label: 'Live', value: stats.active, icon: <Bike size={18} />, tone: '#FF9F43' },
+          { label: 'Done', value: stats.completed, icon: <CheckCircle2 size={18} />, tone: '#3DDC97' },
         ].map(s => (
           <div key={s.label} className="rounded-[20px] px-2 py-3.5 text-center" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
             <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${s.tone}22`, color: s.tone }}>
@@ -89,16 +115,15 @@ export default function UserHome() {
 
       <section className="mb-8">
         <SectionLabel title="Book now" />
+        <p className="mb-3 text-xs" style={{ color: pg.text3 }}>
+          Tap + below to start Instant or Advance booking
+        </p>
         <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/app/create')}
-            className="text-left transition active:scale-[0.98]"
-          >
+          <div className="text-left" aria-hidden="true">
             <img
               src={Images.feature.instantBooking}
               alt="Instant Booking"
-              className="w-full object-contain"
+              className="pointer-events-none w-full object-contain"
               style={{ background: 'transparent', display: 'block' }}
               loading="eager"
               decoding="async"
@@ -108,26 +133,22 @@ export default function UserHome() {
               <Zap size={16} /> Instant
             </p>
             <p className="text-[10px]" style={{ color: pg.text3 }}>~10 min</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/app/create-advance')}
-            className="text-left transition active:scale-[0.98]"
-          >
+          </div>
+          <div className="text-left" aria-hidden="true">
             <img
               src={Images.feature.advanceBooking}
               alt="Advance Booking"
-              className="w-full object-contain"
+              className="pointer-events-none w-full object-contain"
               style={{ background: 'transparent', display: 'block' }}
               loading="eager"
               decoding="async"
               draggable={false}
             />
-            <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold text-sky-400">
+            <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold" style={{ color: pg.info }}>
               <CalendarClock size={16} /> Advance
             </p>
             <p className="text-[10px]" style={{ color: pg.text3 }}>Schedule</p>
-          </button>
+          </div>
         </div>
       </section>
 
@@ -171,7 +192,7 @@ export default function UserHome() {
                 )}
                 {req.status !== 'pending' && req.status !== 'searching_dp' && (
                   <div className="mt-3 h-2 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                    <div className="h-full rounded-full" style={{ width: `${progress}%`, background: `linear-gradient(90deg,#8fa300,${pg.lime})` }} />
+                    <div className="h-full rounded-full" style={{ width: `${progress}%`, background: `linear-gradient(90deg,#E8B84A,${pg.lime})` }} />
                   </div>
                 )}
                 <div className="mt-2.5 flex items-center gap-2 text-xs" style={{ color: pg.text4 }}>
@@ -192,8 +213,8 @@ export default function UserHome() {
           <div className="space-y-2">
             {recentCompleted.map(req => (
               <Surface key={req.id} onClick={() => navigate('/app/orders')} className="flex items-center gap-3 p-3.5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(34,197,94,0.14)' }}>
-                  <CheckCircle2 size={20} className="text-green-400" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(61,220,151,0.14)' }}>
+                  <CheckCircle2 size={20} style={{ color: '#3DDC97' }} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-extrabold">{req.description?.split('\n')[0]?.trim() || 'Delivery'}</p>

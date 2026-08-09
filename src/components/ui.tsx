@@ -17,7 +17,7 @@ export function FullScreenLoader() {
   return (
     <div className="flex h-[100dvh] items-center justify-center" style={{ background: pg.bg }}>
       <div className="relative flex h-16 w-16 items-center justify-center">
-        <div className="absolute h-16 w-16 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: pg.lime, borderRightColor: 'rgba(212,240,0,0.25)' }} />
+        <div className="absolute h-16 w-16 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: pg.lime, borderRightColor: 'rgba(245,197,66,0.25)' }} />
         <Spinner size={28} />
       </div>
     </div>
@@ -217,7 +217,7 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
   const iconMap: Record<SnackbarType, { icon: ReactNode; border: string; bg: string }> = {
     success: { icon: <CheckCircle size={16} style={{ color: pg.success }} />, border: 'rgba(34,197,94,0.35)', bg: 'rgba(34,197,94,0.1)' },
     error:   { icon: <AlertCircle size={16} style={{ color: pg.danger }} />, border: 'rgba(255,77,79,0.35)', bg: 'rgba(255,77,79,0.1)' },
-    info:    { icon: <Info size={16} style={{ color: pg.lime }} />, border: 'rgba(212,240,0,0.35)', bg: pg.limeDim },
+    info:    { icon: <Info size={16} style={{ color: pg.lime }} />, border: 'rgba(245,197,66,0.35)', bg: pg.limeDim },
     warning: { icon: <AlertTriangle size={16} style={{ color: pg.warning }} />, border: 'rgba(245,165,36,0.35)', bg: 'rgba(245,165,36,0.1)' },
   }
   return (
@@ -304,7 +304,7 @@ export function Tabs({ tabs, active, onChange }: { tabs: { key: string; label: s
             style={{
               background: isActive ? pg.limeDim : pg.surface2,
               color: isActive ? pg.lime : pg.text3,
-              border: `1px solid ${isActive ? 'rgba(212,240,0,0.28)' : pg.line}`,
+              border: `1px solid ${isActive ? 'rgba(245,197,66,0.28)' : pg.line}`,
             }}
           >
             {tab.label}
@@ -324,7 +324,7 @@ export function Chip({ label, active, onClick, icon }: { label: string; active?:
     <button onClick={onClick}
       className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
       style={active
-        ? { background: pg.limeDim, color: pg.lime, border: '1px solid rgba(212,240,0,0.35)' }
+        ? { background: pg.limeDim, color: pg.lime, border: '1px solid rgba(245,197,66,0.35)' }
         : { background: pg.surface2, color: pg.text3, border: `1px solid ${pg.line}` }}>
       {icon} {label}
     </button>
@@ -338,7 +338,7 @@ export function ProgressBar({ value, max = 100 }: { value: number; max?: number;
     <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
       <div
         className="h-full rounded-full transition-all duration-700 ease-out"
-        style={{ width: `${pct}%`, background: pg.lime, boxShadow: '0 0 12px rgba(212,240,0,0.45)' }}
+        style={{ width: `${pct}%`, background: pg.lime, boxShadow: '0 0 12px rgba(245,197,66,0.45)' }}
       />
     </div>
   )
@@ -389,7 +389,7 @@ export function EarningsCard({ today, week, deliveries }: { today: number; week:
   return (
     <div
       className="relative overflow-hidden rounded-[28px] p-5 text-white animate-slide-up"
-      style={{ background: pg.surface, border: `1px solid rgba(212,240,0,0.22)`, boxShadow: '0 12px 40px rgba(0,0,0,0.45)' }}
+      style={{ background: pg.surface, border: `1px solid rgba(245,197,66,0.22)`, boxShadow: '0 12px 40px rgba(0,0,0,0.45)' }}
     >
       <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-25 blur-3xl" style={{ background: pg.lime }} />
       <div className="relative z-10">
@@ -398,7 +398,7 @@ export function EarningsCard({ today, week, deliveries }: { today: number; week:
             <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.lime }}>Today&apos;s Earnings</p>
             <p className="mt-1 text-[34px] font-extrabold leading-none tracking-tight"><CountUp value={today} prefix="₹" /></p>
           </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: pg.limeDim, border: '1px solid rgba(212,240,0,0.22)' }}>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: pg.limeDim, border: '1px solid rgba(245,197,66,0.22)' }}>
             <TrendingUp size={22} style={{ color: pg.lime }} />
           </div>
         </div>

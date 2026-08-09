@@ -112,7 +112,7 @@ export default function RescheduleModal({ open, onClose, onConfirm, request, set
                       onClick={() => setNewSlot(slot.key)}
                       className="rounded-2xl py-3 text-sm font-extrabold transition-all active:scale-95"
                       style={newSlot === slot.key
-                        ? { background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(212,240,0,0.28)' }
+                        ? { background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(245,197,66,0.28)' }
                         : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text2 }}
                     >
                       {slot.label}

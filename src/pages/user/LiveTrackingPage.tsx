@@ -199,7 +199,7 @@ export default function LiveTrackingPage() {
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} type="button" onClick={() => setRatingStars(n)} className="active:scale-90">
                   <Star size={36} fill={n <= ratingStars ? '#FBBF24' : 'none'}
-                    className={n <= ratingStars ? 'text-[#D4F000]' : 'text-white/20'} />
+                    className={n <= ratingStars ? 'text-[#F5C542]' : 'text-white/20'} />
                 </button>
               ))}
             </div>
@@ -300,7 +300,7 @@ export default function LiveTrackingPage() {
                     <>
                       <button type="button" onClick={() => { window.location.href = `tel:${dpProfile.phone || ''}` }}
                         className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0"
-                        style={{ background: pg.limeDim, border: '1px solid rgba(212,240,0,0.25)', color: pg.lime }}>
+                        style={{ background: pg.limeDim, border: '1px solid rgba(245,197,66,0.25)', color: pg.lime }}>
                         <Phone size={18} />
                       </button>
                       <button type="button" onClick={async () => {

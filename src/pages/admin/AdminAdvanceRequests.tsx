@@ -112,7 +112,7 @@ export default function AdminAdvanceRequests() {
           <button key={f.key} onClick={() => setFilter(f.key)}
             className="whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition-all"
             style={filter === f.key
-              ? { background: '#D4F000', color: '#0B0B0B' }
+              ? { background: '#F5C542', color: '#0B0B0B' }
               : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>
             {f.label}
           </button>
@@ -130,7 +130,7 @@ export default function AdminAdvanceRequests() {
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(212,240,0,0.15)', color: '#D4F000' }}>
+                    <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(245,197,66,0.15)', color: '#F5C542' }}>
                       {r.request_category || 'Advance'}
                     </span>
                     {r.is_scheduled && (
@@ -149,7 +149,7 @@ export default function AdminAdvanceRequests() {
               {r.estimated_total_charge != null && (
                 <div className="mt-2 text-xs">
                   <span className="text-white/40">Est. Charge: </span>
-                  <span className="font-semibold" style={{ color: '#D4F000' }}>{formatCurrency(r.estimated_total_charge)}</span>
+                  <span className="font-semibold" style={{ color: '#F5C542' }}>{formatCurrency(r.estimated_total_charge)}</span>
                 </div>
               )}
               <p className="mt-2 text-xs text-white/40">{formatTime(r.created_at)}</p>
@@ -256,19 +256,19 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
           {/* Category + Schedule */}
           <div className="rounded-2xl border border-white/10 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <Tag size={14} style={{ color: '#D4F000' }} />
+              <Tag size={14} style={{ color: '#F5C542' }} />
               <span className="text-sm font-semibold text-white">{request.request_category || 'Advance Request'}</span>
             </div>
             {request.scheduled_date && (
               <div className="flex items-center gap-2 text-sm">
-                <CalendarClock size={14} style={{ color: '#D4F000' }} />
+                <CalendarClock size={14} style={{ color: '#F5C542' }} />
                 <span className="text-white/60">Scheduled: </span>
                 <span className="font-medium text-white">{request.scheduled_date} at {request.scheduled_slot || request.scheduled_time}</span>
               </div>
             )}
             {request.estimated_task_duration && (
               <div className="flex items-center gap-2 text-sm">
-                <Clock size={14} style={{ color: '#D4F000' }} />
+                <Clock size={14} style={{ color: '#F5C542' }} />
                 <span className="text-white/60">Est. Duration: </span>
                 <span className="font-medium text-white">
                   {request.estimated_task_duration < 60 ? `${request.estimated_task_duration} min` : `${request.estimated_task_duration / 60} hr`}
@@ -335,7 +335,7 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
                 {request.estimated_total_charge != null && (
                   <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
                     <span className="font-bold text-white">Total</span>
-                    <span className="font-bold" style={{ color: '#D4F000' }}>{formatCurrency(request.estimated_total_charge)}</span>
+                    <span className="font-bold" style={{ color: '#F5C542' }}>{formatCurrency(request.estimated_total_charge)}</span>
                   </div>
                 )}
               </div>

@@ -572,7 +572,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
     return (
       <AuthLayout title="Welcome aboard!" subtitle="Your account is ready. Sign in to start ordering.">
         <div className="flex flex-col items-center py-2 text-center">
-          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: pg.lime, boxShadow: '0 12px 32px rgba(212,240,0,0.35)' }}>
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: pg.lime, boxShadow: '0 12px 32px rgba(245,197,66,0.35)' }}>
             <CheckCircle size={32} style={{ color: pg.limeText }} />
           </div>
           <CTA onClick={() => { setMode('signin'); setRole('user') }} className="w-full">Sign In Now <ArrowRight size={16} /></CTA>
@@ -800,13 +800,13 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
             </div>
           </div>
           {roleLocked && (
-            <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold" style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)`, color: pg.lime }}>
+            <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold" style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)`, color: pg.lime }}>
               {fixedRole === 'dp' ? <Bike size={13} /> : <User size={13} />}
               {fixedRole === 'dp' ? 'Partner app' : 'Customer app'}
             </div>
           )}
           {!roleLocked && detectedRole && (
-            <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold" style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)`, color: pg.lime }}>
+            <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold" style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)`, color: pg.lime }}>
               {detectedRole === 'dp' ? <Bike size={13} /> : <User size={13} />}
               Signing in as <strong>{detectedRole === 'dp' ? 'Delivery Partner' : 'User'}</strong>
             </div>
@@ -842,10 +842,10 @@ function DpSuccessScreen({ onContinue }: { onContinue: () => void }) {
   return (
     <AuthLayout title="Application Submitted!" subtitle="Your delivery partner application is now under review.">
       <div className="flex flex-col items-center py-2 text-center">
-        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: pg.lime, boxShadow: '0 12px 32px rgba(212,240,0,0.35)' }}>
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: pg.lime, boxShadow: '0 12px 32px rgba(245,197,66,0.35)' }}>
           <CheckCircle size={32} style={{ color: pg.limeText }} />
         </div>
-        <div className="mb-5 w-full rounded-2xl p-4" style={{ background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)` }}>
+        <div className="mb-5 w-full rounded-2xl p-4" style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)` }}>
           <p className="text-sm font-extrabold" style={{ color: pg.lime }}>Awaiting Admin Approval</p>
           <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Redirecting to sign in page in {countdown}s...</p>
         </div>

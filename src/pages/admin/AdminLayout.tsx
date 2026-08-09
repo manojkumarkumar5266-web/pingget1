@@ -83,7 +83,7 @@ export default function AdminLayout() {
               onClick={() => navigate(item.path)}
               className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left"
               style={active
-                ? { background: pg.limeDim, border: `1px solid rgba(212,240,0,0.28)` }
+                ? { background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)` }
                 : { border: '1px solid transparent' }}
             >
               <Icon size={18} style={{ color: active ? pg.lime : pg.text3 }} />

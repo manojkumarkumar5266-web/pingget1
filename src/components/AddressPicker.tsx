@@ -198,7 +198,7 @@ export default function AddressPicker({ compact = true }: { compact?: boolean })
             <div><label className="label">City</label><input className="input" value={addrCity} onChange={e => setAddrCity(e.target.value)} /></div>
             <div><label className="label">PIN</label><input className="input" value={addrPincode} onChange={e => setAddrPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} maxLength={6} /></div>
           </div>
-          <CTA type="button" variant="secondary" onClick={pickLocation} className="w-full !min-h-[48px] border-dashed" style={{ border: `1.5px dashed rgba(212,240,0,0.35)`, color: pg.lime, background: pg.limeDim }}>
+          <CTA type="button" variant="secondary" onClick={pickLocation} className="w-full !min-h-[48px] border-dashed" style={{ border: `1.5px dashed rgba(245,197,66,0.35)`, color: pg.lime, background: pg.limeDim }}>
             <Navigation size={15} /> {addrLat ? 'Location set' : 'Use current location'}
           </CTA>
           {error && <ErrorBanner message={error} />}
@@ -271,7 +271,7 @@ export default function AddressPicker({ compact = true }: { compact?: boolean })
           variant="secondary"
           onClick={() => setShowForm(true)}
           className="w-full border-dashed"
-          style={{ border: `1.5px dashed rgba(212,240,0,0.35)`, color: pg.lime, background: pg.limeDim }}
+          style={{ border: `1.5px dashed rgba(245,197,66,0.35)`, color: pg.lime, background: pg.limeDim }}
         >
           <Plus size={16} /> Add delivery address
         </CTA>

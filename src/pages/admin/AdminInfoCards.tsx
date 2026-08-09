@@ -22,7 +22,7 @@ export default function AdminInfoCards() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<InfoCard | null>(null)
-  const [form, setForm] = useState({ title: '', description: '', icon: '📦', bg_color: 'rgba(212,240,0,0.08)', image_url: '', sort_order: 0 })
+  const [form, setForm] = useState({ title: '', description: '', icon: '📦', bg_color: 'rgba(245,197,66,0.08)', image_url: '', sort_order: 0 })
 
   const fetchCards = async () => {
     const { data } = await supabase.from('info_cards').select('*').order('sort_order', { ascending: true })
@@ -45,7 +45,7 @@ export default function AdminInfoCards() {
 
   const openNew = () => {
     setEditing(null)
-    setForm({ title: '', description: '', icon: '📦', bg_color: 'rgba(212,240,0,0.08)', image_url: '', sort_order: cards.length + 1 })
+    setForm({ title: '', description: '', icon: '📦', bg_color: 'rgba(245,197,66,0.08)', image_url: '', sort_order: cards.length + 1 })
     setShowModal(true)
   }
 
@@ -102,7 +102,7 @@ export default function AdminInfoCards() {
                 <div className="flex items-center gap-2">
                   <button onClick={() => toggleActive(card)} className="transition-transform active:scale-90">
                     {card.is_active
-                      ? <ToggleRight size={24} style={{ color: '#D4F000' }} />
+                      ? <ToggleRight size={24} style={{ color: '#F5C542' }} />
                       : <ToggleLeft size={24} className="text-white/30" />}
                   </button>
                   <button onClick={() => openEdit(card)} className="rounded-lg px-2 py-1 text-xs font-semibold text-white/60 hover:text-white"
@@ -143,7 +143,7 @@ export default function AdminInfoCards() {
               </div>
               <div>
                 <label className="label">Background Color</label>
-                <input className="input" value={form.bg_color} onChange={e => setForm({ ...form, bg_color: e.target.value })} placeholder="rgba(212,240,0,0.08)" />
+                <input className="input" value={form.bg_color} onChange={e => setForm({ ...form, bg_color: e.target.value })} placeholder="rgba(245,197,66,0.08)" />
               </div>
               <div>
                 <label className="label">Sort Order</label>

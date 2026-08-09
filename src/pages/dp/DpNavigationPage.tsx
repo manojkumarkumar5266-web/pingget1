@@ -287,7 +287,7 @@ export default function DpNavigationPage() {
                 </div>
                 <button type="button" onClick={() => { window.location.href = `tel:${userProfile.phone || ''}` }}
                   className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0 disabled:opacity-30"
-                  style={{ background: pg.limeDim, border: '1px solid rgba(212,240,0,0.25)', color: pg.lime }}
+                  style={{ background: pg.limeDim, border: '1px solid rgba(245,197,66,0.25)', color: pg.lime }}
                   disabled={isCompleted}>
                   <Phone size={16} />
                 </button>

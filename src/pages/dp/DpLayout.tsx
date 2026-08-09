@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { Home, ClipboardList, Wallet, User, LogOut, AlertTriangle, Bell } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, startTransition } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { FullScreenLoader } from '../../components/ui'
 import { formatCurrency } from '../../lib/utils'
@@ -86,9 +86,10 @@ export default function DpLayout() {
 
   const isActive = (path: string) => location.pathname === path
   const hideDock = location.pathname.startsWith('/dp/chat') || location.pathname.startsWith('/dp/navigate')
+  const go = (path: string) => startTransition(() => navigate(path))
 
   const handleToggleOnline = async () => {
-    if (!dp.is_online && commissionOwed > 0) { navigate('/dp/wallet'); return }
+    if (!dp.is_online && commissionOwed > 0) { go('/dp/wallet'); return }
     const newVal = !dp.is_online
     await supabase.from('delivery_partners').update({ is_online: newVal }).eq('id', dp.id)
     setDp({ ...dp, is_online: newVal })
@@ -98,7 +99,7 @@ export default function DpLayout() {
     <div className="relative flex h-[100dvh] flex-col" style={{ background: pg.bg }}>
       <header
         className="z-10 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]"
-        style={{ background: 'rgba(5,5,5,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+        style={{ background: 'rgba(7,8,11,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
       >
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -135,7 +136,7 @@ export default function DpLayout() {
                 ? `${formatCurrency(commissionOwed)} submitted — waiting for admin.`
                 : `Commission due ${formatCurrency(commissionOwed)}.`}
               {!submittedPending && (
-                <button type="button" onClick={() => navigate('/dp/wallet')} className="ml-1 font-extrabold underline">
+                <button type="button" onClick={() => go('/dp/wallet')} className="ml-1 font-extrabold underline">
                   {receiptRejected ? 'Resubmit' : 'Pay now'}
                 </button>
               )}
@@ -150,11 +151,11 @@ export default function DpLayout() {
 
       {!hideDock && (
         <Dock>
-          <DockItem label="Requests" icon={<Home size={20} />} active={isActive('/dp')} onClick={() => navigate('/dp')} />
-          <DockItem label="Orders" icon={<ClipboardList size={20} />} active={isActive('/dp/orders')} onClick={() => navigate('/dp/orders')} />
-          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/dp/notifications')} badge={unreadCount} onClick={() => navigate('/dp/notifications')} />
-          <DockItem label="Wallet" icon={<Wallet size={20} />} active={isActive('/dp/wallet')} onClick={() => navigate('/dp/wallet')} />
-          <DockItem label="You" icon={<User size={20} />} active={isActive('/dp/profile')} onClick={() => navigate('/dp/profile')} />
+          <DockItem label="Requests" icon={<Home size={20} />} active={isActive('/dp')} onClick={() => go('/dp')} />
+          <DockItem label="Orders" icon={<ClipboardList size={20} />} active={isActive('/dp/orders')} onClick={() => go('/dp/orders')} />
+          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/dp/notifications')} badge={unreadCount} onClick={() => go('/dp/notifications')} />
+          <DockItem label="Wallet" icon={<Wallet size={20} />} active={isActive('/dp/wallet')} onClick={() => go('/dp/wallet')} />
+          <DockItem label="You" icon={<User size={20} />} active={isActive('/dp/profile')} onClick={() => go('/dp/profile')} />
         </Dock>
       )}
     </div>
