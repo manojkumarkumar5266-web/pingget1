@@ -3,6 +3,7 @@ import AdminLayout from './AdminLayout'
 import AdminDashboard from './AdminDashboard'
 import AdminDps from './AdminDps'
 import AdminCities from './AdminCities'
+import AdminServiceWaitlist from './AdminServiceWaitlist'
 import AdminOrders from './AdminOrders'
 import AdminAdvanceRequests from './AdminAdvanceRequests'
 import AdminAdvanceSettings from './AdminAdvanceSettings'
@@ -19,6 +20,7 @@ export default function AdminApp() {
         <Route path="/dps" element={<AdminDps />} />
         <Route path="/users" element={<AdminUsers />} />
         <Route path="/cities" element={<AdminCities />} />
+        <Route path="/waitlist" element={<AdminServiceWaitlist />} />
         <Route path="/orders" element={<AdminOrders />} />
         <Route path="/advance-requests" element={<AdminAdvanceRequests />} />
         <Route path="/advance-settings" element={<AdminAdvanceSettings />} />

@@ -7,6 +7,7 @@ import { useGps } from '../../hooks/useGps'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { Images } from '../../lib/customImages'
 import { BrandWordmark } from '../../components/Brand'
+import ServiceAreaNotice from '../../components/ServiceAreaNotice'
 import { Dock, DockItem } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 
@@ -116,10 +117,13 @@ export default function UserLayout() {
       )}
 
       {showBookingMenu && !hideNav && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowBookingMenu(false)}>
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center px-4"
+          onClick={() => setShowBookingMenu(false)}
+        >
           <div className="absolute inset-0 bg-black/70" />
           <div
-            className="absolute bottom-28 left-1/2 w-[min(92vw,400px)] -translate-x-1/2 animate-slide-in-bottom rounded-[28px] p-4"
+            className="relative z-10 w-full max-w-[400px] animate-slide-in-bottom rounded-[28px] p-4"
             style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}
             onClick={e => e.stopPropagation()}
           >
@@ -168,6 +172,9 @@ export default function UserLayout() {
         </Dock>
       )}
       </div>
+
+      {/* GPS vs admin active cities/pincodes — silent when served */}
+      <ServiceAreaNotice />
     </div>
   )
 }
