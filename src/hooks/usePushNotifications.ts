@@ -65,13 +65,35 @@ export function usePushNotifications(): UsePushNotificationsResult {
   // Deep-link tap handler
   useEffect(() => {
     if (!profile) return
-    const handler = (e: Event) => {
+    const handler = async (e: Event) => {
       const detail = (e as CustomEvent).detail as PushNotificationPayload & { route?: string }
+      const type = detail.notificationType || ''
+      const entityId = detail.entityId || ''
+
+      // Accept → open chat room for quotation
+      if (type === 'request_accepted' || type === 'delivery_accepted') {
+        if (entityId) {
+          const { data: room } = await supabase
+            .from('chat_rooms')
+            .select('id')
+            .eq('request_id', entityId)
+            .maybeSingle()
+          if (room?.id) {
+            navigate(profile.role === 'dp' ? `/dp/chat/${room.id}` : `/app/chat/${room.id}`)
+            return
+          }
+        }
+      }
+
+      // Quotation confirmed → tracking
+      if (type === 'order_confirmed' && entityId) {
+        navigate(profile.role === 'dp' ? `/dp/navigate/${entityId}` : `/app/track/${entityId}`)
+        return
+      }
+
       const route =
         detail.route ||
-        (detail.notificationType
-          ? resolveNotificationRoute(detail.notificationType, detail.entityId, profile.role)
-          : '')
+        (type ? resolveNotificationRoute(type, entityId, profile.role) : '')
       if (route) navigate(route)
     }
     tapHandlerRef.current = handler

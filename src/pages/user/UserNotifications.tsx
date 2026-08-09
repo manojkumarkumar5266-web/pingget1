@@ -91,9 +91,13 @@ export default function UserNotifications() {
   const handleTap = async (n: Notification) => {
     if (!n.is_read) markRead(n.id)
     if (n.related_id) {
-      // Accept / order updates → tracking (chat is opened manually from tracking)
+      // Accept → chat for quotation discussion
+      if (n.type === 'request_accepted') {
+        const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', n.related_id).maybeSingle()
+        if (data) { navigate(`/app/chat/${data.id}`); return }
+      }
+      // Quotation accepted / delivery lifecycle → tracking
       if (
-        n.type === 'request_accepted' ||
         n.type === 'order_status' ||
         n.type === 'order_completed' ||
         n.type === 'order_confirmed' ||

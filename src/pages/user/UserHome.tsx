@@ -231,11 +231,18 @@ export default function UserHome() {
 }
 
 async function navigateToOrder(navigate: (path: string) => void, req: DeliveryRequest) {
-  if (['on_the_way', 'arrived', 'shopping', 'purchased', 'confirmed', 'delivered', 'cash_received', 'accepted'].includes(req.status)) {
+  // After quotation confirmed → tracking
+  if (['on_the_way', 'arrived', 'shopping', 'purchased', 'confirmed', 'delivered', 'cash_received'].includes(req.status)) {
     navigate(`/app/track/${req.id}`)
     return
   }
-  if (req.accepted_dp_id || (req as any).reserved_dp_id) {
+  // Accepted / reserved → chat for quotation
+  if (req.status === 'accepted' || req.accepted_dp_id || (req as any).reserved_dp_id) {
+    const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
+    if (room?.id) {
+      navigate(`/app/chat/${room.id}`)
+      return
+    }
     navigate(`/app/track/${req.id}`)
     return
   }

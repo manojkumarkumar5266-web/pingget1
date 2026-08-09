@@ -148,8 +148,14 @@ export default function ScanningPage() {
             if (scanRef.current) clearInterval(scanRef.current)
             if (elapsedRef.current) clearInterval(elapsedRef.current)
             setPartnerFound(true)
-            setTimeout(() => {
-              navigate(`/app/track/${requestId}`, { replace: true })
+            setTimeout(async () => {
+              const { data: room } = await supabase
+                .from('chat_rooms')
+                .select('id')
+                .eq('request_id', requestId)
+                .maybeSingle()
+              if (room?.id) navigate(`/app/chat/${room.id}`, { replace: true })
+              else navigate(`/app/track/${requestId}`, { replace: true })
             }, 2000)
           }
           if (next?.status === 'cancelled' || next?.status === 'expired') {
@@ -210,7 +216,7 @@ export default function ScanningPage() {
           style={{ borderRadius: 28 }}
           draggable={false}
         />
-        <p className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.45)' }}>Opening order tracking…</p>
+        <p className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.45)' }}>Opening chat…</p>
       </MobileFrame>
     )
   }

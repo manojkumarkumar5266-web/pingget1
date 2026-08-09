@@ -186,7 +186,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!isUser && order?.status === 'confirmed' && room?.request_id) {
-      navigate(`/dp/navigate/${room.request_id}`)
+      navigate(`/dp/navigate/${room.request_id}`, { replace: true })
     }
   }, [order?.status, isUser, room?.request_id, navigate])
 
@@ -196,7 +196,20 @@ export default function ChatScreen() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests', filter: `id=eq.${room.request_id}` },
         (payload: any) => {
           const updated = payload.new as any
+          const prev = payload.old as any
           if (updated.status === 'cancelled') navigate(isUser ? '/app' : '/dp')
+          // Quotation accepted → leave chat for tracking on both sides
+          if (
+            updated.status === 'confirmed' &&
+            prev?.status &&
+            prev.status !== 'confirmed' &&
+            ['accepted', 'pending', 'dp_reserved', 'waiting_payment'].includes(prev.status)
+          ) {
+            navigate(
+              isUser ? `/app/track/${room.request_id}` : `/dp/navigate/${room.request_id}`,
+              { replace: true },
+            )
+          }
           // Refresh fullOrderData so payment status / booking status changes reflect immediately
           setFullOrderData(updated)
           // If advance payment status changed, refetch advance payment data
@@ -315,7 +328,8 @@ export default function ChatScreen() {
         body: 'The user accepted your quotation. Start shopping now.',
         type: 'order_confirmed', related_id: room.request_id,
       })
-      navigate(`/app/track/${room.request_id}`)
+      // User accepts quotation → both sides move to tracking
+      navigate(`/app/track/${room.request_id}`, { replace: true })
     }
   }
 
