@@ -8,7 +8,7 @@ import { X, Clock, RefreshCw, MapPinOff, Loader2, Radar, MapPin } from 'lucide-r
 import { Images } from '../../lib/customImages'
 import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
 import { pg } from '../../design/tokens'
-import { CTA, IconButton, Surface } from '../../design/primitives'
+import { CTA, IconButton, Surface, MobileFrame } from '../../design/primitives'
 
 type DpSpot = {
   id: string
@@ -219,7 +219,7 @@ export default function ScanningPage() {
 
   if (partnerFound) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6" style={{ background: '#050505' }}>
+      <MobileFrame overlay className="items-center justify-center gap-4 px-6 overflow-hidden">
         <img
           src={Images.orderAccepted}
           alt="Order accepted"
@@ -228,13 +228,13 @@ export default function ScanningPage() {
           draggable={false}
         />
         <p className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.45)' }}>Opening order tracking…</p>
-      </div>
+      </MobileFrame>
     )
   }
 
   if (gps.permissionDenied) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 px-8 text-center" style={{ background: pg.bg }}>
+      <MobileFrame overlay className="items-center justify-center gap-6 px-8 text-center overflow-hidden">
         <div className="flex h-20 w-20 items-center justify-center rounded-3xl" style={{ background: 'rgba(239,68,68,0.1)' }}>
           <MapPinOff size={40} className="text-red-400" />
         </div>
@@ -248,12 +248,12 @@ export default function ScanningPage() {
         <button onClick={cancelRequest} className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>
           Cancel
         </button>
-      </div>
+      </MobileFrame>
     )
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ background: pg.bg }}>
+    <MobileFrame overlay className="overflow-hidden">
       <div className="flex items-center justify-between px-5 pb-2 pt-12 shrink-0">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
@@ -268,7 +268,7 @@ export default function ScanningPage() {
         </IconButton>
       </div>
 
-      <div className="relative mx-3 h-[46vh] min-h-[260px] overflow-hidden shrink-0" style={{ borderRadius: 28, border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div className="relative mx-3 h-[42vh] min-h-[240px] overflow-hidden shrink-0" style={{ borderRadius: 28, border: '1px solid rgba(255,255,255,0.1)' }}>
         {center ? (
           <FreeStreetMap
             center={center}
@@ -292,7 +292,7 @@ export default function ScanningPage() {
       </div>
 
       <div className="flex items-center gap-4 px-5 py-4 shrink-0">
-        <img src={Images.userWaiting} alt="" className="h-36 w-32 object-contain" draggable={false} />
+        <img src={Images.userWaiting} alt="" className="h-28 w-24 object-contain" draggable={false} />
         <div className="flex-1">
           <h2 className="text-lg font-bold text-white">
             {waitingForAccept
@@ -311,7 +311,7 @@ export default function ScanningPage() {
         </div>
       </div>
 
-      <div className="px-6 py-1.5 shrink-0">
+      <div className="px-5 py-1.5 shrink-0">
         <div className="flex items-center justify-between gap-1">
           {RADIUS_STEPS_M.map((step, i) => (
             <div
@@ -386,6 +386,6 @@ export default function ScanningPage() {
           </div>
         )}
       </div>
-    </div>
+    </MobileFrame>
   )
 }

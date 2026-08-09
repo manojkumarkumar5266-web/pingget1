@@ -71,6 +71,8 @@ export default function UserLayout() {
 
   return (
     <div className="relative flex h-[100dvh] flex-col" style={{ background: pg.bg }}>
+      {/* Phone-width column — matches Home look on desktop browsers */}
+      <div className="relative mx-auto flex h-full w-full max-w-lg flex-col">
       {acceptedToast && (
         <div className="fixed left-4 right-4 top-4 z-50 mx-auto max-w-lg">
           <div className="flex items-start gap-3 rounded-[22px] p-4" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
@@ -146,6 +148,7 @@ export default function UserLayout() {
           <DockItem label="You" icon={<User size={20} />} active={isActive('/app/profile')} onClick={() => go('/app/profile')} />
         </Dock>
       )}
+      </div>
     </div>
   )
 }

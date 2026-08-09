@@ -15,8 +15,8 @@ const FEATURES = [
 ]
 
 /**
- * Discover section — auto-advancing L→R carousel (no stacked cards, no brand mark).
- * Cards are display-only.
+ * Discover section — auto L→R carousel.
+ * Feature art fills the card edge-to-edge (no inner padding / empty gutters).
  */
 export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: number }) {
   const [index, setIndex] = useState(0)
@@ -56,28 +56,35 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
 
       <div
         className="relative overflow-hidden rounded-[1.35rem]"
-        style={{ border: `1px solid ${pg.line}`, background: pg.surface }}
+        style={{ border: `1px solid ${pg.line}`, background: '#0A0C10' }}
       >
         <div
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${index * 100}%)` }}
         >
           {FEATURES.map((f) => (
-            <article key={f.title} className="min-w-full shrink-0 select-none px-3 pb-3 pt-3">
-              <img
-                src={f.image}
-                alt={f.title}
-                className="mx-auto max-h-[240px] w-full object-contain"
-                style={{ background: 'transparent', display: 'block' }}
-                loading="lazy"
-                decoding="async"
-                draggable={false}
-              />
-              <div className="mt-3 px-1 text-center">
-                <p className="text-[16px] font-extrabold tracking-tight">{f.title}</p>
-                <p className="mt-0.5 text-xs" style={{ color: pg.text3 }}>
-                  {f.subtitle}
-                </p>
+            <article key={f.title} className="relative min-w-full shrink-0 select-none">
+              <div className="relative aspect-[5/4] w-full overflow-hidden sm:aspect-[4/3]">
+                <img
+                  src={f.image}
+                  alt={f.title}
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  style={{ background: 'transparent' }}
+                  loading="lazy"
+                  decoding="async"
+                  draggable={false}
+                />
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3.5 pt-12"
+                  style={{
+                    background: 'linear-gradient(180deg, transparent, rgba(7,8,11,0.94) 60%)',
+                  }}
+                >
+                  <p className="text-[16px] font-extrabold tracking-tight text-white">{f.title}</p>
+                  <p className="mt-0.5 text-xs" style={{ color: pg.text3 }}>
+                    {f.subtitle}
+                  </p>
+                </div>
               </div>
             </article>
           ))}

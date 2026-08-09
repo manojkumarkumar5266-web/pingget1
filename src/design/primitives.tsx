@@ -332,7 +332,7 @@ export function TopChrome({
     <div
       className="sticky top-0 z-20 mb-4 flex items-center gap-3 px-4 py-3"
       style={{
-        background: 'rgba(5,5,5,0.92)',
+        background: 'rgba(7,8,11,0.92)',
         borderBottom: `1px solid ${pg.line}`,
         backdropFilter: 'blur(16px)',
       }}
@@ -340,6 +340,36 @@ export function TopChrome({
       <div className="w-12 shrink-0">{left}</div>
       <div className="min-w-0 flex-1 text-center">{center}</div>
       <div className="flex w-12 shrink-0 justify-end">{right}</div>
+    </div>
+  )
+}
+
+/**
+ * Centers content in a phone-width column (same look as Home on desktop).
+ * Use for full-screen flows (scanning, tracking) so they don't stretch edge-to-edge.
+ */
+export function MobileFrame({
+  children,
+  className = '',
+  overlay = false,
+}: {
+  children: ReactNode
+  className?: string
+  /** fixed fullscreen with dark side gutters */
+  overlay?: boolean
+}) {
+  const inner = (
+    <div
+      className={`mx-auto flex h-full w-full max-w-lg flex-col ${className}`}
+      style={{ background: pg.bg, color: pg.text }}
+    >
+      {children}
+    </div>
+  )
+  if (!overlay) return inner
+  return (
+    <div className="fixed inset-0 z-50 flex justify-center" style={{ background: pg.bg }}>
+      {inner}
     </div>
   )
 }

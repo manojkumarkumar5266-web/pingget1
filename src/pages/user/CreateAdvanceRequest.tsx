@@ -571,7 +571,7 @@ export default function CreateAdvanceRequest() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ background: pg.bg }}>
+    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col" style={{ background: pg.bg }}>
       <TopChrome
         left={
           <IconButton onClick={() => step === 1 ? navigate('/app') : setStep(step - 1)}>
@@ -607,7 +607,7 @@ export default function CreateAdvanceRequest() {
             <div>
               <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#F5C542' }}>What do you need done?</p>
               <p className="mb-4 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Choose a category for your scheduled task</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {REQUEST_CATEGORIES.map(cat => {
                   const saved = categoryDrafts.find(d => d.category === cat.name)
                   const selected = !!(saved || category === cat.name)
@@ -627,21 +627,25 @@ export default function CreateAdvanceRequest() {
                     }}
                       className="relative text-left transition active:scale-[0.98]"
                       style={selected
-                        ? { background: 'rgba(245,197,66,0.1)', border: '1.5px solid rgba(245,197,66,0.45)', borderRadius: 20, padding: 8 }
-                        : { background: 'transparent', border: '1px solid transparent', borderRadius: 20, padding: 8 }}>
-                      <img
-                        src={getCategoryImage(cat.name)}
-                        alt={cat.name}
-                        className="w-full object-contain"
-                        style={{ background: 'transparent', display: 'block' }}
-                        draggable={false}
-                      />
-                      <span className="mt-2 block text-center text-sm font-extrabold leading-tight" style={{ color: selected ? pg.lime : pg.text2 }}>
+                        ? { background: 'rgba(245,197,66,0.1)', border: '1.5px solid rgba(245,197,66,0.45)', borderRadius: 14, padding: 6 }
+                        : { background: pg.surface, border: `1px solid ${pg.line}`, borderRadius: 14, padding: 6 }}>
+                      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <img
+                          src={getCategoryImage(cat.name)}
+                          alt={cat.name}
+                          className="h-full w-full object-contain"
+                          style={{ background: 'transparent', display: 'block', imageRendering: 'auto' }}
+                          loading="lazy"
+                          decoding="async"
+                          draggable={false}
+                        />
+                      </div>
+                      <span className="mt-1.5 block text-center text-[10px] font-extrabold leading-tight" style={{ color: selected ? pg.lime : pg.text2 }}>
                         {cat.name}
                       </span>
                       {saved && (
-                        <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full" style={{ background: pg.lime }}>
-                          <Check size={12} style={{ color: pg.limeText }} strokeWidth={3} />
+                        <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: pg.lime }}>
+                          <Check size={11} style={{ color: pg.limeText }} strokeWidth={3} />
                         </span>
                       )}
                     </button>
@@ -659,8 +663,8 @@ export default function CreateAdvanceRequest() {
 
             {/* Category detail half-sheet */}
             {sheetCategory && (
-              <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={() => setSheetCategory(null)}>
-                <div className="w-full max-h-[88vh] overflow-y-auto rounded-t-3xl p-5 space-y-4" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}
+              <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => setSheetCategory(null)}>
+                <div className="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-t-3xl p-5 space-y-4" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}
                   onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -1170,10 +1174,10 @@ export default function CreateAdvanceRequest() {
       </div>
 
       <div
-        className="fixed bottom-0 left-0 right-0 z-10 px-4 py-4"
+        className="fixed bottom-0 left-0 right-0 z-10 flex justify-center px-4 py-4"
         style={{ background: `linear-gradient(180deg, transparent, ${pg.bg} 30%)` }}
       >
-        <div className="mx-auto max-w-lg">
+        <div className="w-full max-w-lg">
           {step === 1 && categoryDrafts.length > 0 ? (
             <CTA className="w-full" onClick={handleSubmit} disabled={loading}>
               {loading ? 'Submitting...' : `Final Submit (${categoryDrafts.length})`}

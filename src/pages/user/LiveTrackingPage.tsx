@@ -7,7 +7,7 @@ import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/Vi
 import { Images } from '../../lib/customImages'
 import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck } from 'lucide-react'
 import { pg } from '../../design/tokens'
-import { CTA, Surface } from '../../design/primitives'
+import { CTA, Surface, MobileFrame } from '../../design/primitives'
 
 function vehicleIcon(v: string | null | undefined) {
   const s = (v || '').toLowerCase()
@@ -178,16 +178,16 @@ export default function LiveTrackingPage() {
 
   if (payPhase === 'thanks') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6" style={{ background: pg.bg }}>
+      <MobileFrame overlay className="items-center justify-center overflow-hidden px-6">
         <img src={Images.customerThankYou} alt="Thank you" className="w-full max-w-sm object-contain mb-4" draggable={false} />
         <p className="text-sm text-white/50">Returning home...</p>
-      </div>
+      </MobileFrame>
     )
   }
 
   if (payPhase === 'rating') {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6 overflow-y-auto py-8">
+      <MobileFrame overlay className="items-center justify-center overflow-y-auto px-6 py-8">
         <div className="w-full max-w-sm">
           <img src={Images.paymentReceived} alt="Thank you payment received" className="w-full object-contain mb-4 rounded-2xl" draggable={false} />
           <Surface className="rounded-[28px] p-6 text-center">
@@ -215,12 +215,12 @@ export default function LiveTrackingPage() {
             </CTA>
           </Surface>
         </div>
-      </div>
+      </MobileFrame>
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ background: pg.bg }}>
+    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col" style={{ background: pg.bg }}>
       <div className="flex-shrink-0 px-4 pt-12 pb-2">
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => navigate('/app')} className="map-control-btn map-control-dark">

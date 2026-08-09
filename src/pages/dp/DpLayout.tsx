@@ -97,6 +97,7 @@ export default function DpLayout() {
 
   return (
     <div className="relative flex h-[100dvh] flex-col" style={{ background: pg.bg }}>
+      <div className="relative mx-auto flex h-full w-full max-w-lg flex-col">
       <header
         className="z-10 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]"
         style={{ background: 'rgba(7,8,11,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
@@ -158,6 +159,7 @@ export default function DpLayout() {
           <DockItem label="You" icon={<User size={20} />} active={isActive('/dp/profile')} onClick={() => go('/dp/profile')} />
         </Dock>
       )}
+      </div>
     </div>
   )
 }

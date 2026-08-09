@@ -152,7 +152,7 @@ export default function CreateRequest() {
   const canSubmit = (description.trim().length > 0 || photoFiles.length > 0 || !!voiceBlob) && !loading
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ background: pg.bg }}>
+    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col" style={{ background: pg.bg }}>
       <TopChrome
         left={
           <IconButton onClick={() => navigate('/app')}>
