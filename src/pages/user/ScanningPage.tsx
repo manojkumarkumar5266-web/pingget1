@@ -6,7 +6,7 @@ import { useGps } from '../../hooks/useGps'
 import { formatDistance } from '../../lib/utils'
 import { X, Clock, RefreshCw, MapPinOff, Loader2, Radar, MapPin } from 'lucide-react'
 import { Images } from '../../lib/customImages'
-import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
+import FreeStreetMap, { MAP_VIEW_RADIUS_M, SCAN_BACKEND_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import { pg } from '../../design/tokens'
 import { CTA, IconButton, Surface, MobileFrame } from '../../design/primitives'
 
@@ -19,10 +19,9 @@ type DpSpot = {
   full_name: string
 }
 
-const RADIUS_STEPS_M = [2000, 5000, 10000]
-const RADIUS_STEP_INTERVAL_MS = 8000
 const SCAN_INTERVAL_MS = 3500
-const DEFAULT_MAP_RADIUS_M = 10_000
+/** Backend always scans 10 km; map view stays ~2–5 km. */
+const BACKEND_RADIUS_M = SCAN_BACKEND_RADIUS_M
 
 /** Offset a point roughly by distance/bearing for map display when RPC omits coords */
 function offsetFromCenter(lat: number, lng: number, distM: number, angleDeg: number): { lat: number; lng: number } {
@@ -50,7 +49,6 @@ export default function ScanningPage() {
   const [spots, setSpots] = useState<DpSpot[]>([])
   const [scanCount, setScanCount] = useState(0)
   const [requestCancelled, setRequestCancelled] = useState(false)
-  const [radiusStepIndex, setRadiusStepIndex] = useState(0)
   const [waitingForAccept, setWaitingForAccept] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [retrying, setRetrying] = useState(false)
@@ -58,11 +56,11 @@ export default function ScanningPage() {
 
   const scanRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const scanCountRef = useRef(0)
-  const radiusStepRef = useRef(0)
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const radiusMeters = RADIUS_STEPS_M[radiusStepIndex]
+  /** Backend scan always 10 km; map viewport stays ~2–5 km. */
+  const radiusMeters = BACKEND_RADIUS_M
   const centerLat = gps.lat ?? profile?.gps_lat ?? null
   const centerLng = gps.lng ?? profile?.gps_lng ?? null
   const center = centerLat != null && centerLng != null ? { lat: centerLat, lng: centerLng } : null
@@ -74,23 +72,10 @@ export default function ScanningPage() {
     }
   }, [])
 
-  useEffect(() => {
-    if (phase !== 'scanning') return
-    const stepTimer = setInterval(() => {
-      if (radiusStepRef.current < RADIUS_STEPS_M.length - 1) {
-        radiusStepRef.current += 1
-        setRadiusStepIndex(radiusStepRef.current)
-      }
-    }, RADIUS_STEP_INTERVAL_MS)
-    return () => clearInterval(stepTimer)
-  }, [phase])
-
   const triggerRetry = () => {
     setRetrying(true)
     setSpots([])
     setDpCount(0)
-    radiusStepRef.current = 0
-    setRadiusStepIndex(0)
     retryTimeoutRef.current = setTimeout(() => setRetrying(false), 1200)
   }
 
@@ -196,15 +181,13 @@ export default function ScanningPage() {
     setScanCount(0)
     setSpots([])
     setDpCount(0)
-    radiusStepRef.current = 0
-    setRadiusStepIndex(0)
     setPhase('scanning')
   }
 
-  const radiusLabel = formatDistance(radiusMeters)
+  const radiusLabel = formatDistance(BACKEND_RADIUS_M)
   const estimatedWaitSeconds = (() => {
     if (dpCount > 0) return 30 + Math.max(0, 60 - dpCount * 8)
-    return Math.min(60 + radiusStepIndex * 45, 300)
+    return Math.min(60 + Math.floor(scanCount / 2) * 20, 300)
   })()
   const fmtWait = (s: number) => (s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`)
 
@@ -269,12 +252,11 @@ export default function ScanningPage() {
       </div>
 
       <div className="relative mx-3 h-[42vh] min-h-[240px] overflow-hidden shrink-0" style={{ borderRadius: 28, border: '1px solid rgba(255,255,255,0.1)' }}>
-        {/* Show map immediately — use last known / default center so iframe never blocks */}
         <FreeStreetMap
           center={center || { lat: 17.6868, lng: 83.2185 }}
-          zoom={13}
+          zoom={14}
           markers={markers}
-          radiusMeters={DEFAULT_MAP_RADIUS_M}
+          radiusMeters={MAP_VIEW_RADIUS_M}
           light
           radar
           instant
@@ -291,7 +273,7 @@ export default function ScanningPage() {
           className="pointer-events-none absolute right-3 top-3 rounded-full px-3 py-1.5 text-xs font-extrabold"
           style={{ background: 'rgba(255,255,255,0.94)', color: '#C62828', border: '1px solid rgba(229,57,53,0.35)' }}
         >
-          Radius {radiusLabel}
+          Scan {radiusLabel}
         </div>
       </div>
 
@@ -309,27 +291,18 @@ export default function ScanningPage() {
           </h2>
           <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
             {retrying
-              ? 'Expanding search radius and retrying...'
-              : `Scan #${scanCount} · ${fmtWait(elapsedSeconds)} elapsed`}
+              ? 'Retrying nearby partners...'
+              : `Scan #${scanCount} · ${fmtWait(elapsedSeconds)} elapsed · within ${radiusLabel}`}
           </p>
         </div>
       </div>
 
       <div className="px-5 py-1.5 shrink-0">
-        <div className="flex items-center justify-between gap-1">
-          {RADIUS_STEPS_M.map((step, i) => (
-            <div
-              key={step}
-              className="flex-1 rounded-full py-1 text-center text-[10px] font-bold transition-all"
-              style={{
-                background: i <= radiusStepIndex ? 'rgba(245,197,66,0.18)' : 'rgba(255,255,255,0.05)',
-                color: i <= radiusStepIndex ? pg.lime : pg.text4,
-                border: i === radiusStepIndex ? '1px solid rgba(245,197,66,0.4)' : '1px solid transparent',
-              }}
-            >
-              {formatDistance(step)}
-            </div>
-          ))}
+        <div
+          className="rounded-full py-1.5 text-center text-[11px] font-bold"
+          style={{ background: 'rgba(245,197,66,0.14)', color: pg.lime, border: '1px solid rgba(245,197,66,0.35)' }}
+        >
+          Searching within {radiusLabel} · map shows ~{formatDistance(MAP_VIEW_RADIUS_M)}
         </div>
       </div>
 

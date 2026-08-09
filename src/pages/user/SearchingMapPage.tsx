@@ -5,12 +5,12 @@ import { useNearbyDps } from '../../hooks/useNearbyDps'
 import { formatDistance } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
 import { X, Bike, CheckCircle2, ChevronRight, Search, Loader2 } from 'lucide-react'
-import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
+import FreeStreetMap, { MAP_VIEW_RADIUS_M, SCAN_BACKEND_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import { Images } from '../../lib/customImages'
 import { MobileFrame } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 
-const SCAN_RADIUS_KM = 10
+const SCAN_RADIUS_M = SCAN_BACKEND_RADIUS_M
 const MAX_SCANS = 6
 
 export default function SearchingMapPage() {
@@ -23,7 +23,7 @@ export default function SearchingMapPage() {
     ? { lat: profile.gps_lat, lng: profile.gps_lng }
     : null
 
-  const { dps, scanning, scanCount } = useNearbyDps(userLocation, requestId, SCAN_RADIUS_KM * 1000, 4000, MAX_SCANS)
+  const { dps, scanning, scanCount } = useNearbyDps(userLocation, requestId, SCAN_RADIUS_M, 4000, MAX_SCANS)
   const [phase, setPhase] = useState<'scanning' | 'found' | 'none'>('scanning')
   const [retryCount, setRetryCount] = useState(0)
 
@@ -98,9 +98,9 @@ export default function SearchingMapPage() {
       <div className="relative flex-1 min-h-0">
         <FreeStreetMap
           center={userLocation || { lat: 17.6868, lng: 83.2185 }}
-          zoom={13}
+          zoom={14}
           markers={markers}
-          radiusMeters={SCAN_RADIUS_KM * 1000}
+          radiusMeters={MAP_VIEW_RADIUS_M}
           light
           radar
           instant
@@ -120,7 +120,7 @@ export default function SearchingMapPage() {
                     ? `${dps.length} partner${dps.length === 1 ? '' : 's'} nearby`
                     : 'No partners in range'}
                 </h2>
-                <p className="text-[10px] text-white/40 mt-0.5">Search radius: {SCAN_RADIUS_KM} km</p>
+                <p className="text-[10px] text-white/40 mt-0.5">Search radius: {Math.round(SCAN_RADIUS_M / 1000)} km</p>
               </div>
               {phase === 'scanning' && (
                 <button type="button" onClick={cancelRequest} className="map-control-btn map-control-dark">

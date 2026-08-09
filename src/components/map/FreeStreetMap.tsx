@@ -14,8 +14,11 @@ type Props = {
   destination?: LatLng | null
   markers?: MapMarker[]
   routeLine?: LatLng[] | null
+  /** Visual search/view ring only (2–5 km). Backend scan stays separate. */
   radiusMeters?: number
   hideRadius?: boolean
+  /** Hide the built-in Live map chip (avoids overlapping ETA overlays). */
+  hideBadge?: boolean
   light?: boolean
   radar?: boolean
   /** Prefer street tiles (no CSS grid). Default true for light/radar/route maps. */
@@ -25,7 +28,11 @@ type Props = {
   interactive?: boolean
 }
 
-const DEFAULT_RADIUS_M = 10_000
+/** Visual map area — keep ~2–5 km on screen (do not expand to 10 km). */
+export const MAP_VIEW_RADIUS_M = 4_000
+/** Backend scanning radius for nearby DPs. */
+export const SCAN_BACKEND_RADIUS_M = 10_000
+const DEFAULT_ZOOM = 14
 const TILE = 256
 
 function stableCoord(n: number, places = 4) {
@@ -169,12 +176,13 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
 
 export default function FreeStreetMap({
   center,
-  zoom = 13,
+  zoom = DEFAULT_ZOOM,
   destination,
   markers = [],
   routeLine = null,
-  radiusMeters = DEFAULT_RADIUS_M,
+  radiusMeters = MAP_VIEW_RADIUS_M,
   hideRadius = false,
+  hideBadge = false,
   light = false,
   radar = false,
   instant = false,
@@ -193,10 +201,9 @@ export default function FreeStreetMap({
     null
   const pickup = markers.find(m => m.kind === 'pickup')?.position || null
 
-  const lockedZoom = useRef<number | null>(null)
-  const zBase = routeLine ? Math.min(zoom, 14) : radiusMeters >= 8000 ? Math.min(zoom, 12) : zoom
-  if (lockedZoom.current == null) lockedZoom.current = zBase
-  const z = instant || light || routeLine ? lockedZoom.current : zBase
+  // Cap visual area at 2–5 km — never zoom out to a 10 km frame
+  const viewRadius = Math.min(Math.max(radiusMeters, 2_000), 5_000)
+  const z = Math.max(13, Math.min(15, Math.round(zoom || DEFAULT_ZOOM)))
 
   // Always prefer real street/area tiles over CSS grids or iframe lag
   const useStreetTiles = true
@@ -219,12 +226,12 @@ export default function FreeStreetMap({
   const nearby = markers.filter(m => {
     if (m.kind === 'user' || m.kind === 'bike' || m.kind === 'dp') return true
     if (m.kind === 'pickup' || m.kind === 'destination') return true
-    return haversineM(c, m.position) <= radiusMeters
+    return haversineM(c, m.position) <= viewRadius
   })
 
   const dpCount = nearby.filter(m => m.kind === 'bike' || m.kind === 'dp').length
   const metersPerPx = (156543.03392 * Math.cos((c.lat * Math.PI) / 180)) / Math.pow(2, z)
-  const radiusPx = radiusMeters / Math.max(metersPerPx, 0.1)
+  const radiusPx = viewRadius / Math.max(metersPerPx, 0.1)
   const radiusPct = Math.min(92, (radiusPx / H) * 100 * 2)
 
   const routeSvgPoints = useMemo(() => {
@@ -354,18 +361,20 @@ export default function FreeStreetMap({
         )
       })}
 
-      <div
-        className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-[11px] font-bold"
-        style={{
-          background: 'rgba(255,255,255,0.94)',
-          color: '#C62828',
-          border: '1px solid rgba(229,57,53,0.35)',
-        }}
-      >
-        {routeLine ? 'Live tracking' : 'Live map'}
-        {center ? ' · GPS on' : ''}
-        {dpCount > 0 ? ` · ${dpCount} DP` : ''}
-      </div>
+      {!hideBadge && (
+        <div
+          className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-[11px] font-bold"
+          style={{
+            background: 'rgba(255,255,255,0.94)',
+            color: '#C62828',
+            border: '1px solid rgba(229,57,53,0.35)',
+          }}
+        >
+          {routeLine ? 'Live tracking' : 'Live map'}
+          {center ? ' · GPS on' : ''}
+          {dpCount > 0 ? ` · ${dpCount} DP` : ''}
+        </div>
+      )}
     </div>
   )
 }

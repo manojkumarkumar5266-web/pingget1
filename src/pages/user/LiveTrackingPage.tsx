@@ -4,7 +4,7 @@ import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } fr
 import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
 import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/VisualTracking'
-import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
+import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
 import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck } from 'lucide-react'
@@ -256,7 +256,7 @@ export default function LiveTrackingPage() {
   if (payPhase === 'thanks') {
     return (
       <MobileFrame overlay className="items-center justify-center overflow-hidden px-6">
-        <img src={Images.customerThankYou} alt="Thank you" className="w-full max-w-sm object-contain mb-4" draggable={false} />
+        <img src={Images.thankYouRating} alt="Thank you for rating" className="mb-4 w-full max-w-sm object-contain" draggable={false} />
         <p className="text-sm text-white/50">Returning home...</p>
       </MobileFrame>
     )
@@ -322,7 +322,7 @@ export default function LiveTrackingPage() {
             <button type="button" onClick={() => navigate('/app')} className="btn-primary mt-4">Back Home</button>
           </div>
         ) : showLiveMap ? (
-          <div>
+          <div className="space-y-2">
             <VisualTracking
               progress={progress}
               status={request.status}
@@ -332,7 +332,7 @@ export default function LiveTrackingPage() {
               hideProgress
               compact
             />
-            <div className="relative mx-3 mb-2 h-[32vh] min-h-[200px] overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="relative mx-3 mb-2 h-[30vh] min-h-[200px] overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
               <FreeStreetMap
                 center={mapCenter}
                 zoom={14}
@@ -341,7 +341,8 @@ export default function LiveTrackingPage() {
                 light
                 instant
                 hideRadius
-                radiusMeters={5000}
+                hideBadge
+                radiusMeters={MAP_VIEW_RADIUS_M}
               />
               {liveEtaLabel && (
                 <div
@@ -354,7 +355,7 @@ export default function LiveTrackingPage() {
             </div>
           </div>
         ) : (
-          <div className="h-[46vh] min-h-[300px]">
+          <div className="min-h-[240px]">
             <VisualTracking
               progress={progress}
               status={request.status}
