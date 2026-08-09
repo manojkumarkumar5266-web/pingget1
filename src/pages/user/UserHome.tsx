@@ -133,7 +133,7 @@ export default function UserHome() {
             <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold" style={{ color: pg.lime }}>
               <Zap size={16} /> Instant
             </p>
-            <p className="text-[10px]" style={{ color: pg.text3 }}>~10 min</p>
+            <p className="text-[10px]" style={{ color: pg.text3 }}>Book for now</p>
           </div>
           <div className="text-left" aria-hidden="true">
             <img

@@ -318,31 +318,140 @@ export default function DpHome() {
           { p_request_id: req.id, p_dp_user_id: profile!.id }
         )
         const row = Array.isArray(reserved) ? reserved[0] : reserved
-        if (error || !row || !row.success) {
-          showToast(row?.error_msg || error?.message || 'Failed to reserve this booking')
+        if (!error && row?.success) {
+          const roomId = row.chat_room_id
+            || (await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()).data?.id
+          if (roomId) {
+            navigate(`/dp/chat/${roomId}`, { replace: true })
+            return
+          }
+        }
+
+        // Client fallback when RPC fails (often missing advance_payment message_type in DB)
+        console.warn('[DpHome] reserve RPC failed, trying client fallback:', error || row)
+        const fallbackRoomId = await reserveAdvanceClientSide(req)
+        if (fallbackRoomId) {
+          navigate(`/dp/chat/${fallbackRoomId}`, { replace: true })
           return
         }
-        if (row.chat_room_id) navigate(`/dp/chat/${row.chat_room_id}`, { replace: true })
-        else {
-          const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
-          if (room) navigate(`/dp/chat/${room.id}`, { replace: true })
-          else navigate('/dp/orders')
-        }
+        showToast(row?.error_msg || error?.message || 'Failed to reserve this booking')
         return
       }
 
       const { data, error } = await supabase.rpc('accept_request', { p_request_id: req.id, p_dp_user_id: profile!.id })
       const row = Array.isArray(data) ? data[0] : data
-      if (error || !row?.success) { showToast(row?.error_msg || error?.message || 'Failed to accept request'); return }
-      if (row.chat_room_id) navigate(`/dp/chat/${row.chat_room_id}`, { replace: true })
-      else {
-        const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
-        if (room) navigate(`/dp/chat/${room.id}`, { replace: true })
-        else navigate(`/dp/navigate/${req.id}`, { replace: true })
+      if (error || !row?.success) {
+        console.error('[DpHome] accept_request failed:', error || row)
+        showToast(row?.error_msg || error?.message || 'Failed to accept request')
+        return
       }
+      const roomId = row.chat_room_id
+        || (await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()).data?.id
+      if (roomId) navigate(`/dp/chat/${roomId}`, { replace: true })
+      else navigate(`/dp/navigate/${req.id}`, { replace: true })
+    } catch (e: any) {
+      console.error('[DpHome] acceptRequest exception:', e)
+      showToast(e?.message || 'Could not accept request')
     } finally {
       setReservingId(null)
     }
+  }
+
+  /** Manual reserve when reserve_dp_for_advance RPC fails. */
+  const reserveAdvanceClientSide = async (req: RequestWithUser): Promise<string | null> => {
+    if (!profile?.id) return null
+    const { data: fresh } = await supabase
+      .from('requests')
+      .select('id, status, user_id, order_type')
+      .eq('id', req.id)
+      .maybeSingle()
+    if (!fresh || !['searching_dp', 'no_dp_found'].includes(fresh.status)) return null
+
+    const deadline = new Date(Date.now() + 30 * 60 * 1000).toISOString()
+    const { error: updErr } = await supabase.from('requests').update({
+      status: 'dp_reserved',
+      reserved_dp_id: profile.id,
+      reserved_at: new Date().toISOString(),
+      accepted_dp_id: profile.id,
+      payment_deadline: deadline,
+    }).eq('id', req.id).in('status', ['searching_dp', 'no_dp_found'])
+    if (updErr) {
+      console.error('[DpHome] client reserve update failed:', updErr)
+      return null
+    }
+
+    let roomId: string | null = null
+    const { data: existingRoom } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
+    if (existingRoom?.id) roomId = existingRoom.id
+    else {
+      const { data: created, error: roomErr } = await supabase
+        .from('chat_rooms')
+        .insert({ request_id: req.id, user_id: fresh.user_id, dp_id: profile.id })
+        .select('id')
+        .single()
+      if (roomErr || !created) {
+        console.error('[DpHome] client chat create failed:', roomErr)
+        return null
+      }
+      roomId = created.id
+    }
+
+    let fee = 50
+    const { data: settings } = await supabase.from('advance_settings').select('confirmation_fee').limit(1).maybeSingle()
+    if (settings?.confirmation_fee != null) fee = Number(settings.confirmation_fee)
+
+    const { data: ap } = await supabase.from('advance_payments').insert({
+      request_id: req.id,
+      chat_room_id: roomId,
+      dp_id: profile.id,
+      customer_id: fresh.user_id,
+      amount: fee,
+      payment_deadline: deadline,
+      status: 'waiting',
+    }).select('id').maybeSingle()
+
+    if (ap?.id) {
+      await supabase.from('requests').update({ advance_payment_id: ap.id }).eq('id', req.id)
+      const { error: apMsgErr } = await supabase.from('messages').insert({
+        chat_room_id: roomId,
+        sender_id: profile.id,
+        message_type: 'advance_payment',
+        advance_payment_id: ap.id,
+        quotation_data: {
+          amount: fee,
+          deadline,
+          booking_id: req.id,
+          scheduled_date: (req as any).scheduled_date,
+          scheduled_time: (req as any).scheduled_slot || (req as any).scheduled_time,
+          purpose: 'Advance Booking Confirmation',
+          status: 'waiting',
+        },
+      })
+      if (apMsgErr) {
+        await supabase.from('messages').insert({
+          chat_room_id: roomId,
+          sender_id: profile.id,
+          message_type: 'text',
+          content: `Advance confirmation payment requested: ₹${fee}. Please pay and upload proof in chat.`,
+        })
+      }
+    }
+
+    await supabase.from('messages').insert({
+      chat_room_id: roomId,
+      sender_id: profile.id,
+      message_type: 'text',
+      content: 'Hi! I have reserved your advance booking. Please complete the confirmation payment.',
+    })
+    await supabase.from('notifications').insert({
+      user_id: fresh.user_id,
+      title: 'Delivery Partner Reserved!',
+      body: 'A delivery partner reserved your advance booking. Open chat to confirm payment.',
+      type: 'dp_reserved',
+      related_id: req.id,
+    })
+
+    return roomId
   }
 
   const getDistance = (req: DeliveryRequest): number | null => {

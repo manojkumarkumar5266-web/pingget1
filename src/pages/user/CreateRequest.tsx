@@ -7,6 +7,7 @@ import { getSelectedDeliveryAddress } from '../../components/AddressPicker'
 import { Camera, Mic, MicOff, X, Play, Pause, ArrowLeft } from 'lucide-react'
 import { Screen, TopChrome, Surface, CTA, SectionLabel, IconButton } from '../../design/primitives'
 import { pg } from '../../design/tokens'
+import { uploadMediaFile } from '../../lib/uploadMedia'
 
 const DRAFT_KEY = 'cr_notes_draft'
 
@@ -100,12 +101,6 @@ export default function CreateRequest() {
     if (voiceUrlRef.current) { URL.revokeObjectURL(voiceUrlRef.current); voiceUrlRef.current = null }
   }
 
-  const uploadToStorage = async (file: File | Blob, path: string): Promise<string | null> => {
-    const { error } = await supabase.storage.from('media').upload(path, file, { upsert: true })
-    if (error) return null
-    return supabase.storage.from('media').getPublicUrl(path).data.publicUrl
-  }
-
   const handleSubmit = async () => {
     setError(null)
     if (!profile?.id) return
@@ -122,10 +117,23 @@ export default function CreateRequest() {
       const ts = Date.now()
       const photoUrls: string[] = []
       for (let i = 0; i < photoFiles.length; i++) {
-        const url = await uploadToStorage(photoFiles[i], `requests/${profile.id}/${ts}-photo-${i}`)
-        if (url) photoUrls.push(url)
+        try {
+          photoUrls.push(await uploadMediaFile(photoFiles[i], `requests/${profile.id}/${ts}-photo-${i}`))
+        } catch (upErr: any) {
+          throw new Error(upErr?.message || 'Photo upload failed. Please try again.')
+        }
       }
-      const voiceUrl = voiceBlob ? await uploadToStorage(voiceBlob, `requests/${profile.id}/${ts}-voice.webm`) : null
+      let voiceUrl: string | null = null
+      if (voiceBlob) {
+        try {
+          voiceUrl = await uploadMediaFile(voiceBlob, `requests/${profile.id}/${ts}-voice`, {
+            compress: false,
+            contentType: voiceBlob.type || 'audio/webm',
+          })
+        } catch (upErr: any) {
+          throw new Error(upErr?.message || 'Voice upload failed. Please try again.')
+        }
+      }
       const { data: inserted, error: err } = await supabase.from('requests').insert({
         user_id: profile.id,
         description: description.trim() || 'Instant request',
