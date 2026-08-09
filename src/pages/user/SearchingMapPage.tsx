@@ -4,9 +4,11 @@ import { useAuth } from '../../context'
 import { useNearbyDps } from '../../hooks/useNearbyDps'
 import { formatDistance } from '../../lib/utils'
 import { supabase } from '../../lib/supabase'
-import { X, Bike, CheckCircle2, ChevronRight, Clock, Search, Loader2 } from 'lucide-react'
+import { X, Bike, CheckCircle2, ChevronRight, Search, Loader2 } from 'lucide-react'
 import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
 import { Images } from '../../lib/customImages'
+import { MobileFrame } from '../../design/primitives'
+import { pg } from '../../design/tokens'
 
 const SCAN_RADIUS_KM = 10
 const MAX_SCANS = 6
@@ -84,15 +86,15 @@ export default function SearchingMapPage() {
 
   if (partnerFound) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#0B0B0B] px-6">
+      <MobileFrame overlay className="items-center justify-center gap-4 overflow-hidden px-6">
         <img src={Images.orderAccepted} alt="Order accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} />
         <p className="text-sm text-white/50">Opening order tracking...</p>
-      </div>
+      </MobileFrame>
     )
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
+    <MobileFrame overlay className="overflow-hidden">
       <div className="relative flex-1 min-h-0">
         {userLocation ? (
           <FreeStreetMap
@@ -100,6 +102,8 @@ export default function SearchingMapPage() {
             zoom={14}
             markers={markers}
             radiusMeters={SCAN_RADIUS_KM * 1000}
+            light
+            radar
           />
         ) : (
           <div className="flex h-full items-center justify-center text-white/40 text-sm">Getting location…</div>
@@ -137,73 +141,53 @@ export default function SearchingMapPage() {
         </div>
       </div>
 
-      <div className="px-4 pb-8 pt-3 shrink-0">
+      <div className="shrink-0 px-4 pb-8 pt-3" style={{ background: pg.bg }}>
         <div className="mx-auto max-w-md space-y-3">
           {phase === 'scanning' && (
-            <div className="map-glass-panel p-4 animate-slide-up">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg,#F5C542,#606000)' }}>
-                  <Search size={20} className="text-white animate-pulse" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white">Searching for partners...</p>
-                  <p className="text-xs text-white/60">
-                    {dps.length > 0
-                      ? `${dps.length} partner${dps.length === 1 ? '' : 's'} found nearby`
-                      : `Scanning ${Math.min(scanCount + 1, MAX_SCANS)}/${MAX_SCANS} within ${SCAN_RADIUS_KM}km`}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
-                <Clock size={14} className="text-white/60 shrink-0" />
-                <p className="text-xs text-white/70">Tracking opens when a partner accepts</p>
+            <div className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+              <Loader2 size={20} className="animate-spin" style={{ color: pg.lime }} />
+              <div>
+                <p className="text-sm font-extrabold text-white">Scanning nearby…</p>
+                <p className="text-xs" style={{ color: pg.text3 }}>Pass {scanCount}/{MAX_SCANS}</p>
               </div>
             </div>
           )}
-
-          {phase === 'found' && (
-            <div className="space-y-2 animate-slide-up">
-              <div className="map-glass-panel p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-500/80">
-                    <CheckCircle2 size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-white">{dps.length} partner{dps.length !== 1 ? 's' : ''} available!</p>
-                    <p className="text-xs text-white/60">Waiting for a partner to accept your request</p>
-                  </div>
-                </div>
-                {dps.slice(0, 2).map((dp, i) => (
-                  <div key={dp.dp_user_id} className="mt-2 flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
-                    <Bike size={14} style={{ color: '#F5C542' }} />
-                    <span className="text-xs text-white/80">Partner {i + 1}{dp.distance_meters ? ` · ${formatDistance(dp.distance_meters)} away` : ''}</span>
-                  </div>
-                ))}
+          {phase === 'found' && dps.map((dp: any) => (
+            <div key={dp.dp_user_id || dp.id} className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: pg.limeDim }}>
+                <Bike size={18} style={{ color: pg.lime }} />
               </div>
-              <button type="button" onClick={() => navigate('/app/orders')}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold text-white active:scale-95"
-                style={{ background: 'linear-gradient(135deg,#F5C542,#606000)' }}>
-                Track My Request <ChevronRight size={16} />
-              </button>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-extrabold text-white">{dp.full_name || 'Partner'}</p>
+                <p className="text-xs" style={{ color: pg.text3 }}>
+                  {formatDistance(Number(dp.distance_meters || 0))} away
+                </p>
+              </div>
+              <CheckCircle2 size={16} style={{ color: pg.lime }} />
             </div>
-          )}
-
+          ))}
           {phase === 'none' && (
-            <div className="space-y-2 animate-slide-up">
-              <div className="map-glass-panel p-4 text-center">
-                <Loader2 size={24} className="mx-auto mb-2 animate-spin" style={{ color: '#F5C542' }} />
-                <p className="font-semibold text-white">Still searching for a delivery partner...</p>
-                <p className="mt-1 text-xs text-white/60">Retrying automatically in a few seconds (attempt {retryCount + 1})</p>
-              </div>
-              <button type="button" onClick={cancelRequest}
-                className="w-full rounded-2xl py-3 text-sm font-semibold text-white/80 active:scale-95"
-                style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
-                Cancel
+            <div className="rounded-2xl px-4 py-5 text-center" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+              <Search size={22} className="mx-auto mb-2" style={{ color: pg.text3 }} />
+              <p className="font-extrabold text-white">No partners nearby</p>
+              <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Try again or wait — your request stays live.</p>
+              <button
+                type="button"
+                onClick={() => { setRetryCount(c => c + 1); setPhase('scanning') }}
+                className="mt-3 text-sm font-extrabold"
+                style={{ color: pg.lime }}
+              >
+                Scan again <ChevronRight size={14} className="inline" />
               </button>
             </div>
+          )}
+          {(phase === 'none' || phase === 'found') && (
+            <button type="button" onClick={cancelRequest} className="w-full py-2 text-sm" style={{ color: pg.text3 }}>
+              Cancel request
+            </button>
           )}
         </div>
       </div>
-    </div>
+    </MobileFrame>
   )
 }
