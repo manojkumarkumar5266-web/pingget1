@@ -96,18 +96,15 @@ export default function SearchingMapPage() {
   return (
     <MobileFrame overlay className="overflow-hidden">
       <div className="relative flex-1 min-h-0">
-        {userLocation ? (
-          <FreeStreetMap
-            center={userLocation}
-            zoom={14}
-            markers={markers}
-            radiusMeters={SCAN_RADIUS_KM * 1000}
-            light
-            radar
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-white/40 text-sm">Getting location…</div>
-        )}
+        <FreeStreetMap
+          center={userLocation || { lat: 17.6868, lng: 83.2185 }}
+          zoom={13}
+          markers={markers}
+          radiusMeters={SCAN_RADIUS_KM * 1000}
+          light
+          radar
+          instant
+        />
 
         <div className="absolute left-0 right-0 top-0 z-10 px-4 pt-12 pointer-events-none">
           <div className="map-glass-panel p-3 pointer-events-auto">

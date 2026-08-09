@@ -269,18 +269,22 @@ export default function ScanningPage() {
       </div>
 
       <div className="relative mx-3 h-[42vh] min-h-[240px] overflow-hidden shrink-0" style={{ borderRadius: 28, border: '1px solid rgba(255,255,255,0.1)' }}>
-        {center ? (
-          <FreeStreetMap
-            center={center}
-            zoom={radiusStepIndex === 0 ? 14 : radiusStepIndex === 1 ? 13 : 12}
-            markers={markers}
-            radiusMeters={DEFAULT_MAP_RADIUS_M}
-            light
-            radar
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm" style={{ background: pg.surface, color: pg.text3 }}>
-            Detecting your location…
+        {/* Show map immediately — use last known / default center so iframe never blocks */}
+        <FreeStreetMap
+          center={center || { lat: 17.6868, lng: 83.2185 }}
+          zoom={13}
+          markers={markers}
+          radiusMeters={DEFAULT_MAP_RADIUS_M}
+          light
+          radar
+          instant
+        />
+        {!center && (
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-3 mx-auto w-fit rounded-full px-3 py-1 text-[11px] font-bold"
+            style={{ background: 'rgba(7,8,11,0.75)', color: '#fff' }}
+          >
+            Getting GPS…
           </div>
         )}
         <div
