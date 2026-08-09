@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { pushNotificationService, PushNotificationPayload } from '@/services/pushNotificationService'
+import { pushNotificationService, PushNotificationPayload, resolveNotificationRoute } from '@/services/pushNotificationService'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context'
 
@@ -66,10 +66,13 @@ export function usePushNotifications(): UsePushNotificationsResult {
   useEffect(() => {
     if (!profile) return
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as PushNotificationPayload & { route: string }
-      if (detail.route) {
-        navigate(detail.route)
-      }
+      const detail = (e as CustomEvent).detail as PushNotificationPayload & { route?: string }
+      const route =
+        detail.route ||
+        (detail.notificationType
+          ? resolveNotificationRoute(detail.notificationType, detail.entityId, profile.role)
+          : '')
+      if (route) navigate(route)
     }
     tapHandlerRef.current = handler
     window.addEventListener('push-notification-tap', handler)

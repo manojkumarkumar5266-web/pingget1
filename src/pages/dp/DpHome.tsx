@@ -293,13 +293,14 @@ export default function DpHome() {
           showToast(row?.error_msg || error?.message || 'Failed to reserve this booking')
           return
         }
-        navigate(`/dp/navigate/${req.id}`)
+        navigate(`/dp/navigate/${req.id}`, { replace: true })
         return
       }
       const { data, error } = await supabase.rpc('accept_request', { p_request_id: req.id, p_dp_user_id: profile!.id })
       const row = Array.isArray(data) ? data[0] : data
       if (error || !row?.success) { showToast(row?.error_msg || error?.message || 'Failed to accept request'); return }
-      navigate(`/dp/navigate/${req.id}`)
+      // Always open DP tracking after accept — never auto-open chat (chat stays manual)
+      navigate(`/dp/navigate/${req.id}`, { replace: true })
     } finally {
       setReservingId(null)
     }
