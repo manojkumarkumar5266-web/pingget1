@@ -89,8 +89,14 @@ export default function DpNotifications() {
   const handleTap = async (n: Notification) => {
     if (!n.is_read) markRead(n.id)
     if (n.related_id) {
-      if (n.type === 'request_accepted' || n.type === 'order_received' || n.type === 'order_placed' || n.type === 'order_status' || n.type === 'order_confirmed') {
+      // Quotation confirmed / live order → tracking
+      if (n.type === 'order_confirmed' || n.type === 'order_status' || n.type === 'order_delivered' || n.type === 'task_started') {
         navigate(`/dp/navigate/${n.related_id}`)
+        return
+      }
+      // New request alerts → home
+      if (n.type === 'order_received' || n.type === 'order_placed' || n.type === 'new_nearby_request') {
+        navigate('/dp')
       }
     }
   }

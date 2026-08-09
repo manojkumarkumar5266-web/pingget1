@@ -147,6 +147,19 @@ export default function UserOrders() {
     navigate(`/app/track/${req.id}`)
   }
 
+  const openActiveOrder = async (req: RequestWithDp) => {
+    // Before quotation confirmed → chat; after → tracking
+    if (['accepted', 'dp_reserved', 'waiting_payment'].includes(req.status) || (req.accepted_dp_id && req.status === 'accepted')) {
+      await openChat(req)
+      return
+    }
+    if (['pending', 'searching_dp'].includes(req.status)) {
+      navigate(`/app/scanning/${req.id}`)
+      return
+    }
+    openTracking(req)
+  }
+
   const tabs = [
     { key: 'active' as Tab, label: 'Active' },
     { key: 'completed' as Tab, label: 'Completed' },
@@ -188,7 +201,7 @@ export default function UserOrders() {
           {orders.map((req, i) => (
             <Surface
               key={req.id}
-              onClick={tab === 'active' ? () => openTracking(req) : undefined}
+              onClick={tab === 'active' ? () => { void openActiveOrder(req) } : undefined}
               className={`overflow-hidden animate-slide-up ${tab === 'active' ? 'active:scale-[0.99]' : ''}`}
               style={{ animationDelay: `${i * 50}ms` }}
             >

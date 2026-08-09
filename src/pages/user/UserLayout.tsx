@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
-import { Home, ClipboardList, Bell, User, Plus, X, Bike, Zap, CalendarClock } from 'lucide-react'
+import { Home, ClipboardList, Bell, User, Plus, X, MessageCircle, Zap, CalendarClock } from 'lucide-react'
 import { useEffect, useState, useRef, startTransition } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useGps } from '../../hooks/useGps'
@@ -31,9 +31,10 @@ export default function UserLayout() {
     toastTimerRef.current = setTimeout(() => setAcceptedToast(null), 12000)
   }
 
-  const openTrackingFromToast = (requestId: string) => {
+  const openChatFromToast = async (requestId: string) => {
     setAcceptedToast(null)
-    navigate(`/app/track/${requestId}`)
+    const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
+    if (data) navigate(`/app/chat/${data.id}`)
   }
 
   useEffect(() => {
@@ -47,16 +48,20 @@ export default function UserLayout() {
     fetchUnread()
     const channel = supabase.channel('user-notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` },
-        (payload) => {
+        async (payload) => {
           fetchUnread()
           const notif = payload.new as any
           if (notif.type === 'request_accepted' && notif.related_id) {
             showToast({ requestId: notif.related_id, body: notif.body || 'A delivery partner accepted your request.' })
-            // After accept → tracking (never auto-open chat). Scanning page handles its own transition.
+            // Accept → chat (quotation). Scanning page also opens chat on its own.
             const path = window.location.pathname
-            if (!path.includes('/app/track/') && !path.includes('/app/scanning/')) {
-              navigate(`/app/track/${notif.related_id}`)
-            }
+            if (path.includes('/app/chat/') || path.includes('/app/scanning/')) return
+            const { data: room } = await supabase
+              .from('chat_rooms')
+              .select('id')
+              .eq('request_id', notif.related_id)
+              .maybeSingle()
+            if (room?.id) navigate(`/app/chat/${room.id}`)
           }
         })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
@@ -81,18 +86,18 @@ export default function UserLayout() {
         <div className="fixed left-4 right-4 top-4 z-50 mx-auto max-w-lg">
           <div className="flex items-start gap-3 rounded-[22px] p-4" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(34,197,94,0.16)' }}>
-              <Bike size={18} className="text-green-400" />
+              <MessageCircle size={18} className="text-green-400" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-extrabold">Partner accepted</p>
               <p className="mt-0.5 line-clamp-2 text-xs" style={{ color: pg.text3 }}>{acceptedToast.body}</p>
               <button
                 type="button"
-                onClick={() => openTrackingFromToast(acceptedToast.requestId)}
+                onClick={() => openChatFromToast(acceptedToast.requestId)}
                 className="mt-2 rounded-xl px-3 py-1.5 text-xs font-extrabold"
                 style={{ background: pg.lime, color: pg.limeText }}
               >
-                Open tracking
+                Open Chat
               </button>
             </div>
             <button type="button" onClick={() => setAcceptedToast(null)} style={{ color: pg.text4 }}><X size={16} /></button>

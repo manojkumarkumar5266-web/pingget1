@@ -56,7 +56,15 @@ export default function SearchingMapPage() {
         if ((next?.status === 'accepted' && next?.accepted_dp_id) ||
             (next?.status === 'dp_reserved' && next?.reserved_dp_id)) {
           setPartnerFound(true)
-          setTimeout(() => navigate(`/app/track/${requestId}`, { replace: true }), 2000)
+          setTimeout(async () => {
+            const { data: room } = await supabase
+              .from('chat_rooms')
+              .select('id')
+              .eq('request_id', requestId)
+              .maybeSingle()
+            if (room?.id) navigate(`/app/chat/${room.id}`, { replace: true })
+            else navigate(`/app/track/${requestId}`, { replace: true })
+          }, 2000)
         }
         if (next?.status === 'no_dp_found') setPhase('none')
       })
@@ -88,7 +96,7 @@ export default function SearchingMapPage() {
     return (
       <MobileFrame overlay className="items-center justify-center gap-4 overflow-hidden px-6">
         <img src={Images.orderAccepted} alt="Order accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} />
-        <p className="text-sm text-white/50">Opening order tracking...</p>
+        <p className="text-sm text-white/50">Opening chat...</p>
       </MobileFrame>
     )
   }

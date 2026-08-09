@@ -69,12 +69,14 @@ export function resolveNotificationRoute(
 ): string {
   const id = entityId || ''
   switch (notificationType) {
-    // User routes — delivery lifecycle opens tracking (request id), not chat
+    // Accept → chat (entityId is request id — client resolves room when needed via related_id lookups)
     case NOTIFICATION_TYPES.DELIVERY_ACCEPTED:
+    case 'request_accepted':
+      return id ? `/app/orders` : '/app' // tap handler / layout open chat by request id
+    // After quotation / live delivery → tracking
     case NOTIFICATION_TYPES.DELIVERY_ARRIVED:
     case NOTIFICATION_TYPES.DELIVERY_STARTED:
     case NOTIFICATION_TYPES.DELIVERY_COMPLETED:
-    case 'request_accepted':
     case 'order_status':
     case 'order_confirmed':
     case 'order_delivered':

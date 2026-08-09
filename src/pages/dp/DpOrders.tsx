@@ -152,7 +152,7 @@ export default function DpOrders() {
         <div className="space-y-3 pb-4">
           {orders.map(req => {
             const chatClosed = ['delivered', 'cash_received', 'completed'].includes(req.status)
-            const canNavigate = ['accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'dp_reserved', 'task_started'].includes(req.status)
+            const canNavigate = ['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'task_started'].includes(req.status)
             const canUploadProof = ['arrived', 'delivered', 'cash_received'].includes(req.status)
             const awaitingUser = req.status === 'delivered' || req.status === 'cash_received'
 
@@ -181,7 +181,7 @@ export default function DpOrders() {
                     className="mt-3 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold"
                     style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.22)`, color: pg.lime }}
                   >
-                    Open tracking to continue this delivery — chat is optional
+                    Open chat to agree on price — tracking starts after customer accepts quotation
                   </div>
                 )}
 
@@ -242,12 +242,6 @@ export default function DpOrders() {
                       </IconButton>
                     )}
 
-                    {canNavigate && (
-                      <CTA className="min-h-[44px] flex-1 text-sm" onClick={() => navigate(`/dp/navigate/${req.id}`)}>
-                        <Navigation size={15} /> Track order
-                      </CTA>
-                    )}
-
                     {chatClosed ? (
                       <div
                         className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 text-xs font-extrabold"
@@ -256,8 +250,18 @@ export default function DpOrders() {
                         <Lock size={13} /> Chat closed
                       </div>
                     ) : (
-                      <CTA variant="secondary" className="min-h-[44px] flex-1 text-sm" onClick={() => goToChat(req)}>
+                      <CTA
+                        className={`min-h-[44px] flex-1 text-sm ${canNavigate ? '' : ''}`}
+                        variant={req.status === 'accepted' || req.status === 'dp_reserved' ? undefined : 'secondary'}
+                        onClick={() => goToChat(req)}
+                      >
                         <MessageCircle size={15} /> Chat
+                      </CTA>
+                    )}
+
+                    {canNavigate && (
+                      <CTA className="min-h-[44px] flex-1 text-sm" onClick={() => navigate(`/dp/navigate/${req.id}`)}>
+                        <Navigation size={15} /> Track order
                       </CTA>
                     )}
 
