@@ -1,7 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import type { LatLng } from '../../lib/mapUtils'
-import { Images } from '../../lib/customImages'
-import { pg } from '../../design/tokens'
 
 export type MapMarker = {
   id: string
@@ -15,20 +13,12 @@ type Props = {
   zoom?: number
   destination?: LatLng | null
   markers?: MapMarker[]
-  /** Polyline points (lat/lng) drawn between DP ↔ user */
   routeLine?: LatLng[] | null
-  /** Search / visibility radius in meters (default 10 km) */
   radiusMeters?: number
-  /** Hide radius ring (use for live tracking) */
   hideRadius?: boolean
-  /** Light white map with warm street tint (scanning) */
   light?: boolean
-  /** Pulsing radar rings from center out to radius */
   radar?: boolean
-  /**
-   * Instant map mode for scanning — local light basemap + optional street tiles.
-   * No Google iframe (eliminates scan-page load lag).
-   */
+  /** Prefer street tiles (no CSS grid). Default true for light/radar/route maps. */
   instant?: boolean
   className?: string
   style?: React.CSSProperties
@@ -36,14 +26,15 @@ type Props = {
 }
 
 const DEFAULT_RADIUS_M = 10_000
+const TILE = 256
 
-function stableCoord(n: number, places = 3) {
+function stableCoord(n: number, places = 4) {
   const f = 10 ** places
   return Math.round(n * f) / f
 }
 
 function project(lat: number, lng: number, center: LatLng, zoom: number, widthPx: number, heightPx: number) {
-  const scale = 256 * Math.pow(2, zoom)
+  const scale = TILE * Math.pow(2, zoom)
   const world = (la: number, ln: number) => {
     const x = ((ln + 180) / 360) * scale
     const sin = Math.sin((la * Math.PI) / 180)
@@ -69,6 +60,14 @@ function haversineM(a: LatLng, b: LatLng) {
   return 2 * R * Math.asin(Math.sqrt(h))
 }
 
+function latLngToTile(lat: number, lng: number, zoom: number) {
+  const n = Math.pow(2, zoom)
+  const x = ((lng + 180) / 360) * n
+  const latRad = (lat * Math.PI) / 180
+  const y = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n
+  return { x, y }
+}
+
 function RedUserPin() {
   return (
     <svg width="28" height="36" viewBox="0 0 28 36" fill="none" aria-hidden>
@@ -81,41 +80,93 @@ function RedUserPin() {
   )
 }
 
-/** Optional street tiles — never blocks UI; fades in if available */
-function streetTileUrl(lat: number, lng: number, zoom: number) {
-  const clat = stableCoord(lat)
-  const clng = stableCoord(lng)
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${clat},${clng}&zoom=${zoom}&size=640x480&maptype=mapnik`
-}
-
-/** Instant white + yellow street grid — paints in 0ms, no network */
-function InstantLightBasemap() {
+/** Coded bike marker — no PNG / no broken checkerboard */
+function BikePin({ size = 34 }: { size?: number }) {
   return (
-    <div
-      className="absolute inset-0"
-      style={{
-        backgroundColor: '#F4F6F8',
-        backgroundImage: [
-          // major yellow streets (horizontal)
-          'repeating-linear-gradient(0deg, transparent 0 46px, rgba(245,197,66,0.55) 46px 49px, transparent 49px 96px)',
-          // major yellow streets (vertical)
-          'repeating-linear-gradient(90deg, transparent 0 52px, rgba(245,197,66,0.5) 52px 55px, transparent 55px 108px)',
-          // minor grey streets
-          'repeating-linear-gradient(0deg, transparent 0 22px, rgba(180,188,198,0.45) 22px 23px, transparent 23px 48px)',
-          'repeating-linear-gradient(90deg, transparent 0 24px, rgba(180,188,198,0.4) 24px 25px, transparent 25px 54px)',
-          // soft blocks
-          'radial-gradient(ellipse at 30% 40%, rgba(220,230,240,0.9), transparent 55%)',
-          'radial-gradient(ellipse at 70% 65%, rgba(210,222,235,0.7), transparent 50%)',
-        ].join(','),
-      }}
-    />
+    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden className="drop-shadow-md">
+      <circle cx="20" cy="20" r="19" fill="#F5C542" />
+      <circle cx="20" cy="20" r="19" fill="none" stroke="#140F05" strokeOpacity="0.12" strokeWidth="1.5" />
+      <g fill="none" stroke="#140F05" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="26" r="5" />
+        <circle cx="28" cy="26" r="5" />
+        <path d="M12 26h7l4-9h5" />
+        <path d="M19 26l4-9" />
+        <path d="M23 17h5" />
+        <path d="M16 17h4" />
+        <circle cx="20" cy="17" r="1.6" fill="#140F05" stroke="none" />
+      </g>
+    </svg>
   )
 }
 
 /**
- * Street map + overlay pins.
- * Scanning (`instant` / light+radar): local light basemap — no Google iframe lag.
+ * Real street / area tiles (Carto light) — roads & localities, not CSS grid lines.
  */
+function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
+  const z = Math.max(11, Math.min(16, Math.round(zoom)))
+  const { x: cx, y: cy } = latLngToTile(center.lat, center.lng, z)
+  const tileX = Math.floor(cx)
+  const tileY = Math.floor(cy)
+  const fracX = cx - tileX
+  const fracY = cy - tileY
+  const range = [-1, 0, 1]
+  // Position mosaic so center of map = center lat/lng
+  const originLeft = 50 - (fracX + 1) * (100 / 3)
+  const originTop = 50 - (fracY + 1) * (100 / 3)
+
+  return (
+    <div className="absolute inset-0 overflow-hidden" style={{ background: '#E8EEF2' }}>
+      <div
+        className="absolute"
+        style={{
+          left: `${originLeft}%`,
+          top: `${originTop}%`,
+          width: '300%',
+          height: '300%',
+        }}
+      >
+        {range.map((dy) =>
+          range.map((dx) => {
+            const tx = tileX + dx
+            const ty = tileY + dy
+            const n = Math.pow(2, z)
+            if (ty < 0 || ty >= n) return null
+            const wx = ((tx % n) + n) % n
+            const src = `https://a.basemaps.cartocdn.com/rastertiles/voyager/${z}/${wx}/${ty}.png`
+            return (
+              <img
+                key={`${z}-${wx}-${ty}`}
+                src={src}
+                alt=""
+                draggable={false}
+                className="absolute"
+                style={{
+                  left: `${(dx + 1) * (100 / 3)}%`,
+                  top: `${(dy + 1) * (100 / 3)}%`,
+                  width: `${100 / 3}%`,
+                  height: `${100 / 3}%`,
+                  imageRendering: 'auto',
+                }}
+                loading="eager"
+                decoding="async"
+              />
+            )
+          }),
+        )}
+      </div>
+      {/* Soft wash — keep streets readable, mute heavy greenery */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,248,220,0.12) 50%, rgba(255,255,255,0.18))',
+          mixBlendMode: 'soft-light',
+        }}
+      />
+    </div>
+  )
+}
+
 export default function FreeStreetMap({
   center,
   zoom = 13,
@@ -133,6 +184,7 @@ export default function FreeStreetMap({
   const c =
     center ||
     markers.find(m => m.kind === 'user')?.position ||
+    markers.find(m => m.kind === 'bike')?.position ||
     { lat: 17.385, lng: 78.4867 }
 
   const dest =
@@ -141,31 +193,23 @@ export default function FreeStreetMap({
     null
   const pickup = markers.find(m => m.kind === 'pickup')?.position || null
 
-  // Lock zoom after first paint so the map never reloads mid-scan
   const lockedZoom = useRef<number | null>(null)
-  const zBase = radiusMeters >= 8000 ? Math.min(zoom, 12) : zoom
+  const zBase = routeLine ? Math.min(zoom, 14) : radiusMeters >= 8000 ? Math.min(zoom, 12) : zoom
   if (lockedZoom.current == null) lockedZoom.current = zBase
-  // Live tracking with route: allow slightly tighter zoom, still locked
-  const z = instant || light ? lockedZoom.current : zBase
+  const z = instant || light || routeLine ? lockedZoom.current : zBase
 
-  const useInstant = instant || light || !!routeLine
-  const [tileReady, setTileReady] = useState(false)
-
-  const tileSrc = useMemo(() => {
-    if (!useInstant) return null
-    return streetTileUrl(c.lat, c.lng, z)
-  }, [useInstant, c.lat, c.lng, z])
+  // Always prefer real street/area tiles over CSS grids or iframe lag
+  const useStreetTiles = true
 
   const googleSrc = useMemo(() => {
-    if (useInstant) return null
+    if (useStreetTiles) return null
     if (dest) {
       const from = pickup || c
       return `https://www.google.com/maps?saddr=${stableCoord(from.lat)},${stableCoord(from.lng)}&daddr=${stableCoord(dest.lat)},${stableCoord(dest.lng)}&hl=en&z=${z}&output=embed`
     }
     return `https://www.google.com/maps?q=${stableCoord(c.lat)},${stableCoord(c.lng)}&hl=en&z=${z}&output=embed`
-  }, [useInstant, c.lat, c.lng, dest?.lat, dest?.lng, pickup?.lat, pickup?.lng, z])
+  }, [useStreetTiles, c.lat, c.lng, dest?.lat, dest?.lng, pickup?.lat, pickup?.lng, z])
 
-  // Stabilize Google iframe src against GPS jitter
   const lastGoogle = useRef(googleSrc)
   if (googleSrc) lastGoogle.current = googleSrc
 
@@ -179,14 +223,16 @@ export default function FreeStreetMap({
   })
 
   const dpCount = nearby.filter(m => m.kind === 'bike' || m.kind === 'dp').length
-
   const metersPerPx = (156543.03392 * Math.cos((c.lat * Math.PI) / 180)) / Math.pow(2, z)
   const radiusPx = radiusMeters / Math.max(metersPerPx, 0.1)
   const radiusPct = Math.min(92, (radiusPx / H) * 100 * 2)
 
   const routeSvgPoints = useMemo(() => {
     if (!routeLine || routeLine.length < 2) return ''
-    return routeLine
+    // Downsample long OSRM polylines for SVG perf
+    const step = Math.max(1, Math.floor(routeLine.length / 48))
+    const pts = routeLine.filter((_, i) => i % step === 0 || i === routeLine.length - 1)
+    return pts
       .map(p => {
         const { left, top } = project(p.lat, p.lng, c, z, W, H)
         return `${left},${top}`
@@ -196,35 +242,17 @@ export default function FreeStreetMap({
 
   return (
     <div
-      className={`free-street-map relative overflow-hidden ${light || useInstant ? 'light-map' : ''} ${className}`}
+      className={`free-street-map relative overflow-hidden ${light || useStreetTiles ? 'light-map' : ''} ${className}`}
       style={{
         width: '100%',
         height: '100%',
         minHeight: 200,
-        background: light || useInstant ? '#F4F6F8' : '#0B0B0B',
+        background: light || useStreetTiles ? '#E8EEF2' : '#0B0B0B',
         ...style,
       }}
     >
-      {useInstant ? (
-        <>
-          <InstantLightBasemap />
-          {tileSrc && (
-            <img
-              src={tileSrc}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
-              style={{
-                opacity: tileReady ? 0.92 : 0,
-                filter: 'grayscale(0.4) brightness(1.25) contrast(1.06) saturate(0.4) sepia(0.1)',
-              }}
-              decoding="async"
-              fetchPriority="low"
-              draggable={false}
-              onLoad={() => setTileReady(true)}
-              onError={() => setTileReady(false)}
-            />
-          )}
-        </>
+      {useStreetTiles ? (
+        <StreetTileBasemap center={c} zoom={z} />
       ) : (
         <iframe
           key={lastGoogle.current || 'gmap'}
@@ -237,28 +265,15 @@ export default function FreeStreetMap({
         />
       )}
 
-      {(light || useInstant) && (
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,236,160,0.16) 50%, rgba(255,255,255,0.12) 100%)',
-            mixBlendMode: 'soft-light',
-          }}
-        />
-      )}
-
-      {/* Route line DP ↔ user */}
       {routeSvgPoints && (
         <svg className="pointer-events-none absolute inset-0 z-[5] h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           <polyline
             points={routeSvgPoints}
             fill="none"
             stroke="#F5C542"
-            strokeWidth="1.2"
+            strokeWidth="1.4"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="0"
             vectorEffect="non-scaling-stroke"
             opacity={0.95}
           />
@@ -266,12 +281,12 @@ export default function FreeStreetMap({
             points={routeSvgPoints}
             fill="none"
             stroke="#E53935"
-            strokeWidth="0.55"
+            strokeWidth="0.6"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="2 1.5"
+            strokeDasharray="2 1.4"
             vectorEffect="non-scaling-stroke"
-            opacity={0.85}
+            opacity={0.9}
           />
         </svg>
       )}
@@ -282,8 +297,8 @@ export default function FreeStreetMap({
           style={{
             width: `${radiusPct}%`,
             height: `${radiusPct}%`,
-            border: light || useInstant ? '1.5px solid rgba(229,57,53,0.28)' : `2px solid rgba(245,197,66,0.4)`,
-            background: light || useInstant ? 'rgba(229,57,53,0.04)' : 'rgba(245,197,66,0.05)',
+            border: '1.5px solid rgba(229,57,53,0.3)',
+            background: 'rgba(229,57,53,0.05)',
           }}
         />
       )}
@@ -311,31 +326,19 @@ export default function FreeStreetMap({
             style={{ left: `${left}%`, top: `${top}%` }}
           >
             {isUser ? (
-              <div className="-mb-1 drop-shadow-md">
+              <div className="-mb-1">
                 <RedUserPin />
               </div>
             ) : isDp ? (
-              <img
-                src={Images.bikeMarker}
-                alt=""
-                className="mb-0 h-9 w-9 translate-y-1/2 object-contain drop-shadow-lg"
-                draggable={false}
-                onError={(e) => {
-                  const el = e.target as HTMLImageElement
-                  el.onerror = null
-                  el.src =
-                    'data:image/svg+xml,' +
-                    encodeURIComponent(
-                      '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="#F5C542"/><path d="M10 22a4 4 0 1 0 0.01 0zm16 0a4 4 0 1 0 0.01 0zM12 22h8l3-7h-5l-2 4h-2z" fill="#140F05"/></svg>',
-                    )
-                }}
-              />
+              <div className="translate-y-1/2">
+                <BikePin size={32} />
+              </div>
             ) : (
               <div
                 className="mb-0 flex h-4 w-4 translate-y-1/2 items-center justify-center rounded-full"
                 style={{
                   background: m.kind === 'pickup' ? '#F5A524' : '#3B82F6',
-                  boxShadow: '0 0 0 4px rgba(0,0,0,0.25)',
+                  boxShadow: '0 0 0 4px rgba(0,0,0,0.2)',
                 }}
               />
             )}
@@ -354,12 +357,12 @@ export default function FreeStreetMap({
       <div
         className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-[11px] font-bold"
         style={{
-          background: light || useInstant ? 'rgba(255,255,255,0.92)' : 'rgba(11,11,11,0.9)',
-          color: light || useInstant ? '#C62828' : pg.lime,
-          border: light || useInstant ? '1px solid rgba(229,57,53,0.35)' : '1px solid rgba(245,197,66,0.4)',
+          background: 'rgba(255,255,255,0.94)',
+          color: '#C62828',
+          border: '1px solid rgba(229,57,53,0.35)',
         }}
       >
-        {routeLine ? 'Live tracking' : useInstant ? 'Live map' : 'Google Maps · Live'}
+        {routeLine ? 'Live tracking' : 'Live map'}
         {center ? ' · GPS on' : ''}
         {dpCount > 0 ? ` · ${dpCount} DP` : ''}
       </div>
