@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, type DeliveryRequest, type Profile } from '../../lib/supabase'
 import { useAuth } from '../../context'
+import { useGps } from '../../hooks/useGps'
 import { STATUS_LABELS } from '../../lib/utils'
-import VisualTracking, { STATUS_PROGRESS } from '../../components/VisualTracking'
 import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
 import { Images } from '../../lib/customImages'
+import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
 import {
   ArrowLeft, Navigation, MapPin, MessageCircle, Package, CheckCircle2,
   Bike, Phone, Camera, X, Clock, User as UserIcon, Store,
@@ -22,10 +23,13 @@ const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string
   { from: 'arrived', to: 'delivered', label: 'Delivered', notifTitle: 'Order Delivered', notifBody: 'Your order has been delivered. Please confirm receipt in the app.', icon: CheckCircle2 },
 ]
 
+const LIVE_STATUSES = new Set(['on_the_way', 'arrived', 'purchased', 'shopping', 'accepted', 'confirmed'])
+
 export default function DpNavigationPage() {
   const { requestId } = useParams<{ requestId: string }>()
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const gps = useGps(profile?.id, !!profile)
 
   const [request, setRequest] = useState<DeliveryRequest | null>(null)
   const [userProfile, setUserProfile] = useState<Profile | null>(null)
@@ -33,12 +37,13 @@ export default function DpNavigationPage() {
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
-  const [etaMinutes, setEtaMinutes] = useState<number | null>(null)
-  const [updatingEta, setUpdatingEta] = useState(false)
   const [showAcceptedSplash, setShowAcceptedSplash] = useState(false)
   const [showThanks, setShowThanks] = useState(false)
+  const [liveEtaLabel, setLiveEtaLabel] = useState<string | null>(null)
+  const [routeCoords, setRouteCoords] = useState<LatLng[]>([])
   const photoInputRef = useRef<HTMLInputElement>(null)
   const splashShown = useRef(false)
+  const lastEtaWrite = useRef(0)
 
   useEffect(() => {
     if (!requestId) return
@@ -55,11 +60,6 @@ export default function DpNavigationPage() {
         const { data: userProf } = await supabase.from('profiles').select('*').eq('id', req.user_id).maybeSingle()
         setUserProfile(userProf as Profile | null)
       }
-      if (profile?.id) {
-        /* profile already available via useAuth */
-      }
-      const currentEta = (req as any).eta_minutes
-      if (currentEta) setEtaMinutes(currentEta)
       const existingPhotos = (req as any)?.delivery_proof_photos as string[] | null
       if (existingPhotos && existingPhotos.length > 0) {
         setPhotoPreviews(existingPhotos)
@@ -77,24 +77,76 @@ export default function DpNavigationPage() {
     return () => { supabase.removeChannel(channel) }
   }, [requestId, profile?.id])
 
-  const mapMarkers: MapMarker[] = useMemo(() => {
-    if (!request) return []
-    const list: MapMarker[] = []
-    if (request.pickup_lat && request.pickup_lng) {
-      list.push({ id: 'pickup', position: { lat: request.pickup_lat, lng: request.pickup_lng }, kind: 'pickup' })
+  const dpPos: LatLng | null = useMemo(() => {
+    if (gps.lat != null && gps.lng != null) return { lat: gps.lat, lng: gps.lng }
+    if (profile?.gps_lat != null && profile?.gps_lng != null) {
+      return { lat: Number(profile.gps_lat), lng: Number(profile.gps_lng) }
     }
-    if (request.delivery_lat && request.delivery_lng) {
-      list.push({ id: 'dest', position: { lat: request.delivery_lat, lng: request.delivery_lng }, kind: 'destination' })
+    return null
+  }, [gps.lat, gps.lng, profile?.gps_lat, profile?.gps_lng])
+
+  const userPos: LatLng | null = useMemo(() => {
+    if (!request) return null
+    if (request.delivery_lat != null && request.delivery_lng != null) {
+      return { lat: Number(request.delivery_lat), lng: Number(request.delivery_lng) }
     }
-    return list
+    return null
   }, [request])
 
-  const mapCenter =
-    request?.delivery_lat && request?.delivery_lng
-      ? { lat: request.delivery_lat, lng: request.delivery_lng }
-      : request?.pickup_lat && request?.pickup_lng
-      ? { lat: request.pickup_lat, lng: request.pickup_lng }
-      : null
+  // Live route + ETA DP → customer; write eta_minutes for user side
+  useEffect(() => {
+    if (!request || !LIVE_STATUSES.has(request.status) || !dpPos || !userPos) return
+    let cancelled = false
+    const run = async () => {
+      const route = await fetchRoute(dpPos, userPos, 'driving')
+      if (cancelled) return
+      if (!route) {
+        setRouteCoords([dpPos, userPos])
+        const R = 6371000
+        const dLat = ((userPos.lat - dpPos.lat) * Math.PI) / 180
+        const dLng = ((userPos.lng - dpPos.lng) * Math.PI) / 180
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((dpPos.lat * Math.PI) / 180) *
+            Math.cos((userPos.lat * Math.PI) / 180) *
+            Math.sin(dLng / 2) ** 2
+        const meters = 2 * R * Math.asin(Math.sqrt(a))
+        const seconds = (meters / 1000 / 22) * 3600
+        setLiveEtaLabel(formatETA(seconds))
+        return
+      }
+      setRouteCoords(route.coordinates.map(([lat, lng]) => ({ lat, lng })))
+      setLiveEtaLabel(formatETA(route.duration_seconds))
+      const mins = Math.max(1, Math.round(route.duration_seconds / 60))
+      if (Date.now() - lastEtaWrite.current > 15000 && requestId) {
+        lastEtaWrite.current = Date.now()
+        await supabase.from('requests').update({
+          eta_minutes: mins,
+          dp_lat: dpPos.lat,
+          dp_lng: dpPos.lng,
+          dp_last_update: new Date().toISOString(),
+        } as any).eq('id', requestId)
+      }
+    }
+    run()
+    const id = window.setInterval(run, 10000)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [dpPos?.lat, dpPos?.lng, userPos?.lat, userPos?.lng, request?.status, requestId])
+
+  const mapMarkers: MapMarker[] = useMemo(() => {
+    const list: MapMarker[] = []
+    if (userPos) list.push({ id: 'user', position: userPos, kind: 'user', label: 'Customer' })
+    if (dpPos) list.push({ id: 'dp', position: dpPos, kind: 'bike', label: 'You' })
+    return list
+  }, [userPos, dpPos])
+
+  const mapCenter = useMemo(() => {
+    if (dpPos && userPos) return { lat: (dpPos.lat + userPos.lat) / 2, lng: (dpPos.lng + userPos.lng) / 2 }
+    return dpPos || userPos
+  }, [dpPos, userPos])
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-black text-white/40">Loading...</div>
   if (!request) return (
@@ -105,7 +157,13 @@ export default function DpNavigationPage() {
   )
 
   const updateStatus = async (newStatus: string, notifTitle: string, notifBody: string) => {
-    await supabase.from('requests').update({ status: newStatus }).eq('id', requestId)
+    const patch: Record<string, unknown> = { status: newStatus }
+    if (dpPos) {
+      patch.dp_lat = dpPos.lat
+      patch.dp_lng = dpPos.lng
+      patch.dp_last_update = new Date().toISOString()
+    }
+    await supabase.from('requests').update(patch as any).eq('id', requestId)
     await supabase.from('orders').update({ status: newStatus }).eq('request_id', requestId)
     await supabase.from('notifications').insert({
       user_id: request.user_id, title: notifTitle, body: notifBody, type: 'order_status', related_id: requestId,
@@ -144,18 +202,6 @@ export default function DpNavigationPage() {
     setUploading(false)
   }
 
-  const updateEta = async () => {
-    if (!etaMinutes || etaMinutes < 1) return
-    setUpdatingEta(true)
-    await supabase.from('requests').update({ eta_minutes: etaMinutes }).eq('id', requestId)
-    await supabase.from('notifications').insert({
-      user_id: request.user_id, title: 'ETA Updated',
-      body: `Your delivery partner updated the ETA to ${etaMinutes} minutes.`,
-      type: 'order_status', related_id: requestId,
-    })
-    setUpdatingEta(false)
-  }
-
   const openGoogleMaps = () => {
     const lat = request.delivery_lat
     const lng = request.delivery_lng
@@ -169,13 +215,11 @@ export default function DpNavigationPage() {
   const isDelivered = request.status === 'delivered'
   const isCompleted = request.status === 'completed'
   const currentStep = STATUS_FLOW.find(s => s.from === request.status)
-  const stepIndex = STATUS_FLOW.findIndex(s => s.from === request.status)
-  const progress = STATUS_PROGRESS[request.status] ?? 0
 
   if (showThanks) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6">
-        <img src={Images.customerThankYou} alt="Thank you" className="w-full max-w-sm object-contain mb-4" draggable={false} />
+        <img src={Images.customerThankYou} alt="Thank you" className="mb-4 w-full max-w-sm object-contain" draggable={false} />
         <p className="text-sm text-white/50">Returning home...</p>
       </div>
     )
@@ -184,94 +228,85 @@ export default function DpNavigationPage() {
   if (showAcceptedSplash) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6" style={{ background: pg.bg }}>
-        <img src={Images.orderAccepted} alt="Order accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} />
+        <img src={Images.orderAccepted} alt="Order accepted" className="w-full max-w-sm rounded-3xl object-contain" draggable={false} />
         <p className="text-sm text-white/50">Opening order tracking...</p>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ background: pg.bg }}>
-      <div className="flex-shrink-0 px-4 pt-12 pb-2">
-        <div className="map-glass-panel flex items-center gap-3 p-3">
-          <button type="button" onClick={() => navigate('/dp')} className="map-control-btn map-control-dark">
-            <ArrowLeft size={18} />
-          </button>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-white/50">Order Tracking</p>
-            <p className="truncate text-sm font-bold text-white">{STATUS_LABELS[request.status] || request.status}</p>
-          </div>
+    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col" style={{ background: pg.bg }}>
+      {/* Centered header — no side ribbon */}
+      <div className="relative flex-shrink-0 px-4 pb-2 pt-12">
+        <button
+          type="button"
+          onClick={() => navigate('/dp')}
+          className="absolute left-4 top-12 map-control-btn map-control-dark"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div className="text-center">
+          <p className="text-base font-extrabold text-white">Order tracking</p>
+          <p className="text-xs" style={{ color: pg.text3 }}>{STATUS_LABELS[request.status] || request.status}</p>
         </div>
       </div>
 
-      {/* Progress store → user + large synced step images */}
-      <div className="flex-shrink-0 px-2 pb-2" style={{ height: '42vh', minHeight: 260 }}>
-        <VisualTracking
-          progress={progress}
-          status={request.status}
-          pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
-          deliveryLabel={request.delivery_address?.split(',')[0] || 'Customer'}
+      {/* Live street map — no status illustrations */}
+      <div className="relative mx-3 mb-3 h-[42vh] min-h-[260px] shrink-0 overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
+        <FreeStreetMap
+          center={mapCenter || { lat: 17.6868, lng: 83.2185 }}
+          zoom={14}
+          markers={mapMarkers}
+          routeLine={routeCoords.length >= 2 ? routeCoords : dpPos && userPos ? [dpPos, userPos] : null}
+          light
+          instant
+          hideRadius
+          radiusMeters={5000}
         />
+        {liveEtaLabel && (
+          <div
+            className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
+            style={{ background: 'rgba(7,8,11,0.88)', color: pg.lime, border: '1px solid rgba(245,197,66,0.35)' }}
+          >
+            ETA to customer · {liveEtaLabel}
+          </div>
+        )}
       </div>
 
-      {mapCenter && (
-        <div className="mx-4 mb-3 h-44 overflow-hidden rounded-[24px] shrink-0" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-          <FreeStreetMap center={mapCenter} zoom={14} markers={mapMarkers} radiusMeters={10_000} />
-        </div>
-      )}
-
-      <div className="flex-shrink-0 px-4 pb-3">
-        <div className="mx-auto max-w-md">
-          <div className="rounded-[24px] p-4" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
-            <p className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.lime }}>Delivery Progress</p>
-            <div className="flex items-center justify-between">
-              {STATUS_FLOW.filter((s, i, arr) => arr.findIndex(x => x.label === s.label) === i).map((step, i, arr) => {
-                const reached = stepIndex > STATUS_FLOW.indexOf(step) || isDelivered || isCompleted
-                const isCurrent = step.from === request.status || (request.status === 'confirmed' && step.from === 'accepted')
-                const Icon = step.icon
-                return (
-                  <div key={`${step.label}-${i}`} className="flex flex-1 flex-col items-center relative">
-                    {i > 0 && (
-                      <div className="absolute right-1/2 top-3 h-0.5 w-full" style={{
-                        background: reached ? pg.lime : pg.line,
-                      }} />
-                    )}
-                    <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full"
-                      style={{
-                        background: reached ? pg.lime : isCurrent ? pg.limeDim : pg.surface2,
-                        border: isCurrent ? `2px solid ${pg.lime}` : '2px solid transparent',
-                      }}>
-                      {reached ? <Icon size={13} className="text-black" /> : <div className="h-2 w-2 rounded-full bg-white/20" />}
-                    </div>
-                    <span className="mt-1 text-[8px] font-medium text-center leading-tight"
-                      style={{ color: reached || isCurrent ? pg.lime : pg.text4 }}>
-                      {step.label}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {['confirmed', 'shopping', 'purchased', 'on_the_way', 'accepted'].includes(request.status) && (
-            <Surface className="mt-3 p-4">
-              <p className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.lime }}>Update ETA (minutes)</p>
-              <div className="flex gap-2">
-                <input type="number" min={1} max={120} value={etaMinutes ?? ''} onChange={e => setEtaMinutes(e.target.value ? parseInt(e.target.value) : null)}
-                  placeholder="Enter minutes" className="input flex-1" />
-                <CTA type="button" onClick={updateEta} disabled={!etaMinutes || updatingEta} className="!min-h-[48px] !px-5">
-                  {updatingEta ? '...' : 'Update'}
-                </CTA>
+      <div className="flex-1 overflow-y-auto px-4 py-2 pb-24" style={{ background: pg.bg }}>
+        <div className="mx-auto max-w-md space-y-4">
+          {/* DP own photo + Customer photo */}
+          <div className="grid grid-cols-2 gap-3">
+            <Surface className="p-3">
+              <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>You</p>
+              <div className="flex items-center gap-2">
+                <div className="h-12 w-12 overflow-hidden rounded-xl bg-white/5 shrink-0">
+                  {profile?.photo_url ? (
+                    <img src={profile.photo_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-white/30"><Bike size={18} /></div>
+                  )}
+                </div>
+                <p className="truncate text-sm font-extrabold">{profile?.full_name?.split(' ')[0] || 'Partner'}</p>
               </div>
             </Surface>
-          )}
-        </div>
-      </div>
+            <Surface className="p-3">
+              <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>Customer</p>
+              <div className="flex items-center gap-2">
+                <div className="h-12 w-12 overflow-hidden rounded-xl bg-white/5 shrink-0">
+                  {userProfile?.photo_url ? (
+                    <img src={userProfile.photo_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-white/30"><UserIcon size={18} /></div>
+                  )}
+                </div>
+                <p className="truncate text-sm font-extrabold">{userProfile?.full_name?.split(' ')[0] || 'Customer'}</p>
+              </div>
+            </Surface>
+          </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24" style={{ background: pg.bg }}>
-        <div className="mx-auto max-w-md space-y-4">
           {userProfile && (
-            <Surface className="p-4 animate-slide-up">
+            <Surface className="p-4">
               <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Customer</div>
               <div className="flex items-center gap-3">
                 <div className="h-14 w-14 overflow-hidden rounded-2xl bg-white/5 shrink-0">
@@ -281,12 +316,12 @@ export default function DpNavigationPage() {
                     <div className="flex h-full w-full items-center justify-center text-white/30"><UserIcon size={20} /></div>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-white truncate">{userProfile.full_name}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-white">{userProfile.full_name}</p>
                   <p className="text-xs text-white/40">{userProfile.phone || 'No phone'}</p>
                 </div>
                 <button type="button" onClick={() => { window.location.href = `tel:${userProfile.phone || ''}` }}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0 disabled:opacity-30"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl active:scale-95 disabled:opacity-30"
                   style={{ background: pg.limeDim, border: '1px solid rgba(245,197,66,0.25)', color: pg.lime }}
                   disabled={isCompleted}>
                   <Phone size={16} />
@@ -294,7 +329,7 @@ export default function DpNavigationPage() {
                 <button type="button" onClick={async () => {
                   const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
                   if (data) navigate(`/dp/chat/${data.id}`)
-                }} className="flex h-10 w-10 items-center justify-center rounded-xl active:scale-95 transition-transform shrink-0 disabled:opacity-30"
+                }} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl active:scale-95 disabled:opacity-30"
                   style={{ background: pg.lime, color: pg.limeText }}
                   disabled={isCompleted}>
                   <MessageCircle size={16} />
@@ -303,19 +338,19 @@ export default function DpNavigationPage() {
             </Surface>
           )}
 
-          <Surface className="p-4 animate-slide-up">
+          <Surface className="p-4">
             <div className="mb-3 flex items-center gap-2">
               <MapPin size={16} className="text-red-400" />
               <p className="text-sm font-bold text-white">Delivery Address</p>
             </div>
-            <p className="text-sm text-white/80 mb-3 leading-relaxed">{request.delivery_address || 'Not specified'}</p>
+            <p className="mb-3 text-sm leading-relaxed text-white/80">{request.delivery_address || 'Not specified'}</p>
             <CTA type="button" onClick={openGoogleMaps} className="w-full">
               <Navigation size={18} /> Open in Google Maps
             </CTA>
           </Surface>
 
           {request.pickup_address && (
-            <Surface className="p-4 animate-slide-up">
+            <Surface className="p-4">
               <div className="mb-2 flex items-center gap-2">
                 <Store size={16} style={{ color: pg.lime }} />
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Pickup Location</p>
@@ -325,7 +360,7 @@ export default function DpNavigationPage() {
           )}
 
           {currentStep && (
-            <Surface className="p-4 animate-slide-up">
+            <Surface className="p-4">
               <p className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Update Status</p>
               <CTA type="button" onClick={() => updateStatus(currentStep.to, currentStep.notifTitle, currentStep.notifBody)} className="w-full">
                 <currentStep.icon size={18} /> {currentStep.label}
@@ -334,7 +369,7 @@ export default function DpNavigationPage() {
           )}
 
           {isDelivered && (
-            <Surface className="p-4 animate-slide-up">
+            <Surface className="p-4">
               <div className="mb-3 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Delivery Proof Photos</div>
               <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
               {photoPreviews.length > 0 && (
@@ -364,7 +399,7 @@ export default function DpNavigationPage() {
           )}
 
           {isDelivered && !isCompleted && (
-            <Surface className="p-4 text-center animate-slide-up">
+            <Surface className="p-4 text-center">
               <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: pg.lime }} />
               <p className="font-bold text-white">Waiting for customer to accept delivery</p>
               <p className="mt-1 text-xs" style={{ color: pg.text3 }}>You'll continue after the customer confirms receipt</p>

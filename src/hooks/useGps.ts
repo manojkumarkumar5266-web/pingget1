@@ -25,7 +25,30 @@ export function useGps(profileId: string | undefined, enabled = true) {
     try {
       await supabase.rpc('update_location', { p_lat: lat, p_lng: lng })
     } catch { /* non-critical */ }
-  }, [])
+    // Best-effort: keep DP live coords on partner row + active deliveries for tracking maps
+    if (!profileId) return
+    try {
+      await supabase
+        .from('delivery_partners')
+        .update({
+          current_lat: lat,
+          current_lng: lng,
+          last_location_at: new Date().toISOString(),
+        } as any)
+        .eq('user_id', profileId)
+    } catch { /* columns may be missing */ }
+    try {
+      await supabase
+        .from('requests')
+        .update({
+          dp_lat: lat,
+          dp_lng: lng,
+          dp_last_update: new Date().toISOString(),
+        } as any)
+        .eq('accepted_dp_id', profileId)
+        .in('status', ['accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived'])
+    } catch { /* columns may be missing */ }
+  }, [profileId])
 
   const startWatch = useCallback(() => {
     if (!navigator.geolocation) {
