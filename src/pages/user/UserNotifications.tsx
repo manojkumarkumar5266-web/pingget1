@@ -91,13 +91,24 @@ export default function UserNotifications() {
   const handleTap = async (n: Notification) => {
     if (!n.is_read) markRead(n.id)
     if (n.related_id) {
-      if (n.type === 'request_accepted') {
-        const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', n.related_id).maybeSingle()
-        if (data) { navigate(`/app/chat/${data.id}`); return }
-      }
-      if (n.type === 'order_status' || n.type === 'order_completed' || n.type === 'order_confirmed' || n.type === 'order_delivered' || n.type === 'delivered') {
+      // Accept / order updates → tracking (chat is opened manually from tracking)
+      if (
+        n.type === 'request_accepted' ||
+        n.type === 'order_status' ||
+        n.type === 'order_completed' ||
+        n.type === 'order_confirmed' ||
+        n.type === 'order_delivered' ||
+        n.type === 'delivered' ||
+        n.type === 'task_started'
+      ) {
         navigate(`/app/track/${n.related_id}`)
         return
+      }
+      if (n.type === 'new_chat_message' || n.type === 'chat_message') {
+        const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', n.related_id).maybeSingle()
+        if (data) { navigate(`/app/chat/${data.id}`); return }
+        const { data: byId } = await supabase.from('chat_rooms').select('id').eq('id', n.related_id).maybeSingle()
+        if (byId) navigate(`/app/chat/${byId.id}`)
       }
     }
   }

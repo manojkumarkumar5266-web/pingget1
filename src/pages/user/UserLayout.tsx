@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
-import { Home, ClipboardList, Bell, User, Plus, X, MessageCircle, Zap, CalendarClock } from 'lucide-react'
+import { Home, ClipboardList, Bell, User, Plus, X, Bike, Zap, CalendarClock } from 'lucide-react'
 import { useEffect, useState, useRef, startTransition } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useGps } from '../../hooks/useGps'
@@ -31,10 +31,9 @@ export default function UserLayout() {
     toastTimerRef.current = setTimeout(() => setAcceptedToast(null), 12000)
   }
 
-  const openChatFromToast = async (requestId: string) => {
+  const openTrackingFromToast = (requestId: string) => {
     setAcceptedToast(null)
-    const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
-    if (data) navigate(`/app/chat/${data.id}`)
+    navigate(`/app/track/${requestId}`)
   }
 
   useEffect(() => {
@@ -53,13 +52,18 @@ export default function UserLayout() {
           const notif = payload.new as any
           if (notif.type === 'request_accepted' && notif.related_id) {
             showToast({ requestId: notif.related_id, body: notif.body || 'A delivery partner accepted your request.' })
+            // After accept → tracking (never auto-open chat). Scanning page handles its own transition.
+            const path = window.location.pathname
+            if (!path.includes('/app/track/') && !path.includes('/app/scanning/')) {
+              navigate(`/app/track/${notif.related_id}`)
+            }
           }
         })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
       .subscribe()
     return () => { supabase.removeChannel(channel); if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }
-  }, [profile?.id])
+  }, [profile?.id, navigate])
 
   const isActive = (path: string) => path === '/app' ? location.pathname === '/app' : location.pathname.startsWith(path)
   const go = (path: string) => startTransition(() => navigate(path))
@@ -77,18 +81,18 @@ export default function UserLayout() {
         <div className="fixed left-4 right-4 top-4 z-50 mx-auto max-w-lg">
           <div className="flex items-start gap-3 rounded-[22px] p-4" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(34,197,94,0.16)' }}>
-              <MessageCircle size={18} className="text-green-400" />
+              <Bike size={18} className="text-green-400" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-extrabold">Partner accepted</p>
               <p className="mt-0.5 line-clamp-2 text-xs" style={{ color: pg.text3 }}>{acceptedToast.body}</p>
               <button
                 type="button"
-                onClick={() => openChatFromToast(acceptedToast.requestId)}
+                onClick={() => openTrackingFromToast(acceptedToast.requestId)}
                 className="mt-2 rounded-xl px-3 py-1.5 text-xs font-extrabold"
                 style={{ background: pg.lime, color: pg.limeText }}
               >
-                Open Chat
+                Open tracking
               </button>
             </div>
             <button type="button" onClick={() => setAcceptedToast(null)} style={{ color: pg.text4 }}><X size={16} /></button>

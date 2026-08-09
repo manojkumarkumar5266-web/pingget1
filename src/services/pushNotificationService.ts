@@ -69,13 +69,22 @@ export function resolveNotificationRoute(
 ): string {
   const id = entityId || ''
   switch (notificationType) {
-    // User routes
+    // User routes — delivery lifecycle opens tracking (request id), not chat
     case NOTIFICATION_TYPES.DELIVERY_ACCEPTED:
     case NOTIFICATION_TYPES.DELIVERY_ARRIVED:
     case NOTIFICATION_TYPES.DELIVERY_STARTED:
     case NOTIFICATION_TYPES.DELIVERY_COMPLETED:
+    case 'request_accepted':
+    case 'order_status':
+    case 'order_confirmed':
+    case 'order_delivered':
+    case 'delivered':
+    case 'task_started':
+      return id ? `/app/track/${id}` : '/app'
     case NOTIFICATION_TYPES.NEW_CHAT_MESSAGE:
-      return `/app/chat/${id}`
+    case 'chat_message':
+    case 'new_chat_message':
+      return id ? `/app/chat/${id}` : '/app'
     case NOTIFICATION_TYPES.PAYMENT_COMPLETED:
     case NOTIFICATION_TYPES.REFUND_PROCESSED:
       return `/app/orders`
@@ -419,10 +428,13 @@ class PushNotificationService {
    */
   private handleNotificationTap(notification: any): void {
     const payload = this.extractPayload(notification)
-    const { route } = payload
+    let route = payload.route
+    if (!route && payload.notificationType) {
+      route = resolveNotificationRoute(payload.notificationType, payload.entityId)
+    }
     if (route) {
       window.dispatchEvent(
-        new CustomEvent('push-notification-tap', { detail: { route, ...payload } })
+        new CustomEvent('push-notification-tap', { detail: { ...payload, route } })
       )
     }
   }
