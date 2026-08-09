@@ -125,6 +125,20 @@ export default function LiveTrackingPage() {
     return null
   }, [request, profile?.gps_lat, profile?.gps_lng])
 
+  const mapMarkers: MapMarker[] = useMemo(() => {
+    const list: MapMarker[] = []
+    if (userPos) list.push({ id: 'user', position: userPos, kind: 'user' })
+    if (dpLive) list.push({ id: 'dp', position: dpLive, kind: 'bike', label: dpProfile?.full_name?.split(' ')[0] })
+    return list
+  }, [userPos, dpLive, dpProfile?.full_name])
+
+  const mapCenter = useMemo(() => {
+    if (dpLive && userPos) {
+      return { lat: (dpLive.lat + userPos.lat) / 2, lng: (dpLive.lng + userPos.lng) / 2 }
+    }
+    return dpLive || userPos
+  }, [dpLive, userPos])
+
   // Live route + ETA from DP → user
   useEffect(() => {
     if (!request || !LIVE_STATUSES.has(request.status) || !dpLive || !userPos) return
@@ -132,7 +146,6 @@ export default function LiveTrackingPage() {
     const run = async () => {
       const route = await fetchRoute(dpLive, userPos, 'driving')
       if (cancelled || !route) {
-        // Straight-line fallback ETA (~22 km/h city bike)
         const R = 6371000
         const dLat = ((userPos.lat - dpLive.lat) * Math.PI) / 180
         const dLng = ((userPos.lng - dpLive.lng) * Math.PI) / 180
@@ -239,20 +252,6 @@ export default function LiveTrackingPage() {
   const progress = STATUS_PROGRESS[request.status] ?? 0
   const etaLabel = liveEtaLabel || STATUS_ETA[request.status] || '--'
   const VehicleIcon = vehicleIcon(dpData?.vehicle_type)
-
-  const mapMarkers: MapMarker[] = useMemo(() => {
-    const list: MapMarker[] = []
-    if (userPos) list.push({ id: 'user', position: userPos, kind: 'user' })
-    if (dpLive) list.push({ id: 'dp', position: dpLive, kind: 'bike', label: dpProfile?.full_name?.split(' ')[0] })
-    return list
-  }, [userPos, dpLive, dpProfile?.full_name])
-
-  const mapCenter = useMemo(() => {
-    if (dpLive && userPos) {
-      return { lat: (dpLive.lat + userPos.lat) / 2, lng: (dpLive.lng + userPos.lng) / 2 }
-    }
-    return dpLive || userPos
-  }, [dpLive, userPos])
 
   if (payPhase === 'thanks') {
     return (

@@ -5,6 +5,7 @@ import { useAuth } from '../../context'
 import { useGps } from '../../hooks/useGps'
 import { STATUS_LABELS } from '../../lib/utils'
 import FreeStreetMap, { type MapMarker } from '../../components/map/FreeStreetMap'
+import VisualTracking, { STATUS_PROGRESS } from '../../components/VisualTracking'
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
 import {
@@ -23,7 +24,8 @@ const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string
   { from: 'arrived', to: 'delivered', label: 'Delivered', notifTitle: 'Order Delivered', notifBody: 'Your order has been delivered. Please confirm receipt in the app.', icon: CheckCircle2 },
 ]
 
-const LIVE_STATUSES = new Set(['on_the_way', 'arrived', 'purchased', 'shopping', 'accepted', 'confirmed'])
+const ROUTE_STATUSES = new Set(['on_the_way', 'arrived', 'purchased', 'shopping', 'accepted', 'confirmed'])
+const MAP_LIVE_STATUSES = new Set(['on_the_way', 'arrived'])
 
 export default function DpNavigationPage() {
   const { requestId } = useParams<{ requestId: string }>()
@@ -37,12 +39,10 @@ export default function DpNavigationPage() {
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
-  const [showAcceptedSplash, setShowAcceptedSplash] = useState(false)
   const [showThanks, setShowThanks] = useState(false)
   const [liveEtaLabel, setLiveEtaLabel] = useState<string | null>(null)
   const [routeCoords, setRouteCoords] = useState<LatLng[]>([])
   const photoInputRef = useRef<HTMLInputElement>(null)
-  const splashShown = useRef(false)
   const lastEtaWrite = useRef(0)
 
   useEffect(() => {
@@ -51,11 +51,6 @@ export default function DpNavigationPage() {
       const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
       if (!req) { setLoading(false); return }
       setRequest(req as DeliveryRequest)
-      if (!splashShown.current && (req.status === 'accepted' || req.status === 'confirmed')) {
-        splashShown.current = true
-        setShowAcceptedSplash(true)
-        setTimeout(() => setShowAcceptedSplash(false), 2000)
-      }
       if (req.user_id) {
         const { data: userProf } = await supabase.from('profiles').select('*').eq('id', req.user_id).maybeSingle()
         setUserProfile(userProf as Profile | null)
@@ -95,7 +90,7 @@ export default function DpNavigationPage() {
 
   // Live route + ETA DP → customer; write eta_minutes for user side
   useEffect(() => {
-    if (!request || !LIVE_STATUSES.has(request.status) || !dpPos || !userPos) return
+    if (!request || !ROUTE_STATUSES.has(request.status) || !dpPos || !userPos) return
     let cancelled = false
     const run = async () => {
       const route = await fetchRoute(dpPos, userPos, 'driving')
@@ -225,15 +220,6 @@ export default function DpNavigationPage() {
     )
   }
 
-  if (showAcceptedSplash) {
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6" style={{ background: pg.bg }}>
-        <img src={Images.orderAccepted} alt="Order accepted" className="w-full max-w-sm rounded-3xl object-contain" draggable={false} />
-        <p className="text-sm text-white/50">Opening order tracking...</p>
-      </div>
-    )
-  }
-
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col" style={{ background: pg.bg }}>
       {/* Centered header — no side ribbon */}
@@ -251,24 +237,47 @@ export default function DpNavigationPage() {
         </div>
       </div>
 
-      {/* Live street map — no status illustrations */}
-      <div className="relative mx-3 mb-3 h-[42vh] min-h-[260px] shrink-0 overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
-        <FreeStreetMap
-          center={mapCenter || { lat: 17.6868, lng: 83.2185 }}
-          zoom={14}
-          markers={mapMarkers}
-          routeLine={routeCoords.length >= 2 ? routeCoords : dpPos && userPos ? [dpPos, userPos] : null}
-          light
-          instant
-          hideRadius
-          radiusMeters={5000}
-        />
-        {liveEtaLabel && (
-          <div
-            className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-            style={{ background: 'rgba(7,8,11,0.88)', color: pg.lime, border: '1px solid rgba(245,197,66,0.35)' }}
-          >
-            ETA to customer · {liveEtaLabel}
+      {/* Match user tracking: step art first; live street map after on_the_way */}
+      <div className="relative flex-shrink-0">
+        {MAP_LIVE_STATUSES.has(request.status) ? (
+          <div>
+            <VisualTracking
+              progress={STATUS_PROGRESS[request.status] ?? 0}
+              status={request.status}
+              pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
+              deliveryLabel={request.delivery_address?.split(',')[0] || 'Customer'}
+              hideProgress
+              compact
+            />
+            <div className="relative mx-3 mb-2 h-[32vh] min-h-[200px] overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
+              <FreeStreetMap
+                center={mapCenter || { lat: 17.6868, lng: 83.2185 }}
+                zoom={14}
+                markers={mapMarkers}
+                routeLine={routeCoords.length >= 2 ? routeCoords : dpPos && userPos ? [dpPos, userPos] : null}
+                light
+                instant
+                hideRadius
+                radiusMeters={5000}
+              />
+              {liveEtaLabel && (
+                <div
+                  className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
+                  style={{ background: 'rgba(7,8,11,0.88)', color: pg.lime, border: '1px solid rgba(245,197,66,0.35)' }}
+                >
+                  ETA to customer · {liveEtaLabel}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="h-[46vh] min-h-[300px]">
+            <VisualTracking
+              progress={STATUS_PROGRESS[request.status] ?? 0}
+              status={request.status}
+              pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
+              deliveryLabel={request.delivery_address?.split(',')[0] || 'Customer'}
+            />
           </div>
         )}
       </div>
