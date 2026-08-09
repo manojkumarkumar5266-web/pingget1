@@ -74,7 +74,7 @@ export default function PermissionOnboarding({ onComplete }: { onComplete: () =>
 
       <div className="relative z-10 w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <Brand size="md" />
+          <Brand size="md" showTagline />
           <div className="text-center">
             <h2 className="text-xl font-extrabold tracking-tight">Quick Setup</h2>
             <p className="text-sm" style={{ color: pg.text3 }}>Step {stepIdx + 1} of {STEPS.length}</p>

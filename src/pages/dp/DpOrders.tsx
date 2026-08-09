@@ -4,20 +4,31 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
 import { StatusBadge, SkeletonList } from '../../components/ui'
 import { formatTime, formatCurrency } from '../../lib/utils'
-import { Screen, PageTitle, Surface, CTA, Chip, EmptyBlock, IconButton } from '../../design/primitives'
+import { Screen, PageTitle, Surface, CTA, Chip, EmptyBlock } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import {
   Clock, MessageCircle, Lock, Camera, Wallet, Navigation,
-  XCircle, Play, CalendarClock, CreditCard, ChevronRight,
+  Play, CalendarClock, CreditCard, ChevronRight, Handshake,
 } from 'lucide-react'
 import DeliveryProofUploader from '../../components/DeliveryProofUploader'
 
-type Tab = 'active' | 'completed' | 'cancelled'
+type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'active', label: 'Active' },
+  { key: 'reserved', label: 'Reserved' },
   { key: 'completed', label: 'Completed' },
   { key: 'cancelled', label: 'Cancelled' },
+]
+
+const INSTANT_ACTIVE = [
+  'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received',
+]
+
+const ADVANCE_RESERVED = [
+  'searching_dp', 'scheduled', 'rescheduled', 'dp_reserved', 'waiting_payment', 'payment_verified',
+  'booking_confirmed', 'task_started', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived',
+  'delivered', 'cash_received',
 ]
 
 export default function DpOrders() {
@@ -33,15 +44,24 @@ export default function DpOrders() {
   const fetchOrders = useCallback(async () => {
     let query = supabase.from('requests').select('*')
       .or(`accepted_dp_id.eq.${profile!.id},reserved_dp_id.eq.${profile!.id}`)
-    if (tab === 'active') {
-      query = query.in('status', ['accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received', 'dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed', 'task_started'])
+
+    if (tab === 'active' || tab === 'reserved') {
+      const statuses = tab === 'active' ? INSTANT_ACTIVE : ADVANCE_RESERVED
+      query = query.in('status', statuses)
     } else if (tab === 'completed') {
       query = query.eq('status', 'completed')
     } else {
       query = query.eq('status', 'cancelled')
     }
+
     const { data } = await query.order('created_at', { ascending: false })
-    setOrders((data as DeliveryRequest[]) || [])
+    let rows = (data as DeliveryRequest[]) || []
+    if (tab === 'active') {
+      rows = rows.filter(r => r.order_type !== 'advance')
+    } else if (tab === 'reserved') {
+      rows = rows.filter(r => r.order_type === 'advance')
+    }
+    setOrders(rows)
     setLoading(false)
   }, [profile, tab])
 
@@ -78,16 +98,19 @@ export default function DpOrders() {
     checkCommission()
   }, [profile, orders])
 
-  const cancelOrder = async (req: DeliveryRequest) => {
-    if (!confirm('Cancel this order? This cannot be undone.')) return
+  const requestMutualCancel = async (req: DeliveryRequest) => {
+    const pendingFromUser = req.cancel_requested_by === 'user'
+    const msg = pendingFromUser
+      ? 'Agree to cancel this advance booking with the customer?'
+      : 'Request cancel? Advance bookings need both sides to agree. The customer must confirm.'
+    if (!confirm(msg)) return
     setUpdating(req.id)
-    await supabase.from('requests').update({ status: 'cancelled' }).eq('id', req.id)
-    await supabase.from('orders').update({ status: 'cancelled' }).eq('request_id', req.id)
-    await supabase.from('notifications').insert({
-      user_id: req.user_id, title: 'Order Cancelled',
-      body: 'Your delivery partner had to cancel this order.',
-      type: 'order_status', related_id: req.id,
+    const { data, error } = await supabase.rpc('request_mutual_cancel', {
+      p_request_id: req.id,
+      p_reason: pendingFromUser ? 'DP agreed to cancel' : 'DP requested cancel',
     })
+    if (error) alert(error.message)
+    else if (data && !(data as any).success) alert((data as any).error || 'Could not update cancel request')
     setUpdating(null)
     fetchOrders()
   }
@@ -102,6 +125,11 @@ export default function DpOrders() {
       .select('id').single()
     if (newRoom) navigate(`/dp/chat/${newRoom.id}`)
   }
+
+  const emptyBody =
+    tab === 'active' ? 'Instant orders you accept show up here.'
+      : tab === 'reserved' ? 'Advance bookings you reserve appear here until completed.'
+        : undefined
 
   return (
     <Screen className="mx-auto max-w-lg animate-fade-in-up">
@@ -125,7 +153,7 @@ export default function DpOrders() {
         </button>
       )}
 
-      <div className="mb-5 flex gap-2">
+      <div className="mb-5 flex flex-wrap gap-2">
         {TABS.map(t => (
           <button
             key={t.key}
@@ -144,10 +172,7 @@ export default function DpOrders() {
       {loading ? (
         <SkeletonList count={3} lines={4} />
       ) : orders.length === 0 ? (
-        <EmptyBlock
-          title={`No ${tab} deliveries`}
-          body={tab === 'active' ? 'Accepted orders will show up here.' : undefined}
-        />
+        <EmptyBlock title={`No ${tab} deliveries`} body={emptyBody} />
       ) : (
         <div className="space-y-3 pb-4">
           {orders.map(req => {
@@ -155,6 +180,10 @@ export default function DpOrders() {
             const canNavigate = ['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'task_started'].includes(req.status)
             const canUploadProof = ['arrived', 'delivered', 'cash_received'].includes(req.status)
             const awaitingUser = req.status === 'delivered' || req.status === 'cash_received'
+            const isAdvance = req.order_type === 'advance'
+            const cancelPendingFromUser = isAdvance && req.cancel_requested_by === 'user'
+            const cancelPendingFromDp = isAdvance && req.cancel_requested_by === 'dp'
+            const canMutualCancel = isAdvance && !['cancelled', 'completed', 'expired'].includes(req.status)
 
             return (
               <Surface key={req.id} className="p-4">
@@ -173,10 +202,11 @@ export default function DpOrders() {
                   {req.max_budget != null && (
                     <span className="font-extrabold" style={{ color: pg.text2 }}>{formatCurrency(req.max_budget)}</span>
                   )}
-                  {req.order_type === 'advance' && <Chip tone="info">Advance</Chip>}
+                  {isAdvance && <Chip tone="info">Advance</Chip>}
+                  {!isAdvance && <Chip>Instant</Chip>}
                 </div>
 
-                {req.status === 'accepted' && (
+                {req.status === 'accepted' && !isAdvance && (
                   <div
                     className="mt-3 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold"
                     style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.22)`, color: pg.lime }}
@@ -185,7 +215,7 @@ export default function DpOrders() {
                   </div>
                 )}
 
-                {req.order_type === 'advance' && ['dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed'].includes(req.status) && (
+                {isAdvance && ['dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed'].includes(req.status) && (
                   <div
                     className="mt-3 flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-xs font-medium"
                     style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.2)`, color: pg.lime }}
@@ -195,13 +225,30 @@ export default function DpOrders() {
                   </div>
                 )}
 
-                {req.order_type === 'advance' && req.status === 'waiting_payment' && (
+                {isAdvance && req.status === 'waiting_payment' && (
                   <div
                     className="mt-2 flex items-center gap-2 rounded-2xl px-3 py-2 text-xs"
                     style={{ background: 'rgba(245,165,36,0.1)', border: '1px solid rgba(245,165,36,0.22)', color: '#FCD34D' }}
                   >
                     <CreditCard size={12} />
                     Waiting for customer's advance payment confirmation
+                  </div>
+                )}
+
+                {cancelPendingFromUser && (
+                  <div
+                    className="mt-3 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold"
+                    style={{ background: 'rgba(255,92,92,0.12)', border: '1px solid rgba(255,92,92,0.25)', color: '#FCA5A5' }}
+                  >
+                    Customer requested cancel — tap Agree to cancel to confirm
+                  </div>
+                )}
+                {cancelPendingFromDp && (
+                  <div
+                    className="mt-3 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold"
+                    style={{ background: 'rgba(245,165,36,0.1)', border: '1px solid rgba(245,165,36,0.22)', color: '#FCD34D' }}
+                  >
+                    Waiting for customer to agree to cancel
                   </div>
                 )}
 
@@ -236,12 +283,6 @@ export default function DpOrders() {
 
                 {req.status !== 'completed' && req.status !== 'cancelled' && (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {req.status === 'accepted' && (
-                      <IconButton onClick={() => cancelOrder(req)} disabled={updating === req.id} aria-label="Cancel order">
-                        <XCircle size={16} className="text-red-400" />
-                      </IconButton>
-                    )}
-
                     {chatClosed ? (
                       <div
                         className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 text-xs font-extrabold"
@@ -251,7 +292,7 @@ export default function DpOrders() {
                       </div>
                     ) : (
                       <CTA
-                        className={`min-h-[44px] flex-1 text-sm ${canNavigate ? '' : ''}`}
+                        className="min-h-[44px] flex-1 text-sm"
                         variant={req.status === 'accepted' || req.status === 'dp_reserved' ? undefined : 'secondary'}
                         onClick={() => goToChat(req)}
                       >
@@ -265,13 +306,12 @@ export default function DpOrders() {
                       </CTA>
                     )}
 
-                    {req.order_type === 'advance' && req.status === 'booking_confirmed' && (
+                    {isAdvance && req.status === 'booking_confirmed' && (
                       <CTA
                         className="min-h-[44px] flex-1 text-sm"
                         onClick={async () => {
                           setUpdating(req.id)
                           const now = new Date().toISOString()
-                          // Same as instant after quotation: ensure order row, enter confirmed tracking flow
                           const { data: existingOrder } = await supabase
                             .from('orders')
                             .select('id')
@@ -314,9 +354,21 @@ export default function DpOrders() {
                       </CTA>
                     )}
 
-                    {req.order_type === 'advance' && req.status === 'task_started' && (
+                    {isAdvance && req.status === 'task_started' && (
                       <CTA className="min-h-[44px] flex-1 text-sm" onClick={() => navigate(`/dp/navigate/${req.id}`)}>
                         <Navigation size={15} /> Live tracking
+                      </CTA>
+                    )}
+
+                    {canMutualCancel && (
+                      <CTA
+                        variant={cancelPendingFromUser ? 'danger' : 'secondary'}
+                        className="min-h-[44px] w-full text-sm"
+                        disabled={updating === req.id || cancelPendingFromDp}
+                        onClick={() => requestMutualCancel(req)}
+                      >
+                        <Handshake size={14} />
+                        {cancelPendingFromUser ? 'Agree to cancel' : cancelPendingFromDp ? 'Cancel requested…' : 'Request cancel'}
                       </CTA>
                     )}
                   </div>

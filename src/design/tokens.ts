@@ -9,11 +9,11 @@ export const pg = {
   surface2: '#1C2230',
   line: 'rgba(255,255,255,0.07)',
   lineStrong: 'rgba(255,255,255,0.14)',
-  /** Primary accent — lime (first G in pinGGet) */
+  /** Primary accent — lime (2nd G in pinGGet) */
   lime: '#C4D600',
   limeDim: 'rgba(196,214,0,0.16)',
   limeText: '#101404',
-  /** Secondary accent — olive green light (second G in pinGGet) */
+  /** Secondary accent — olive (1st G in pinGGet) */
   olive: '#8FAE3E',
   oliveDim: 'rgba(143,174,62,0.16)',
   oliveText: '#101404',

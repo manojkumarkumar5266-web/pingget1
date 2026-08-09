@@ -1,12 +1,7 @@
 import Brand from './Brand'
 
-/** Alias — always use official pinGGet logo artwork */
-export default function PingGetLogo({
-  size = 'sm',
-}: {
-  size?: 'sm' | 'md' | 'lg'
-  showText?: boolean
-}) {
+/** Alias kept for older imports — always CSS wordmark */
+export default function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const map = { sm: 'sm' as const, md: 'md' as const, lg: 'lg' as const }
-  return <Brand size={map[size]} />
+  return <Brand size={map[size]} showTagline={size !== 'sm'} />
 }

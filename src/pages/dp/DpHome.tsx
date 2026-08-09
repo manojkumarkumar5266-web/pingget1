@@ -316,6 +316,21 @@ export default function DpHome() {
     setReservingId(req.id)
     try {
       const advance = isAdvanceNearbyRequest(req)
+
+      // Prefer edge function for advance (bypasses message_type CHECK via service role)
+      if (advance) {
+        const { data: fnData, error: fnErr } = await supabase.functions.invoke('accept-advance', {
+          body: { request_id: req.id },
+        })
+        const payload = (fnData || {}) as any
+        if (!fnErr && payload.success && payload.chat_room_id) {
+          navigate(`/dp/chat/${payload.chat_room_id}`, { replace: true })
+          return
+        }
+        // Fall through to RPC if function not deployed yet
+        console.warn('[DpHome] accept-advance function failed, trying RPC:', fnErr || payload)
+      }
+
       const rpcName = advance ? 'reserve_dp_for_advance' : 'accept_request'
       const { data, error } = await supabase.rpc(rpcName, {
         p_request_id: req.id,
@@ -330,15 +345,9 @@ export default function DpHome() {
           navigate(`/dp/chat/${roomId}`, { replace: true })
           return
         }
-        // Reserved but room missing — still leave nearby list
         showToast('Accepted. Opening orders…')
         navigate('/dp/orders', { replace: true })
         return
-      }
-
-      // If RPC missing / failed, try the other RPC once for advance mis-tagged as instant
-      if (advance && error) {
-        console.warn('[DpHome] reserve failed, retry client-visible error:', error)
       }
 
       if (advance) {
@@ -352,8 +361,9 @@ export default function DpHome() {
       const detail = row?.error_msg || error?.message || 'Failed to accept request'
       console.error('[DpHome] accept failed:', error || row)
       showToast(detail)
-      // Visible on mobile webviews where toast can be missed
-      window.alert(`Accept failed: ${detail}`)
+      window.alert(
+        `Accept failed: ${detail}\n\nIf this mentions messages_message_type_check, run supabase/APPLY_NOW_FIX_ACCEPT_AND_PHOTO.sql in Supabase SQL Editor.`,
+      )
     } catch (e: any) {
       console.error('[DpHome] acceptRequest exception:', e)
       showToast(e?.message || 'Could not accept request')

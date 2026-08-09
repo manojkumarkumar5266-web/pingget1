@@ -129,6 +129,9 @@ export type DeliveryRequest = {
   cancellation_reason: string | null
   cancelled_by: string | null
   cancellation_fee: number | null
+  cancel_requested_by: 'user' | 'dp' | null
+  cancel_request_reason: string | null
+  cancel_requested_at: string | null
   expired_at: string | null
   // V3 reservation fields
   reserved_dp_id: string | null

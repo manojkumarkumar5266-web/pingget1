@@ -2,7 +2,7 @@ import { ReactNode } from 'react'
 import Brand from './Brand'
 import { pg } from '../design/tokens'
 
-/** Auth chrome — official pinGGet logo, no plain PingGET text */
+/** Auth chrome — pinGGet wordmark with tagline */
 export default function AuthLayout({
   children,
   title,
@@ -16,7 +16,7 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center px-5 py-10" style={{ background: pg.bg }}>
       <div className="mb-8 flex flex-col items-center text-center">
-        <Brand size="lg" className="mb-4" />
+        <Brand size="lg" showTagline className="mb-4" />
         {title && <h1 className="text-[28px] font-extrabold tracking-tight">{title}</h1>}
         {subtitle && <p className="mt-2 text-sm" style={{ color: pg.text3 }}>{subtitle}</p>}
       </div>

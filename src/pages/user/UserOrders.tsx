@@ -261,6 +261,16 @@ export default function UserOrders() {
                     <p className="text-xs font-bold text-green-400">Booking confirmed! See you on the scheduled date.</p>
                   </div>
                 )}
+                {req.order_type === 'advance' && req.cancel_requested_by === 'dp' && (
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,92,92,0.12)', border: '1px solid rgba(255,92,92,0.25)' }}>
+                    <p className="text-xs font-bold" style={{ color: '#FCA5A5' }}>Partner requested cancel — tap Agree to cancel to confirm.</p>
+                  </div>
+                )}
+                {req.order_type === 'advance' && req.cancel_requested_by === 'user' && (
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(245,165,36,0.1)', border: '1px solid rgba(245,165,36,0.22)' }}>
+                    <p className="text-xs font-bold" style={{ color: '#FCD34D' }}>Waiting for partner to agree to cancel.</p>
+                  </div>
+                )}
 
                 {req._dp && (
                   <div className="mb-2 flex items-center gap-2.5 rounded-2xl px-3 py-2.5" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
@@ -320,14 +330,33 @@ export default function UserOrders() {
                       {updating === req.id ? 'Confirming...' : 'Accept Delivery'}
                     </CTA>
                   )}
-                  {['pending', 'accepted', 'confirmed', 'shopping', 'scheduled', 'rescheduled', 'searching_dp', 'dp_reserved', 'waiting_payment', 'booking_confirmed'].includes(req.status) && (
+                  {/* Instant: customer may cancel. Advance with DP: mutual only. Advance alone: cancel OK. */}
+                  {req.order_type !== 'advance' &&
+                    ['pending', 'accepted', 'confirmed', 'shopping', 'purchased'].includes(req.status) && (
                     <CTA
                       variant="danger"
                       className="ml-auto min-h-0 rounded-xl px-3 py-2 text-xs"
                       onClick={() => setCancelTarget(req)}
                       disabled={updating === req.id}
                     >
-                      {req.status === 'scheduled' || req.status === 'rescheduled' ? 'Cancel Request' : 'Cancel Order'}
+                      Cancel Order
+                    </CTA>
+                  )}
+                  {req.order_type === 'advance' &&
+                    !['cancelled', 'completed', 'expired', 'delivered', 'cash_received'].includes(req.status) && (
+                    <CTA
+                      variant={req.cancel_requested_by === 'dp' ? 'danger' : 'secondary'}
+                      className="ml-auto min-h-0 rounded-xl px-3 py-2 text-xs"
+                      onClick={() => setCancelTarget(req)}
+                      disabled={updating === req.id || req.cancel_requested_by === 'user'}
+                    >
+                      {req.cancel_requested_by === 'dp'
+                        ? 'Agree to cancel'
+                        : req.cancel_requested_by === 'user'
+                          ? 'Waiting for partner…'
+                          : (req.reserved_dp_id || req.accepted_dp_id)
+                            ? 'Request cancel'
+                            : 'Cancel Request'}
                     </CTA>
                   )}
                   {(req.status === 'scheduled' || req.status === 'rescheduled') && !req.accepted_dp_id && !req.reserved_dp_id && (
@@ -364,13 +393,27 @@ export default function UserOrders() {
           cutoffMinutes={advanceSettings?.cancellation_cutoff_minutes ?? 120}
           onConfirm={async (reason) => {
             setUpdating(cancelTarget.id)
-            const hasFee = !!cancelTarget.accepted_dp_id
-            await supabase.from('requests').update({
-              status: 'cancelled',
-              cancellation_reason: reason,
-              cancelled_by: 'customer',
-              cancellation_fee: hasFee ? (advanceSettings?.cancellation_fee_after_accept ?? 0) : 0,
-            }).eq('id', cancelTarget.id)
+            if (cancelTarget.order_type === 'advance') {
+              const { data, error } = await supabase.rpc('request_mutual_cancel', {
+                p_request_id: cancelTarget.id,
+                p_reason: reason,
+              })
+              if (error) console.error(error)
+              else if (data && !(data as any).success) console.error((data as any).error)
+            } else {
+              const { error } = await supabase.rpc('cancel_instant_order', {
+                p_request_id: cancelTarget.id,
+                p_reason: reason,
+              })
+              if (error) {
+                // Fallback if RPC not applied yet
+                await supabase.from('requests').update({
+                  status: 'cancelled',
+                  cancellation_reason: reason,
+                  cancelled_by: 'customer',
+                }).eq('id', cancelTarget.id)
+              }
+            }
             await fetchOrders()
             setUpdating(null)
             setCancelTarget(null)
