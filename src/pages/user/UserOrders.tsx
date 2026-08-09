@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, type AdvanceSettings } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { StatusBadge, Avatar, SkeletonList } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
 import CancellationModal from '../../components/CancellationModal'
@@ -134,6 +135,7 @@ export default function UserOrders() {
       type: 'order_completed',
       related_id: req.id,
     })
+    kickPushDelivery()
     await fetchOrders()
     setUpdating(null)
   }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, type DeliveryRequest, type Profile } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { useAuth } from '../../context'
 import { useGps } from '../../hooks/useGps'
 import { STATUS_LABELS } from '../../lib/utils'
@@ -233,6 +234,7 @@ export default function DpNavigationPage() {
     await supabase.from('notifications').insert({
       user_id: request.user_id, title: notifTitle, body: notifBody, type: 'order_status', related_id: requestId,
     })
+    kickPushDelivery()
   }
 
   const handlePhotosSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -522,6 +524,7 @@ export default function DpNavigationPage() {
                     type: 'payment_accepted',
                     related_id: requestId,
                   })
+                  kickPushDelivery()
                   setEndPhase('payment_accepted')
                 }}
                 className="w-full"

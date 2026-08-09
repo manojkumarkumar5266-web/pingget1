@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { StatusBadge, SkeletonList } from '../../components/ui'
 import { formatTime, formatCurrency } from '../../lib/utils'
 import { Screen, PageTitle, Surface, CTA, Chip, EmptyBlock } from '../../design/primitives'
@@ -345,6 +346,7 @@ export default function DpOrders() {
                             type: 'task_started',
                             related_id: req.id,
                           })
+                          kickPushDelivery()
                           setUpdating(null)
                           navigate(`/dp/navigate/${req.id}`, { replace: true })
                         }}

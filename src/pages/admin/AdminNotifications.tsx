@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { useSnackbar } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
 import { Send, Users, Bike, UserCheck, Megaphone, Clock, CheckCircle, XCircle, Loader2, Image, X, Search, CalendarClock, Bell } from 'lucide-react'
@@ -43,7 +44,7 @@ export default function AdminNotifications() {
   const [userList, setUserList] = useState<UserEntry[]>([])
   const [showUserList, setShowUserList] = useState(false)
   const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>('now')
-  const [scheduledFor, setScheduledFor] = useState(() => toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)))
+  const [scheduledFor, setScheduledFor] = useState(() => toLocalInputValue(new Date()))
 
   const fetchBroadcasts = useCallback(async () => {
     const { data } = await supabase
@@ -103,22 +104,25 @@ export default function AdminNotifications() {
         body: body.trim(),
         targetType,
         targetUserId: targetType === 'single' ? targetUserId.trim() : undefined,
-        notificationType: 'admin_announcement',
+        notificationType: 'admin_offer',
         imageUrl,
-        scheduledFor: scheduleMode === 'later' ? new Date(scheduledFor).toISOString() : undefined,
+        scheduledFor: new Date(scheduledFor).toISOString(),
       }
 
       const { data, error } = await supabase.functions.invoke('notify-broadcast', { body: payload })
 
       if (error) {
-        // Fallback: direct in-app insert if edge function not deployed yet
-        console.warn('notify-broadcast invoke failed, falling back to direct insert', error)
+        // Fallback: queue/schedule in DB if edge function not deployed yet
+        console.warn('notify-broadcast invoke failed, falling back', error)
+        const when = new Date(scheduledFor)
+        const scheduleLater = when.getTime() - Date.now() > 45_000
+
         let targetUsers: string[] = []
         if (targetType === 'single' && targetUserId.trim()) {
           targetUsers = [targetUserId.trim()]
         } else {
           const roleFilter = targetType === 'all_dps' ? 'dp' : targetType === 'all_users' ? 'user' : null
-          let q = supabase.from('profiles').select('id')
+          let q = supabase.from('profiles').select('id, role')
           if (roleFilter) q = q.eq('role', roleFilter)
           else q = q.in('role', ['user', 'dp'])
           const { data: profiles } = await q
@@ -129,47 +133,62 @@ export default function AdminNotifications() {
           setSending(false)
           return
         }
-        if (scheduleMode === 'later') {
-          const { error: qErr } = await supabase.from('notification_broadcasts').insert({
-            title: title.trim(),
-            body: body.trim(),
-            image_url: imageUrl || null,
-            target_type: targetType,
-            target_user_id: targetType === 'single' ? targetUserId.trim() : null,
-            scheduled_for: new Date(scheduledFor).toISOString(),
-            status: 'pending',
-          })
-          if (qErr) {
-            show('Schedule failed: ' + qErr.message + ' — apply mutual_cancel_and_scheduled_notify SQL first', 'error')
-            setSending(false)
-            return
-          }
-          show(`Scheduled for ${new Date(scheduledFor).toLocaleString()}`, 'success')
+
+        const { data: broadcast, error: qErr } = await supabase.from('notification_broadcasts').insert({
+          title: title.trim(),
+          body: body.trim(),
+          image_url: imageUrl || null,
+          target_type: targetType,
+          target_user_id: targetType === 'single' ? targetUserId.trim() : null,
+          scheduled_for: when.toISOString(),
+          status: scheduleLater ? 'pending' : 'sending',
+        }).select('id').single()
+
+        if (qErr) {
+          show('Notify failed: ' + qErr.message + ' — run APPLY_NOW_PUSH_OUTBOX.sql + deploy notify-broadcast', 'error')
+          setSending(false)
+          return
+        }
+
+        if (scheduleLater) {
+          show(`Scheduled for ${when.toLocaleString()}`, 'success')
         } else {
-          const inserts = targetUsers.map(uid => ({
-            user_id: uid,
-            title: title.trim(),
-            body: body.trim(),
-            type: 'admin_announcement',
-            notification_type: 'admin_announcement',
-            image_url: imageUrl || null,
-          }))
-          const { error: insertError } = await supabase.from('notifications').insert(inserts)
-          if (insertError) {
-            show('Failed: ' + insertError.message, 'error')
-            setSending(false)
-            return
+          const { data: profiles } = await supabase.from('profiles').select('id, role').in('id', targetUsers)
+          for (const p of profiles || []) {
+            const base = p.role === 'dp' ? '/dp' : '/app'
+            const { data: created } = await supabase.from('notifications').insert({
+              user_id: p.id,
+              title: title.trim(),
+              body: body.trim(),
+              type: 'admin_announcement',
+              notification_type: 'admin_offer',
+              image_url: imageUrl || null,
+              related_id: broadcast?.id || null,
+              route: `${base}/offers/pending`,
+            }).select('id').single()
+            kickPushDelivery()
+            if (created?.id) {
+              await supabase.from('notifications').update({
+                route: `${base}/offers/${created.id}`,
+                entity_id: created.id,
+              }).eq('id', created.id)
+            }
           }
-          show(`Sent to Alerts for ${targetUsers.length} recipient(s)`, 'success')
+          // Best-effort push for each (requires dispatch-push + FCM secrets)
+          supabase.functions.invoke('dispatch-push', { body: { processOutbox: true, limit: 200 } }).catch(() => {})
+          show(`Sent to Alerts for ${targetUsers.length} recipient(s) — push via FCM when configured`, 'success')
         }
       } else if (data && data.success === false) {
         show(data.error || 'Notify failed', 'error')
         setSending(false)
         return
       } else if (data?.scheduled) {
-        show(`Scheduled for ${new Date(data.scheduledFor).toLocaleString()} — will hit Alerts + email`, 'success')
+        show(`Scheduled for ${new Date(data.scheduledFor).toLocaleString()} — Alerts + push + email`, 'success')
       } else {
-        show(`Sent to ${data?.recipientCount ?? 'audience'} — Alerts + Resend email`, 'success')
+        const pushNote = data?.fcmConfigured === false
+          ? ' (set FCM_SERVER_KEY or FCM_SERVICE_ACCOUNT_JSON on edge for mobile push)'
+          : ` · push ${data?.pushSent ?? 0}`
+        show(`Sent to ${data?.recipientCount ?? 'audience'} — Alerts + email${pushNote}`, 'success')
       }
 
       setTitle('')
@@ -203,9 +222,11 @@ export default function AdminNotifications() {
           <div className="text-sm text-white/70 leading-relaxed">
             <p className="font-semibold text-white mb-1">Where does Notify go?</p>
             <p>
-              Messages land in the <span className="text-white">Alerts</span> tab for customers and delivery partners
-              (same inbox as order updates). Email is also sent via <span className="text-white">Resend</span> when the
-              profile has an email. Native push fires when the device is registered for FCM.
+              Messages land in the <span className="text-white">Alerts</span> tab for customers and partners.
+              Mobile <span className="text-white">push</span> is sent via FCM for every notification (set
+              <span className="text-white"> FCM_SERVER_KEY</span> or <span className="text-white">FCM_SERVICE_ACCOUNT_JSON</span> on edge functions).
+              Email goes through <span className="text-white">Resend</span> when the profile has an email.
+              Tapping an offer opens the full details page with image.
             </p>
           </div>
         </div>
@@ -286,32 +307,46 @@ export default function AdminNotifications() {
             className="input min-h-[100px]" maxLength={500} />
         </div>
 
-        <div className="mb-4">
-          <label className="mb-2 block text-sm font-medium text-white/60">When to notify</label>
-          <div className="mb-3 flex gap-2">
+        <div className="mb-4 rounded-xl border border-primary-400/40 bg-primary-500/10 p-4">
+          <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-white">
+            <CalendarClock size={16} className="text-primary-400" />
+            Notify time *
+          </label>
+          <p className="mb-3 text-xs text-white/50">
+            Pick when recipients should get Alerts + push + email. Leave as now to send immediately.
+          </p>
+          <div className="mb-3 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setScheduleMode('now')}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'now' ? 'border border-primary-400 bg-primary-500/10 text-white' : 'border border-white/10 text-white/50'}`}
+              onClick={() => {
+                setScheduleMode('now')
+                setScheduledFor(toLocalInputValue(new Date()))
+              }}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'now' ? 'border border-primary-400 bg-primary-500/20 text-white' : 'border border-white/10 text-white/50'}`}
             >
               Send now
             </button>
             <button
               type="button"
-              onClick={() => setScheduleMode('later')}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'later' ? 'border border-primary-400 bg-primary-500/10 text-white' : 'border border-white/10 text-white/50'}`}
+              onClick={() => {
+                setScheduleMode('later')
+                setScheduledFor(toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)))
+              }}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'later' ? 'border border-primary-400 bg-primary-500/20 text-white' : 'border border-white/10 text-white/50'}`}
             >
-              <CalendarClock size={14} /> Schedule time
+              Schedule for later
             </button>
           </div>
-          {scheduleMode === 'later' && (
-            <input
-              type="datetime-local"
-              value={scheduledFor}
-              onChange={e => setScheduledFor(e.target.value)}
-              className="input"
-            />
-          )}
+          <input
+            type="datetime-local"
+            value={scheduledFor}
+            onChange={e => {
+              setScheduledFor(e.target.value)
+              const t = new Date(e.target.value).getTime()
+              setScheduleMode(t - Date.now() > 45_000 ? 'later' : 'now')
+            }}
+            className="input"
+          />
         </div>
 
         <div className="mb-4">

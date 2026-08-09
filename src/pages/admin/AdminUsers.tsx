@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../../context'
 import { supabase, Profile } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { Avatar, EmptyState, SkeletonCard } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
 import { Users, ShieldOff, Ban, CheckCircle, AlertTriangle, Download, Search, MapPin, LogIn } from 'lucide-react'
@@ -70,6 +71,7 @@ export default function AdminUsers() {
           body: notifMessages[newStatus].body,
           type: 'account_status',
         })
+        kickPushDelivery()
       }
       setSelected(null)
       fetchUsers()

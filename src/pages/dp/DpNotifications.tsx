@@ -8,7 +8,8 @@ import { pg } from '../../design/tokens'
 import { Bike, CheckCircle2, AlertCircle, Info, Package, Trash2, MessageCircle, Shield, IndianRupee } from 'lucide-react'
 
 type Notification = {
-  id: string; title: string; body: string; type: string; is_read: boolean; created_at: string; related_id?: string | null
+  id: string; title: string; body: string; type: string; is_read: boolean; created_at: string
+  related_id?: string | null; image_url?: string | null; notification_type?: string | null; route?: string | null
 }
 
 function relativeTime(iso: string) {
@@ -88,6 +89,15 @@ export default function DpNotifications() {
 
   const handleTap = async (n: Notification) => {
     if (!n.is_read) markRead(n.id)
+    const nType = n.notification_type || n.type
+    if (nType === 'admin_announcement' || nType === 'admin_offer') {
+      navigate(`/dp/offers/${n.id}`)
+      return
+    }
+    if (n.route && n.route.startsWith('/dp/')) {
+      navigate(n.route.includes('/offers/pending') ? `/dp/offers/${n.id}` : n.route)
+      return
+    }
     if (n.related_id) {
       // Quotation confirmed / live order → tracking
       if (n.type === 'order_confirmed' || n.type === 'order_status' || n.type === 'order_delivered' || n.type === 'task_started') {
@@ -180,10 +190,14 @@ export default function DpNotifications() {
                         />
                       )}
                       <div
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl"
                         style={{ background: bg }}
                       >
-                        <span style={{ color }}>{icon}</span>
+                        {n.image_url ? (
+                          <img src={n.image_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span style={{ color }}>{icon}</span>
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-extrabold" style={{ color: n.is_read ? pg.text2 : pg.text }}>

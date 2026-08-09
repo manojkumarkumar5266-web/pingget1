@@ -8,6 +8,7 @@ import DpWallet from './DpWallet'
 import DpProfile from './DpProfile'
 import DpNavigationPage from './DpNavigationPage'
 import DpNotifications from './DpNotifications'
+import OfferDetailPage from '../shared/OfferDetailPage'
 
 /**
  * Partner app routes — absolute /dp/* paths (no splat descendant matching).
@@ -22,6 +23,7 @@ export default function DpApp() {
         <Route path="wallet" element={<DpWallet />} />
         <Route path="profile" element={<DpProfile />} />
         <Route path="notifications" element={<DpNotifications />} />
+        <Route path="offers/:offerId" element={<OfferDetailPage basePath="/dp" />} />
       </Route>
       <Route path="/dp/chat/:roomId" element={<ChatScreen />} />
       <Route path="/dp/chat/:roomId/order" element={<FullOrderDetails />} />

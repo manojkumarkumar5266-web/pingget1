@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { EmptyState, SkeletonCard, Tabs } from '../../components/ui'
 import { formatTime, formatCurrency } from '../../lib/utils'
 import { CreditCard, Download, IndianRupee, CheckCircle, XCircle, Clock, Settings, ExternalLink, AlertTriangle } from 'lucide-react'
@@ -156,6 +157,7 @@ export default function AdminPayments() {
         body: 'Your commission payment has been verified. Your account is now active and online.',
         type: 'payment_confirmed',
       })
+      kickPushDelivery()
     }
     fetchAll()
   }
@@ -175,6 +177,7 @@ export default function AdminPayments() {
         body: (rejectReason || 'Payment could not be verified') + '. Please pay outstanding commission to come back online.',
         type: 'payment_rejected',
       })
+      kickPushDelivery()
     }
     setRejectId(null)
     setRejectReason('')

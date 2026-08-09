@@ -169,80 +169,40 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Process due admin scheduled broadcasts → User/DP Alerts (+ Resend email)
+    // Process due admin scheduled broadcasts → User/DP Alerts (+ Resend + FCM)
     let broadcastsSent = 0;
+    let pushProcessed = 0;
     try {
-      const nowIso = new Date().toISOString();
-      const { data: due } = await supabase
-        .from("notification_broadcasts")
-        .select("*")
-        .eq("status", "pending")
-        .lte("scheduled_for", nowIso)
-        .order("scheduled_for", { ascending: true })
-        .limit(20);
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-      for (const row of due || []) {
-        await supabase.from("notification_broadcasts").update({ status: "sending" }).eq("id", row.id);
-        try {
-          let q = supabase.from("profiles").select("id, email, role");
-          if (row.target_type === "single" && row.target_user_id) q = q.eq("id", row.target_user_id);
-          else if (row.target_type === "all_users") q = q.eq("role", "user");
-          else if (row.target_type === "all_dps") q = q.eq("role", "dp");
-          else q = q.in("role", ["user", "dp"]);
+      const dueRes = await fetch(`${supabaseUrl}/functions/v1/notify-broadcast`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ processDueOnly: true }),
+      });
+      if (dueRes.ok) {
+        const dueJson = await dueRes.json();
+        broadcastsSent = dueJson.processed || 0;
+      }
 
-          const { data: recipients } = await q;
-          const list = recipients || [];
-          for (let i = 0; i < list.length; i += 200) {
-            const chunk = list.slice(i, i + 200).map((r: any) => ({
-              user_id: r.id,
-              title: row.title,
-              body: row.body,
-              type: "admin_announcement",
-              notification_type: "admin_announcement",
-              image_url: row.image_url || null,
-              related_id: row.id,
-            }));
-            if (chunk.length) await supabase.from("notifications").insert(chunk);
-          }
-
-          const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-          const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "PingGet <noreply@pingget.com>";
-          if (RESEND_API_KEY) {
-            for (const r of list.filter((x: any) => x.email).slice(0, 200)) {
-              try {
-                await fetch("https://api.resend.com/emails", {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${RESEND_API_KEY}`,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    from: FROM_EMAIL,
-                    to: [r.email],
-                    subject: row.title,
-                    html: `<p><strong>${row.title}</strong></p><p>${row.body}</p>`,
-                    text: `${row.title}\n\n${row.body}`,
-                  }),
-                });
-              } catch (_) { /* ignore */ }
-            }
-          }
-
-          await supabase.from("notification_broadcasts").update({
-            status: "sent",
-            sent_at: new Date().toISOString(),
-            recipient_count: list.length,
-          }).eq("id", row.id);
-          broadcastsSent++;
-        } catch (e: any) {
-          await supabase.from("notification_broadcasts").update({
-            status: "failed",
-            error_message: e?.message || "failed",
-          }).eq("id", row.id);
-        }
+      const pushRes = await fetch(`${supabaseUrl}/functions/v1/dispatch-push`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ processOutbox: true, limit: 80 }),
+      });
+      if (pushRes.ok) {
+        const pushJson = await pushRes.json();
+        pushProcessed = pushJson.processed || 0;
       }
     } catch (broadcastErr: any) {
-      console.error("scheduled broadcast processing error:", broadcastErr?.message);
+      console.error("scheduled broadcast / push processing error:", broadcastErr?.message);
     }
 
     return new Response(
@@ -250,6 +210,7 @@ Deno.serve(async (req: Request) => {
         success: true,
         activated: activated?.length || 0,
         broadcastsSent,
+        pushProcessed,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

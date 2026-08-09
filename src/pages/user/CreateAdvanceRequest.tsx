@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, type AdvanceSettings } from '../../lib/supabase'
+import { kickPushDelivery } from '../../lib/notify'
 import { ErrorBanner } from '../../components/ui'
 import PremiumCalendar from '../../components/PremiumCalendar'
 import PremiumTimeSlotSelector from '../../components/PremiumTimeSlotSelector'
@@ -544,6 +545,7 @@ export default function CreateAdvanceRequest() {
         type: 'advance_request_created',
         related_id: inserted.id,
       })
+      kickPushDelivery()
 
       navigate(`/app/scanning/${inserted.id}`)
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
