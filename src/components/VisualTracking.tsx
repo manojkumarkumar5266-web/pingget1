@@ -45,7 +45,7 @@ export default function VisualTracking({
       <div className="mx-auto w-full max-w-lg">
         <div
           className="overflow-hidden"
-          style={{ borderRadius: compact ? 22 : 28, border: `1px solid rgba(245,197,66,0.22)`, background: '#000' }}
+          style={{ borderRadius: compact ? 22 : 28, border: `1px solid rgba(196,214,0,0.22)`, background: '#000' }}
         >
           <div
             className="flex w-full items-center justify-center"

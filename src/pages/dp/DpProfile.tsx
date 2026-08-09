@@ -92,7 +92,7 @@ export default function DpProfile() {
                 onClick={() => cameraRef.current?.click()}
                 disabled={uploadingPhoto}
                 className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full transition active:scale-90"
-                style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 4px 12px rgba(245,197,66,0.35)' }}
+                style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 4px 12px rgba(196,214,0,0.35)' }}
               >
                 <Camera size={14} />
               </button>
@@ -200,7 +200,7 @@ export default function DpProfile() {
         <a
           href="mailto:support@pingget.in"
           className="flex items-center gap-3 rounded-2xl px-4 py-3.5 transition active:scale-[0.99]"
-          style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.22)` }}
+          style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.22)` }}
         >
           <Mail size={16} style={{ color: pg.lime }} />
           <span className="text-sm font-extrabold" style={{ color: pg.lime }}>support@pingget.in</span>

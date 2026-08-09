@@ -115,7 +115,7 @@ export default function FullOrderDetails() {
                 type="button"
                 onClick={playVoice}
                 className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5"
-                style={{ background: pg.limeDim, border: '1px solid rgba(245,197,66,0.22)' }}
+                style={{ background: pg.limeDim, border: '1px solid rgba(196,214,0,0.22)' }}
               >
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: pg.lime }}>
                   {playingVoice ? <Pause size={16} style={{ color: pg.limeText }} /> : <Play size={16} style={{ color: pg.limeText }} />}

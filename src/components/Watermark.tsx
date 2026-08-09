@@ -7,7 +7,7 @@ export default function Watermark() {
       <div
         className="absolute inset-0"
         style={{
-          background: `radial-gradient(ellipse at 15% 0%, ${pg.limeDim}, transparent 42%), radial-gradient(ellipse at 90% 100%, rgba(245,197,66,0.05), transparent 40%)`,
+          background: `radial-gradient(ellipse at 15% 0%, ${pg.limeDim}, transparent 42%), radial-gradient(ellipse at 90% 100%, rgba(196,214,0,0.05), transparent 40%)`,
         }}
       />
     </div>

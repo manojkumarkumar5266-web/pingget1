@@ -91,7 +91,7 @@ export default function AdminLogin() {
   return (
     <AuthLayout title="Admin Login" subtitle="Restricted access — administrators only">
       <div className="mb-6 flex justify-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)` }}>
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.28)` }}>
           <ShieldCheck size={26} style={{ color: pg.lime }} />
         </div>
       </div>

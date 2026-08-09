@@ -63,7 +63,7 @@ export default function UserProfile() {
               onClick={() => cameraRef.current?.click()}
               disabled={uploadingPhoto}
               className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full transition active:scale-90"
-              style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(245,197,66,0.35)' }}
+              style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(196,214,0,0.35)' }}
             >
               <Camera size={16} />
             </button>

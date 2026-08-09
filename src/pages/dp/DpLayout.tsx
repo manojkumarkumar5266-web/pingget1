@@ -104,8 +104,12 @@ export default function DpLayout() {
       >
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em]" style={{ color: pg.lime }}>Partner</p>
-            <p className="text-sm font-extrabold tracking-tight">{profile?.full_name?.split(' ')[0] || 'Rider'}</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em]" style={{ color: pg.lime }}>
+              Partner
+            </p>
+            <p className="text-xs font-bold" style={{ color: pg.olive }}>
+              pin<span style={{ color: pg.lime }}>G</span><span style={{ color: pg.olive }}>G</span>et
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -113,12 +117,12 @@ export default function DpLayout() {
               onClick={handleToggleOnline}
               className="rounded-full px-3.5 py-2 text-xs font-extrabold active:scale-95"
               style={dp.is_online
-                ? { background: 'rgba(34,197,94,0.16)', color: '#86EFAC', border: '1px solid rgba(34,197,94,0.35)' }
+                ? { background: pg.oliveDim, color: pg.olive, border: `1px solid rgba(143,174,62,0.4)` }
                 : commissionOwed > 0
                 ? { background: 'rgba(245,165,36,0.16)', color: '#FCD34D', border: '1px solid rgba(245,165,36,0.35)' }
                 : { background: pg.surface2, color: pg.text3, border: `1px solid ${pg.line}` }}
             >
-              <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${dp.is_online ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />
+              <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${dp.is_online ? 'animate-pulse' : 'bg-white/30'}`} style={dp.is_online ? { background: pg.olive } : undefined} />
               {dp.is_online ? 'Online' : commissionOwed > 0 ? 'Pay due' : 'Go online'}
             </button>
             <button type="button" onClick={() => signOut()} className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.surface2, color: pg.text3 }}>

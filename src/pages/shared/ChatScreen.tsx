@@ -402,10 +402,10 @@ export default function ChatScreen() {
           <p className="font-bold text-white leading-snug">{otherUser?.full_name || 'User'}</p>
           {otherTyping ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-medium" style={{ color: '#F5C542' }}>typing</span>
+              <span className="text-xs font-medium" style={{ color: '#C4D600' }}>typing</span>
               <div className="flex gap-0.5 items-center">
                 {[0, 150, 300].map(delay => (
-                  <span key={delay} className="h-1 w-1 rounded-full animate-bounce" style={{ background: '#F5C542', animationDelay: `${delay}ms` }} />
+                  <span key={delay} className="h-1 w-1 rounded-full animate-bounce" style={{ background: '#C4D600', animationDelay: `${delay}ms` }} />
                 ))}
               </div>
             </div>
@@ -415,7 +415,7 @@ export default function ChatScreen() {
             </p>
           ) : (
             <p className="flex items-center gap-1 text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              {lastOwnMsg?.read_at ? <><CheckCheck size={11} style={{ color: '#F5C542' }} /> Seen</> : lastOwnMsg ? <><Check size={11} /> Delivered</> : 'Chat'}
+              {lastOwnMsg?.read_at ? <><CheckCheck size={11} style={{ color: '#C4D600' }} /> Seen</> : lastOwnMsg ? <><Check size={11} /> Delivered</> : 'Chat'}
             </p>
           )}
         </div>
@@ -450,7 +450,7 @@ export default function ChatScreen() {
           {/* Context banners */}
           {!order && isUser && fullOrderData?.order_type !== 'advance' && (
             <div className="mb-4 rounded-2xl px-4 py-3 text-center text-xs font-medium animate-fade-in"
-              style={{ background: 'rgba(245,197,66,0.08)', border: '1px solid rgba(245,197,66,0.2)', color: 'rgba(255,255,255,0.6)' }}>
+              style={{ background: 'rgba(196,214,0,0.08)', border: '1px solid rgba(196,214,0,0.2)', color: 'rgba(255,255,255,0.6)' }}>
               Discuss items and delivery charge. Your partner will send a quotation.
             </div>
           )}
@@ -468,7 +468,7 @@ export default function ChatScreen() {
                 )}
                 <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 ${isOwn ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
                   style={isOwn
-                    ? { background: pg.lime, boxShadow: '0 4px 16px rgba(245,197,66,0.2)' }
+                    ? { background: pg.lime, boxShadow: '0 4px 16px rgba(196,214,0,0.2)' }
                     : { background: pg.surface, border: `1px solid ${pg.line}` }}>
 
                   {msg.message_type === 'text' && (
@@ -488,8 +488,8 @@ export default function ChatScreen() {
                   {msg.message_type === 'quotation' && msg.quotation_data && (
                     <div className="min-w-[240px] space-y-3">
                       <div className="flex items-center justify-center gap-2 pb-2 border-b" style={{ borderColor: isOwn ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.1)' }}>
-                        <FileText size={15} style={{ color: isOwn ? '#0B0B0B' : '#F5C542' }} />
-                        <p className="text-sm font-bold tracking-wide" style={{ color: isOwn ? '#0B0B0B' : '#F5C542' }}>Quotation</p>
+                        <FileText size={15} style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }} />
+                        <p className="text-sm font-bold tracking-wide" style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }}>Quotation</p>
                       </div>
                       {msg.quotation_data.photo_url && (
                         <div className="flex flex-wrap gap-1.5">
@@ -504,7 +504,7 @@ export default function ChatScreen() {
                         {String(msg.quotation_data.items_summary || '').split('\n').map((line: string, i: number) =>
                           line.trim() ? (
                             <li key={i} className="flex items-start gap-2 text-sm" style={{ color: isOwn ? '#0B0B0B' : 'rgba(255,255,255,0.85)' }}>
-                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: isOwn ? '#0B0B0B' : '#F5C542' }} />
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: isOwn ? '#0B0B0B' : '#C4D600' }} />
                               {line.trim()}
                             </li>
                           ) : null
@@ -530,20 +530,20 @@ export default function ChatScreen() {
                           </button>
                         </div>
                       )}
-                      {order && <p className="text-center text-sm font-bold" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : '#F5C542' }}>✓ Accepted</p>}
+                      {order && <p className="text-center text-sm font-bold" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : '#C4D600' }}>✓ Accepted</p>}
                     </div>
                   )}
 
                   {/* Advance Payment Card */}
                   {msg.message_type === 'advance_payment' && msg.quotation_data && (
                     <div className="w-72 space-y-3 p-4 rounded-2xl"
-                      style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(245,197,66,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(245,197,66,0.2)'}` }}>
+                      style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(196,214,0,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(196,214,0,0.2)'}` }}>
                       <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(245,197,66,0.2)' }}>
-                          <CreditCard size={16} style={{ color: '#F5C542' }} />
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(196,214,0,0.2)' }}>
+                          <CreditCard size={16} style={{ color: '#C4D600' }} />
                         </div>
                         <div>
-                          <p className="text-sm font-bold" style={{ color: isOwn ? '#0B0B0B' : '#F5C542' }}>Advance Booking Confirmation</p>
+                          <p className="text-sm font-bold" style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }}>Advance Booking Confirmation</p>
                           <p className="text-[10px]" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)' }}>Payment Request</p>
                         </div>
                       </div>
@@ -551,7 +551,7 @@ export default function ChatScreen() {
                         <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Booking ID</span><span className="font-mono font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{(msg.quotation_data.booking_id || '').slice(0, 8)}...</span></div>
                         <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Date</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_date || 'N/A'}</span></div>
                         <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Time</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_time || 'N/A'}</span></div>
-                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Amount</span><span className="font-bold" style={{ color: '#F5C542' }}>{formatCurrency(msg.quotation_data.amount)}</span></div>
+                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Amount</span><span className="font-bold" style={{ color: '#C4D600' }}>{formatCurrency(msg.quotation_data.amount)}</span></div>
                         {msg.quotation_data.payment_deadline && (
                           <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Deadline</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.payment_deadline}</span></div>
                         )}
@@ -568,7 +568,7 @@ export default function ChatScreen() {
                       {isUser && (msg.quotation_data.status === 'waiting' || msg.quotation_data.status === 'rejected') && msg.advance_payment_id && (
                         <button onClick={() => { setShowPaymentProof(msg.advance_payment_id); setAdvancePaymentData(msg.quotation_data) }}
                           className="w-full rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
-                          style={{ background: '#F5C542', color: '#0B0B0B' }}>
+                          style={{ background: '#C4D600', color: '#0B0B0B' }}>
                           <Upload size={12} className="inline mr-1" /> Upload Payment Proof
                         </button>
                       )}
@@ -681,7 +681,7 @@ export default function ChatScreen() {
               <div style={{ width: 28 }}><Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={28} /></div>
               <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm px-4 py-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 {[0, 150, 300].map(delay => (
-                  <span key={delay} className="h-2 w-2 rounded-full animate-bounce" style={{ background: '#F5C542', animationDelay: `${delay}ms` }} />
+                  <span key={delay} className="h-2 w-2 rounded-full animate-bounce" style={{ background: '#C4D600', animationDelay: `${delay}ms` }} />
                 ))}
               </div>
             </div>
@@ -695,15 +695,15 @@ export default function ChatScreen() {
       {isCompleted && isUser && !hasRated && (
         <div className="shrink-0 px-4 py-3" style={{ background: pg.bg, borderTop: `1px solid ${pg.line}` }}>
           <button onClick={() => setShowRating(true)} className="w-full gap-2 rounded-2xl py-3.5 text-sm font-extrabold transition-all active:scale-95"
-            style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(245,197,66,0.28)' }}>
+            style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(196,214,0,0.28)' }}>
             <Star size={16} /> Rate Your Partner
           </button>
         </div>
       )}
       {isCompleted && hasRated && (
         <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-3" style={{ background: pg.bg, borderTop: `1px solid ${pg.line}` }}>
-          <CheckCircle size={15} style={{ color: '#F5C542' }} />
-          <p className="text-sm font-medium" style={{ color: '#F5C542' }}>Order completed & rated</p>
+          <CheckCircle size={15} style={{ color: '#C4D600' }} />
+          <p className="text-sm font-medium" style={{ color: '#C4D600' }}>Order completed & rated</p>
         </div>
       )}
 
@@ -722,7 +722,7 @@ export default function ChatScreen() {
             <div className="mb-2 flex justify-start">
               <button type="button" onClick={() => setShowPickupPhoto(true)}
                 className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-extrabold transition active:scale-95"
-                style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.28)`, color: pg.lime }}>
+                style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.28)`, color: pg.lime }}>
                 <PackageCheck size={14} /> Pickup Proof
               </button>
             </div>
@@ -764,7 +764,7 @@ export default function ChatScreen() {
               <button type="button" onClick={handleSend}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl active:scale-90"
                 style={input.trim()
-                  ? { background: pg.lime, boxShadow: '0 8px 20px rgba(245,197,66,0.3)' }
+                  ? { background: pg.lime, boxShadow: '0 8px 20px rgba(196,214,0,0.3)' }
                   : { background: pg.surface2, border: `1px solid ${pg.line}` }}>
                 <Send size={18} style={{ color: input.trim() ? pg.limeText : pg.text4 }} />
               </button>
@@ -792,20 +792,20 @@ export default function ChatScreen() {
         <div className="fixed bottom-24 left-0 right-0 z-20 flex justify-center gap-2 px-4">
           <button onClick={() => navigate(isUser ? `/app/chat/${roomId}/order` : `/dp/chat/${roomId}/order`)}
             className="flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-extrabold shadow-lg transition-all active:scale-95"
-            style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(245,197,66,0.35)' }}>
+            style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(196,214,0,0.35)' }}>
             <ClipboardList size={14} /> View Full Order
           </button>
           {!isUser && !order && fullOrderData?.order_type !== 'advance' && (
             <button onClick={() => setShowQuotation(true)}
               className="flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-extrabold shadow-lg transition-all active:scale-95"
-              style={{ background: pg.surface2, color: pg.lime, border: `1px solid rgba(245,197,66,0.35)` }}>
+              style={{ background: pg.surface2, color: pg.lime, border: `1px solid rgba(196,214,0,0.35)` }}>
               <FileText size={14} /> Send Quotation
             </button>
           )}
           {!isUser && fullOrderData?.order_type === 'advance' && ['dp_reserved', 'accepted', 'searching_dp'].includes(fullOrderData.status) && !advancePaymentData && (
             <button onClick={() => setShowAdvancePayment(true)}
               className="flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-extrabold shadow-lg transition-all active:scale-95"
-              style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(245,197,66,0.35)' }}>
+              style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(196,214,0,0.35)' }}>
               <CreditCard size={14} /> Advance Payment
             </button>
           )}
@@ -876,17 +876,17 @@ function VoiceMessagePlayer({ url, isOwn }: { url: string; isOwn: boolean }) {
   return (
     <div className="flex items-center gap-2.5 min-w-[140px]">
       <button onClick={toggle} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all active:scale-90"
-        style={{ background: isOwn ? 'rgba(0,0,0,0.2)' : 'rgba(245,197,66,0.2)' }}>
+        style={{ background: isOwn ? 'rgba(0,0,0,0.2)' : 'rgba(196,214,0,0.2)' }}>
         {playing
-          ? <Pause size={14} style={{ color: isOwn ? '#0B0B0B' : '#F5C542' }} />
-          : <Play size={14} style={{ color: isOwn ? '#0B0B0B' : '#F5C542' }} />}
+          ? <Pause size={14} style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }} />
+          : <Play size={14} style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }} />}
       </button>
       <div className="flex flex-1 items-center gap-0.5 h-8">
         {Array.from({ length: 16 }).map((_, i) => (
           <div key={i} className={`flex-1 rounded-full ${playing ? 'animate-pulse' : ''}`}
             style={{
               height: `${20 + Math.sin(i) * 14 + Math.random() * 10}%`,
-              background: isOwn ? 'rgba(0,0,0,0.35)' : 'rgba(245,197,66,0.5)',
+              background: isOwn ? 'rgba(0,0,0,0.35)' : 'rgba(196,214,0,0.5)',
               animationDelay: `${i * 50}ms`,
             }} />
         ))}
@@ -929,7 +929,7 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
           <button onClick={handleSubmit} disabled={!file || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-xl py-3"
-            style={{ background: '#F5C542', color: '#0B0B0B' }}>
+            style={{ background: '#C4D600', color: '#0B0B0B' }}>
             {uploading ? 'Sending...' : 'Send Proof'}
           </button>
         </div>
@@ -1019,7 +1019,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
             )}
             {photoFiles.length < MAX_PROOF_PHOTOS && (
               <button onClick={() => photoInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm transition-all active:scale-95"
-                style={{ background: 'rgba(245,197,66,0.08)', border: '1.5px dashed rgba(245,197,66,0.25)', color: '#F5C542' }}>
+                style={{ background: 'rgba(196,214,0,0.08)', border: '1.5px dashed rgba(196,214,0,0.25)', color: '#C4D600' }}>
                 <Camera size={15} /> {photoFiles.length > 0 ? 'Add More Photos' : 'Upload Proof Photos'}
               </button>
             )}
@@ -1028,7 +1028,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleSend} disabled={!items || !deliveryCharge || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-xl py-3 transition-all active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #F5C542, #F5C542)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(245,197,66,0.35)' }}>
+              style={{ background: 'linear-gradient(135deg, #C4D600, #C4D600)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(196,214,0,0.35)' }}>
               {uploading ? 'Uploading...' : 'Send'}
             </button>
           </div>
@@ -1051,18 +1051,18 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
         <div className="mb-2 flex justify-center gap-3">
           {[1, 2, 3, 4, 5].map(i => (
             <button key={i} onClick={() => setStars(i)} className="transition-transform active:scale-90">
-              <svg width={40} height={40} viewBox="0 0 24 24" fill={i <= stars ? '#F5C542' : 'none'} stroke={i <= stars ? '#F5C542' : 'rgba(255,255,255,0.2)'} strokeWidth={1.5}>
+              <svg width={40} height={40} viewBox="0 0 24 24" fill={i <= stars ? '#C4D600' : 'none'} stroke={i <= stars ? '#C4D600' : 'rgba(255,255,255,0.2)'} strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
               </svg>
             </button>
           ))}
         </div>
-        <p className="mb-4 text-center font-semibold" style={{ color: '#F5C542' }}>{labels[stars]}</p>
+        <p className="mb-4 text-center font-semibold" style={{ color: '#C4D600' }}>{labels[stars]}</p>
         <textarea className="input min-h-20 resize-none mb-4" value={review} onChange={e => setReview(e.target.value)} placeholder="Leave a review (optional)" />
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Skip</button>
           <button onClick={() => onSubmit(stars, review)} className="flex-1 btn font-bold rounded-xl py-3"
-            style={{ background: '#F5C542', color: '#0B0B0B' }}>Submit</button>
+            style={{ background: '#C4D600', color: '#0B0B0B' }}>Submit</button>
         </div>
       </div>
     </div>
@@ -1145,7 +1145,7 @@ function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
           <div className="flex items-center gap-2">
-            <CreditCard size={20} style={{ color: '#F5C542' }} />
+            <CreditCard size={20} style={{ color: '#C4D600' }} />
             <h3 className="text-lg font-bold text-white">Request Advance Payment</h3>
           </div>
           <p className="text-sm text-white/50">Send a premium payment card to the customer inside this chat. The customer will upload their payment proof here.</p>
@@ -1161,7 +1161,7 @@ function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleSend} disabled={sending || !amount}
               className="flex-1 rounded-xl py-3 font-bold transition-all active:scale-95 disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #F5C542, #F5C542)', color: '#0B0B0B' }}>
+              style={{ background: 'linear-gradient(135deg, #C4D600, #C4D600)', color: '#0B0B0B' }}>
               {sending ? 'Sending...' : 'Send Payment Card'}
             </button>
           </div>
@@ -1235,14 +1235,14 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, onSe
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
           <div className="flex items-center gap-2">
-            <Upload size={20} style={{ color: '#F5C542' }} />
+            <Upload size={20} style={{ color: '#C4D600' }} />
             <h3 className="text-lg font-bold text-white">Upload Payment Proof</h3>
           </div>
           <p className="text-sm text-white/50">Upload your payment screenshot and enter your UPI reference number or transaction ID.</p>
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Payment Screenshot</label>
             <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} className="hidden" id="proof-file" />
-            <label htmlFor="proof-file" className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 py-6 text-sm text-white/50 transition-all hover:border-[#F5C542] hover:text-[#F5C542]">
+            <label htmlFor="proof-file" className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 py-6 text-sm text-white/50 transition-all hover:border-[#C4D600] hover:text-[#C4D600]">
               {preview ? <img src={preview} alt="Preview" className="h-24 rounded-lg object-cover" /> : <><Camera size={20} /> Tap to upload screenshot</>}
             </label>
           </div>
@@ -1262,7 +1262,7 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, onSe
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleSubmit} disabled={uploading || !file}
               className="flex-1 rounded-xl py-3 font-bold transition-all active:scale-95 disabled:opacity-50"
-              style={{ background: '#F5C542', color: '#0B0B0B' }}>
+              style={{ background: '#C4D600', color: '#0B0B0B' }}>
               {uploading ? 'Uploading...' : 'Submit Proof'}
             </button>
           </div>
@@ -1321,7 +1321,7 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
 
   const Row = ({ icon, label, value }: { icon: any; label: string; value: string }) => (
     <div className="flex items-start gap-2 py-1.5">
-      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg" style={{ background: 'rgba(245,197,66,0.1)' }}>
+      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg" style={{ background: 'rgba(196,214,0,0.1)' }}>
         {icon}
       </div>
       <div className="min-w-0 flex-1">
@@ -1332,18 +1332,18 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
   )
 
   return (
-    <div className="shrink-0 px-4 pt-3 pb-1" style={{ background: 'rgba(245,197,66,0.04)', borderBottom: '1px solid rgba(245,197,66,0.12)' }}>
+    <div className="shrink-0 px-4 pt-3 pb-1" style={{ background: 'rgba(196,214,0,0.04)', borderBottom: '1px solid rgba(196,214,0,0.12)' }}>
       <div className="mx-auto max-w-md">
         <button
           onClick={() => setExpanded(v => !v)}
           className="flex w-full items-center justify-between gap-2 py-1.5"
         >
           <div className="flex items-center gap-2">
-            <ClipboardList size={15} style={{ color: '#F5C542' }} />
+            <ClipboardList size={15} style={{ color: '#C4D600' }} />
             <span className="text-sm font-bold text-white">Advance Task Summary</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(245,197,66,0.15)', color: '#F5C542', border: '1px solid rgba(245,197,66,0.25)' }}>
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: '#C4D600', border: '1px solid rgba(196,214,0,0.25)' }}>
               {statusLabel}
             </span>
             {expanded ? <ChevronUp size={16} style={{ color: 'rgba(255,255,255,0.4)' }} /> : <ChevronDown size={16} style={{ color: 'rgba(255,255,255,0.4)' }} />}
@@ -1352,14 +1352,14 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
 
         {expanded && (
           <div className="pb-3 pt-1 animate-fade-in">
-            {category && <Row icon={<Tag size={12} style={{ color: '#F5C542' }} />} label="Category" value={category} />}
-            {scheduledDate && <Row icon={<CalendarClock size={12} style={{ color: '#F5C542' }} />} label="Scheduled Date" value={scheduledDate} />}
-            {scheduledTime && <Row icon={<Clock size={12} style={{ color: '#F5C542' }} />} label="Scheduled Time" value={scheduledTime} />}
-            {pickup && <Row icon={<MapPin size={12} style={{ color: '#F5C542' }} />} label="Pickup Address" value={pickup} />}
-            {delivery && <Row icon={<Navigation size={12} style={{ color: '#F5C542' }} />} label="Delivery Address" value={delivery} />}
-            {hasDescription && <Row icon={<FileText size={12} style={{ color: '#F5C542' }} />} label="Task Description" value={request.description} />}
-            {hasBudget && <Row icon={<IndianRupee size={12} style={{ color: '#F5C542' }} />} label="Budget" value={formatCurrency(Number(request.max_budget))} />}
-            {hasInstructions && <Row icon={<ShieldCheck size={12} style={{ color: '#F5C542' }} />} label="Special Instructions" value={request.special_instructions} />}
+            {category && <Row icon={<Tag size={12} style={{ color: '#C4D600' }} />} label="Category" value={category} />}
+            {scheduledDate && <Row icon={<CalendarClock size={12} style={{ color: '#C4D600' }} />} label="Scheduled Date" value={scheduledDate} />}
+            {scheduledTime && <Row icon={<Clock size={12} style={{ color: '#C4D600' }} />} label="Scheduled Time" value={scheduledTime} />}
+            {pickup && <Row icon={<MapPin size={12} style={{ color: '#C4D600' }} />} label="Pickup Address" value={pickup} />}
+            {delivery && <Row icon={<Navigation size={12} style={{ color: '#C4D600' }} />} label="Delivery Address" value={delivery} />}
+            {hasDescription && <Row icon={<FileText size={12} style={{ color: '#C4D600' }} />} label="Task Description" value={request.description} />}
+            {hasBudget && <Row icon={<IndianRupee size={12} style={{ color: '#C4D600' }} />} label="Budget" value={formatCurrency(Number(request.max_budget))} />}
+            {hasInstructions && <Row icon={<ShieldCheck size={12} style={{ color: '#C4D600' }} />} label="Special Instructions" value={request.special_instructions} />}
 
             {photos.length > 0 && (
               <div className="mt-2">
@@ -1375,16 +1375,16 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
             )}
 
             {hasVoice && (
-              <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(245,197,66,0.06)' }}>
-                <Volume2 size={14} style={{ color: '#F5C542' }} />
+              <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(196,214,0,0.06)' }}>
+                <Volume2 size={14} style={{ color: '#C4D600' }} />
                 <span className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Voice note attached</span>
-                <a href={request.voice_note_url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs font-semibold" style={{ color: '#F5C542' }}>Play</a>
+                <a href={request.voice_note_url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs font-semibold" style={{ color: '#C4D600' }}>Play</a>
               </div>
             )}
 
-            <div className="mt-3 flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(245,197,66,0.06)' }}>
-              <CheckCircle size={12} style={{ color: '#F5C542' }} />
-              <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Current Status: <span className="font-bold" style={{ color: '#F5C542' }}>{statusLabel}</span></p>
+            <div className="mt-3 flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(196,214,0,0.06)' }}>
+              <CheckCircle size={12} style={{ color: '#C4D600' }} />
+              <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Current Status: <span className="font-bold" style={{ color: '#C4D600' }}>{statusLabel}</span></p>
             </div>
           </div>
         )}

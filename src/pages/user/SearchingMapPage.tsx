@@ -139,7 +139,7 @@ export default function SearchingMapPage() {
             <div className="mt-2.5 flex items-center gap-1.5">
               {Array.from({ length: MAX_SCANS }).map((_, i) => (
                 <div key={i} className="h-1.5 rounded-full transition-all duration-500"
-                  style={{ width: i < scanCount ? 24 : 8, background: i < scanCount ? '#F5C542' : 'rgba(255,255,255,0.15)' }} />
+                  style={{ width: i < scanCount ? 24 : 8, background: i < scanCount ? '#C4D600' : 'rgba(255,255,255,0.15)' }} />
               ))}
             </div>
           </div>

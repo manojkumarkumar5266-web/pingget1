@@ -322,7 +322,7 @@ export default function LiveTrackingPage() {
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} type="button" onClick={() => setRatingStars(n)} className="active:scale-90">
                   <Star size={36} fill={n <= ratingStars ? '#FBBF24' : 'none'}
-                    className={n <= ratingStars ? 'text-[#F5C542]' : 'text-white/20'} />
+                    className={n <= ratingStars ? 'text-[#C4D600]' : 'text-white/20'} />
                 </button>
               ))}
             </div>
@@ -393,7 +393,7 @@ export default function LiveTrackingPage() {
               {liveEtaLabel && (
                 <div
                   className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                  style={{ background: 'rgba(7,8,11,0.88)', color: pg.lime, border: `1px solid rgba(245,197,66,0.35)` }}
+                  style={{ background: 'rgba(7,8,11,0.88)', color: pg.lime, border: `1px solid rgba(196,214,0,0.35)` }}
                 >
                   ETA {liveEtaLabel}
                 </div>
@@ -458,7 +458,7 @@ export default function LiveTrackingPage() {
                     <>
                       <button type="button" onClick={() => { window.location.href = `tel:${dpProfile.phone || ''}` }}
                         className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0"
-                        style={{ background: pg.limeDim, border: '1px solid rgba(245,197,66,0.25)', color: pg.lime }}>
+                        style={{ background: pg.limeDim, border: '1px solid rgba(196,214,0,0.25)', color: pg.lime }}>
                         <Phone size={18} />
                       </button>
                       <button type="button" onClick={async () => {
@@ -480,6 +480,24 @@ export default function LiveTrackingPage() {
                 </div>
                 <p className="text-sm leading-relaxed" style={{ color: pg.text2 }}>{request.delivery_address || 'Not specified'}</p>
               </Surface>
+
+              {Array.isArray((request as any).photo_urls) && (request as any).photo_urls.length > 0 && (
+                <Surface className="mb-4 p-4">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/60">Order photos</p>
+                  <div className="flex flex-wrap gap-2">
+                    {((request as any).photo_urls as string[]).map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={url}
+                          alt={`Order photo ${i + 1}`}
+                          className="h-20 w-20 rounded-xl object-cover"
+                          style={{ border: `1px solid ${pg.line}` }}
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </Surface>
+              )}
             </>
           )}
 

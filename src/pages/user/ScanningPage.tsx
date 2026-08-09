@@ -306,7 +306,7 @@ export default function ScanningPage() {
       <div className="px-5 py-1.5 shrink-0">
         <div
           className="rounded-full py-1.5 text-center text-[11px] font-bold"
-          style={{ background: 'rgba(245,197,66,0.14)', color: pg.lime, border: '1px solid rgba(245,197,66,0.35)' }}
+          style={{ background: 'rgba(196,214,0,0.14)', color: pg.lime, border: '1px solid rgba(196,214,0,0.35)' }}
         >
           Searching within {radiusLabel} · map shows ~{formatDistance(MAP_VIEW_RADIUS_M)}
         </div>

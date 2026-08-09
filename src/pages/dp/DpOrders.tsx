@@ -133,7 +133,7 @@ export default function DpOrders() {
             onClick={() => setTab(t.key)}
             className="rounded-full px-4 py-2 text-sm font-extrabold transition active:scale-95"
             style={tab === t.key
-              ? { background: pg.limeDim, border: `1px solid rgba(245,197,66,0.35)`, color: pg.lime }
+              ? { background: pg.limeDim, border: `1px solid rgba(196,214,0,0.35)`, color: pg.lime }
               : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text3 }}
           >
             {t.label}
@@ -179,7 +179,7 @@ export default function DpOrders() {
                 {req.status === 'accepted' && (
                   <div
                     className="mt-3 rounded-2xl px-3.5 py-2.5 text-xs font-extrabold"
-                    style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.22)`, color: pg.lime }}
+                    style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.22)`, color: pg.lime }}
                   >
                     Open chat to agree on price — tracking starts after customer accepts quotation
                   </div>
@@ -188,7 +188,7 @@ export default function DpOrders() {
                 {req.order_type === 'advance' && ['dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed'].includes(req.status) && (
                   <div
                     className="mt-3 flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-xs font-medium"
-                    style={{ background: pg.limeDim, border: `1px solid rgba(245,197,66,0.2)`, color: pg.lime }}
+                    style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.2)`, color: pg.lime }}
                   >
                     <CalendarClock size={14} />
                     {req.request_category} · {req.scheduled_date} at {req.scheduled_slot || req.scheduled_time}
@@ -218,7 +218,7 @@ export default function DpOrders() {
                   <CTA
                     variant="secondary"
                     className="mt-3 w-full min-h-[44px] border-2 border-dashed text-sm"
-                    style={{ borderColor: 'rgba(245,197,66,0.35)' }}
+                    style={{ borderColor: 'rgba(196,214,0,0.35)' }}
                     onClick={() => setProofReqId(req.id)}
                   >
                     <Camera size={16} /> Upload delivery proof

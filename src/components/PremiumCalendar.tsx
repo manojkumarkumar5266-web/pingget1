@@ -86,10 +86,10 @@ export default function PremiumCalendar({ selectedDate, onSelect, maxDays }: Pro
               disabled={!enabled}
               className="relative flex flex-col items-center justify-center rounded-2xl py-2.5 transition-all active:scale-90 disabled:cursor-not-allowed"
               style={selected
-                ? { background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(245,197,66,0.35)' }
+                ? { background: pg.lime, color: pg.limeText, boxShadow: '0 4px 16px rgba(196,214,0,0.35)' }
                 : enabled
                   ? todayBadge
-                    ? { background: pg.limeDim, border: `1.5px solid rgba(245,197,66,0.28)`, color: pg.lime }
+                    ? { background: pg.limeDim, border: `1.5px solid rgba(196,214,0,0.28)`, color: pg.lime }
                     : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text2 }
                   : { background: 'transparent', color: pg.text4, cursor: 'not-allowed' }}
             >

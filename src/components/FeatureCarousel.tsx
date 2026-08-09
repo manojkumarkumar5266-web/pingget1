@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
 import { Images } from '../lib/customImages'
 import { pg } from '../design/tokens'
 
@@ -16,34 +15,34 @@ const FEATURES = [
 ]
 
 /**
- * Discover section — auto L→R carousel.
- * Tap a card to open full-screen for reading; close resumes auto-move.
+ * Discover carousel — auto-moves.
+ * Press/hold pauses on the current card; release resumes. No full-screen expand.
  */
 export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: number }) {
   const [index, setIndex] = useState(0)
-  const [expanded, setExpanded] = useState<(typeof FEATURES)[number] | null>(null)
+  const [holding, setHolding] = useState(false)
   const pauseUntil = useRef(0)
   const n = FEATURES.length
 
   useEffect(() => {
     if (n <= 1) return
     const id = window.setInterval(() => {
-      if (expanded) return
+      if (holding) return
       if (Date.now() < pauseUntil.current) return
       setIndex((i) => (i + 1) % n)
     }, intervalMs)
     return () => window.clearInterval(id)
-  }, [n, intervalMs, expanded])
+  }, [n, intervalMs, holding])
 
   const go = (next: number) => {
-    pauseUntil.current = Date.now() + 5000
+    pauseUntil.current = Date.now() + 4000
     setIndex(((next % n) + n) % n)
   }
 
-  const closeExpanded = () => {
-    setExpanded(null)
-    // Resume auto-carousel shortly after close
-    pauseUntil.current = Date.now() + 1200
+  const holdStart = () => setHolding(true)
+  const holdEnd = () => {
+    setHolding(false)
+    pauseUntil.current = Date.now() + 800
   }
 
   return (
@@ -59,33 +58,33 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
           We serve you
         </h2>
         <p className="mt-0.5 text-xs" style={{ color: pg.text3 }}>
-          Tap a card to read — close to continue
+          Hold a card to pause — release to continue
         </p>
       </div>
 
       <div
-        className="relative overflow-hidden rounded-[1.35rem]"
-        style={{ border: `1px solid ${pg.line}`, background: '#0A0C10' }}
+        className="relative overflow-hidden rounded-[1.35rem] touch-manipulation select-none"
+        style={{
+          border: `1px solid ${pg.line}`,
+          background: '#0A0C10',
+          boxShadow: holding ? `0 0 0 2px ${pg.olive}` : undefined,
+        }}
+        onPointerDown={holdStart}
+        onPointerUp={holdEnd}
+        onPointerCancel={holdEnd}
+        onPointerLeave={holdEnd}
       >
         <div
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${index * 100}%)` }}
         >
           {FEATURES.map((f) => (
-            <article key={f.title} className="relative min-w-full shrink-0 select-none">
-              <button
-                type="button"
-                className="relative aspect-[5/4] w-full overflow-hidden text-left sm:aspect-[4/3]"
-                onClick={() => {
-                  pauseUntil.current = Number.MAX_SAFE_INTEGER
-                  setExpanded(f)
-                }}
-                aria-label={`Open ${f.title}`}
-              >
+            <article key={f.title} className="relative min-w-full shrink-0">
+              <div className="relative aspect-[5/4] w-full overflow-hidden sm:aspect-[4/3]">
                 <img
                   src={f.image}
                   alt={f.title}
-                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
                   style={{ background: 'transparent' }}
                   loading="lazy"
                   decoding="async"
@@ -102,7 +101,7 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
                     {f.subtitle}
                   </p>
                 </div>
-              </button>
+              </div>
             </article>
           ))}
         </div>
@@ -118,55 +117,11 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
             className="h-1.5 rounded-full transition-all"
             style={{
               width: i === index ? 24 : 6,
-              background: i === index ? pg.lime : 'rgba(255,255,255,0.22)',
+              background: i === index ? pg.lime : i % 2 === 0 ? 'rgba(143,174,62,0.45)' : 'rgba(255,255,255,0.22)',
             }}
           />
         ))}
       </div>
-
-      {expanded && (
-        <div
-          className="fixed inset-0 z-[120] flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.88)' }}
-          onClick={closeExpanded}
-          role="dialog"
-          aria-modal="true"
-          aria-label={expanded.title}
-        >
-          <div
-            className="relative w-full max-w-lg overflow-hidden rounded-[1.5rem]"
-            style={{ background: '#0A0C10', border: `1px solid ${pg.lineStrong}` }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={closeExpanded}
-              className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full"
-              style={{ background: 'rgba(0,0,0,0.55)', color: '#fff' }}
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
-            <div className="relative aspect-[4/5] w-full sm:aspect-[4/3]">
-              <img
-                src={expanded.image}
-                alt={expanded.title}
-                className="absolute inset-0 h-full w-full object-cover"
-                draggable={false}
-              />
-              <div
-                className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-16"
-                style={{ background: 'linear-gradient(180deg, transparent, rgba(7,8,11,0.96) 55%)' }}
-              >
-                <p className="text-[22px] font-extrabold tracking-tight text-white">{expanded.title}</p>
-                <p className="mt-1.5 text-sm leading-relaxed" style={{ color: pg.text2 }}>
-                  {expanded.subtitle}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   )
 }

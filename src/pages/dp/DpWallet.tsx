@@ -330,7 +330,7 @@ function SubmitReceiptModal({
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-8 text-sm font-extrabold transition active:scale-[0.99]"
-                style={{ borderColor: 'rgba(245,197,66,0.3)', color: pg.text3 }}
+                style={{ borderColor: 'rgba(196,214,0,0.3)', color: pg.text3 }}
               >
                 <Camera size={18} /> Upload payment screenshot (required)
               </button>
