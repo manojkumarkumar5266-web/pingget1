@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 /** Delivery Partner mobile app — packages dist-dp. Same Supabase as User + Admin. */
 const config: CapacitorConfig = {
   appId: 'com.pingget.dp',
-  appName: 'PingGET Partner',
+  appName: 'pinGGetDP',
   webDir: 'dist-dp',
   server: {
     androidScheme: 'https',
