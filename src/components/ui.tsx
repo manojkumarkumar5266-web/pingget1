@@ -7,7 +7,7 @@ import { pg } from '../design/tokens'
 export function Spinner({ size = 24 }: { size?: number }) {
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+      <div className="absolute inset-0 rounded-full border-2 border-black/10" />
       <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: pg.lime }} />
     </div>
   )
@@ -58,7 +58,7 @@ export function EmptyState({
         </div>
       ) : null}
 
-      <p className="text-base font-bold text-white/80">{title}</p>
+      <p className="text-base font-bold text-black/75">{title}</p>
 
       {description && (
         <p
@@ -256,7 +256,7 @@ export function BottomSheet({ open, onClose, title, children }: { open: boolean;
         onClick={e => e.stopPropagation()}>
         <div className="px-5 pb-1 pt-3">
           <div className="bottom-sheet-handle" />
-          {title && <h3 className="mb-4 text-lg font-bold text-white">{title}</h3>}
+          {title && <h3 className="mb-4 text-lg font-bold text-[#0F1A14]">{title}</h3>}
         </div>
         <div className="overflow-y-auto pb-8" style={{ maxHeight: 'calc(88vh - 80px)' }}>
           {children}
@@ -278,8 +278,8 @@ export function Dialog({ open, onClose, title, children, footer }: { open: boole
         onClick={e => e.stopPropagation()}>
         {title && (
           <div className="mb-5 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-white">{title}</h3>
-            <button onClick={onClose} className="btn-icon h-8 w-8 rounded-xl"><X size={16} className="text-white/50" /></button>
+            <h3 className="text-lg font-bold text-[#0F1A14]">{title}</h3>
+            <button onClick={onClose} className="btn-icon h-8 w-8 rounded-xl"><X size={16} className="text-black/50" /></button>
           </div>
         )}
         {children}
@@ -309,7 +309,7 @@ export function Tabs({ tabs, active, onChange }: { tabs: { key: string; label: s
           >
             {tab.label}
             {tab.count !== undefined && tab.count > 0 && (
-              <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{tab.count}</span>
+              <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-[#0F1A14]">{tab.count}</span>
             )}
           </button>
         )
@@ -324,7 +324,7 @@ export function Chip({ label, active, onClick, icon }: { label: string; active?:
     <button onClick={onClick}
       className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
       style={active
-        ? { background: pg.limeDim, color: pg.lime, border: '1px solid rgba(196,214,0,0.35)' }
+        ? { background: pg.limeDim, color: pg.lime, border: '1px solid rgba(12, 138, 62, 0.35)' }
         : { background: pg.surface2, color: pg.text3, border: `1px solid ${pg.line}` }}>
       {icon} {label}
     </button>
@@ -368,7 +368,7 @@ export function StatCard({ label, value, icon, color, delay = 0 }: { label: stri
       <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-2xl ${color}`}>
         {icon}
       </div>
-      <p className="text-2xl font-bold text-white">{value}</p>
+      <p className="text-2xl font-bold text-[#0F1A14]">{value}</p>
       <p className="mt-0.5 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</p>
     </div>
   )
@@ -378,7 +378,7 @@ export function StatCard({ label, value, icon, color, delay = 0 }: { label: stri
 export function SectionHeader({ title, action }: { title: string; action?: ReactNode }) {
   return (
     <div className="mb-3 flex items-center justify-between">
-      <h3 className="text-base font-bold text-white">{title}</h3>
+      <h3 className="text-base font-bold text-[#0F1A14]">{title}</h3>
       {action}
     </div>
   )
@@ -388,7 +388,7 @@ export function SectionHeader({ title, action }: { title: string; action?: React
 export function EarningsCard({ today, week, deliveries }: { today: number; week: number; deliveries: number }) {
   return (
     <div
-      className="relative overflow-hidden rounded-[28px] p-5 text-white animate-slide-up"
+      className="relative overflow-hidden rounded-[28px] p-5 text-[#0F1A14] animate-slide-up"
       style={{ background: pg.surface, border: `1px solid rgba(196,214,0,0.22)`, boxShadow: '0 12px 40px rgba(0,0,0,0.45)' }}
     >
       <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-25 blur-3xl" style={{ background: pg.lime }} />

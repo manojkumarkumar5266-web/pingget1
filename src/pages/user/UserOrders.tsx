@@ -186,7 +186,7 @@ export default function UserOrders() {
             className="flex-1 rounded-2xl py-3 text-sm font-extrabold transition-all active:scale-[0.98]"
             style={
               tab === t.key
-                ? { background: pg.limeDim, border: `1px solid rgba(196,214,0,0.35)`, color: pg.lime }
+                ? { background: pg.limeDim, border: `1px solid rgba(12, 138, 62, 0.35)`, color: pg.lime }
                 : { background: pg.surface, border: `1px solid ${pg.line}`, color: pg.text3 }
             }
           >

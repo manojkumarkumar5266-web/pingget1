@@ -500,13 +500,13 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
         <>
           <div className="fixed inset-0 z-10" onClick={() => setRoleDropdownOpen(false)} />
           <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl animate-fade-in" style={{ background: pg.surface2, border: `1px solid ${pg.lineStrong}` }}>
-            <button type="button" onClick={() => { setRole('user'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/5">
+            <button type="button" onClick={() => { setRole('user'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-black/5">
               <User size={18} className="mt-0.5 shrink-0" style={{ color: pg.lime }} />
-              <div><p className="text-sm font-extrabold text-white">User</p><p className="text-xs" style={{ color: pg.text3 }}>Order groceries, medicines, parcels & more</p></div>
+              <div><p className="text-sm font-extrabold text-[#0F1A14]">User</p><p className="text-xs" style={{ color: pg.text3 }}>Order groceries, medicines, parcels & more</p></div>
             </button>
-            <button type="button" onClick={() => { setRole('dp'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 border-t px-4 py-3.5 text-left transition-colors hover:bg-white/5" style={{ borderColor: pg.line }}>
+            <button type="button" onClick={() => { setRole('dp'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 border-t px-4 py-3.5 text-left transition-colors hover:bg-black/5" style={{ borderColor: pg.line }}>
               <Bike size={18} className="mt-0.5 shrink-0" style={{ color: pg.lime }} />
-              <div><p className="text-sm font-extrabold text-white">Delivery Partner</p><p className="text-xs" style={{ color: pg.text3 }}>Earn money delivering in your area</p></div>
+              <div><p className="text-sm font-extrabold text-[#0F1A14]">Delivery Partner</p><p className="text-xs" style={{ color: pg.text3 }}>Earn money delivering in your area</p></div>
             </button>
           </div>
         </>
@@ -592,7 +592,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
         <button type="button" onClick={() => { setMode('signin'); setError(null); setResetSent(false) }} className="mb-5 flex items-center gap-1 text-sm font-bold" style={{ color: pg.lime }}>← Back to Sign In</button>
         {resetSent ? (
           <div className="rounded-2xl px-4 py-4 text-sm" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
-            <div className="flex items-center gap-2 text-white"><CheckCircle size={16} className="shrink-0 text-green-400" /> Reset link sent! Check your inbox.</div>
+            <div className="flex items-center gap-2 text-[#0F1A14]"><CheckCircle size={16} className="shrink-0 text-green-400" /> Reset link sent! Check your inbox.</div>
           </div>
         ) : (
           <form onSubmit={handleForgot} className="space-y-4">
@@ -693,7 +693,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
 
               {dpStep === 1 && (
                 <form onSubmit={handleDpStep1} className="space-y-3">
-                  <h3 className="text-sm font-extrabold text-white">Basic Information</h3>
+                  <h3 className="text-sm font-extrabold text-[#0F1A14]">Basic Information</h3>
                   <div><label className="label flex items-center gap-1.5"><User size={13} /> Full Name *</label><input className="input" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your full name" required /></div>
                   <div><label className="label flex items-center gap-1.5"><Phone size={13} /> Phone Number *</label><input className="input" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" maxLength={10} required /></div>
                   <div>
@@ -723,7 +723,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
 
               {dpStep === 2 && (
                 <form onSubmit={handleDpStep2} className="space-y-3">
-                  <h3 className="text-sm font-extrabold text-white">Vehicle & Identity</h3>
+                  <h3 className="text-sm font-extrabold text-[#0F1A14]">Vehicle & Identity</h3>
                   <div>
                     <label className="label flex items-center gap-1.5"><Truck size={13} /> Vehicle Type *</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -755,7 +755,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
 
               {dpStep === 3 && (
                 <form onSubmit={handleDpStep3} className="space-y-4">
-                  <h3 className="text-sm font-extrabold text-white">Documents & Photo</h3>
+                  <h3 className="text-sm font-extrabold text-[#0F1A14]">Documents & Photo</h3>
                   <div>
                     <label className="label flex items-center gap-1.5"><Camera size={13} /> Profile Photo *</label>
                     <input ref={photoInputRef} type="file" className="hidden" accept="image/*" capture="user" onChange={e => e.target.files?.[0] && pickDpFile(e.target.files[0], 'photo')} />
@@ -778,7 +778,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
                     {aadhaarPreview ? (
                       <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
                         {aadhaarFile?.type.startsWith('image') ? <img src={aadhaarPreview} alt="Aadhaar" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg"><FileText size={24} className="text-green-400" /></div>}
-                        <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-white">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
+                        <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#0F1A14]">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
                         <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                       </div>
                     ) : (
@@ -792,7 +792,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
                       {licensePreview ? (
                         <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
                           {licenseFile?.type.startsWith('image') ? <img src={licensePreview} alt="Licence" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg"><FileText size={24} className="text-green-400" /></div>}
-                          <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-white">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
+                          <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#0F1A14]">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
                           <button type="button" onClick={() => licenseInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                         </div>
                       ) : (

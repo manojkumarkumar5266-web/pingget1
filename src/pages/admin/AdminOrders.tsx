@@ -122,7 +122,7 @@ export default function AdminOrders() {
 
       <div className="mb-4">
         <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by description or order ID..." className="input pl-10" />
         </div>
@@ -142,28 +142,28 @@ export default function AdminOrders() {
               onClick={() => setSelected(o)}>
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white truncate">
+                  <p className="font-semibold text-[#0F1A14] truncate">
                     {o._request?.description?.split('\n')[0]?.trim() || o.items_summary || 'Delivery'}
                   </p>
-                  <p className="mt-0.5 text-xs text-white/40">ID: {o.id.slice(0, 12)}...</p>
+                  <p className="mt-0.5 text-xs text-black/40">ID: {o.id.slice(0, 12)}...</p>
                 </div>
                 <StatusBadge status={o.status} />
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                 <div>
-                  <p className="text-white/40">Delivery Charge</p>
-                  <p className="font-semibold text-white">{o.delivery_charge != null ? formatCurrency(o.delivery_charge) : '—'}</p>
+                  <p className="text-black/40">Delivery Charge</p>
+                  <p className="font-semibold text-[#0F1A14]">{o.delivery_charge != null ? formatCurrency(o.delivery_charge) : '—'}</p>
                 </div>
                 <div>
-                  <p className="text-white/40">Commission</p>
+                  <p className="text-black/40">Commission</p>
                   <p className="font-semibold text-success-600 dark:text-success-400">{o.commission_amount != null ? formatCurrency(o.commission_amount) : '—'}</p>
                 </div>
                 <div>
-                  <p className="text-white/40">DP Earnings</p>
-                  <p className="font-semibold text-white">{o.dp_earnings != null ? formatCurrency(o.dp_earnings) : '—'}</p>
+                  <p className="text-black/40">DP Earnings</p>
+                  <p className="font-semibold text-[#0F1A14]">{o.dp_earnings != null ? formatCurrency(o.dp_earnings) : '—'}</p>
                 </div>
               </div>
-              <p className="mt-2 text-xs text-white/40">{formatTime(o.created_at)}</p>
+              <p className="mt-2 text-xs text-black/40">{formatTime(o.created_at)}</p>
             </div>
           ))}
         </div>
@@ -204,7 +204,7 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
   const req = order._request || {}
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-[#F4F6F5]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-3xl glass bottom-sheet"
         onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1">
@@ -214,15 +214,15 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
           {/* Status + ID */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-white/40">Order ID</p>
-              <p className="font-mono text-sm text-white/80">{order.id}</p>
+              <p className="text-xs text-black/40">Order ID</p>
+              <p className="font-mono text-sm text-black/75">{order.id}</p>
             </div>
             <StatusBadge status={order.status} />
           </div>
 
           {/* Title */}
           <div>
-            <p className="text-sm font-bold text-white">{req.description?.split('\n')[0]?.trim() || order.items_summary || 'Delivery'}</p>
+            <p className="text-sm font-bold text-[#0F1A14]">{req.description?.split('\n')[0]?.trim() || order.items_summary || 'Delivery'}</p>
             {req.description && (
               <ul className="mt-1.5 space-y-0.5">
                 {req.description.split('\n').map((line: string, i: number) => line.trim() && (
@@ -236,33 +236,33 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
           </div>
 
           {/* Addresses */}
-          <div className="rounded-2xl border border-white/10 p-4 space-y-2">
+          <div className="rounded-2xl border border-black/10 p-4 space-y-2">
             {req.preferred_shop && (
               <div className="flex items-start gap-2 text-sm">
                 <Package size={14} className="mt-0.5 shrink-0 text-accent-500" />
-                <span className="text-white/60">Shop: <span className="font-medium text-white">{req.preferred_shop}</span></span>
+                <span className="text-black/55">Shop: <span className="font-medium text-[#0F1A14]">{req.preferred_shop}</span></span>
               </div>
             )}
             {req.pickup_address && (
               <div className="flex items-start gap-2 text-sm">
                 <MapPin size={14} className="mt-0.5 shrink-0 text-warning-500" />
-                <span className="text-white/60">Pickup: <span className="font-medium text-white">{req.pickup_address}</span></span>
+                <span className="text-black/55">Pickup: <span className="font-medium text-[#0F1A14]">{req.pickup_address}</span></span>
               </div>
             )}
             <div className="flex items-start gap-2 text-sm">
               <MapPin size={14} className="mt-0.5 shrink-0 text-error-500" />
-              <span className="text-white/60">Deliver to: <span className="font-medium text-white">{req.delivery_address}</span></span>
+              <span className="text-black/55">Deliver to: <span className="font-medium text-[#0F1A14]">{req.delivery_address}</span></span>
             </div>
           </div>
 
           {/* Delivery Proof Photos */}
           {req.photo_urls && req.photo_urls.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">Request Photos</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/40">Request Photos</p>
               <div className="flex flex-wrap gap-2">
                 {(req.photo_urls as string[]).map((url, i) => (
                   <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-24 rounded-xl object-cover border border-white/10" />
+                    <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-24 rounded-xl object-cover border border-black/10" />
                   </a>
                 ))}
               </div>
@@ -270,8 +270,8 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
           )}
 
           {/* Financials */}
-          <div className="rounded-2xl border border-white/10 p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-white/40">Financials</p>
+          <div className="rounded-2xl border border-black/10 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-black/40">Financials</p>
             <div className="space-y-2 text-sm">
               {order.item_cost > 0 && (
                 <div className="flex justify-between">
@@ -287,7 +287,7 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
                 <span className="text-gray-500">Commission ({order.commission_pct || 0}%)</span>
                 <span className="font-semibold text-success-600">{order.commission_amount != null ? formatCurrency(order.commission_amount) : '—'}</span>
               </div>
-              <div className="flex justify-between border-t border-white/10 pt-2 dark:border-gray-800">
+              <div className="flex justify-between border-t border-black/10 pt-2 dark:border-gray-800">
                 <span className="text-gray-500">DP Earnings</span>
                 <span className="font-bold text-primary-600">{order.dp_earnings != null ? formatCurrency(order.dp_earnings) : '—'}</span>
               </div>
@@ -297,22 +297,22 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
           {/* People */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
-              <div className="flex items-center gap-1.5 mb-2 text-xs text-white/40"><User size={12} /> Customer</div>
+              <div className="flex items-center gap-1.5 mb-2 text-xs text-black/40"><User size={12} /> Customer</div>
               <div className="flex items-center gap-2">
                 <Avatar url={userProfile?.photo_url} name={userProfile?.full_name || 'User'} size={32} />
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{userProfile?.full_name || '...'}</p>
+                  <p className="text-sm font-semibold text-[#0F1A14] truncate">{userProfile?.full_name || '...'}</p>
                   <p className="text-xs text-gray-500">{userProfile?.phone || ''}</p>
                 </div>
               </div>
             </div>
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
-              <div className="flex items-center gap-1.5 mb-2 text-xs text-white/40"><Bike size={12} /> Delivery Partner</div>
+              <div className="flex items-center gap-1.5 mb-2 text-xs text-black/40"><Bike size={12} /> Delivery Partner</div>
               {dpProfile ? (
                 <div className="flex items-center gap-2">
                   <Avatar url={dpProfile?.photo_url} name={dpProfile?.full_name || 'DP'} size={32} />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{dpProfile?.full_name || '...'}</p>
+                    <p className="text-sm font-semibold text-[#0F1A14] truncate">{dpProfile?.full_name || '...'}</p>
                     <p className="text-xs text-gray-500">{dpProfile?.phone || ''}</p>
                     {dpData?.rating_count > 0 && (
                       <p className="text-xs text-yellow-500 flex items-center gap-0.5">
@@ -322,26 +322,26 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-white/40">Not assigned</p>
+                <p className="text-sm text-black/40">Not assigned</p>
               )}
             </div>
           </div>
 
           {/* Chat messages */}
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40 flex items-center gap-1.5">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/40 flex items-center gap-1.5">
               <MessageCircle size={14} /> Chat History ({messages.length} messages)
             </p>
             {messages.length === 0 ? (
-              <p className="text-sm text-white/40 rounded-2xl border border-white/10 p-4 text-center">No chat messages for this order</p>
+              <p className="text-sm text-black/40 rounded-2xl border border-black/10 p-4 text-center">No chat messages for this order</p>
             ) : (
-              <div className="space-y-1.5 max-h-64 overflow-y-auto rounded-2xl border border-white/10 p-3 dark:border-gray-800">
+              <div className="space-y-1.5 max-h-64 overflow-y-auto rounded-2xl border border-black/10 p-3 dark:border-gray-800">
                 {[...messages].reverse().map((m, i) => (
                   <div key={i} className="text-xs flex items-start gap-1.5">
                     <span className={`font-semibold shrink-0 ${m.sender_id === req.user_id ? 'text-blue-400' : 'text-yellow-400'}`}>
                       {m.sender_id === req.user_id ? 'User' : 'DP'}:
                     </span>
-                    <span className="text-white/80 flex-1">
+                    <span className="text-black/75 flex-1">
                       {m.message_type === 'text' ? m.content :
                        m.message_type === 'image' ? '[Photo]' :
                        m.message_type === 'voice' ? '[Voice]' :
@@ -349,7 +349,7 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
                        m.message_type === 'quotation' ? '[Quotation]' :
                        `[${m.message_type}]`}
                     </span>
-                    <span className="text-white/40 shrink-0 flex items-center gap-0.5">
+                    <span className="text-black/40 shrink-0 flex items-center gap-0.5">
                       <Clock size={9} />{formatTime(m.created_at)}
                     </span>
                   </div>
@@ -358,7 +358,7 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
             )}
           </div>
 
-          <p className="text-center text-xs text-white/40">Created {formatTime(order.created_at)}</p>
+          <p className="text-center text-xs text-black/40">Created {formatTime(order.created_at)}</p>
         </div>
       </div>
     </div>

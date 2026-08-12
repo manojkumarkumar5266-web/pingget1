@@ -96,7 +96,7 @@ export default function SearchingMapPage() {
     return (
       <MobileFrame overlay className="items-center justify-center gap-4 overflow-hidden px-6">
         <img src={Images.orderAccepted} alt="Order accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} />
-        <p className="text-sm text-white/50">Opening chat...</p>
+        <p className="text-sm text-black/50">Opening chat...</p>
       </MobileFrame>
     )
   }
@@ -118,17 +118,17 @@ export default function SearchingMapPage() {
           <div className="map-glass-panel p-3 pointer-events-auto">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-widest text-white/50">
+                <p className="text-xs font-medium uppercase tracking-widest text-black/50">
                   {phase === 'scanning' ? 'Scanning...' : phase === 'found' ? 'Partners Found' : 'Search Complete'}
                 </p>
-                <h2 className="text-base font-bold text-white mt-0.5">
+                <h2 className="text-base font-bold text-[#0F1A14] mt-0.5">
                   {phase === 'scanning'
                     ? 'Finding nearby partners'
                     : phase === 'found'
                     ? `${dps.length} partner${dps.length === 1 ? '' : 's'} nearby`
                     : 'No partners in range'}
                 </h2>
-                <p className="text-[10px] text-white/40 mt-0.5">Search radius: {Math.round(SCAN_RADIUS_M / 1000)} km</p>
+                <p className="text-[10px] text-black/40 mt-0.5">Search radius: {Math.round(SCAN_RADIUS_M / 1000)} km</p>
               </div>
               {phase === 'scanning' && (
                 <button type="button" onClick={cancelRequest} className="map-control-btn map-control-dark">
@@ -139,7 +139,7 @@ export default function SearchingMapPage() {
             <div className="mt-2.5 flex items-center gap-1.5">
               {Array.from({ length: MAX_SCANS }).map((_, i) => (
                 <div key={i} className="h-1.5 rounded-full transition-all duration-500"
-                  style={{ width: i < scanCount ? 24 : 8, background: i < scanCount ? '#C4D600' : 'rgba(255,255,255,0.15)' }} />
+                  style={{ width: i < scanCount ? 24 : 8, background: i < scanCount ? '#0C8A3E' : 'rgba(255,255,255,0.15)' }} />
               ))}
             </div>
           </div>
@@ -152,7 +152,7 @@ export default function SearchingMapPage() {
             <div className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
               <Loader2 size={20} className="animate-spin" style={{ color: pg.lime }} />
               <div>
-                <p className="text-sm font-extrabold text-white">Scanning nearby…</p>
+                <p className="text-sm font-extrabold text-[#0F1A14]">Scanning nearby…</p>
                 <p className="text-xs" style={{ color: pg.text3 }}>Pass {scanCount}/{MAX_SCANS}</p>
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function SearchingMapPage() {
                 <Bike size={18} style={{ color: pg.lime }} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-extrabold text-white">{dp.full_name || 'Partner'}</p>
+                <p className="truncate text-sm font-extrabold text-[#0F1A14]">{dp.full_name || 'Partner'}</p>
                 <p className="text-xs" style={{ color: pg.text3 }}>
                   {formatDistance(Number(dp.distance_meters || 0))} away
                 </p>
@@ -174,7 +174,7 @@ export default function SearchingMapPage() {
           {phase === 'none' && (
             <div className="rounded-2xl px-4 py-5 text-center" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
               <Search size={22} className="mx-auto mb-2" style={{ color: pg.text3 }} />
-              <p className="font-extrabold text-white">No partners nearby</p>
+              <p className="font-extrabold text-[#0F1A14]">No partners nearby</p>
               <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Try again or wait — your request stays live.</p>
               <button
                 type="button"

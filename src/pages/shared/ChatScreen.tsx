@@ -402,13 +402,13 @@ export default function ChatScreen() {
         </IconButton>
         <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={42} />
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-white leading-snug">{otherUser?.full_name || 'User'}</p>
+          <p className="font-bold text-[#0F1A14] leading-snug">{otherUser?.full_name || 'User'}</p>
           {otherTyping ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-medium" style={{ color: '#C4D600' }}>typing</span>
+              <span className="text-xs font-medium" style={{ color: '#0C8A3E' }}>typing</span>
               <div className="flex gap-0.5 items-center">
                 {[0, 150, 300].map(delay => (
-                  <span key={delay} className="h-1 w-1 rounded-full animate-bounce" style={{ background: '#C4D600', animationDelay: `${delay}ms` }} />
+                  <span key={delay} className="h-1 w-1 rounded-full animate-bounce" style={{ background: '#0C8A3E', animationDelay: `${delay}ms` }} />
                 ))}
               </div>
             </div>
@@ -418,7 +418,7 @@ export default function ChatScreen() {
             </p>
           ) : (
             <p className="flex items-center gap-1 text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              {lastOwnMsg?.read_at ? <><CheckCheck size={11} style={{ color: '#C4D600' }} /> Seen</> : lastOwnMsg ? <><Check size={11} /> Delivered</> : 'Chat'}
+              {lastOwnMsg?.read_at ? <><CheckCheck size={11} style={{ color: '#0C8A3E' }} /> Seen</> : lastOwnMsg ? <><Check size={11} /> Delivered</> : 'Chat'}
             </p>
           )}
         </div>
@@ -491,8 +491,8 @@ export default function ChatScreen() {
                   {msg.message_type === 'quotation' && msg.quotation_data && (
                     <div className="min-w-[240px] space-y-3">
                       <div className="flex items-center justify-center gap-2 pb-2 border-b" style={{ borderColor: isOwn ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.1)' }}>
-                        <FileText size={15} style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }} />
-                        <p className="text-sm font-bold tracking-wide" style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }}>Quotation</p>
+                        <FileText size={15} style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }} />
+                        <p className="text-sm font-bold tracking-wide" style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }}>Quotation</p>
                       </div>
                       {msg.quotation_data.photo_url && (
                         <div className="flex flex-wrap gap-1.5">
@@ -507,7 +507,7 @@ export default function ChatScreen() {
                         {String(msg.quotation_data.items_summary || '').split('\n').map((line: string, i: number) =>
                           line.trim() ? (
                             <li key={i} className="flex items-start gap-2 text-sm" style={{ color: isOwn ? '#0B0B0B' : 'rgba(255,255,255,0.85)' }}>
-                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: isOwn ? '#0B0B0B' : '#C4D600' }} />
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: isOwn ? '#0B0B0B' : '#0C8A3E' }} />
                               {line.trim()}
                             </li>
                           ) : null
@@ -523,7 +523,7 @@ export default function ChatScreen() {
                       </div>
                       {!order && isUser && (
                         <div className="flex gap-2 pt-1">
-                          <button onClick={rejectQuotation} className="flex-1 rounded-xl py-2.5 text-sm font-bold text-white transition-all active:scale-95"
+                          <button onClick={rejectQuotation} className="flex-1 rounded-xl py-2.5 text-sm font-bold text-[#0F1A14] transition-all active:scale-95"
                             style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)' }}>
                             Decline
                           </button>
@@ -533,7 +533,7 @@ export default function ChatScreen() {
                           </button>
                         </div>
                       )}
-                      {order && <p className="text-center text-sm font-bold" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : '#C4D600' }}>✓ Accepted</p>}
+                      {order && <p className="text-center text-sm font-bold" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : '#0C8A3E' }}>✓ Accepted</p>}
                     </div>
                   )}
 
@@ -549,10 +549,10 @@ export default function ChatScreen() {
                       style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(196,214,0,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(196,214,0,0.2)'}` }}>
                       <div className="flex items-center gap-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(196,214,0,0.2)' }}>
-                          <CreditCard size={16} style={{ color: '#C4D600' }} />
+                          <CreditCard size={16} style={{ color: '#0C8A3E' }} />
                         </div>
                         <div>
-                          <p className="text-sm font-bold" style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }}>Advance Booking Confirmation</p>
+                          <p className="text-sm font-bold" style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }}>Advance Booking Confirmation</p>
                           <p className="text-[10px]" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)' }}>Payment Request</p>
                         </div>
                       </div>
@@ -560,7 +560,7 @@ export default function ChatScreen() {
                         <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Booking ID</span><span className="font-mono font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{(msg.quotation_data.booking_id || '').slice(0, 8)}...</span></div>
                         <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Date</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_date || 'N/A'}</span></div>
                         <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Time</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_time || 'N/A'}</span></div>
-                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Amount</span><span className="font-bold" style={{ color: '#C4D600' }}>{formatCurrency(msg.quotation_data.amount)}</span></div>
+                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Amount</span><span className="font-bold" style={{ color: '#0C8A3E' }}>{formatCurrency(msg.quotation_data.amount)}</span></div>
                         {msg.quotation_data.payment_deadline && (
                           <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Deadline</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.payment_deadline}</span></div>
                         )}
@@ -577,7 +577,7 @@ export default function ChatScreen() {
                       {isUser && (payStatus === 'waiting' || payStatus === 'rejected') && msg.advance_payment_id && (
                         <button onClick={() => { setShowPaymentProof(msg.advance_payment_id); setAdvancePaymentData(msg.quotation_data) }}
                           className="w-full rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
-                          style={{ background: '#C4D600', color: '#0B0B0B' }}>
+                          style={{ background: '#0C8A3E', color: '#0B0B0B' }}>
                           <Upload size={12} className="inline mr-1" /> Upload Payment Proof
                         </button>
                       )}
@@ -704,7 +704,7 @@ export default function ChatScreen() {
               <div style={{ width: 28 }}><Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={28} /></div>
               <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm px-4 py-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 {[0, 150, 300].map(delay => (
-                  <span key={delay} className="h-2 w-2 rounded-full animate-bounce" style={{ background: '#C4D600', animationDelay: `${delay}ms` }} />
+                  <span key={delay} className="h-2 w-2 rounded-full animate-bounce" style={{ background: '#0C8A3E', animationDelay: `${delay}ms` }} />
                 ))}
               </div>
             </div>
@@ -725,8 +725,8 @@ export default function ChatScreen() {
       )}
       {isCompleted && hasRated && (
         <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-3" style={{ background: pg.bg, borderTop: `1px solid ${pg.line}` }}>
-          <CheckCircle size={15} style={{ color: '#C4D600' }} />
-          <p className="text-sm font-medium" style={{ color: '#C4D600' }}>Order completed & rated</p>
+          <CheckCircle size={15} style={{ color: '#0C8A3E' }} />
+          <p className="text-sm font-medium" style={{ color: '#0C8A3E' }}>Order completed & rated</p>
         </div>
       )}
 
@@ -821,7 +821,7 @@ export default function ChatScreen() {
           {!isUser && !order && fullOrderData?.order_type !== 'advance' && (
             <button onClick={() => setShowQuotation(true)}
               className="flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-extrabold shadow-lg transition-all active:scale-95"
-              style={{ background: pg.surface2, color: pg.lime, border: `1px solid rgba(196,214,0,0.35)` }}>
+              style={{ background: pg.surface2, color: pg.lime, border: `1px solid rgba(12, 138, 62, 0.35)` }}>
               <FileText size={14} /> Send Quotation
             </button>
           )}
@@ -837,9 +837,9 @@ export default function ChatScreen() {
 
       {/* Image lightbox */}
       {lightboxImage && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 animate-fade-in" onClick={() => setLightboxImage(null)}>
-          <button className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10" onClick={() => setLightboxImage(null)}>
-            <X size={20} className="text-white" />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#F4F6F5]/90 animate-fade-in" onClick={() => setLightboxImage(null)}>
+          <button className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/5" onClick={() => setLightboxImage(null)}>
+            <X size={20} className="text-[#0F1A14]" />
           </button>
           <img src={lightboxImage} alt="Full size" className="max-h-full max-w-full object-contain" onClick={e => e.stopPropagation()} />
         </div>
@@ -918,8 +918,8 @@ function VoiceMessagePlayer({ url, isOwn }: { url: string; isOwn: boolean }) {
       <button onClick={toggle} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all active:scale-90"
         style={{ background: isOwn ? 'rgba(0,0,0,0.2)' : 'rgba(196,214,0,0.2)' }}>
         {playing
-          ? <Pause size={14} style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }} />
-          : <Play size={14} style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }} />}
+          ? <Pause size={14} style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }} />
+          : <Play size={14} style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }} />}
       </button>
       <div className="flex flex-1 items-center gap-0.5 h-8">
         {Array.from({ length: 16 }).map((_, i) => (
@@ -946,17 +946,17 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
   }
   const handleSubmit = async () => { if (!file) return; setUploading(true); await onSubmit(file); setUploading(false) }
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/60 p-4 animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
-        <h3 className="mb-1 text-lg font-bold text-white">Pickup Proof</h3>
+        <h3 className="mb-1 text-lg font-bold text-[#0F1A14]">Pickup Proof</h3>
         <p className="mb-4 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Photo of items as pickup confirmation.</p>
         <input ref={fileRef} type="file" className="hidden" accept="image/*" onChange={handleSelect} />
         {preview ? (
           <div className="relative mb-4">
             <img src={preview} alt="Proof" className="h-40 w-full rounded-2xl object-cover" />
             <button onClick={() => { setFile(null); setPreview(null) }} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full" style={{ background: 'rgba(0,0,0,0.7)' }}>
-              <X size={14} className="text-white" />
+              <X size={14} className="text-[#0F1A14]" />
             </button>
           </div>
         ) : (
@@ -969,7 +969,7 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
           <button onClick={handleSubmit} disabled={!file || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-xl py-3"
-            style={{ background: '#C4D600', color: '#0B0B0B' }}>
+            style={{ background: '#0C8A3E', color: '#0B0B0B' }}>
             {uploading ? 'Sending...' : 'Send Proof'}
           </button>
         </div>
@@ -1020,37 +1020,37 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
     }
   }
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/60 animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
         <div className="px-5 pt-4 pb-2">
           <div className="bottom-sheet-handle" />
-          <h3 className="text-lg font-bold text-white mb-4">Send Quotation</h3>
+          <h3 className="text-lg font-bold text-[#0F1A14] mb-4">Send Quotation</h3>
         </div>
         <div className="overflow-y-auto px-5 pb-8 space-y-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
           <div>
-            <label className="label" style={{ color: '#C4D600' }}>Items Summary</label>
+            <label className="label" style={{ color: '#0C8A3E' }}>Items Summary</label>
             <p className="mb-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Edit the customer's request — each item on its own line.</p>
             <textarea className="input min-h-24 resize-none" value={items} onChange={e => setItems(e.target.value)} placeholder="2kg Rice&#10;1L Milk" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label flex items-center gap-1" style={{ color: '#C4D600' }}><IndianRupee size={12} /> Item Cost</label>
+              <label className="label flex items-center gap-1" style={{ color: '#0C8A3E' }}><IndianRupee size={12} /> Item Cost</label>
               <input type="number" className="input" value={itemCost} onChange={e => setItemCost(e.target.value)} placeholder="0" />
             </div>
             <div>
-              <label className="label flex items-center gap-1" style={{ color: '#C4D600' }}><IndianRupee size={12} /> Delivery Fee</label>
+              <label className="label flex items-center gap-1" style={{ color: '#0C8A3E' }}><IndianRupee size={12} /> Delivery Fee</label>
               <input type="number" className="input" value={deliveryCharge} onChange={e => setDeliveryCharge(e.target.value)} placeholder="0" />
             </div>
           </div>
           <div>
-            <label className="label" style={{ color: '#C4D600' }}>Proof Photos <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(up to {MAX_PROOF_PHOTOS})</span></label>
+            <label className="label" style={{ color: '#0C8A3E' }}>Proof Photos <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(up to {MAX_PROOF_PHOTOS})</span></label>
             <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotoSelect} />
             {photoPreviews.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
                 {photoPreviews.map((preview, idx) => (
                   <div key={idx} className="relative">
                     <img src={preview} alt={`Proof ${idx + 1}`} className="h-20 w-20 rounded-2xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
-                    <button onClick={() => removePhoto(idx)} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-lg">
+                    <button onClick={() => removePhoto(idx)} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[#0F1A14] shadow-lg">
                       <X size={10} />
                     </button>
                   </div>
@@ -1059,7 +1059,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
             )}
             {photoFiles.length < MAX_PROOF_PHOTOS && (
               <button onClick={() => photoInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm transition-all active:scale-95"
-                style={{ background: 'rgba(196,214,0,0.08)', border: '1.5px dashed rgba(196,214,0,0.25)', color: '#C4D600' }}>
+                style={{ background: 'rgba(196,214,0,0.08)', border: '1.5px dashed rgba(196,214,0,0.25)', color: '#0C8A3E' }}>
                 <Camera size={15} /> {photoFiles.length > 0 ? 'Add More Photos' : 'Upload Proof Photos'}
               </button>
             )}
@@ -1083,26 +1083,26 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
   const [review, setReview] = useState('')
   const labels = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent']
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/60 animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
-        <h3 className="text-lg font-bold text-white text-center">Rate {targetName}</h3>
+        <h3 className="text-lg font-bold text-[#0F1A14] text-center">Rate {targetName}</h3>
         <p className="mt-1 mb-6 text-sm text-center" style={{ color: 'rgba(255,255,255,0.4)' }}>How was your experience?</p>
         <div className="mb-2 flex justify-center gap-3">
           {[1, 2, 3, 4, 5].map(i => (
             <button key={i} onClick={() => setStars(i)} className="transition-transform active:scale-90">
-              <svg width={40} height={40} viewBox="0 0 24 24" fill={i <= stars ? '#C4D600' : 'none'} stroke={i <= stars ? '#C4D600' : 'rgba(255,255,255,0.2)'} strokeWidth={1.5}>
+              <svg width={40} height={40} viewBox="0 0 24 24" fill={i <= stars ? '#0C8A3E' : 'none'} stroke={i <= stars ? '#0C8A3E' : 'rgba(255,255,255,0.2)'} strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
               </svg>
             </button>
           ))}
         </div>
-        <p className="mb-4 text-center font-semibold" style={{ color: '#C4D600' }}>{labels[stars]}</p>
+        <p className="mb-4 text-center font-semibold" style={{ color: '#0C8A3E' }}>{labels[stars]}</p>
         <textarea className="input min-h-20 resize-none mb-4" value={review} onChange={e => setReview(e.target.value)} placeholder="Leave a review (optional)" />
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Skip</button>
           <button onClick={() => onSubmit(stars, review)} className="flex-1 btn font-bold rounded-xl py-3"
-            style={{ background: '#C4D600', color: '#0B0B0B' }}>Submit</button>
+            style={{ background: '#0C8A3E', color: '#0B0B0B' }}>Submit</button>
         </div>
       </div>
     </div>
@@ -1181,21 +1181,21 @@ function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
   }
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#F4F6F5]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
           <div className="flex items-center gap-2">
-            <CreditCard size={20} style={{ color: '#C4D600' }} />
-            <h3 className="text-lg font-bold text-white">Request Advance Payment</h3>
+            <CreditCard size={20} style={{ color: '#0C8A3E' }} />
+            <h3 className="text-lg font-bold text-[#0F1A14]">Request Advance Payment</h3>
           </div>
-          <p className="text-sm text-white/50">Send a premium payment card to the customer inside this chat. The customer will upload their payment proof here.</p>
+          <p className="text-sm text-black/50">Send a premium payment card to the customer inside this chat. The customer will upload their payment proof here.</p>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Amount (₹)</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">Amount (₹)</label>
             <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="200" className="input" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Payment Deadline (minutes)</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">Payment Deadline (minutes)</label>
             <input type="number" value={deadline} onChange={e => setDeadline(e.target.value)} placeholder="120" className="input" />
           </div>
           <div className="flex gap-2">
@@ -1301,39 +1301,39 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, requ
   }
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#F4F6F5]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
           <div className="flex items-center gap-2">
-            <Upload size={20} style={{ color: '#C4D600' }} />
-            <h3 className="text-lg font-bold text-white">Upload Payment Proof</h3>
+            <Upload size={20} style={{ color: '#0C8A3E' }} />
+            <h3 className="text-lg font-bold text-[#0F1A14]">Upload Payment Proof</h3>
           </div>
-          <p className="text-sm text-white/50">Upload your payment screenshot and enter your UPI reference number or transaction ID.</p>
+          <p className="text-sm text-black/50">Upload your payment screenshot and enter your UPI reference number or transaction ID.</p>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Payment Screenshot</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">Payment Screenshot</label>
             <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} className="hidden" id="proof-file" />
-            <label htmlFor="proof-file" className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 py-6 text-sm text-white/50 transition-all hover:border-[#C4D600] hover:text-[#C4D600]">
+            <label htmlFor="proof-file" className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-black/10 py-6 text-sm text-black/50 transition-all hover:border-[#C4D600] hover:text-[#0C8A3E]">
               {preview ? <img src={preview} alt="Preview" className="h-24 rounded-lg object-cover" /> : <><Camera size={20} /> Tap to upload screenshot</>}
             </label>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">UPI Reference Number</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">UPI Reference Number</label>
             <input value={upiRef} onChange={e => setUpiRef(e.target.value)} placeholder="e.g. 9876543210" className="input" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Transaction ID (optional)</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">Transaction ID (optional)</label>
             <input value={txnId} onChange={e => setTxnId(e.target.value)} placeholder="Bank transaction ID" className="input" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/40">Remarks (optional)</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">Remarks (optional)</label>
             <textarea value={remarks} onChange={e => setRemarks(e.target.value)} placeholder="Any notes for the delivery partner" className="input min-h-16 resize-none" />
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleSubmit} disabled={uploading || !file}
               className="flex-1 rounded-xl py-3 font-bold transition-all active:scale-95 disabled:opacity-50"
-              style={{ background: '#C4D600', color: '#0B0B0B' }}>
+              style={{ background: '#0C8A3E', color: '#0B0B0B' }}>
               {uploading ? 'Uploading...' : 'Submit Proof'}
             </button>
           </div>
@@ -1353,15 +1353,15 @@ function RejectPaymentModal({ onClose, advancePaymentId, dpId, onReject }: {
   const [reason, setReason] = useState('')
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#F4F6F5]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
           <div className="flex items-center gap-2">
             <AlertCircle size={20} style={{ color: '#f87171' }} />
-            <h3 className="text-lg font-bold text-white">Reject Payment</h3>
+            <h3 className="text-lg font-bold text-[#0F1A14]">Reject Payment</h3>
           </div>
-          <p className="text-sm text-white/50">Please provide a reason for rejecting this payment. This is mandatory.</p>
+          <p className="text-sm text-black/50">Please provide a reason for rejecting this payment. This is mandatory.</p>
           <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Payment amount does not match, invalid screenshot..." className="input min-h-24 resize-none" />
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
@@ -1397,7 +1397,7 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.35)' }}>{label}</p>
-        <p className="text-sm text-white break-words">{value}</p>
+        <p className="text-sm text-[#0F1A14] break-words">{value}</p>
       </div>
     </div>
   )
@@ -1410,11 +1410,11 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
           className="flex w-full items-center justify-between gap-2 py-1.5"
         >
           <div className="flex items-center gap-2">
-            <ClipboardList size={15} style={{ color: '#C4D600' }} />
-            <span className="text-sm font-bold text-white">Advance Task Summary</span>
+            <ClipboardList size={15} style={{ color: '#0C8A3E' }} />
+            <span className="text-sm font-bold text-[#0F1A14]">Advance Task Summary</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: '#C4D600', border: '1px solid rgba(196,214,0,0.25)' }}>
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: '#0C8A3E', border: '1px solid rgba(196,214,0,0.25)' }}>
               {statusLabel}
             </span>
             {expanded ? <ChevronUp size={16} style={{ color: 'rgba(255,255,255,0.4)' }} /> : <ChevronDown size={16} style={{ color: 'rgba(255,255,255,0.4)' }} />}
@@ -1423,14 +1423,14 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
 
         {expanded && (
           <div className="pb-3 pt-1 animate-fade-in">
-            {category && <Row icon={<Tag size={12} style={{ color: '#C4D600' }} />} label="Category" value={category} />}
-            {scheduledDate && <Row icon={<CalendarClock size={12} style={{ color: '#C4D600' }} />} label="Scheduled Date" value={scheduledDate} />}
-            {scheduledTime && <Row icon={<Clock size={12} style={{ color: '#C4D600' }} />} label="Scheduled Time" value={scheduledTime} />}
-            {pickup && <Row icon={<MapPin size={12} style={{ color: '#C4D600' }} />} label="Pickup Address" value={pickup} />}
-            {delivery && <Row icon={<Navigation size={12} style={{ color: '#C4D600' }} />} label="Delivery Address" value={delivery} />}
-            {hasDescription && <Row icon={<FileText size={12} style={{ color: '#C4D600' }} />} label="Task Description" value={request.description} />}
-            {hasBudget && <Row icon={<IndianRupee size={12} style={{ color: '#C4D600' }} />} label="Budget" value={formatCurrency(Number(request.max_budget))} />}
-            {hasInstructions && <Row icon={<ShieldCheck size={12} style={{ color: '#C4D600' }} />} label="Special Instructions" value={request.special_instructions} />}
+            {category && <Row icon={<Tag size={12} style={{ color: '#0C8A3E' }} />} label="Category" value={category} />}
+            {scheduledDate && <Row icon={<CalendarClock size={12} style={{ color: '#0C8A3E' }} />} label="Scheduled Date" value={scheduledDate} />}
+            {scheduledTime && <Row icon={<Clock size={12} style={{ color: '#0C8A3E' }} />} label="Scheduled Time" value={scheduledTime} />}
+            {pickup && <Row icon={<MapPin size={12} style={{ color: '#0C8A3E' }} />} label="Pickup Address" value={pickup} />}
+            {delivery && <Row icon={<Navigation size={12} style={{ color: '#0C8A3E' }} />} label="Delivery Address" value={delivery} />}
+            {hasDescription && <Row icon={<FileText size={12} style={{ color: '#0C8A3E' }} />} label="Task Description" value={request.description} />}
+            {hasBudget && <Row icon={<IndianRupee size={12} style={{ color: '#0C8A3E' }} />} label="Budget" value={formatCurrency(Number(request.max_budget))} />}
+            {hasInstructions && <Row icon={<ShieldCheck size={12} style={{ color: '#0C8A3E' }} />} label="Special Instructions" value={request.special_instructions} />}
 
             {photos.length > 0 && (
               <div className="mt-2">
@@ -1447,15 +1447,15 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
 
             {hasVoice && (
               <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(196,214,0,0.06)' }}>
-                <Volume2 size={14} style={{ color: '#C4D600' }} />
+                <Volume2 size={14} style={{ color: '#0C8A3E' }} />
                 <span className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Voice note attached</span>
-                <a href={request.voice_note_url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs font-semibold" style={{ color: '#C4D600' }}>Play</a>
+                <a href={request.voice_note_url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs font-semibold" style={{ color: '#0C8A3E' }}>Play</a>
               </div>
             )}
 
             <div className="mt-3 flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(196,214,0,0.06)' }}>
-              <CheckCircle size={12} style={{ color: '#C4D600' }} />
-              <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Current Status: <span className="font-bold" style={{ color: '#C4D600' }}>{statusLabel}</span></p>
+              <CheckCircle size={12} style={{ color: '#0C8A3E' }} />
+              <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Current Status: <span className="font-bold" style={{ color: '#0C8A3E' }}>{statusLabel}</span></p>
             </div>
           </div>
         )}

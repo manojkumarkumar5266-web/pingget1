@@ -82,30 +82,30 @@ export default function AdminInfoCards() {
       <div className="mx-auto max-w-2xl">
 
       {cards.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
-          <p className="text-white/40">No cards yet. Create one to show on the user home screen.</p>
+        <div className="rounded-2xl border border-black/10 bg-black/5 p-8 text-center">
+          <p className="text-black/40">No cards yet. Create one to show on the user home screen.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {cards.map(card => (
-            <div key={card.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div key={card.id} className="rounded-2xl border border-black/10 bg-black/5 p-4">
               <div className="flex items-start gap-3">
                 <div className="flex items-center self-stretch">
-                  <GripVertical size={16} className="text-white/20" />
+                  <GripVertical size={16} className="text-black/20" />
                 </div>
                 <div className="text-2xl">{card.icon}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-white">{card.title}</p>
-                  <p className="text-sm text-white/50 line-clamp-2">{card.description}</p>
-                  <p className="mt-1 text-xs text-white/30">Order: {card.sort_order}</p>
+                  <p className="font-bold text-[#0F1A14]">{card.title}</p>
+                  <p className="text-sm text-black/50 line-clamp-2">{card.description}</p>
+                  <p className="mt-1 text-xs text-black/30">Order: {card.sort_order}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => toggleActive(card)} className="transition-transform active:scale-90">
                     {card.is_active
-                      ? <ToggleRight size={24} style={{ color: '#C4D600' }} />
-                      : <ToggleLeft size={24} className="text-white/30" />}
+                      ? <ToggleRight size={24} style={{ color: '#0C8A3E' }} />
+                      : <ToggleLeft size={24} className="text-black/30" />}
                   </button>
-                  <button onClick={() => openEdit(card)} className="rounded-lg px-2 py-1 text-xs font-semibold text-white/60 hover:text-white"
+                  <button onClick={() => openEdit(card)} className="rounded-lg px-2 py-1 text-xs font-semibold text-black/55 hover:text-[#0F1A14]"
                     style={{ background: 'rgba(255,255,255,0.06)' }}>Edit</button>
                   <button onClick={() => deleteCard(card.id)} className="rounded-lg p-1.5 hover:bg-red-500/10">
                     <Trash2 size={15} className="text-red-400" />
@@ -118,11 +118,11 @@ export default function AdminInfoCards() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 animate-fade-in" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/60 animate-fade-in" onClick={() => setShowModal(false)}>
           <div className="w-full max-w-md rounded-t-3xl p-5 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">{editing ? 'Edit Card' : 'New Card'}</h3>
-              <button onClick={() => setShowModal(false)}><X size={20} className="text-white/40" /></button>
+              <h3 className="text-lg font-bold text-[#0F1A14]">{editing ? 'Edit Card' : 'New Card'}</h3>
+              <button onClick={() => setShowModal(false)}><X size={20} className="text-black/40" /></button>
             </div>
             <div className="space-y-3">
               <div>

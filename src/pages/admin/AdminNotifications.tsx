@@ -219,13 +219,13 @@ export default function AdminNotifications() {
       <div className="card mb-4 p-4">
         <div className="flex items-start gap-3">
           <Bell size={18} className="mt-0.5 text-primary-400" />
-          <div className="text-sm text-white/70 leading-relaxed">
-            <p className="font-semibold text-white mb-1">Where does Notify go?</p>
+          <div className="text-sm text-black/65 leading-relaxed">
+            <p className="font-semibold text-[#0F1A14] mb-1">Where does Notify go?</p>
             <p>
-              Messages land in the <span className="text-white">Alerts</span> tab for customers and partners.
-              Mobile <span className="text-white">push</span> is sent via FCM for every notification (set
-              <span className="text-white"> FCM_SERVER_KEY</span> or <span className="text-white">FCM_SERVICE_ACCOUNT_JSON</span> on edge functions).
-              Email goes through <span className="text-white">Resend</span> when the profile has an email.
+              Messages land in the <span className="text-[#0F1A14]">Alerts</span> tab for customers and partners.
+              Mobile <span className="text-[#0F1A14]">push</span> is sent via FCM for every notification (set
+              <span className="text-[#0F1A14]"> FCM_SERVER_KEY</span> or <span className="text-[#0F1A14]">FCM_SERVICE_ACCOUNT_JSON</span> on edge functions).
+              Email goes through <span className="text-[#0F1A14]">Resend</span> when the profile has an email.
               Tapping an offer opens the full details page with image.
             </p>
           </div>
@@ -233,12 +233,12 @@ export default function AdminNotifications() {
       </div>
 
       <div className="card mb-6 p-5">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0F1A14]">
           <Send size={18} className="text-primary-400" /> Compose Notification
         </h2>
 
         <div className="mb-4">
-          <label className="mb-2 block text-sm font-medium text-white/60">Target Audience</label>
+          <label className="mb-2 block text-sm font-medium text-black/55">Target Audience</label>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
             {targetOptions.map(opt => {
               const Icon = opt.icon
@@ -246,12 +246,12 @@ export default function AdminNotifications() {
                 <button key={opt.value} onClick={() => { setTargetType(opt.value); setTargetUserId(''); setUserSearch('') }}
                   className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all ${
                     targetType === opt.value
-                      ? 'border-primary-400 bg-primary-500/10 text-white'
-                      : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20'
+                      ? 'border-primary-400 bg-primary-500/10 text-[#0F1A14]'
+                      : 'border-black/10 bg-black/5 text-black/50 hover:border-black/10'
                   }`}>
                   <Icon size={20} />
                   <span className="text-xs font-semibold">{opt.label}</span>
-                  <span className="text-[10px] text-white/40">{opt.desc}</span>
+                  <span className="text-[10px] text-black/40">{opt.desc}</span>
                 </button>
               )
             })}
@@ -260,23 +260,23 @@ export default function AdminNotifications() {
 
         {targetType === 'single' && (
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-white/60">Search User</label>
+            <label className="mb-1 block text-sm font-medium text-black/55">Search User</label>
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
               <input value={userSearch} onChange={e => { setUserSearch(e.target.value); setTargetUserId('') }}
                 placeholder="Search by name or phone..." className="input pl-10" />
             </div>
             {showUserList && userList.length > 0 && !targetUserId && (
-              <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-white/5 dark:bg-gray-800">
+              <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-black/10 bg-black/5 dark:bg-gray-800">
                 {userList.map(u => (
                   <button key={u.id} onClick={() => { setTargetUserId(u.id); setUserSearch(`${u.full_name} (${u.phone || 'no phone'})`); setShowUserList(false) }}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-white/5 dark:hover:bg-gray-700">
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-black/5 dark:hover:bg-gray-700">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
                       {u.role === 'dp' ? <Bike size={14} /> : <UserCheck size={14} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{u.full_name}</p>
-                      <p className="text-xs text-white/40">{u.phone || 'No phone'} · {u.role}</p>
+                      <p className="text-sm font-medium text-[#0F1A14] truncate">{u.full_name}</p>
+                      <p className="text-xs text-black/40">{u.phone || 'No phone'} · {u.role}</p>
                     </div>
                   </button>
                 ))}
@@ -285,9 +285,9 @@ export default function AdminNotifications() {
             {targetUserId && (
               <div className="mt-2 flex items-center gap-2 rounded-xl bg-primary-50 px-3 py-2 dark:bg-primary-900/20">
                 <CheckCircle size={16} className="text-success-500" />
-                <span className="text-sm text-white">User selected</span>
+                <span className="text-sm text-[#0F1A14]">User selected</span>
                 <button onClick={() => { setTargetUserId(''); setUserSearch('') }} className="ml-auto">
-                  <X size={14} className="text-white/40" />
+                  <X size={14} className="text-black/40" />
                 </button>
               </div>
             )}
@@ -295,24 +295,24 @@ export default function AdminNotifications() {
         )}
 
         <div className="mb-4">
-          <label className="mb-1 block text-sm font-medium text-white/60">Title *</label>
+          <label className="mb-1 block text-sm font-medium text-black/55">Title *</label>
           <input value={title} onChange={e => setTitle(e.target.value)}
             placeholder="e.g. Weekend Offer!" className="input" maxLength={100} />
         </div>
 
         <div className="mb-4">
-          <label className="mb-1 block text-sm font-medium text-white/60">Message *</label>
+          <label className="mb-1 block text-sm font-medium text-black/55">Message *</label>
           <textarea value={body} onChange={e => setBody(e.target.value)}
             placeholder="Write your announcement, offer or update here..."
             className="input min-h-[100px]" maxLength={500} />
         </div>
 
         <div className="mb-4 rounded-xl border border-primary-400/40 bg-primary-500/10 p-4">
-          <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-white">
+          <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#0F1A14]">
             <CalendarClock size={16} className="text-primary-400" />
             Notify time *
           </label>
-          <p className="mb-3 text-xs text-white/50">
+          <p className="mb-3 text-xs text-black/50">
             Pick when recipients should get Alerts + push + email. Leave as now to send immediately.
           </p>
           <div className="mb-3 flex flex-wrap gap-2">
@@ -322,7 +322,7 @@ export default function AdminNotifications() {
                 setScheduleMode('now')
                 setScheduledFor(toLocalInputValue(new Date()))
               }}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'now' ? 'border border-primary-400 bg-primary-500/20 text-white' : 'border border-white/10 text-white/50'}`}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'now' ? 'border border-primary-400 bg-primary-500/20 text-[#0F1A14]' : 'border border-black/10 text-black/50'}`}
             >
               Send now
             </button>
@@ -332,7 +332,7 @@ export default function AdminNotifications() {
                 setScheduleMode('later')
                 setScheduledFor(toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)))
               }}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'later' ? 'border border-primary-400 bg-primary-500/20 text-white' : 'border border-white/10 text-white/50'}`}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'later' ? 'border border-primary-400 bg-primary-500/20 text-[#0F1A14]' : 'border border-black/10 text-black/50'}`}
             >
               Schedule for later
             </button>
@@ -350,18 +350,18 @@ export default function AdminNotifications() {
         </div>
 
         <div className="mb-4">
-          <label className="mb-1 block text-sm font-medium text-white/60">Attach Image (optional)</label>
+          <label className="mb-1 block text-sm font-medium text-black/55">Attach Image (optional)</label>
           {imagePreview ? (
-            <div className="relative w-40 h-28 rounded-xl overflow-hidden border border-white/10">
+            <div className="relative w-40 h-28 rounded-xl overflow-hidden border border-black/10">
               <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
               <button onClick={removeImage}
-                className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white">
+                className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#F4F6F5]/70 text-[#0F1A14]">
                 <X size={12} />
               </button>
             </div>
           ) : (
             <button type="button" onClick={() => imageInputRef.current?.click()}
-              className="flex items-center gap-2 rounded-xl border border-dashed border-white/20 px-4 py-3 text-sm text-white/50 transition-all hover:border-white/40 hover:text-white/70">
+              className="flex items-center gap-2 rounded-xl border border-dashed border-black/10 px-4 py-3 text-sm text-black/50 transition-all hover:border-white/40 hover:text-black/65">
               <Image size={16} /> Upload image
             </button>
           )}
@@ -375,30 +375,30 @@ export default function AdminNotifications() {
       </div>
 
       <div className="card p-5">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0F1A14]">
           <Clock size={18} className="text-primary-400" /> Broadcast history
         </h2>
         {logsLoading ? (
-          <p className="text-sm text-white/40">Loading...</p>
+          <p className="text-sm text-black/40">Loading...</p>
         ) : broadcasts.length === 0 ? (
-          <p className="text-sm text-white/40">No broadcasts yet. Send or schedule one above.</p>
+          <p className="text-sm text-black/40">No broadcasts yet. Send or schedule one above.</p>
         ) : (
           <div className="space-y-2">
             {broadcasts.map(row => (
-              <div key={row.id} className="flex items-start gap-3 rounded-xl bg-white/5 p-3">
+              <div key={row.id} className="flex items-start gap-3 rounded-xl bg-black/5 p-3">
                 {row.status === 'sent'
                   ? <CheckCircle size={16} className="mt-0.5 shrink-0 text-success-400" />
                   : row.status === 'pending' || row.status === 'sending'
                     ? <Clock size={16} className="mt-0.5 shrink-0 text-amber-300" />
                     : <XCircle size={16} className="mt-0.5 shrink-0 text-error-400" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{row.title}</p>
-                  <p className="text-xs text-white/50">
+                  <p className="text-sm font-medium text-[#0F1A14] truncate">{row.title}</p>
+                  <p className="text-xs text-black/50">
                     {row.target_type} · {row.status}
                     {row.recipient_count != null ? ` · ${row.recipient_count} recipients` : ''}
                   </p>
                   {row.error_message && <p className="truncate text-xs text-error-300">{row.error_message}</p>}
-                  <p className="text-[11px] text-white/35 mt-1">
+                  <p className="text-[11px] text-[#0F1A14]/35 mt-1">
                     {row.status === 'pending'
                       ? `Scheduled ${formatTime(row.scheduled_for)}`
                       : formatTime(row.sent_at || row.created_at)}

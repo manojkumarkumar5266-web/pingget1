@@ -137,7 +137,7 @@ export default function AdminUsers() {
                 <div className="flex items-center gap-3">
                   <Avatar url={u.photo_url} name={u.full_name || 'User'} size={44} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-extrabold text-white truncate">{u.full_name}</p>
+                    <p className="font-extrabold text-[#0F1A14] truncate">{u.full_name}</p>
                     <p className="text-sm" style={{ color: pg.text3 }}>{u.phone || 'No phone'}</p>
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-xs" style={{ color: pg.text4 }}>{u.city || 'No city'} · {u.role.toUpperCase()} · {formatTime(u.created_at)}</p>
@@ -214,7 +214,7 @@ function UserActionDrawer({
           <div className="mb-5 flex items-center gap-4">
             <Avatar url={user.photo_url} name={user.full_name || 'User'} size={56} />
             <div>
-              <p className="text-lg font-extrabold text-white">{user.full_name}</p>
+              <p className="text-lg font-extrabold text-[#0F1A14]">{user.full_name}</p>
               <p className="text-sm" style={{ color: pg.text3 }}>{user.phone}</p>
               <div className="mt-1 flex items-center gap-2">
                 <span className="rounded-full px-2 py-0.5 text-xs font-extrabold uppercase" style={{ background: pg.surface2, color: pg.text3 }}>{user.role}</span>
@@ -247,15 +247,15 @@ function UserActionDrawer({
                 {[1,2].map(i => <div key={i} className="h-10 animate-pulse rounded-xl glass" />)}
               </div>
             ) : orders.length === 0 ? (
-              <p className="text-sm text-white/40 italic">No requests yet.</p>
+              <p className="text-sm text-black/40 italic">No requests yet.</p>
             ) : (
               <div className="space-y-1.5">
                 {orders.map(o => (
                   <div key={o.id} className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: pg.surface2 }}>
-                    <p className="text-sm font-medium text-white truncate max-w-[60%]">{(o as any).description?.split('\n')[0]?.trim() || 'Request'}</p>
+                    <p className="text-sm font-medium text-[#0F1A14] truncate max-w-[60%]">{(o as any).description?.split('\n')[0]?.trim() || 'Request'}</p>
                     <div className="flex items-center gap-2 shrink-0">
                       <StatusPill status={o.status} />
-                      <span className="text-[10px] text-white/40">{formatTime(o.created_at)}</span>
+                      <span className="text-[10px] text-black/40">{formatTime(o.created_at)}</span>
                     </div>
                   </div>
                 ))}
@@ -298,8 +298,8 @@ function UserActionDrawer({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="text-sm text-white/50 shrink-0">{label}</span>
-      <span className="text-sm font-medium text-white text-right">{value}</span>
+      <span className="text-sm text-black/50 shrink-0">{label}</span>
+      <span className="text-sm font-medium text-[#0F1A14] text-right">{value}</span>
     </div>
   )
 }

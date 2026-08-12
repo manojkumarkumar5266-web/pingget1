@@ -94,14 +94,14 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
   const totalAmount = Object.values(selected).reduce((s, i) => s + i.quantity * i.price, 0)
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-[#F4F6F5]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-2">
           <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-full active:scale-90 transition-transform" style={{ background: 'rgba(255,255,255,0.08)' }}>
-            <X size={20} className="text-white/70" />
+            <X size={20} className="text-black/65" />
           </button>
-          <h2 className="text-lg font-bold text-white">{category}</h2>
+          <h2 className="text-lg font-bold text-[#0F1A14]">{category}</h2>
         </div>
         {selectedCount > 0 && (
           <span className="rounded-full px-3 py-1 text-xs font-bold" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
@@ -113,16 +113,16 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
       {/* Search bar */}
       <div className="px-4 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.08)' }}>
-          <Search size={18} className="text-white/40 shrink-0" />
+          <Search size={18} className="text-black/40 shrink-0" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={`Search ${category.toLowerCase()}...`}
-            className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/40"
+            className="flex-1 bg-transparent text-sm text-[#0F1A14] outline-none placeholder:text-black/40"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="text-white/40">
+            <button onClick={() => setSearch('')} className="text-black/40">
               <X size={16} />
             </button>
           )}
@@ -133,10 +133,10 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-black/10 border-t-white/60" />
           </div>
         ) : filteredItems.length === 0 ? (
-          <p className="py-8 text-center text-sm text-white/40">
+          <p className="py-8 text-center text-sm text-black/40">
             {search ? `No items found for "${search}"` : 'No items available in this category'}
           </p>
         ) : (
@@ -150,16 +150,16 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
                     : { border: '1px solid rgba(255,255,255,0.08)' }}>
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-white">{item.name}</p>
+                      <p className="text-sm font-semibold text-[#0F1A14]">{item.name}</p>
                     </div>
                     {sel ? (
                       <div className="flex items-center gap-2">
                         <button onClick={() => updateQty(item.name, -1)}
                           className="flex h-7 w-7 items-center justify-center rounded-full active:scale-90 transition-transform"
                           style={{ background: 'rgba(255,255,255,0.1)' }}>
-                          <Minus size={14} className="text-white/70" />
+                          <Minus size={14} className="text-black/65" />
                         </button>
-                        <span className="min-w-[24px] text-center text-sm font-bold text-white">{sel.quantity}</span>
+                        <span className="min-w-[24px] text-center text-sm font-bold text-[#0F1A14]">{sel.quantity}</span>
                         <button onClick={() => updateQty(item.name, 1)}
                           className="flex h-7 w-7 items-center justify-center rounded-full active:scale-90 transition-transform"
                           style={{ background: '#facc15' }}>
@@ -170,23 +170,23 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
                       <button onClick={() => toggleItem(item.name)}
                         className="flex h-8 w-8 items-center justify-center rounded-full active:scale-90 transition-transform"
                         style={{ background: 'rgba(255,255,255,0.1)' }}>
-                        <Plus size={16} className="text-white/70" />
+                        <Plus size={16} className="text-black/65" />
                       </button>
                     )}
                   </div>
                   {sel && (
                     <div className="mt-2 flex items-center gap-2">
-                      <label className="text-xs text-white/50">Your price ₹</label>
+                      <label className="text-xs text-black/50">Your price ₹</label>
                       <input
                         type="number"
                         value={sel.price || ''}
                         onChange={e => updatePrice(item.name, Number(e.target.value))}
                         placeholder="0"
-                        className="w-24 rounded-lg px-2 py-1 text-sm text-white outline-none"
+                        className="w-24 rounded-lg px-2 py-1 text-sm text-[#0F1A14] outline-none"
                         style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
                       />
                       {sel.price > 0 && (
-                        <span className="text-xs text-white/40">= ₹{sel.quantity * sel.price}</span>
+                        <span className="text-xs text-black/40">= ₹{sel.quantity * sel.price}</span>
                       )}
                     </div>
                   )}

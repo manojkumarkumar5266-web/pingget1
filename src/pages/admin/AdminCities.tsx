@@ -150,14 +150,14 @@ export default function AdminCities() {
               <div className="flex items-start justify-between p-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-white">{city.name}</p>
-                    <span className={`badge ${city.is_active ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-white/40'}`}>
+                    <p className="font-semibold text-[#0F1A14]">{city.name}</p>
+                    <span className={`badge ${city.is_active ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-black/40'}`}>
                       {city.is_active ? 'Active' : 'Inactive'}
                     </span>
                     {city.service_paused && (
                       <span className="badge bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300">Paused</span>
                     )}
-                    <span className="text-xs text-white/40">{city.pincodes?.length || 0} pincodes</span>
+                    <span className="text-xs text-black/40">{city.pincodes?.length || 0} pincodes</span>
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     <label className="text-xs text-gray-500">Commission %</label>
@@ -171,7 +171,7 @@ export default function AdminCities() {
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 ml-2">
                   <button onClick={() => toggleCity(city)} title={city.is_active ? 'Deactivate city' : 'Activate city'} className="btn-ghost p-1.5">
-                    {city.is_active ? <ToggleRight size={20} className="text-success-600" /> : <ToggleLeft size={20} className="text-white/40" />}
+                    {city.is_active ? <ToggleRight size={20} className="text-success-600" /> : <ToggleLeft size={20} className="text-black/40" />}
                   </button>
                   <button onClick={() => togglePause(city)} title={city.service_paused ? 'Resume service' : 'Pause service'} className="btn-ghost p-1.5">
                     {city.service_paused ? <Play size={16} className="text-success-500" /> : <Pause size={16} className="text-warning-500" />}
@@ -186,15 +186,15 @@ export default function AdminCities() {
               </div>
 
               {expandedCity === city.id && (
-                <div className="border-t border-white/10 px-4 pb-4 pt-3">
+                <div className="border-t border-black/10 px-4 pb-4 pt-3">
                   <div className="mb-2 flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Pincodes</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-black/50">Pincodes</p>
                     <div className="flex gap-2">
                       <button onClick={() => toggleAllPincodes(city, true)} className="text-xs text-success-600 dark:text-success-400 font-medium">Activate All</button>
                       <span className="text-gray-300">|</span>
                       <button onClick={() => toggleAllPincodes(city, false)} className="text-xs text-error-600 dark:text-error-400 font-medium">Deactivate All</button>
                       <span className="text-gray-300">|</span>
-                      <button onClick={() => setShowAddPincode(city.id)} className="text-xs font-medium" style={{ color: '#C4D600' }}>+ Add</button>
+                      <button onClick={() => setShowAddPincode(city.id)} className="text-xs font-medium" style={{ color: '#0C8A3E' }}>+ Add</button>
                     </div>
                   </div>
                   {showAddPincode === city.id && (
@@ -219,24 +219,24 @@ export default function AdminCities() {
                           </div>
                         ) : (
                           <div>
-                            <span className="font-mono font-semibold text-white">{p.pincode}</span>
+                            <span className="font-mono font-semibold text-[#0F1A14]">{p.pincode}</span>
                             {p.area_name && <span className="ml-2 text-xs text-gray-500">{p.area_name}</span>}
                           </div>
                         )}
                         {editingPinId !== p.id && (
                           <div className="flex items-center gap-0.5">
-                            <button onClick={() => startEditPincode(p)} className="btn-ghost p-1" title="Edit"><Pencil size={14} className="text-white/40" /></button>
+                            <button onClick={() => startEditPincode(p)} className="btn-ghost p-1" title="Edit"><Pencil size={14} className="text-black/40" /></button>
                             <button onClick={() => togglePincode(p)} className="btn-ghost p-1">
                               {p.is_active
                                 ? <ToggleRight size={18} className="text-success-600" />
-                                : <ToggleLeft size={18} className="text-white/40" />}
+                                : <ToggleLeft size={18} className="text-black/40" />}
                             </button>
                           </div>
                         )}
                       </div>
                     ))}
                     {(city.pincodes || []).length === 0 && (
-                      <p className="text-xs text-white/40 col-span-2">No pincodes added yet.</p>
+                      <p className="text-xs text-black/40 col-span-2">No pincodes added yet.</p>
                     )}
                   </div>
                 </div>
@@ -247,10 +247,10 @@ export default function AdminCities() {
       )}
 
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setShowAdd(false)}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setShowAdd(false)}>
           <div className="card w-full max-w-md p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">Add City</h3>
+              <h3 className="text-lg font-bold text-[#0F1A14]">Add City</h3>
               <button onClick={() => setShowAdd(false)} className="btn-ghost p-1"><X size={20} /></button>
             </div>
             <div className="space-y-3">

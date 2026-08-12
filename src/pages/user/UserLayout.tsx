@@ -87,7 +87,7 @@ export default function UserLayout() {
       {!hideNav && (
         <header
           className="z-10 flex items-center px-4 pb-2 pt-[max(10px,env(safe-area-inset-top))]"
-          style={{ background: 'rgba(7,8,11,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+          style={{ background: 'rgba(255,255,255,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
         >
           <BrandWordmark size="xs" showTagline={false} align="left" />
         </header>
@@ -121,7 +121,7 @@ export default function UserLayout() {
           className="fixed inset-0 z-40 flex items-center justify-center px-4"
           onClick={() => setShowBookingMenu(false)}
         >
-          <div className="absolute inset-0 bg-black/70" />
+          <div className="absolute inset-0 bg-[#F4F6F5]/70" />
           <div
             className="relative z-10 w-full max-w-[400px] animate-slide-in-bottom rounded-[28px] p-4"
             style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}

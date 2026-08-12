@@ -91,7 +91,7 @@ function RedUserPin() {
 function BikePin({ size = 34 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden className="drop-shadow-md">
-      <circle cx="20" cy="20" r="19" fill="#C4D600" />
+      <circle cx="20" cy="20" r="19" fill="#0C8A3E" />
       <circle cx="20" cy="20" r="19" fill="none" stroke="#140F05" strokeOpacity="0.12" strokeWidth="1.5" />
       <g fill="none" stroke="#140F05" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="26" r="5" />
@@ -277,7 +277,7 @@ export default function FreeStreetMap({
           <polyline
             points={routeSvgPoints}
             fill="none"
-            stroke="#C4D600"
+            stroke="#0C8A3E"
             strokeWidth="1.4"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -352,7 +352,7 @@ export default function FreeStreetMap({
             {m.label && !isUser && (
               <p
                 className="mt-0.5 max-w-[88px] truncate rounded-md px-1.5 py-0.5 text-[9px] font-bold"
-                style={{ background: 'rgba(7,8,11,0.88)', color: '#fff' }}
+                style={{ background: 'rgba(255,255,255,0.94)', color: '#0F1A14', border: '1px solid rgba(15,40,25,0.12)' }}
               >
                 {m.label}
               </p>

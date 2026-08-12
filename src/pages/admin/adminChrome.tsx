@@ -25,7 +25,7 @@ export function AdminHeader({
         <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
           {eyebrow}
         </p>
-        <h1 className="truncate text-[28px] font-extrabold tracking-tight text-white">{title}</h1>
+        <h1 className="truncate text-[28px] font-extrabold tracking-tight text-[#0F1A14]">{title}</h1>
       </div>
       {action}
     </div>
@@ -110,7 +110,7 @@ export function StatusPill({ status }: { status: string }) {
 
 export function DrawerShell({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-[#F4F6F5]/60 backdrop-blur-sm" onClick={onClose}>
       <div
         className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-[28px]"
         style={{ background: pg.surface, borderTop: `1px solid ${pg.line}` }}

@@ -125,11 +125,11 @@ export default function AdminDps() {
               <div className="flex items-center gap-3">
                 <Avatar url={dp.profile?.photo_url} name={dp.profile?.full_name || 'DP'} size={48} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-extrabold text-white truncate">{dp.profile?.full_name}</p>
+                  <p className="font-extrabold text-[#0F1A14] truncate">{dp.profile?.full_name}</p>
                   <p className="text-sm" style={{ color: pg.text3 }}>{dp.profile?.phone}</p>
                   <p className="text-xs" style={{ color: pg.text4 }}>{dp.vehicle_type || 'Vehicle not set'} • {formatTime(dp.created_at)}</p>
                   {dp.status === 'approved' && (
-                    <p className="text-xs text-white/40">
+                    <p className="text-xs text-black/40">
                       Rating: {dp.rating_count > 0 ? `${dp.rating_avg} ★ (${dp.rating_count} reviews)` : 'No ratings yet'}
                     </p>
                   )}
@@ -160,7 +160,7 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
   dp: DpWithProfile; onClose: () => void; onApprove: () => void; onReject: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-[#F4F6F5]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div
         className="absolute bottom-0 left-0 right-0 max-h-[92vh] overflow-y-auto rounded-t-3xl glass bottom-sheet"
         onClick={e => e.stopPropagation()}
@@ -171,21 +171,21 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
         <div className="px-5 pb-8">
           <div className="mb-5 flex items-center gap-3">
             <button onClick={onClose} className="btn-ghost p-2 -ml-2"><ArrowLeft size={20} /></button>
-            <h2 className="text-lg font-bold text-white">DP Application</h2>
+            <h2 className="text-lg font-bold text-[#0F1A14]">DP Application</h2>
           </div>
 
           <div className="mb-6 flex items-center gap-4">
             <Avatar url={dp.profile?.photo_url} name={dp.profile?.full_name || 'DP'} size={72} />
             <div>
-              <p className="text-xl font-bold text-white">{dp.profile?.full_name}</p>
+              <p className="text-xl font-bold text-[#0F1A14]">{dp.profile?.full_name}</p>
               <span className={`badge mt-1 ${dp.status==='approved' ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' : dp.status==='rejected' ? 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300' : 'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300'}`}>{dp.status === 'approved' ? 'Approved' : dp.status === 'rejected' ? 'Rejected' : 'Pending Approval'}</span>
             </div>
           </div>
 
           {/* Profile Photo */}
           {dp.profile?.photo_url && (
-            <div className="mb-4 rounded-2xl border border-white/10 p-4 dark:border-gray-800">
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-white/60"><FileText size={16} /> Profile Photo</div>
+            <div className="mb-4 rounded-2xl border border-black/10 p-4 dark:border-gray-800">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-black/55"><FileText size={16} /> Profile Photo</div>
               <a href={dp.profile.photo_url} target="_blank" rel="noopener noreferrer">
                 <img src={dp.profile.photo_url} alt="Profile" className="h-32 w-32 rounded-xl object-cover" />
               </a>
@@ -264,7 +264,7 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
               </button>
               <button
                 onClick={onApprove}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-all active:scale-95"
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-[#0F1A14] transition-all active:scale-95"
                 style={{ backgroundColor: '#22c55e' }}
               >
                 <Check size={18} /> Approve
@@ -290,7 +290,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-2">
       <span className="text-sm shrink-0" style={{ color: pg.text3 }}>{label}</span>
-      <span className="text-sm font-medium text-white text-right">{value}</span>
+      <span className="text-sm font-medium text-[#0F1A14] text-right">{value}</span>
     </div>
   )
 }
