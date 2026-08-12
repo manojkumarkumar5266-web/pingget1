@@ -235,6 +235,15 @@ export default function DpOrders() {
                     Waiting for customer's advance payment confirmation
                   </div>
                 )}
+                {isAdvance && req.status === 'payment_verified' && (
+                  <div
+                    className="mt-2 flex items-center gap-2 rounded-2xl px-3 py-2 text-xs"
+                    style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: '#93C5FD' }}
+                  >
+                    <CreditCard size={12} />
+                    Payment proof uploaded — open chat to Verify
+                  </div>
+                )}
 
                 {cancelPendingFromUser && (
                   <div

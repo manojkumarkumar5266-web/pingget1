@@ -126,9 +126,11 @@ export default function UserHome() {
               alt="Instant Booking"
               className="pointer-events-none w-full object-contain"
               style={{ background: 'transparent', display: 'block' }}
-              loading="eager"
+              loading="lazy"
               decoding="async"
               draggable={false}
+              width={720}
+              height={720}
             />
             <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold" style={{ color: pg.lime }}>
               <Zap size={16} /> Instant
@@ -141,9 +143,11 @@ export default function UserHome() {
               alt="Advance Booking"
               className="pointer-events-none w-full object-contain"
               style={{ background: 'transparent', display: 'block' }}
-              loading="eager"
+              loading="lazy"
               decoding="async"
               draggable={false}
+              width={720}
+              height={720}
             />
             <p className="mt-2 flex items-center gap-1.5 text-sm font-extrabold" style={{ color: pg.info }}>
               <CalendarClock size={16} /> Advance

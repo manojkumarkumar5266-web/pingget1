@@ -47,10 +47,9 @@ export default function LiveTrackingPage() {
       const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
       if (!req) { setLoading(false); return }
       setRequest(req as DeliveryRequest)
-      if ((req as any).payment_accepted_at) {
-        // Already past payment accept — go to rating unless already rated (handled by thanks nav)
+      if (req.payment_accepted_at) {
         setPayPhase('rating')
-      } else if ((req as any).payment_completed_at) {
+      } else if (req.payment_completed_at) {
         setPayPhase('awaiting_dp_accept')
       } else if (req.status === 'completed') {
         setPayPhase('awaiting_user_payment')
@@ -78,9 +77,9 @@ export default function LiveTrackingPage() {
         async (payload: any) => {
           const next = payload.new as DeliveryRequest
           setRequest(next)
-          if ((next as any).payment_accepted_at) {
+          if (next.payment_accepted_at) {
             setPayPhase(prev => (prev === 'rating' || prev === 'thanks' ? prev : 'payment_accepted'))
-          } else if ((next as any).payment_completed_at) {
+          } else if (next.payment_completed_at) {
             setPayPhase(prev => (prev === 'payment_accepted' || prev === 'rating' || prev === 'thanks' ? prev : 'awaiting_dp_accept'))
           }
           const lat = (next as any).dp_lat
@@ -196,9 +195,9 @@ export default function LiveTrackingPage() {
         .maybeSingle()
       if (!data) return
       setRequest(prev => (prev ? ({ ...prev, ...data } as DeliveryRequest) : prev))
-      if ((data as any).payment_accepted_at) {
+      if (data.payment_accepted_at) {
         setPayPhase(prev => (prev === 'rating' || prev === 'thanks' ? prev : 'payment_accepted'))
-      } else if ((data as any).payment_completed_at) {
+      } else if (data.payment_completed_at) {
         setPayPhase(prev => (
           prev === 'payment_accepted' || prev === 'rating' || prev === 'thanks' ? prev : 'awaiting_dp_accept'
         ))
@@ -221,17 +220,26 @@ export default function LiveTrackingPage() {
   }
 
   const markPaymentCompleted = async () => {
-    await supabase.from('requests').update({
-      payment_completed_at: new Date().toISOString(),
-    } as any).eq('id', requestId)
-    await supabase.from('notifications').insert({
-      user_id: request?.accepted_dp_id,
-      title: 'Payment Completed',
-      body: 'Customer marked payment as completed. Please Accept Payment.',
-      type: 'payment_completed',
-      related_id: requestId,
-    })
-    kickPushDelivery()
+    const now = new Date().toISOString()
+    const { error } = await supabase.from('requests').update({
+      payment_completed_at: now,
+    }).eq('id', requestId)
+    if (error) {
+      console.error('[LiveTracking] payment_completed_at update failed:', error)
+      alert('Could not confirm payment. Please try again.')
+      return
+    }
+    setRequest(prev => (prev ? { ...prev, payment_completed_at: now } : prev))
+    if (request?.accepted_dp_id) {
+      await supabase.from('notifications').insert({
+        user_id: request.accepted_dp_id,
+        title: 'Payment Completed',
+        body: 'Customer marked payment as completed. Please Accept Payment.',
+        type: 'payment_completed',
+        related_id: requestId,
+      })
+      kickPushDelivery()
+    }
     setPayPhase('awaiting_dp_accept')
   }
 

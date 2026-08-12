@@ -1,14 +1,17 @@
-import React, { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, useLocation } from 'react-router-dom'
 import { App as CapacitorApp } from '@capacitor/app'
 import { supabase } from '../lib/supabase'
 import { AuthProvider, ThemeProvider } from '../context'
 import { APP_TARGET, APP_DISPLAY_NAME, resolveAppTarget } from '../lib/appTarget'
-import UserShell from './user/UserShell'
-import DpShell from './dp/DpShell'
-import AdminShell from './admin/AdminShell'
+import { FullScreenLoader } from '../components/ui'
 import '../index.css'
+
+const UserShell = lazy(() => import('./user/UserShell'))
+const DpShell = lazy(() => import('./dp/DpShell'))
+const AdminShell = lazy(() => import('./admin/AdminShell'))
 
 function syncDocumentTitle(target: 'user' | 'dp' | 'admin') {
   if (target === 'dp') document.title = `${APP_DISPLAY_NAME} — Deliver & Earn`
@@ -64,7 +67,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <Root />
+          <Suspense fallback={<FullScreenLoader />}>
+            <Root />
+          </Suspense>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
