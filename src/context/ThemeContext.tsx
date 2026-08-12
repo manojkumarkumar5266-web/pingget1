@@ -14,20 +14,16 @@ const THEME_KEY = 'pingget_theme'
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'dark'
-    return (localStorage.getItem(THEME_KEY) as Theme) || 'dark'
+    if (typeof window === 'undefined') return 'light'
+    // Force commerce light look (Dunzo/Blinkit style). Ignore stale dark preference.
+    return 'light'
   })
 
   useEffect(() => {
     localStorage.setItem(THEME_KEY, theme)
     const root = document.documentElement
-    if (theme === 'light') {
-      root.classList.add('light-mode')
-      root.classList.remove('dark-mode')
-    } else {
-      root.classList.add('dark-mode')
-      root.classList.remove('light-mode')
-    }
+    root.classList.add('light-mode')
+    root.classList.remove('dark-mode')
   }, [theme])
 
   const toggle = () => setThemeState(prev => (prev === 'dark' ? 'light' : 'dark'))

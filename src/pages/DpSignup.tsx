@@ -327,7 +327,7 @@ export default function DpSignup() {
               <label className="label flex items-center gap-1.5"><Lock size={14} /> Password</label>
               <div className="relative">
                 <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={signInPassword} onChange={e => setSignInPassword(e.target.value)} placeholder="Your password" required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/55">
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -340,7 +340,7 @@ export default function DpSignup() {
                   <MapPin size={16} style={{ color: pg.lime }} />
                 </button>
               </div>
-              {signInPincodeChecking && <p className="mt-1 text-xs text-white/40">Checking service area...</p>}
+              {signInPincodeChecking && <p className="mt-1 text-xs text-black/40">Checking service area...</p>}
               {!signInPincodeChecking && signInPincodeStatus && (
                 <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${signInPincodeStatus.served ? 'text-green-300' : 'text-red-300'}`} style={{ background: signInPincodeStatus.served ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${signInPincodeStatus.served ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
                   {signInPincodeStatus.served
@@ -409,7 +409,7 @@ export default function DpSignup() {
               <div>
                 <label className="label flex items-center gap-1.5"><MapPin size={14} /> Your Area Pincode *</label>
                 <input className="input" value={pincode} onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} required />
-                {pincodeChecking && <p className="mt-1.5 text-xs text-white/40">Checking service area...</p>}
+                {pincodeChecking && <p className="mt-1.5 text-xs text-black/40">Checking service area...</p>}
                 {!pincodeChecking && pincodeStatus && (
                   <div className={`mt-1.5 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${pincodeStatus.served ? 'text-green-300' : 'text-red-300'}`}>
                     {pincodeStatus.served ? <><CheckCircle size={13} /> We operate in {pincodeStatus.area}{pincodeStatus.city ? `, ${pincodeStatus.city}` : ''}!</> : <><XCircle size={13} /> We will serve in your area soon. Thanks for your patience.</>}
@@ -421,7 +421,7 @@ export default function DpSignup() {
                 <label className="label flex items-center gap-1.5"><Lock size={14} /> Password *</label>
                 <div className="relative">
                   <input type={showPassword ? 'text' : 'password'} className="input pr-10" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/55">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                 </div>
               </div>
               <div>
@@ -489,7 +489,7 @@ export default function DpSignup() {
                 {aadhaarPreview ? (
                   <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
                     {aadhaarFile?.type.startsWith('image') ? <img src={aadhaarPreview} alt="Aadhaar" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg "><FileText size={24} className="text-green-400" /></div>}
-                    <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-white">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
+                    <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#0F1A14]">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
                     <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                   </div>
                 ) : (
@@ -503,7 +503,7 @@ export default function DpSignup() {
                   {licensePreview ? (
                     <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
                       {licenseFile?.type.startsWith('image') ? <img src={licensePreview} alt="Licence" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg "><FileText size={24} className="text-green-400" /></div>}
-                      <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-white">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
+                      <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#0F1A14]">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
                       <button type="button" onClick={() => licenseInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                     </div>
                   ) : (

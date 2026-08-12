@@ -1,34 +1,34 @@
 /**
- * pinGGet brand tokens — lime + olive green (User / DP / Admin).
- * Primary CTA / highlights use lime; secondary / Advance accents use olive.
+ * pinGGet brand tokens — Dunzo / Blinkit / Rapido inspired commerce UI.
+ * Light canvas, forest-green primary CTAs, clean white cards.
  */
 export const pg = {
-  bg: '#07080B',
-  bgElevated: '#0E1016',
-  surface: '#141821',
-  surface2: '#1C2230',
-  line: 'rgba(255,255,255,0.07)',
-  lineStrong: 'rgba(255,255,255,0.14)',
-  /** Primary accent — lime (2nd G in pinGGet) */
-  lime: '#C4D600',
-  limeDim: 'rgba(196,214,0,0.16)',
-  limeText: '#101404',
-  /** Secondary accent — olive (1st G in pinGGet) */
-  olive: '#8FAE3E',
-  oliveDim: 'rgba(143,174,62,0.16)',
-  oliveText: '#101404',
-  text: '#F7F4EE',
-  text2: 'rgba(247,244,238,0.72)',
-  text3: 'rgba(247,244,238,0.48)',
-  text4: 'rgba(247,244,238,0.28)',
-  danger: '#FF5C5C',
-  success: '#3DDC97',
-  info: '#8FAE3E',
-  warning: '#FF9F43',
+  bg: '#F4F6F5',
+  bgElevated: '#FFFFFF',
+  surface: '#FFFFFF',
+  surface2: '#EEF2EF',
+  line: 'rgba(15, 40, 25, 0.08)',
+  lineStrong: 'rgba(15, 40, 25, 0.14)',
+  /** Primary accent — forest green (Dunzo/Blinkit style) */
+  lime: '#0C8A3E',
+  limeDim: 'rgba(12, 138, 62, 0.12)',
+  limeText: '#FFFFFF',
+  /** Secondary accent — softer leaf green */
+  olive: '#2EAD5A',
+  oliveDim: 'rgba(46, 173, 90, 0.14)',
+  oliveText: '#FFFFFF',
+  text: '#0F1A14',
+  text2: 'rgba(15, 26, 20, 0.72)',
+  text3: 'rgba(15, 26, 20, 0.48)',
+  text4: 'rgba(15, 26, 20, 0.32)',
+  danger: '#E23B3B',
+  success: '#0C8A3E',
+  info: '#1A7FBF',
+  warning: '#E89B0C',
   radius: {
     sm: 12,
     md: 16,
-    lg: 22,
+    lg: 20,
     xl: 28,
     pill: 999,
   },

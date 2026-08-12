@@ -47,10 +47,10 @@ export default function DeliveryProofUploader({ requestId, userId, onUploaded, o
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/50 p-4 animate-fade-in" onClick={onClose}>
       <div className="card w-full max-w-md p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delivery Proof Photo</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-[#0F1A14]">Delivery Proof Photo</h3>
           <button onClick={onClose} className="btn-ghost p-1.5"><X size={18} /></button>
         </div>
 
@@ -64,7 +64,7 @@ export default function DeliveryProofUploader({ requestId, userId, onUploaded, o
             <div className="relative">
               <img src={preview} alt="Delivery proof" className="h-56 w-full rounded-xl object-cover" />
               <button onClick={() => { setPreview(null); setFile(null) }}
-                className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white">
+                className="absolute right-2 top-2 rounded-full bg-[#F4F6F5]/60 p-1.5 text-[#0F1A14]">
                 <X size={16} />
               </button>
             </div>

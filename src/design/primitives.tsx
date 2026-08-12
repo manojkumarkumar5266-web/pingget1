@@ -69,8 +69,9 @@ export function Surface({
       className={`w-full text-left ${className}`}
       style={{
         background: pg.surface,
-        border: `1px solid ${accent ? 'rgba(196,214,0,0.35)' : pg.line}`,
+        border: `1px solid ${accent ? 'rgba(12, 138, 62, 0.35)' : pg.line}`,
         borderRadius: pg.radius.lg,
+        boxShadow: accent ? '0 8px 24px rgba(12, 138, 62, 0.08)' : '0 2px 12px rgba(15, 26, 20, 0.04)',
         ...style,
       }}
     >
@@ -91,12 +92,12 @@ export function CTA({
     primary: {
       background: pg.lime,
       color: pg.limeText,
-      boxShadow: '0 10px 28px rgba(196,214,0,0.28)',
+      boxShadow: '0 8px 22px rgba(12, 138, 62, 0.28)',
     },
     secondary: {
       background: pg.oliveDim,
-      color: pg.olive,
-      border: `1px solid rgba(143,174,62,0.35)`,
+      color: pg.lime,
+      border: `1px solid rgba(12, 138, 62, 0.28)`,
     },
     danger: {
       background: pg.danger,
@@ -127,12 +128,12 @@ export function Chip({
   tone?: 'neutral' | 'lime' | 'info' | 'danger' | 'success' | 'warn'
 }) {
   const map: Record<string, { bg: string; color: string }> = {
-    neutral: { bg: 'rgba(255,255,255,0.06)', color: pg.text2 },
+    neutral: { bg: pg.surface2, color: pg.text2 },
     lime: { bg: pg.limeDim, color: pg.lime },
-    info: { bg: pg.oliveDim, color: pg.olive },
-    danger: { bg: 'rgba(255,77,79,0.15)', color: '#FCA5A5' },
-    success: { bg: 'rgba(34,197,94,0.15)', color: '#86EFAC' },
-    warn: { bg: 'rgba(245,165,36,0.15)', color: '#FCD34D' },
+    info: { bg: 'rgba(26, 127, 191, 0.12)', color: pg.info },
+    danger: { bg: 'rgba(226, 59, 59, 0.12)', color: pg.danger },
+    success: { bg: pg.limeDim, color: pg.success },
+    warn: { bg: 'rgba(232, 155, 12, 0.14)', color: pg.warning },
   }
   const t = map[tone]
   return (
@@ -227,10 +228,10 @@ export function Dock({ children }: { children: ReactNode }) {
       <div
         className="mx-auto flex max-w-lg items-center justify-between gap-1 px-2 py-2"
         style={{
-          background: 'rgba(10,12,18,0.96)',
+          background: 'rgba(255,255,255,0.96)',
           border: `1px solid ${pg.lineStrong}`,
           borderRadius: 28,
-          boxShadow: '0 16px 48px rgba(0,0,0,0.75)',
+          boxShadow: '0 12px 36px rgba(15, 26, 20, 0.12)',
           backdropFilter: 'blur(20px)',
         }}
       >
@@ -264,7 +265,7 @@ export function DockItem({
         style={{
           background: pg.lime,
           color: pg.limeText,
-          boxShadow: '0 12px 32px rgba(196,214,0,0.35)',
+          boxShadow: '0 12px 28px rgba(12, 138, 62, 0.35)',
         }}
         aria-label={label}
       >
@@ -287,7 +288,7 @@ export function DockItem({
         {label}
       </span>
       {!!badge && badge > 0 && (
-        <span className="absolute right-1 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+        <span className="absolute right-1 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-[#0F1A14]">
           {badge > 99 ? '99+' : badge}
         </span>
       )}

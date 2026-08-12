@@ -49,7 +49,7 @@ export default function LiveTrackingPage() {
       setRequest(req as DeliveryRequest)
       if (req.payment_accepted_at) {
         setPayPhase('rating')
-      } else if (req.payment_completed_at) {
+      } else if (req.payment_completed_at || req.status === 'cash_received') {
         setPayPhase('awaiting_dp_accept')
       } else if (req.status === 'completed') {
         setPayPhase('awaiting_user_payment')
@@ -79,7 +79,7 @@ export default function LiveTrackingPage() {
           setRequest(next)
           if (next.payment_accepted_at) {
             setPayPhase(prev => (prev === 'rating' || prev === 'thanks' ? prev : 'payment_accepted'))
-          } else if (next.payment_completed_at) {
+          } else if (next.payment_completed_at || next.status === 'cash_received') {
             setPayPhase(prev => (prev === 'payment_accepted' || prev === 'rating' || prev === 'thanks' ? prev : 'awaiting_dp_accept'))
           }
           const lat = (next as any).dp_lat
@@ -197,7 +197,7 @@ export default function LiveTrackingPage() {
       setRequest(prev => (prev ? ({ ...prev, ...data } as DeliveryRequest) : prev))
       if (data.payment_accepted_at) {
         setPayPhase(prev => (prev === 'rating' || prev === 'thanks' ? prev : 'payment_accepted'))
-      } else if (data.payment_completed_at) {
+      } else if (data.payment_completed_at || data.status === 'cash_received') {
         setPayPhase(prev => (
           prev === 'payment_accepted' || prev === 'rating' || prev === 'thanks' ? prev : 'awaiting_dp_accept'
         ))
@@ -221,15 +221,43 @@ export default function LiveTrackingPage() {
 
   const markPaymentCompleted = async () => {
     const now = new Date().toISOString()
-    const { error } = await supabase.from('requests').update({
-      payment_completed_at: now,
-    }).eq('id', requestId)
-    if (error) {
-      console.error('[LiveTracking] payment_completed_at update failed:', error)
-      alert('Could not confirm payment. Please try again.')
-      return
+
+    // Prefer RPC (adds timestamps + cash_received even when schema/RLS is sticky)
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('mark_customer_payment_completed', {
+      p_request_id: requestId,
+    })
+
+    if (!rpcErr && rpcData && (rpcData as any).ok !== false) {
+      const completedAt = (rpcData as any).payment_completed_at || now
+      const nextStatus = (rpcData as any).status || 'cash_received'
+      setRequest(prev => (prev ? {
+        ...prev,
+        payment_completed_at: completedAt,
+        status: nextStatus,
+      } : prev))
+    } else {
+      // Fallback 1: direct column update
+      let { error } = await supabase.from('requests').update({
+        payment_completed_at: now,
+        status: 'cash_received',
+      }).eq('id', requestId)
+
+      if (error) {
+        // Fallback 2: status-only (column may be missing on older DBs)
+        const fb = await supabase.from('requests').update({
+          status: 'cash_received',
+        }).eq('id', requestId)
+        if (fb.error) {
+          console.error('[LiveTracking] payment confirm failed:', rpcErr || error, fb.error)
+          alert('Could not confirm payment. Please try again.')
+          return
+        }
+        setRequest(prev => (prev ? { ...prev, status: 'cash_received', payment_completed_at: now } : prev))
+      } else {
+        setRequest(prev => (prev ? { ...prev, payment_completed_at: now, status: 'cash_received' } : prev))
+      }
     }
-    setRequest(prev => (prev ? { ...prev, payment_completed_at: now } : prev))
+
     if (request?.accepted_dp_id) {
       await supabase.from('notifications').insert({
         user_id: request.accepted_dp_id,
@@ -277,16 +305,16 @@ export default function LiveTrackingPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-black">
-        <div className="text-white/40">Loading tracking...</div>
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F6F5]">
+        <div className="text-black/40">Loading tracking...</div>
       </div>
     )
   }
 
   if (!request) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black">
-        <p className="text-white/50">Order not found</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F4F6F5]">
+        <p className="text-black/50">Order not found</p>
         <button type="button" onClick={() => navigate('/app')} className="btn-primary">Back Home</button>
       </div>
     )
@@ -304,8 +332,8 @@ export default function LiveTrackingPage() {
   if (payPhase === 'thanks') {
     return (
       <MobileFrame overlay className="items-center justify-center overflow-hidden px-6">
-        <img src={Images.thankYouRating} alt="Thank you for rating" className="mb-4 w-full max-w-sm object-contain" draggable={false} style={{ background: '#000' }} />
-        <p className="text-sm text-white/50">Returning home...</p>
+        <img src={Images.thankYouRating} alt="Thank you for rating" className="mb-4 w-full max-w-sm object-contain" draggable={false} style={{ background: 'transparent' }} />
+        <p className="text-sm text-black/50">Returning home...</p>
       </MobileFrame>
     )
   }
@@ -313,9 +341,9 @@ export default function LiveTrackingPage() {
   if (payPhase === 'payment_accepted') {
     return (
       <MobileFrame overlay className="items-center justify-center overflow-hidden px-6">
-        <img src={Images.paymentReceived} alt="Payment accepted" className="mb-4 w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: '#000' }} />
-        <p className="text-base font-extrabold text-white">Payment accepted</p>
-        <p className="mt-1 text-sm text-white/50">Opening rating…</p>
+        <img src={Images.paymentReceived} alt="Payment accepted" className="mb-4 w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: 'transparent' }} />
+        <p className="text-base font-extrabold text-[#0F1A14]">Payment accepted</p>
+        <p className="mt-1 text-sm text-black/50">Opening rating…</p>
       </MobileFrame>
     )
   }
@@ -325,7 +353,7 @@ export default function LiveTrackingPage() {
       <MobileFrame overlay className="items-center justify-center overflow-y-auto px-6 py-8">
         <div className="w-full max-w-sm">
           <Surface className="rounded-[28px] p-6 text-center">
-            <h2 className="mb-1 text-xl font-bold text-white">Rate Your Delivery</h2>
+            <h2 className="mb-1 text-xl font-bold text-[#0F1A14]">Rate Your Delivery</h2>
             <p className="mb-5 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
               How was {dpProfile?.full_name?.split(' ')[0] || 'your partner'}'s service?
             </p>
@@ -333,7 +361,7 @@ export default function LiveTrackingPage() {
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} type="button" onClick={() => setRatingStars(n)} className="active:scale-90">
                   <Star size={36} fill={n <= ratingStars ? '#FBBF24' : 'none'}
-                    className={n <= ratingStars ? 'text-[#C4D600]' : 'text-white/20'} />
+                    className={n <= ratingStars ? 'text-[#0C8A3E]' : 'text-black/20'} />
                 </button>
               ))}
             </div>
@@ -362,20 +390,20 @@ export default function LiveTrackingPage() {
           </button>
           <div className="flex-1 text-center pr-11">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>Live</p>
-            <p className="text-sm font-extrabold text-white">Order tracking</p>
+            <p className="text-sm font-extrabold text-[#0F1A14]">Order tracking</p>
           </div>
         </div>
       </div>
 
       <div className="relative flex-shrink-0">
         {isPending ? (
-          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-black px-6">
+          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-[#F4F6F5] px-6">
             <img src={Images.userWaiting} alt="" className="mb-3 h-40 w-40 object-contain" />
-            <p className="text-lg font-bold text-white">Waiting for partner</p>
+            <p className="text-lg font-bold text-[#0F1A14]">Waiting for partner</p>
           </div>
         ) : isCancelled ? (
-          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-black px-6">
-            <p className="text-lg font-bold text-white">Order Cancelled</p>
+          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-[#F4F6F5] px-6">
+            <p className="text-lg font-bold text-[#0F1A14]">Order Cancelled</p>
             <button type="button" onClick={() => navigate('/app')} className="btn-primary mt-4">Back Home</button>
           </div>
         ) : showLiveMap ? (
@@ -404,7 +432,7 @@ export default function LiveTrackingPage() {
               {liveEtaLabel && (
                 <div
                   className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                  style={{ background: 'rgba(7,8,11,0.88)', color: pg.lime, border: `1px solid rgba(196,214,0,0.35)` }}
+                  style={{ background: 'rgba(255,255,255,0.94)', color: pg.lime, border: `1px solid rgba(12, 138, 62, 0.35)` }}
                 >
                   ETA {liveEtaLabel}
                 </div>
@@ -433,37 +461,37 @@ export default function LiveTrackingPage() {
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(251,191,36,0.15)' }}>
                     <Star size={16} style={{ color: pg.lime }} fill={pg.lime} />
                   </div>
-                  <p className="text-base font-bold text-white">{dpData?.rating_avg?.toFixed(1) || '0.0'}</p>
+                  <p className="text-base font-bold text-[#0F1A14]">{dpData?.rating_avg?.toFixed(1) || '0.0'}</p>
                   <p className="text-[10px]" style={{ color: pg.text3 }}>{dpData?.rating_count || 0} reviews</p>
                 </Surface>
                 <Surface className="p-3 text-center">
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: pg.limeDim }}>
                     <VehicleIcon size={16} style={{ color: pg.lime }} />
                   </div>
-                  <p className="text-base font-bold text-white capitalize">{dpData?.vehicle_type || 'Bike'}</p>
+                  <p className="text-base font-bold text-[#0F1A14] capitalize">{dpData?.vehicle_type || 'Bike'}</p>
                   <p className="text-[10px]" style={{ color: pg.text3 }}>Vehicle</p>
                 </Surface>
                 <Surface className="p-3 text-center">
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(59,130,246,0.15)' }}>
                     <Clock size={16} style={{ color: pg.lime }} />
                   </div>
-                  <p className="text-base font-bold text-white">{etaLabel}</p>
+                  <p className="text-base font-bold text-[#0F1A14]">{etaLabel}</p>
                   <p className="text-[10px]" style={{ color: pg.text3 }}>ETA</p>
                 </Surface>
               </div>
 
               <Surface className="mb-4 p-4">
                 <div className="flex items-center gap-3">
-                  <div className="relative h-16 w-16 overflow-hidden rounded-2xl bg-white/5 shrink-0">
+                  <div className="relative h-16 w-16 overflow-hidden rounded-2xl bg-black/5 shrink-0">
                     {dpProfile.photo_url ? (
                       <img src={dpProfile.photo_url} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-white/30"><Bike size={24} /></div>
+                      <div className="flex h-full w-full items-center justify-center text-black/30"><Bike size={24} /></div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-white truncate">{dpProfile.full_name}</p>
-                    <p className="text-xs text-white/40">{STATUS_LABELS[request.status] || request.status}</p>
+                    <p className="font-bold text-[#0F1A14] truncate">{dpProfile.full_name}</p>
+                    <p className="text-xs text-black/40">{STATUS_LABELS[request.status] || request.status}</p>
                   </div>
                   {!isCompleted && (
                     <>
@@ -487,14 +515,14 @@ export default function LiveTrackingPage() {
               <Surface className="mb-4 p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <MapPin size={16} className="text-red-400" />
-                  <p className="text-xs font-bold uppercase tracking-wider text-white/60">Delivery Address</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-black/55">Delivery Address</p>
                 </div>
                 <p className="text-sm leading-relaxed" style={{ color: pg.text2 }}>{request.delivery_address || 'Not specified'}</p>
               </Surface>
 
               {Array.isArray((request as any).photo_urls) && (request as any).photo_urls.length > 0 && (
                 <Surface className="mb-4 p-4">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/60">Order photos</p>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-black/55">Order photos</p>
                   <div className="flex flex-wrap gap-2">
                     {((request as any).photo_urls as string[]).map((url, i) => (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer">
@@ -527,8 +555,8 @@ export default function LiveTrackingPage() {
               <div className="mb-3 flex items-center gap-2">
                 <PackageCheck size={20} className="text-green-400" />
                 <div>
-                  <p className="font-bold text-white">Order has been delivered!</p>
-                  <p className="text-xs text-white/40">Confirm receipt to continue</p>
+                  <p className="font-bold text-[#0F1A14]">Order has been delivered!</p>
+                  <p className="text-xs text-black/40">Confirm receipt to continue</p>
                 </div>
               </div>
               <CTA type="button" onClick={confirmDelivery} className="w-full" style={{ background: pg.success, color: '#fff', boxShadow: 'none' }}>

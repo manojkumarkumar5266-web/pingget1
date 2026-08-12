@@ -28,9 +28,8 @@ const tagScale: Record<BrandSize, string> = {
 }
 
 /**
- * pinGGet wordmark
- * p,i,n white · 1st G olive · 2nd G lime · e,t white
- * Tagline in lime when shown
+ * pinGGet wordmark — light commerce UI
+ * pin/et dark · 1st G soft green · 2nd G brand green
  */
 export function BrandWordmark({
   className = '',
@@ -52,15 +51,15 @@ export function BrandWordmark({
         className={`font-extrabold tracking-tight ${wordScale[size]}`}
         style={{ fontFamily: "'Outfit', 'DM Sans', system-ui, sans-serif" }}
       >
-        <span style={{ color: '#F7F4EE' }}>pin</span>
-        <span style={{ color: '#8FAE3E' }}>G</span>
-        <span style={{ color: '#C4D600' }}>G</span>
-        <span style={{ color: '#F7F4EE' }}>et</span>
+        <span style={{ color: '#0F1A14' }}>pin</span>
+        <span style={{ color: '#2EAD5A' }}>G</span>
+        <span style={{ color: '#0C8A3E' }}>G</span>
+        <span style={{ color: '#0F1A14' }}>et</span>
       </div>
       {showTagline && (
         <div
           className={`mt-1.5 font-semibold uppercase ${tagScale[size]}`}
-          style={{ color: '#C4D600' }}
+          style={{ color: '#0C8A3E' }}
         >
           boy next door
         </div>

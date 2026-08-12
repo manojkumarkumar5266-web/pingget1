@@ -192,7 +192,7 @@ export default function CreateRequest() {
                 <button
                   type="button"
                   onClick={() => removePhoto(idx)}
-                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white"
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[#0F1A14]"
                 >
                   <X size={10} />
                 </button>

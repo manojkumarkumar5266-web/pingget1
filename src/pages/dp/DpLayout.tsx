@@ -101,7 +101,7 @@ export default function DpLayout() {
       <div className="relative mx-auto flex h-full w-full max-w-lg flex-col">
       <header
         className="z-10 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]"
-        style={{ background: 'rgba(7,8,11,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+        style={{ background: 'rgba(255,255,255,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
       >
         <div className="flex items-center justify-between gap-3">
           <BrandWordmark size="xs" showTagline={false} align="left" />

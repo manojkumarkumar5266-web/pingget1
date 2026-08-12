@@ -66,7 +66,7 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
         className="relative overflow-hidden rounded-[1.35rem] touch-manipulation select-none"
         style={{
           border: `1px solid ${pg.line}`,
-          background: '#0A0C10',
+          background: '#F4F6F5',
           boxShadow: holding ? `0 0 0 2px ${pg.olive}` : undefined,
         }}
         onPointerDown={holdStart}
@@ -97,16 +97,16 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
                     height={640}
                   />
                 ) : (
-                  <div className="absolute inset-0" style={{ background: '#0A0C10' }} />
+                  <div className="absolute inset-0" style={{ background: '#F4F6F5' }} />
                 )}
                 <div
                   className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3.5 pt-12"
                   style={{
-                    background: 'linear-gradient(180deg, transparent, rgba(7,8,11,0.94) 60%)',
+                    background: 'linear-gradient(180deg, transparent, rgba(15,26,20,0.88) 62%)',
                   }}
                 >
                   <p className="text-[16px] font-extrabold tracking-tight text-white">{f.title}</p>
-                  <p className="mt-0.5 text-xs" style={{ color: pg.text3 }}>
+                  <p className="mt-0.5 text-xs text-white/75">
                     {f.subtitle}
                   </p>
                 </div>

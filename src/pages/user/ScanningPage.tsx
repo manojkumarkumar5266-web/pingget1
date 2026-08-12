@@ -228,7 +228,7 @@ export default function ScanningPage() {
           <MapPinOff size={40} className="text-red-400" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white">Location Access Required</h2>
+          <h2 className="text-xl font-bold text-[#0F1A14]">Location Access Required</h2>
           <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
             Please allow location access so we can find delivery partners near you.
           </p>
@@ -248,7 +248,7 @@ export default function ScanningPage() {
           <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
             {waitingForAccept ? 'Waiting' : 'Scanning'}
           </p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-white">
+          <h1 className="text-2xl font-extrabold tracking-tight text-[#0F1A14]">
             {waitingForAccept ? 'Partner nearby' : 'Finding partners'}
           </h1>
         </div>
@@ -270,7 +270,7 @@ export default function ScanningPage() {
         {!center && (
           <div
             className="pointer-events-none absolute inset-x-0 bottom-3 mx-auto w-fit rounded-full px-3 py-1 text-[11px] font-bold"
-            style={{ background: 'rgba(7,8,11,0.75)', color: '#fff' }}
+            style={{ background: 'rgba(255,255,255,0.92)', color: pg.text, border: `1px solid ${pg.line}` }}
           >
             Getting GPS…
           </div>
@@ -286,7 +286,7 @@ export default function ScanningPage() {
       <div className="flex items-center gap-4 px-5 py-4 shrink-0">
         <img src={Images.userWaiting} alt="" className="h-28 w-24 object-contain" draggable={false} />
         <div className="flex-1">
-          <h2 className="text-lg font-bold text-white">
+          <h2 className="text-lg font-bold text-[#0F1A14]">
             {waitingForAccept
               ? 'Waiting for Partner to Accept...'
               : retrying
@@ -306,7 +306,7 @@ export default function ScanningPage() {
       <div className="px-5 py-1.5 shrink-0">
         <div
           className="rounded-full py-1.5 text-center text-[11px] font-bold"
-          style={{ background: 'rgba(196,214,0,0.14)', color: pg.lime, border: '1px solid rgba(196,214,0,0.35)' }}
+          style={{ background: 'rgba(196,214,0,0.14)', color: pg.lime, border: '1px solid rgba(12, 138, 62, 0.35)' }}
         >
           Searching within {radiusLabel} · map shows ~{formatDistance(MAP_VIEW_RADIUS_M)}
         </div>
@@ -330,7 +330,7 @@ export default function ScanningPage() {
                 )}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-bold text-white">
+                <p className="text-sm font-bold text-[#0F1A14]">
                   {dpCount > 0 ? `${dpCount} partner${dpCount > 1 ? 's' : ''} notified` : 'Searching...'}
                 </p>
                 <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>

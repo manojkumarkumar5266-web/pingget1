@@ -214,10 +214,10 @@ export default function DpNavigationPage() {
     return dpPos || userPos
   }, [dpPos, userPos])
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-black text-white/40">Loading...</div>
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#F4F6F5] text-black/40">Loading...</div>
   if (!request) return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black">
-      <p className="text-white/50">Order not found</p>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F4F6F5]">
+      <p className="text-black/50">Order not found</p>
       <button type="button" onClick={() => navigate('/dp')} className="btn-primary">Back</button>
     </div>
   )
@@ -289,8 +289,8 @@ export default function DpNavigationPage() {
   if (endPhase === 'thanks_rating') {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6" style={{ background: pg.bg }}>
-        <img src={Images.thankYouRating} alt="Thank you for rating" className="w-full max-w-sm object-contain" draggable={false} style={{ background: '#000' }} />
-        <p className="text-center text-base font-extrabold text-white">Customer rated your delivery</p>
+        <img src={Images.thankYouRating} alt="Thank you for rating" className="w-full max-w-sm object-contain" draggable={false} style={{ background: 'transparent' }} />
+        <p className="text-center text-base font-extrabold text-[#0F1A14]">Customer rated your delivery</p>
         <CTA type="button" onClick={() => navigate('/dp', { replace: true })} className="w-full max-w-sm">
           Go Home
         </CTA>
@@ -301,9 +301,9 @@ export default function DpNavigationPage() {
   if (endPhase === 'payment_accepted' || request.payment_accepted_at) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 px-6" style={{ background: pg.bg }}>
-        <img src={Images.paymentReceived} alt="Payment accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: '#000' }} />
-        <p className="text-center text-base font-extrabold text-white">Payment accepted</p>
-        <p className="text-center text-sm text-white/50">Waiting for customer rating…</p>
+        <img src={Images.paymentReceived} alt="Payment accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: 'transparent' }} />
+        <p className="text-center text-base font-extrabold text-[#0F1A14]">Payment accepted</p>
+        <p className="text-center text-sm text-black/50">Waiting for customer rating…</p>
       </div>
     )
   }
@@ -320,7 +320,7 @@ export default function DpNavigationPage() {
           <ArrowLeft size={18} />
         </button>
         <div className="text-center">
-          <p className="text-base font-extrabold text-white">Order tracking</p>
+          <p className="text-base font-extrabold text-[#0F1A14]">Order tracking</p>
           <p className="text-xs" style={{ color: pg.text3 }}>{STATUS_LABELS[request.status] || request.status}</p>
         </div>
       </div>
@@ -352,7 +352,7 @@ export default function DpNavigationPage() {
               {liveEtaLabel && (
                 <div
                   className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                  style={{ background: 'rgba(7,8,11,0.88)', color: pg.lime, border: '1px solid rgba(196,214,0,0.35)' }}
+                  style={{ background: 'rgba(255,255,255,0.94)', color: pg.lime, border: '1px solid rgba(12, 138, 62, 0.35)' }}
                 >
                   ETA to customer · {liveEtaLabel}
                 </div>
@@ -377,7 +377,7 @@ export default function DpNavigationPage() {
             <Surface className="p-4">
               <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Customer</div>
               <div className="flex items-center gap-3">
-                <div className="h-14 w-14 overflow-hidden rounded-2xl bg-white/5 shrink-0">
+                <div className="h-14 w-14 overflow-hidden rounded-2xl bg-black/5 shrink-0">
                   {userProfile.photo_url ? (
                     <img
                       src={userProfile.photo_url}
@@ -386,12 +386,12 @@ export default function DpNavigationPage() {
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-white/30"><UserIcon size={20} /></div>
+                    <div className="flex h-full w-full items-center justify-center text-black/30"><UserIcon size={20} /></div>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-white">{userProfile.full_name}</p>
-                  <p className="text-xs text-white/40">{userProfile.phone || 'No phone'}</p>
+                  <p className="truncate font-bold text-[#0F1A14]">{userProfile.full_name}</p>
+                  <p className="text-xs text-black/40">{userProfile.phone || 'No phone'}</p>
                 </div>
                 <button type="button" onClick={() => { window.location.href = `tel:${userProfile.phone || ''}` }}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl active:scale-95 disabled:opacity-30"
@@ -414,9 +414,9 @@ export default function DpNavigationPage() {
           <Surface className="p-4">
             <div className="mb-3 flex items-center gap-2">
               <MapPin size={16} className="text-red-400" />
-              <p className="text-sm font-bold text-white">Delivery Address</p>
+              <p className="text-sm font-bold text-[#0F1A14]">Delivery Address</p>
             </div>
-            <p className="mb-3 text-sm leading-relaxed text-white/80">{request.delivery_address || 'Not specified'}</p>
+            <p className="mb-3 text-sm leading-relaxed text-black/75">{request.delivery_address || 'Not specified'}</p>
             <CTA type="button" onClick={openGoogleMaps} className="w-full">
               <Navigation size={18} /> Open in Google Maps
             </CTA>
@@ -468,7 +468,7 @@ export default function DpNavigationPage() {
                   {photoPreviews.map((preview, idx) => (
                     <div key={idx} className="relative">
                       <img src={preview} alt={`Proof ${idx + 1}`} className="h-20 w-20 rounded-xl object-cover" />
-                      <button type="button" onClick={() => removePhoto(idx)} className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1 text-white shadow">
+                      <button type="button" onClick={() => removePhoto(idx)} className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1 text-[#0F1A14] shadow">
                         <X size={10} />
                       </button>
                     </div>
@@ -478,7 +478,7 @@ export default function DpNavigationPage() {
               <button type="button" onClick={() => photoInputRef.current?.click()}
                 className="w-full rounded-xl border-2 border-dashed py-3 text-sm font-bold"
                 style={{ borderColor: pg.line, background: pg.bgElevated, color: pg.text3 }}>
-                <Camera size={18} className="mx-auto mb-1 text-white/60" />
+                <Camera size={18} className="mx-auto mb-1 text-black/55" />
                 {photoPreviews.length > 0 ? 'Add More Photos' : 'Take Delivery Photos'}
               </button>
               {photoFiles.length > 0 && (
@@ -492,20 +492,20 @@ export default function DpNavigationPage() {
           {isDelivered && !isCompleted && !request.payment_completed_at && (
             <Surface className="p-4 text-center">
               <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: pg.lime }} />
-              <p className="font-bold text-white">Waiting for customer to accept delivery</p>
+              <p className="font-bold text-[#0F1A14]">Waiting for customer to accept delivery</p>
               <p className="mt-1 text-xs" style={{ color: pg.text3 }}>You'll continue after the customer confirms receipt</p>
             </Surface>
           )}
 
-          {(isCompleted || isDelivered) && !request.payment_completed_at && !request.payment_accepted_at && isCompleted && (
+          {(isCompleted || isDelivered) && !request.payment_completed_at && request.status !== 'cash_received' && !request.payment_accepted_at && isCompleted && (
             <Surface className="p-4 text-center">
               <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: pg.lime }} />
-              <p className="font-bold text-white">Waiting for customer payment</p>
+              <p className="font-bold" style={{ color: pg.text }}>Waiting for customer payment</p>
               <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Stay here until the customer marks payment completed</p>
             </Surface>
           )}
 
-          {!!request.payment_completed_at && !request.payment_accepted_at && (
+          {(!!request.payment_completed_at || request.status === 'cash_received') && !request.payment_accepted_at && (
             <Surface accent className="p-4">
               <p className="mb-1 text-sm font-extrabold" style={{ color: pg.lime }}>Payment completed by customer</p>
               <p className="mb-3 text-xs" style={{ color: pg.text3 }}>Accept payment to continue — customer will rate next</p>
@@ -513,15 +513,23 @@ export default function DpNavigationPage() {
                 type="button"
                 onClick={async () => {
                   const now = new Date().toISOString()
-                  const { error } = await supabase.from('requests').update({
-                    payment_accepted_at: now,
-                  }).eq('id', requestId)
-                  if (error) {
-                    console.error('[DpNav] payment_accepted_at update failed:', error)
-                    alert('Could not accept payment. Please try again.')
-                    return
+                  const { data: rpcData, error: rpcErr } = await supabase.rpc('mark_dp_payment_accepted', {
+                    p_request_id: requestId,
+                  })
+                  if (!rpcErr && rpcData && (rpcData as any).ok !== false) {
+                    const acceptedAt = (rpcData as any).payment_accepted_at || now
+                    setRequest(prev => prev ? ({ ...prev, payment_accepted_at: acceptedAt }) : prev)
+                  } else {
+                    const { error } = await supabase.from('requests').update({
+                      payment_accepted_at: now,
+                    }).eq('id', requestId)
+                    if (error) {
+                      console.error('[DpNav] payment_accepted_at update failed:', rpcErr || error)
+                      alert('Could not accept payment. Please try again.')
+                      return
+                    }
+                    setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now }) : prev)
                   }
-                  setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now }) : prev)
                   await supabase.from('notifications').insert({
                     user_id: request.user_id,
                     title: 'Payment Accepted',
