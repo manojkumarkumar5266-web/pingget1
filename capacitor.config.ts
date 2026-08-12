@@ -1,9 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 /**
- * Customer mobile app — packages dist-user.
- * applicationId remains com.pingget.app until Firebase/google-services is updated.
- * Partner app uses capacitor.dp.config.ts (com.pingget.dp) in a separate native project.
+ * Customer mobile app — packages dist-user into android-customer/.
+ * Firebase / Play package: com.pingget.customer
+ * Partner app: capacitor.dp.config.ts → android-dp/ (com.pingget.dp)
  * Both share one Supabase project.
  */
 const config: CapacitorConfig = {
@@ -29,6 +29,7 @@ const config: CapacitorConfig = {
     },
   },
   android: {
+    path: 'android-customer',
     allowMixedContent: true,
     captureInput: true,
     webContentsDebuggingEnabled: false,

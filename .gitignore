@@ -13,7 +13,6 @@ dist-dp
 dist-admin
 dist-ssr
 *.local
-android-dp/
 ios-dp/
 
 .vscode/*
@@ -26,4 +25,4 @@ ios-dp/
 *.sln
 *.sw?
 .env
-.env
+.capacitor.config.ts.bak

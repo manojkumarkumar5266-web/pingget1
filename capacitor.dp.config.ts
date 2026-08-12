@@ -1,6 +1,10 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
-/** Delivery Partner mobile app — packages dist-dp. Same Supabase as User + Admin. */
+/**
+ * Delivery Partner mobile app — packages dist-dp into android-dp/.
+ * Firebase / Play package: com.pingget.dp
+ * Same Supabase as User + Admin.
+ */
 const config: CapacitorConfig = {
   appId: 'com.pingget.dp',
   appName: 'pinGGetDP',
@@ -24,6 +28,7 @@ const config: CapacitorConfig = {
     },
   },
   android: {
+    path: 'android-dp',
     allowMixedContent: true,
     captureInput: true,
     webContentsDebuggingEnabled: false,

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">pinGGetDP</string>
+    <string name="title_activity_main">pinGGetDP</string>
+    <string name="package_name">com.pingget.dp</string>
+    <string name="custom_url_scheme">com.pingget.dp</string>
+</resources>
