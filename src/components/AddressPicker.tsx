@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from './ui'
@@ -188,9 +189,9 @@ export default function AddressPicker({
     }
   }
 
-  if (showForm) {
-    const form = (
-      <Surface className={`${compact || inline ? 'mb-4' : 'mb-5'} p-4`}>
+  if (showForm && !inline) {
+    return (
+      <Surface className={`${compact ? 'mb-4' : 'mb-5'} p-4`}>
         <AddressFormHeader title={editingId ? 'Edit Address' : 'New Address'} onClose={() => { setShowForm(false); resetForm() }} />
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -215,15 +216,11 @@ export default function AddressPicker({
         </div>
       </Surface>
     )
-    if (inline) {
-      return <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">{form}</div>
-    }
-    return form
   }
 
-  if (showList) {
-    const list = (
-      <Surface className={`${compact || inline ? 'mb-4' : 'mb-5'} p-4`}>
+  if (showList && !inline) {
+    return (
+      <Surface className={`${compact ? 'mb-4' : 'mb-5'} p-4`}>
         <AddressFormHeader title="Select Address" onClose={() => setShowList(false)} />
         <div className="mb-3 max-h-64 space-y-2 overflow-y-auto">
           {addresses.map(addr => (
@@ -233,7 +230,7 @@ export default function AddressPicker({
               className="!flex items-start gap-2 p-3"
               style={selectedAddressId !== addr.id ? { background: pg.bgElevated } : undefined}
             >
-              <button type="button" className="min-w-0 flex-1 text-left" onClick={() => { setSelectedAddressId(addr.id); setShowList(false) }}>
+              <button type="button" className="min-w-0 flex-1 text-left" onClick={() => { setSelectedAddressId(addr.id); localStorage.setItem(SELECTED_ADDRESS_KEY, addr.id); setShowList(false) }}>
                 <p className="truncate text-sm font-extrabold">{addr.label || 'Address'}</p>
                 <p className="truncate text-xs" style={{ color: pg.text3 }}>{formatAddress(addr)}</p>
               </button>
@@ -258,52 +255,140 @@ export default function AddressPicker({
         )}
       </Surface>
     )
-    if (inline) {
-      return <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">{list}</div>
-    }
-    return list
   }
 
-  return (
-    <div className={inline ? '' : compact ? 'mb-4' : 'mb-5'}>
-      {!inline && <SectionLabel title="Select Address" />}
-      {selected ? (
-        <Surface
-          className={`flex items-center gap-2 ${inline ? 'p-2.5' : 'gap-3 p-3.5'}`}
-          onClick={inline ? () => setShowList(true) : undefined}
-        >
-          <div
-            className={`flex shrink-0 items-center justify-center rounded-xl ${inline ? 'h-9 w-9' : 'h-11 w-11 rounded-2xl'}`}
-            style={{ background: pg.limeDim }}
+  const popupForm = (
+    <Surface className="p-4">
+      <AddressFormHeader title={editingId ? 'Edit Address' : 'New Address'} onClose={() => { setShowForm(false); resetForm() }} />
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="label">House No.</label><input className="input" value={addrHouse} onChange={e => setAddrHouse(e.target.value)} /></div>
+          <div><label className="label">Flat No.</label><input className="input" value={addrFlat} onChange={e => setAddrFlat(e.target.value)} /></div>
+        </div>
+        <div><label className="label">Building</label><input className="input" value={addrBuilding} onChange={e => setAddrBuilding(e.target.value)} /></div>
+        <div><label className="label">Landmark</label><input className="input" value={addrLandmark} onChange={e => setAddrLandmark(e.target.value)} /></div>
+        <div><label className="label">Street</label><input className="input" value={addrStreet} onChange={e => setAddrStreet(e.target.value)} /></div>
+        <div><label className="label">Area</label><input className="input" value={addrArea} onChange={e => setAddrArea(e.target.value)} /></div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="label">City</label><input className="input" value={addrCity} onChange={e => setAddrCity(e.target.value)} /></div>
+          <div><label className="label">PIN</label><input className="input" value={addrPincode} onChange={e => setAddrPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} maxLength={6} /></div>
+        </div>
+        <CTA type="button" variant="secondary" onClick={pickLocation} className="w-full !min-h-[48px] border-dashed" style={{ border: `1.5px dashed rgba(196,214,0,0.35)`, color: pg.lime, background: pg.limeDim }}>
+          <Navigation size={15} /> {addrLat ? 'Location set' : 'Use current location'}
+        </CTA>
+        {error && <ErrorBanner message={error} />}
+        <CTA type="button" onClick={saveAddress} disabled={saving} className="w-full">
+          {saving ? 'Saving...' : 'Save Address'}
+        </CTA>
+      </div>
+    </Surface>
+  )
+
+  const popupList = (
+    <Surface className="p-4">
+      <AddressFormHeader title="Select Address" onClose={() => setShowList(false)} />
+      <div className="mb-3 max-h-64 space-y-2 overflow-y-auto">
+        {addresses.map(addr => (
+          <Surface
+            key={addr.id}
+            accent={selectedAddressId === addr.id}
+            className="!flex items-start gap-2 p-3"
+            style={selectedAddressId !== addr.id ? { background: pg.bgElevated } : undefined}
           >
-            <Home size={inline ? 15 : 18} style={{ color: pg.lime }} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.12em]" style={{ color: pg.text3 }}>
-              Deliver To
-            </p>
-            <p className={`font-bold ${inline ? 'line-clamp-2 text-xs leading-snug' : 'truncate text-sm'}`}>
-              {formatShortAddress(selected) || formatAddress(selected)}
-            </p>
-          </div>
-          {!inline && (
-            <CTA type="button" onClick={() => setShowList(true)} className="!min-h-[36px] !rounded-xl !px-3 !py-1.5 !text-xs">
-              <MapPin size={12} /> Select
-            </CTA>
-          )}
-        </Surface>
-      ) : (
-        <CTA
-          type="button"
-          variant="secondary"
-          onClick={() => setShowForm(true)}
-          className={inline ? '!min-h-[44px] !rounded-xl !px-3 !py-2 !text-xs' : 'w-full border-dashed'}
-          style={{ border: `1.5px dashed rgba(196,214,0,0.35)`, color: pg.lime, background: pg.limeDim }}
-        >
-          <Plus size={inline ? 14 : 16} /> {inline ? 'Add address' : 'Add delivery address'}
+            <button
+              type="button"
+              className="min-w-0 flex-1 text-left"
+              onClick={() => {
+                setSelectedAddressId(addr.id)
+                localStorage.setItem(SELECTED_ADDRESS_KEY, addr.id)
+                setShowList(false)
+              }}
+            >
+              <p className="truncate text-sm font-extrabold">{addr.label || 'Address'}</p>
+              <p className="truncate text-xs" style={{ color: pg.text3 }}>{formatAddress(addr)}</p>
+            </button>
+            <IconButton onClick={() => { startEdit(addr); setShowList(false); setShowForm(true) }} className="!h-8 !w-8 !rounded-xl">
+              <Edit2 size={12} />
+            </IconButton>
+            <button
+              type="button"
+              onClick={() => deleteAddress(addr.id)}
+              className="flex h-8 w-8 items-center justify-center rounded-xl transition active:scale-90"
+              style={{ background: 'rgba(255,77,79,0.12)', border: '1px solid rgba(255,77,79,0.2)', color: pg.danger }}
+            >
+              <Trash2 size={12} />
+            </button>
+          </Surface>
+        ))}
+      </div>
+      {addresses.length < MAX_ADDRESSES && (
+        <CTA type="button" onClick={() => { resetForm(); setShowForm(true); setShowList(false) }} className="w-full">
+          <Plus size={16} /> Add New Address
         </CTA>
       )}
-    </div>
+      <CTA type="button" className="mt-2 w-full" onClick={() => setShowList(false)}>
+        Done
+      </CTA>
+    </Surface>
+  )
+
+  const popup = inline && (showList || showForm)
+    ? createPortal(
+        <div
+          className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => { setShowList(false); setShowForm(false); resetForm() }}
+        >
+          <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {showForm ? popupForm : popupList}
+          </div>
+        </div>,
+        document.body,
+      )
+    : null
+
+  return (
+    <>
+      <div className={inline ? '' : compact ? 'mb-4' : 'mb-5'}>
+        {!inline && <SectionLabel title="Select Address" />}
+        {selected ? (
+          <Surface
+            className={`flex items-center gap-2 ${inline ? 'p-2.5' : 'gap-3 p-3.5'}`}
+            onClick={inline ? () => setShowList(true) : undefined}
+          >
+            <div
+              className={`flex shrink-0 items-center justify-center rounded-xl ${inline ? 'h-9 w-9' : 'h-11 w-11 rounded-2xl'}`}
+              style={{ background: pg.limeDim }}
+            >
+              <Home size={inline ? 15 : 18} style={{ color: pg.lime }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.12em]" style={{ color: pg.text3 }}>
+                Deliver To
+              </p>
+              <p className={`font-bold ${inline ? 'line-clamp-2 text-xs leading-snug' : 'truncate text-sm'}`}>
+                {formatShortAddress(selected) || formatAddress(selected)}
+              </p>
+            </div>
+            {!inline && (
+              <CTA type="button" onClick={() => setShowList(true)} className="!min-h-[36px] !rounded-xl !px-3 !py-1.5 !text-xs">
+                <MapPin size={12} /> Select
+              </CTA>
+            )}
+          </Surface>
+        ) : (
+          <CTA
+            type="button"
+            variant="secondary"
+            onClick={() => setShowForm(true)}
+            className={inline ? '!min-h-[44px] !rounded-xl !px-3 !py-2 !text-xs' : 'w-full border-dashed'}
+            style={{ border: `1.5px dashed rgba(196,214,0,0.35)`, color: pg.lime, background: pg.limeDim }}
+          >
+            <Plus size={inline ? 14 : 16} /> {inline ? 'Add address' : 'Add delivery address'}
+          </CTA>
+        )}
+      </div>
+      {popup}
+    </>
   )
 }
 

@@ -227,6 +227,8 @@ export type ChatRoom = {
   user_id: string
   dp_id: string
   created_at: string
+  closed_at?: string | null
+  closed_by?: string | null
 }
 
 export type MessageType = 'text' | 'image' | 'voice' | 'location' | 'quotation' | 'order_summary' | 'advance_payment' | 'payment_proof'
