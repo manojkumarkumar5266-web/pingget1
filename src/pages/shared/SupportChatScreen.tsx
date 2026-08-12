@@ -170,7 +170,7 @@ export function SupportChatScreen({ homePath }: { homePath: string }) {
         ) : null}
         {!loading && messages.length === 0 ? (
           <p className="rounded-2xl px-4 py-3 text-sm" style={{ border: `1px solid ${pg.line}`, background: pg.surface, color: pg.text3 }}>
-            Say hello — an admin will reply here. Your name and user ID are visible on the admin side.
+            Say hello — the support team will reply here. Your name and user ID are visible on their side.
           </p>
         ) : null}
         {messages.map((m) => {
@@ -187,7 +187,7 @@ export function SupportChatScreen({ homePath }: { homePath: string }) {
               >
                 {!mine ? (
                   <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide" style={{ color: pg.text3 }}>
-                    Admin
+                    Support
                   </p>
                 ) : null}
                 <p className="whitespace-pre-wrap break-words">{m.content}</p>
