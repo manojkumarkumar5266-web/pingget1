@@ -110,10 +110,10 @@ export function StatusPill({ status }: { status: string }) {
 
 export function DrawerShell({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 bg-[#F4F6F5]/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-[#000000]/60 backdrop-blur-sm" onClick={onClose}>
       <div
         className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-[28px]"
-        style={{ background: pg.surface, borderTop: `1px solid ${pg.line}` }}
+        style={{ background: pg.surface, color: pg.ink, borderTop: `1px solid ${pg.line}` }}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1">
@@ -161,7 +161,7 @@ export function InfoPanel({ children, className = '' }: { children: ReactNode; c
   return (
     <div
       className={`rounded-2xl p-4 space-y-2 ${className}`}
-      style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}
+      style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}
     >
       {children}
     </div>

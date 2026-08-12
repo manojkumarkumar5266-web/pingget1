@@ -65,7 +65,7 @@ export default function AdminLayout() {
   const isActive = (path: string) => path === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(path)
 
   const Sidebar = () => (
-    <div className="flex h-full flex-col" style={{ background: pg.surface }}>
+    <div className="flex h-full flex-col" style={{ background: pg.surface, color: pg.ink }}>
       <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: `1px solid ${pg.line}` }}>
         <div>
           <BrandWordmark size="sm" showTagline={false} align="left" className="mb-1" />
@@ -99,7 +99,7 @@ export default function AdminLayout() {
         })}
       </nav>
       <div className="p-4" style={{ borderTop: `1px solid ${pg.line}` }}>
-        <div className="mb-3 flex items-center gap-2.5 rounded-2xl px-3 py-2.5" style={{ background: pg.surface2 }}>
+        <div className="mb-3 flex items-center gap-2.5 rounded-2xl px-3 py-2.5" style={{ background: pg.surface2, color: pg.ink }}>
           <div className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-extrabold" style={{ background: pg.limeDim, color: pg.lime }}>
             {profile?.full_name?.charAt(0).toUpperCase() || 'A'}
           </div>
@@ -128,7 +128,7 @@ export default function AdminLayout() {
 
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
-          <div className="absolute inset-0 bg-[#F4F6F5]/70" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute inset-0 bg-[#000000]/70" onClick={() => setSidebarOpen(false)} />
           <aside className="relative z-10 h-full w-72">
             <Sidebar />
           </aside>
@@ -137,7 +137,7 @@ export default function AdminLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-3 md:hidden" style={{ background: 'rgba(255,255,255,0.95)', borderBottom: `1px solid ${pg.line}` }}>
-          <button type="button" onClick={() => setSidebarOpen(!sidebarOpen)} className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.surface2 }}>
+          <button type="button" onClick={() => setSidebarOpen(!sidebarOpen)} className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.surface2, color: pg.ink }}>
             {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
           <p className="text-sm font-extrabold">Admin</p>

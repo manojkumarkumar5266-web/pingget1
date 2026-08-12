@@ -673,8 +673,8 @@ export default function CreateAdvanceRequest() {
 
             {/* Category detail half-sheet */}
             {sheetCategory && (
-              <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/60" onClick={() => setSheetCategory(null)}>
-                <div className="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-t-3xl p-5 space-y-4" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}
+              <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60" onClick={() => setSheetCategory(null)}>
+                <div className="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-t-3xl p-5 space-y-4" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}
                   onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

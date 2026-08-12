@@ -68,7 +68,7 @@ export default function AdminServiceWaitlist() {
             <div
               key={row.id}
               className="flex flex-wrap items-start justify-between gap-3 rounded-[22px] px-4 py-3.5"
-              style={{ background: pg.surface, border: `1px solid ${pg.line}` }}
+              style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 text-sm font-extrabold">

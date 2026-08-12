@@ -66,7 +66,7 @@ export default function OfferDetailPage({ basePath }: { basePath: '/app' | '/dp'
         {loading ? (
           <p className="text-sm" style={{ color: pg.text3 }}>Loading…</p>
         ) : error || !offer ? (
-          <div className="rounded-[22px] p-5" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+          <div className="rounded-[22px] p-5" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}>
             <p className="font-extrabold">Offer unavailable</p>
             <p className="mt-1 text-sm" style={{ color: pg.text3 }}>{error || 'This notification may have been deleted.'}</p>
             <CTA className="mt-4" onClick={() => navigate(`${basePath}/notifications`)}>Back to Alerts</CTA>
@@ -76,7 +76,7 @@ export default function OfferDetailPage({ basePath }: { basePath: '/app' | '/dp'
             {offer.image_url ? (
               <div
                 className="mb-5 overflow-hidden rounded-[24px]"
-                style={{ border: `1px solid ${pg.line}`, background: pg.surface }}
+                style={{ border: `1px solid ${pg.line}`, background: pg.surface, color: pg.ink }}
               >
                 <img
                   src={offer.image_url}

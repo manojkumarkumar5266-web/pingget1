@@ -177,7 +177,7 @@ export default function AdminCategories() {
 
       {/* Add Category Modal */}
       {showAddCat && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#F4F6F5]/60" onClick={() => setShowAddCat(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#000000]/60" onClick={() => setShowAddCat(false)}>
           <div className="mx-4 w-full max-w-sm rounded-2xl p-5" style={{ background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(255,255,255,0.12)' }} onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-[#0F1A14]">Add Category</h2>

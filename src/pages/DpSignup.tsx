@@ -336,7 +336,7 @@ export default function DpSignup() {
               <label className="label flex items-center gap-1.5"><MapPin size={14} /> Your Area Pincode (optional)</label>
               <div className="flex gap-2">
                 <input className="input flex-1" value={signInPincode} onChange={e => setSignInPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit pincode" maxLength={6} />
-                <button type="button" onClick={() => autoDetectPincode(setSignInPincode, setError)} className="shrink-0 rounded-2xl px-3 py-2" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }} title="Detect my location">
+                <button type="button" onClick={() => autoDetectPincode(setSignInPincode, setError)} className="shrink-0 rounded-2xl px-3 py-2" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }} title="Detect my location">
                   <MapPin size={16} style={{ color: pg.lime }} />
                 </button>
               </div>
@@ -487,7 +487,7 @@ export default function DpSignup() {
                 <label className="label flex items-center gap-1.5"><Upload size={14} /> Aadhaar Proof *</label>
                 <input ref={aadhaarInputRef} type="file" className="hidden" accept="image/*,application/pdf" onChange={e => e.target.files?.[0] && pickFile(e.target.files[0], 'aadhaar')} />
                 {aadhaarPreview ? (
-                  <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+                  <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
                     {aadhaarFile?.type.startsWith('image') ? <img src={aadhaarPreview} alt="Aadhaar" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg "><FileText size={24} className="text-green-400" /></div>}
                     <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#0F1A14]">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
                     <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
@@ -501,7 +501,7 @@ export default function DpSignup() {
                   <label className="label flex items-center gap-1.5"><FileText size={14} /> Driving Licence *</label>
                   <input ref={licenseInputRef} type="file" className="hidden" accept="image/*,application/pdf" onChange={e => e.target.files?.[0] && pickFile(e.target.files[0], 'license')} />
                   {licensePreview ? (
-                    <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+                    <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
                       {licenseFile?.type.startsWith('image') ? <img src={licensePreview} alt="Licence" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg "><FileText size={24} className="text-green-400" /></div>}
                       <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#0F1A14]">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
                       <button type="button" onClick={() => licenseInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>

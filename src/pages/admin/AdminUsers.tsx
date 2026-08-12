@@ -251,7 +251,7 @@ function UserActionDrawer({
             ) : (
               <div className="space-y-1.5">
                 {orders.map(o => (
-                  <div key={o.id} className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: pg.surface2 }}>
+                  <div key={o.id} className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: pg.surface2, color: pg.ink }}>
                     <p className="text-sm font-medium text-[#0F1A14] truncate max-w-[60%]">{(o as any).description?.split('\n')[0]?.trim() || 'Request'}</p>
                     <div className="flex items-center gap-2 shrink-0">
                       <StatusPill status={o.status} />

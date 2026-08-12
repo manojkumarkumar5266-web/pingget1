@@ -83,7 +83,7 @@ export default function CompleteProfile() {
         <Brand size="md" showTagline className="mb-4" />
         <h1 className="mb-2 text-[28px] font-extrabold tracking-tight">Complete Your Profile</h1>
         <p className="mb-6 text-sm" style={{ color: pg.text3 }}>Select your city and share your location to get started.</p>
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-[28px] p-5" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-[28px] p-5" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}>
           <div>
             <label className="label">City</label>
             <input className="input" value={city} onChange={e => setCity(e.target.value)} placeholder="Your city" required />

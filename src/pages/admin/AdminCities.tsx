@@ -247,7 +247,7 @@ export default function AdminCities() {
       )}
 
       {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setShowAdd(false)}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setShowAdd(false)}>
           <div className="card w-full max-w-md p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold text-[#0F1A14]">Add City</h3>

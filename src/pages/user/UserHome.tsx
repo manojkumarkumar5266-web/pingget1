@@ -102,12 +102,12 @@ export default function UserHome() {
           { label: 'Live', value: stats.active, icon: <Bike size={18} />, tone: '#FF9F43' },
           { label: 'Done', value: stats.completed, icon: <CheckCircle2 size={18} />, tone: '#3DDC97' },
         ].map(s => (
-          <div key={s.label} className="rounded-[20px] px-2 py-3.5 text-center" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+          <div key={s.label} className="rounded-[20px] px-2 py-3.5 text-center" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}>
             <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${s.tone}22`, color: s.tone }}>
               {s.icon}
             </div>
             <p className="text-2xl font-extrabold tracking-tight">{s.value}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>{s.label}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.ink3 }}>{s.label}</p>
           </div>
         ))}
       </div>
@@ -191,7 +191,7 @@ export default function UserHome() {
                   <div className="mt-2"><Chip tone="info">Advance</Chip></div>
                 )}
                 {req.delivery_address && (
-                  <div className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: pg.text3 }}>
+                  <div className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: pg.ink3 }}>
                     <MapPin size={12} /> <span className="line-clamp-1">{req.delivery_address}</span>
                   </div>
                 )}
@@ -200,7 +200,7 @@ export default function UserHome() {
                     <div className="h-full rounded-full" style={{ width: `${progress}%`, background: `linear-gradient(90deg,#E8B84A,${pg.lime})` }} />
                   </div>
                 )}
-                <div className="mt-2.5 flex items-center gap-2 text-xs" style={{ color: pg.text4 }}>
+                <div className="mt-2.5 flex items-center gap-2 text-xs" style={{ color: pg.ink3 }}>
                   <Clock size={12} /> {formatTime(req.created_at)}
                 </div>
               </Surface>
@@ -223,9 +223,9 @@ export default function UserHome() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-extrabold">{req.description?.split('\n')[0]?.trim() || 'Delivery'}</p>
-                  <p className="mt-0.5 text-xs" style={{ color: pg.text4 }}>{formatTime(req.created_at)}</p>
+                  <p className="mt-0.5 text-xs" style={{ color: pg.ink3 }}>{formatTime(req.created_at)}</p>
                 </div>
-                <ChevronRight size={16} style={{ color: pg.text4 }} />
+                <ChevronRight size={16} style={{ color: pg.ink3 }} />
               </Surface>
             ))}
           </div>

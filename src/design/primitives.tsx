@@ -69,9 +69,10 @@ export function Surface({
       className={`w-full text-left ${className}`}
       style={{
         background: pg.surface,
-        border: `1px solid ${accent ? 'rgba(12, 138, 62, 0.35)' : pg.line}`,
+        color: pg.ink,
+        border: `1px solid ${accent ? 'rgba(12, 138, 62, 0.35)' : 'rgba(15, 40, 25, 0.08)'}`,
         borderRadius: pg.radius.lg,
-        boxShadow: accent ? '0 8px 24px rgba(12, 138, 62, 0.08)' : '0 2px 12px rgba(15, 26, 20, 0.04)',
+        boxShadow: accent ? '0 8px 24px rgba(12, 138, 62, 0.12)' : '0 2px 12px rgba(0, 0, 0, 0.35)',
         ...style,
       }}
     >
@@ -183,8 +184,9 @@ export function MediaTile({
       className="overflow-hidden text-left transition active:scale-[0.98]"
       style={{
         background: pg.surface,
+        color: pg.ink,
         borderRadius: pg.radius.xl,
-        border: `1px solid ${pg.line}`,
+        border: `1px solid rgba(15, 40, 25, 0.08)`,
       }}
     >
       <div className="relative">
@@ -310,7 +312,7 @@ export function EmptyBlock({
   return (
     <div
       className="flex flex-col items-center px-6 py-10 text-center"
-      style={{ background: pg.surface, borderRadius: pg.radius.xl, border: `1px solid ${pg.line}` }}
+      style={{ background: pg.surface, color: pg.ink, borderRadius: pg.radius.xl, border: `1px solid ${pg.line}` }}
     >
       {image && <img src={image} alt="" className="mb-4 h-36 w-36 object-contain" draggable={false} />}
       <p className="text-lg font-extrabold">{title}</p>

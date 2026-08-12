@@ -160,7 +160,7 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
   dp: DpWithProfile; onClose: () => void; onApprove: () => void; onReject: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 bg-[#F4F6F5]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div
         className="absolute bottom-0 left-0 right-0 max-h-[92vh] overflow-y-auto rounded-t-3xl glass bottom-sheet"
         onClick={e => e.stopPropagation()}
@@ -279,7 +279,7 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
 
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl p-4" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+    <div className="rounded-2xl p-4" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
       <div className="mb-3 flex items-center gap-2 text-sm font-extrabold" style={{ color: pg.text3 }}>{icon} {title}</div>
       <div className="space-y-2">{children}</div>
     </div>

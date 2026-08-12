@@ -66,7 +66,7 @@ export default function DpProfile() {
     >
       <div
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-        style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}
+        style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}
       >
         {icon}
       </div>
