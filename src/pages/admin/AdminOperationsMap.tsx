@@ -114,7 +114,7 @@ export default function AdminOperationsMap() {
           </button>
           <div className="flex-1">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>Live Operations</p>
-            <p className="text-sm font-extrabold text-[#0F1A14]">Operations Dashboard</p>
+            <p className="text-sm font-extrabold text-[#F5F7F6]">Operations Dashboard</p>
           </div>
           <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.25)' }}>
             <Activity size={14} className="text-green-400" />
@@ -125,7 +125,7 @@ export default function AdminOperationsMap() {
         {/* Stats */}
         <div className="mt-3 grid grid-cols-5 gap-2">
           <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <p className="text-lg font-bold text-[#0F1A14]">{stats.online}</p>
+            <p className="text-lg font-bold text-[#F5F7F6]">{stats.online}</p>
             <p className="text-[9px] text-black/40">Online DPs</p>
           </div>
           <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
@@ -164,7 +164,7 @@ export default function AdminOperationsMap() {
                     {dp.photo_url ? <img src={dp.photo_url} alt={dp.full_name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><Bike size={18} className="text-black/40" /></div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#0F1A14] truncate">{dp.full_name}</p>
+                    <p className="text-sm font-semibold text-[#F5F7F6] truncate">{dp.full_name}</p>
                     <div className="flex items-center gap-2 text-xs text-black/40">
                       <span className="flex items-center gap-0.5"><Star size={10} className="text-yellow-400" />{dp.rating_avg?.toFixed(1) || '0.0'}</span>
                       <span>·</span>
@@ -195,7 +195,7 @@ export default function AdminOperationsMap() {
                     <Package size={14} style={{ color: STATUS_COLORS[req.status] || '#666' }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#0F1A14]">{STATUS_LABELS[req.status] || req.status}</p>
+                    <p className="text-sm font-semibold text-[#F5F7F6]">{STATUS_LABELS[req.status] || req.status}</p>
                     <p className="text-xs text-black/40 truncate flex items-center gap-1">
                       <MapPin size={10} className="shrink-0" />
                       {req.delivery_address?.substring(0, 50) || 'No address'}
@@ -223,7 +223,7 @@ export default function AdminOperationsMap() {
                   {selectedDp.photo_url ? <img src={selectedDp.photo_url} alt={selectedDp.full_name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-black/40"><Bike size={24} /></div>}
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold text-[#0F1A14]">{selectedDp.full_name}</p>
+                  <p className="font-bold text-[#F5F7F6]">{selectedDp.full_name}</p>
                   <div className="flex items-center gap-2 text-xs text-black/50">
                     <span className="flex items-center gap-0.5"><Star size={12} className="text-yellow-400" />{selectedDp.rating_avg?.toFixed(1) || '0.0'}</span>
                     <span>·</span>
@@ -240,18 +240,18 @@ export default function AdminOperationsMap() {
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 border-t border-black/10 pt-3">
                 <div className="text-center">
-                  <p className="text-xs font-bold text-[#0F1A14]">{formatSpeed(selectedDp.speed_kmh || 0)}</p>
+                  <p className="text-xs font-bold text-[#F5F7F6]">{formatSpeed(selectedDp.speed_kmh || 0)}</p>
                   <p className="text-[9px] text-black/40">Speed</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs font-bold text-[#0F1A14] flex items-center justify-center gap-0.5">
+                  <p className="text-xs font-bold text-[#F5F7F6] flex items-center justify-center gap-0.5">
                     <Battery size={12} className="text-green-400" />
                     {formatBattery(selectedDp.battery_level)}
                   </p>
                   <p className="text-[9px] text-black/40">Battery</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs font-bold text-[#0F1A14]">
+                  <p className="text-xs font-bold text-[#F5F7F6]">
                     {selectedDp.last_location_at ? new Date(selectedDp.last_location_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '--'}
                   </p>
                   <p className="text-[9px] text-black/40">Last Update</p>

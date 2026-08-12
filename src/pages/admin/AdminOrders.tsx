@@ -142,7 +142,7 @@ export default function AdminOrders() {
               onClick={() => setSelected(o)}>
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[#0F1A14] truncate">
+                  <p className="font-semibold text-[#F5F7F6] truncate">
                     {o._request?.description?.split('\n')[0]?.trim() || o.items_summary || 'Delivery'}
                   </p>
                   <p className="mt-0.5 text-xs text-black/40">ID: {o.id.slice(0, 12)}...</p>
@@ -152,7 +152,7 @@ export default function AdminOrders() {
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                 <div>
                   <p className="text-black/40">Delivery Charge</p>
-                  <p className="font-semibold text-[#0F1A14]">{o.delivery_charge != null ? formatCurrency(o.delivery_charge) : '—'}</p>
+                  <p className="font-semibold text-[#F5F7F6]">{o.delivery_charge != null ? formatCurrency(o.delivery_charge) : '—'}</p>
                 </div>
                 <div>
                   <p className="text-black/40">Commission</p>
@@ -160,7 +160,7 @@ export default function AdminOrders() {
                 </div>
                 <div>
                   <p className="text-black/40">DP Earnings</p>
-                  <p className="font-semibold text-[#0F1A14]">{o.dp_earnings != null ? formatCurrency(o.dp_earnings) : '—'}</p>
+                  <p className="font-semibold text-[#F5F7F6]">{o.dp_earnings != null ? formatCurrency(o.dp_earnings) : '—'}</p>
                 </div>
               </div>
               <p className="mt-2 text-xs text-black/40">{formatTime(o.created_at)}</p>
@@ -222,7 +222,7 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
 
           {/* Title */}
           <div>
-            <p className="text-sm font-bold text-[#0F1A14]">{req.description?.split('\n')[0]?.trim() || order.items_summary || 'Delivery'}</p>
+            <p className="text-sm font-bold text-[#F5F7F6]">{req.description?.split('\n')[0]?.trim() || order.items_summary || 'Delivery'}</p>
             {req.description && (
               <ul className="mt-1.5 space-y-0.5">
                 {req.description.split('\n').map((line: string, i: number) => line.trim() && (
@@ -240,18 +240,18 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
             {req.preferred_shop && (
               <div className="flex items-start gap-2 text-sm">
                 <Package size={14} className="mt-0.5 shrink-0 text-accent-500" />
-                <span className="text-black/55">Shop: <span className="font-medium text-[#0F1A14]">{req.preferred_shop}</span></span>
+                <span className="text-black/55">Shop: <span className="font-medium text-[#F5F7F6]">{req.preferred_shop}</span></span>
               </div>
             )}
             {req.pickup_address && (
               <div className="flex items-start gap-2 text-sm">
                 <MapPin size={14} className="mt-0.5 shrink-0 text-warning-500" />
-                <span className="text-black/55">Pickup: <span className="font-medium text-[#0F1A14]">{req.pickup_address}</span></span>
+                <span className="text-black/55">Pickup: <span className="font-medium text-[#F5F7F6]">{req.pickup_address}</span></span>
               </div>
             )}
             <div className="flex items-start gap-2 text-sm">
               <MapPin size={14} className="mt-0.5 shrink-0 text-error-500" />
-              <span className="text-black/55">Deliver to: <span className="font-medium text-[#0F1A14]">{req.delivery_address}</span></span>
+              <span className="text-black/55">Deliver to: <span className="font-medium text-[#F5F7F6]">{req.delivery_address}</span></span>
             </div>
           </div>
 
@@ -301,7 +301,7 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
               <div className="flex items-center gap-2">
                 <Avatar url={userProfile?.photo_url} name={userProfile?.full_name || 'User'} size={32} />
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#0F1A14] truncate">{userProfile?.full_name || '...'}</p>
+                  <p className="text-sm font-semibold text-[#F5F7F6] truncate">{userProfile?.full_name || '...'}</p>
                   <p className="text-xs text-gray-500">{userProfile?.phone || ''}</p>
                 </div>
               </div>
@@ -312,7 +312,7 @@ function OrderDetailDrawer({ order, onClose }: { order: any; onClose: () => void
                 <div className="flex items-center gap-2">
                   <Avatar url={dpProfile?.photo_url} name={dpProfile?.full_name || 'DP'} size={32} />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[#0F1A14] truncate">{dpProfile?.full_name || '...'}</p>
+                    <p className="text-sm font-semibold text-[#F5F7F6] truncate">{dpProfile?.full_name || '...'}</p>
                     <p className="text-xs text-gray-500">{dpProfile?.phone || ''}</p>
                     {dpData?.rating_count > 0 && (
                       <p className="text-xs text-yellow-500 flex items-center gap-0.5">

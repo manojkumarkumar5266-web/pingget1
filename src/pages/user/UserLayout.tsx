@@ -87,7 +87,7 @@ export default function UserLayout() {
       {!hideNav && (
         <header
           className="z-10 flex items-center px-4 pb-2 pt-[max(10px,env(safe-area-inset-top))]"
-          style={{ background: 'rgba(255,255,255,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+          style={{ background: 'rgba(0,0,0,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
         >
           <BrandWordmark size="xs" showTagline={false} align="left" />
         </header>

@@ -352,7 +352,7 @@ export default function FreeStreetMap({
             {m.label && !isUser && (
               <p
                 className="mt-0.5 max-w-[88px] truncate rounded-md px-1.5 py-0.5 text-[9px] font-bold"
-                style={{ background: 'rgba(255,255,255,0.94)', color: '#0F1A14', border: '1px solid rgba(15,40,25,0.12)' }}
+                style={{ background: 'rgba(0,0,0,0.94)', color: '#F5F7F6', border: '1px solid rgba(255,255,255,0.12)' }}
               >
                 {m.label}
               </p>
@@ -365,7 +365,7 @@ export default function FreeStreetMap({
         <div
           className="pointer-events-none absolute left-3 top-3 rounded-full px-3 py-1.5 text-[11px] font-bold"
           style={{
-            background: 'rgba(255,255,255,0.94)',
+            background: 'rgba(0,0,0,0.94)',
             color: '#C62828',
             border: '1px solid rgba(229,57,53,0.35)',
           }}

@@ -121,7 +121,7 @@ export default function SearchingMapPage() {
                 <p className="text-xs font-medium uppercase tracking-widest text-black/50">
                   {phase === 'scanning' ? 'Scanning...' : phase === 'found' ? 'Partners Found' : 'Search Complete'}
                 </p>
-                <h2 className="text-base font-bold text-[#0F1A14] mt-0.5">
+                <h2 className="text-base font-bold text-[#F5F7F6] mt-0.5">
                   {phase === 'scanning'
                     ? 'Finding nearby partners'
                     : phase === 'found'
@@ -152,7 +152,7 @@ export default function SearchingMapPage() {
             <div className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}>
               <Loader2 size={20} className="animate-spin" style={{ color: pg.lime }} />
               <div>
-                <p className="text-sm font-extrabold text-[#0F1A14]">Scanning nearby…</p>
+                <p className="text-sm font-extrabold text-[#F5F7F6]">Scanning nearby…</p>
                 <p className="text-xs" style={{ color: pg.text3 }}>Pass {scanCount}/{MAX_SCANS}</p>
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function SearchingMapPage() {
                 <Bike size={18} style={{ color: pg.lime }} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-extrabold text-[#0F1A14]">{dp.full_name || 'Partner'}</p>
+                <p className="truncate text-sm font-extrabold text-[#F5F7F6]">{dp.full_name || 'Partner'}</p>
                 <p className="text-xs" style={{ color: pg.text3 }}>
                   {formatDistance(Number(dp.distance_meters || 0))} away
                 </p>
@@ -174,7 +174,7 @@ export default function SearchingMapPage() {
           {phase === 'none' && (
             <div className="rounded-2xl px-4 py-5 text-center" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}>
               <Search size={22} className="mx-auto mb-2" style={{ color: pg.text3 }} />
-              <p className="font-extrabold text-[#0F1A14]">No partners nearby</p>
+              <p className="font-extrabold text-[#F5F7F6]">No partners nearby</p>
               <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Try again or wait — your request stays live.</p>
               <button
                 type="button"

@@ -46,7 +46,7 @@ export default function OfferDetailPage({ basePath }: { basePath: '/app' | '/dp'
     <Screen className="mx-auto max-w-lg animate-fade-in-up" pad={false}>
       <div
         className="sticky top-0 z-10 flex items-center gap-3 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]"
-        style={{ background: 'rgba(255,255,255,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+        style={{ background: 'rgba(0,0,0,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
       >
         <button
           type="button"

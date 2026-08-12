@@ -94,7 +94,7 @@ export default function DpWallet() {
             style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}
           >
             <span style={{ color: pg.text3 }}>
-              Pay via UPI: <span className="font-extrabold text-[#0F1A14]">{adminUpi}</span>
+              Pay via UPI: <span className="font-extrabold text-[#F5F7F6]">{adminUpi}</span>
             </span>
             <button type="button" onClick={() => navigator.clipboard.writeText(adminUpi)} className="font-extrabold" style={{ color: pg.lime }}>
               Copy
@@ -320,7 +320,7 @@ function SubmitReceiptModal({
                 <button
                   type="button"
                   onClick={() => { setScreenshot(null); setScreenshotPreview(null) }}
-                  className="absolute right-2 top-2 rounded-full bg-[#000000]/70 p-1.5 text-[#0F1A14]"
+                  className="absolute right-2 top-2 rounded-full bg-[#000000]/70 p-1.5 text-[#F5F7F6]"
                 >
                   <X size={14} />
                 </button>

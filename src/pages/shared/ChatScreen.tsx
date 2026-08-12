@@ -402,7 +402,7 @@ export default function ChatScreen() {
         </IconButton>
         <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={42} />
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-[#0F1A14] leading-snug">{otherUser?.full_name || 'User'}</p>
+          <p className="font-bold text-[#F5F7F6] leading-snug">{otherUser?.full_name || 'User'}</p>
           {otherTyping ? (
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-medium" style={{ color: '#0C8A3E' }}>typing</span>
@@ -453,7 +453,7 @@ export default function ChatScreen() {
           {/* Context banners */}
           {!order && isUser && fullOrderData?.order_type !== 'advance' && (
             <div className="mb-4 rounded-2xl px-4 py-3 text-center text-xs font-medium animate-fade-in"
-              style={{ background: 'rgba(196,214,0,0.08)', border: '1px solid rgba(196,214,0,0.2)', color: 'rgba(255,255,255,0.6)' }}>
+              style={{ background: 'rgba(12, 138, 62,0.08)', border: '1px solid rgba(12, 138, 62,0.2)', color: 'rgba(255,255,255,0.6)' }}>
               Discuss items and delivery charge. Your partner will send a quotation.
             </div>
           )}
@@ -471,7 +471,7 @@ export default function ChatScreen() {
                 )}
                 <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 ${isOwn ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
                   style={isOwn
-                    ? { background: pg.lime, boxShadow: '0 4px 16px rgba(196,214,0,0.2)' }
+                    ? { background: pg.lime, boxShadow: '0 4px 16px rgba(12, 138, 62,0.2)' }
                     : { background: pg.surface, border: `1px solid ${pg.line}` }}>
 
                   {msg.message_type === 'text' && (
@@ -523,7 +523,7 @@ export default function ChatScreen() {
                       </div>
                       {!order && isUser && (
                         <div className="flex gap-2 pt-1">
-                          <button onClick={rejectQuotation} className="flex-1 rounded-xl py-2.5 text-sm font-bold text-[#0F1A14] transition-all active:scale-95"
+                          <button onClick={rejectQuotation} className="flex-1 rounded-xl py-2.5 text-sm font-bold text-[#F5F7F6] transition-all active:scale-95"
                             style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)' }}>
                             Decline
                           </button>
@@ -546,9 +546,9 @@ export default function ChatScreen() {
                     ) as string
                     return (
                     <div className="w-72 space-y-3 p-4 rounded-2xl"
-                      style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(196,214,0,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(196,214,0,0.2)'}` }}>
+                      style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(12, 138, 62,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(12, 138, 62,0.2)'}` }}>
                       <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(196,214,0,0.2)' }}>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(12, 138, 62,0.2)' }}>
                           <CreditCard size={16} style={{ color: '#0C8A3E' }} />
                         </div>
                         <div>
@@ -718,7 +718,7 @@ export default function ChatScreen() {
       {isCompleted && isUser && !hasRated && (
         <div className="shrink-0 px-4 py-3" style={{ background: pg.bg, borderTop: `1px solid ${pg.line}` }}>
           <button onClick={() => setShowRating(true)} className="w-full gap-2 rounded-2xl py-3.5 text-sm font-extrabold transition-all active:scale-95"
-            style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(196,214,0,0.28)' }}>
+            style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(12, 138, 62,0.28)' }}>
             <Star size={16} /> Rate Your Partner
           </button>
         </div>
@@ -745,7 +745,7 @@ export default function ChatScreen() {
             <div className="mb-2 flex justify-start">
               <button type="button" onClick={() => setShowPickupPhoto(true)}
                 className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-extrabold transition active:scale-95"
-                style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.28)`, color: pg.lime }}>
+                style={{ background: pg.limeDim, border: `1px solid rgba(12, 138, 62,0.28)`, color: pg.lime }}>
                 <PackageCheck size={14} /> Pickup Proof
               </button>
             </div>
@@ -787,7 +787,7 @@ export default function ChatScreen() {
               <button type="button" onClick={handleSend}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl active:scale-90"
                 style={input.trim()
-                  ? { background: pg.lime, boxShadow: '0 8px 20px rgba(196,214,0,0.3)' }
+                  ? { background: pg.lime, boxShadow: '0 8px 20px rgba(12, 138, 62,0.3)' }
                   : { background: pg.surface2, border: `1px solid ${pg.line}` }}>
                 <Send size={18} style={{ color: input.trim() ? pg.limeText : pg.text4 }} />
               </button>
@@ -815,7 +815,7 @@ export default function ChatScreen() {
         <div className="fixed bottom-24 left-0 right-0 z-20 flex justify-center gap-2 px-4">
           <button onClick={() => navigate(isUser ? `/app/chat/${roomId}/order` : `/dp/chat/${roomId}/order`)}
             className="flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-extrabold shadow-lg transition-all active:scale-95"
-            style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(196,214,0,0.35)' }}>
+            style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(12, 138, 62,0.35)' }}>
             <ClipboardList size={14} /> View Full Order
           </button>
           {!isUser && !order && fullOrderData?.order_type !== 'advance' && (
@@ -828,7 +828,7 @@ export default function ChatScreen() {
           {!isUser && fullOrderData?.order_type === 'advance' && ['dp_reserved', 'accepted', 'searching_dp'].includes(fullOrderData.status) && !advancePaymentData && (
             <button onClick={() => setShowAdvancePayment(true)}
               className="flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-extrabold shadow-lg transition-all active:scale-95"
-              style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(196,214,0,0.35)' }}>
+              style={{ background: pg.lime, color: pg.limeText, boxShadow: '0 10px 28px rgba(12, 138, 62,0.35)' }}>
               <CreditCard size={14} /> Advance Payment
             </button>
           )}
@@ -839,7 +839,7 @@ export default function ChatScreen() {
       {lightboxImage && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#000000]/90 animate-fade-in" onClick={() => setLightboxImage(null)}>
           <button className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/5" onClick={() => setLightboxImage(null)}>
-            <X size={20} className="text-[#0F1A14]" />
+            <X size={20} className="text-[#F5F7F6]" />
           </button>
           <img src={lightboxImage} alt="Full size" className="max-h-full max-w-full object-contain" onClick={e => e.stopPropagation()} />
         </div>
@@ -916,7 +916,7 @@ function VoiceMessagePlayer({ url, isOwn }: { url: string; isOwn: boolean }) {
   return (
     <div className="flex items-center gap-2.5 min-w-[140px]">
       <button onClick={toggle} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all active:scale-90"
-        style={{ background: isOwn ? 'rgba(0,0,0,0.2)' : 'rgba(196,214,0,0.2)' }}>
+        style={{ background: isOwn ? 'rgba(0,0,0,0.2)' : 'rgba(12, 138, 62,0.2)' }}>
         {playing
           ? <Pause size={14} style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }} />
           : <Play size={14} style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }} />}
@@ -926,7 +926,7 @@ function VoiceMessagePlayer({ url, isOwn }: { url: string; isOwn: boolean }) {
           <div key={i} className={`flex-1 rounded-full ${playing ? 'animate-pulse' : ''}`}
             style={{
               height: `${20 + Math.sin(i) * 14 + Math.random() * 10}%`,
-              background: isOwn ? 'rgba(0,0,0,0.35)' : 'rgba(196,214,0,0.5)',
+              background: isOwn ? 'rgba(0,0,0,0.35)' : 'rgba(12, 138, 62,0.5)',
               animationDelay: `${i * 50}ms`,
             }} />
         ))}
@@ -949,14 +949,14 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 p-4 animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
-        <h3 className="mb-1 text-lg font-bold text-[#0F1A14]">Pickup Proof</h3>
+        <h3 className="mb-1 text-lg font-bold text-[#F5F7F6]">Pickup Proof</h3>
         <p className="mb-4 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Photo of items as pickup confirmation.</p>
         <input ref={fileRef} type="file" className="hidden" accept="image/*" onChange={handleSelect} />
         {preview ? (
           <div className="relative mb-4">
             <img src={preview} alt="Proof" className="h-40 w-full rounded-2xl object-cover" />
             <button onClick={() => { setFile(null); setPreview(null) }} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full" style={{ background: 'rgba(0,0,0,0.7)' }}>
-              <X size={14} className="text-[#0F1A14]" />
+              <X size={14} className="text-[#F5F7F6]" />
             </button>
           </div>
         ) : (
@@ -1024,7 +1024,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
       <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
         <div className="px-5 pt-4 pb-2">
           <div className="bottom-sheet-handle" />
-          <h3 className="text-lg font-bold text-[#0F1A14] mb-4">Send Quotation</h3>
+          <h3 className="text-lg font-bold text-[#F5F7F6] mb-4">Send Quotation</h3>
         </div>
         <div className="overflow-y-auto px-5 pb-8 space-y-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
           <div>
@@ -1050,7 +1050,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
                 {photoPreviews.map((preview, idx) => (
                   <div key={idx} className="relative">
                     <img src={preview} alt={`Proof ${idx + 1}`} className="h-20 w-20 rounded-2xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
-                    <button onClick={() => removePhoto(idx)} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[#0F1A14] shadow-lg">
+                    <button onClick={() => removePhoto(idx)} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[#F5F7F6] shadow-lg">
                       <X size={10} />
                     </button>
                   </div>
@@ -1059,7 +1059,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
             )}
             {photoFiles.length < MAX_PROOF_PHOTOS && (
               <button onClick={() => photoInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm transition-all active:scale-95"
-                style={{ background: 'rgba(196,214,0,0.08)', border: '1.5px dashed rgba(196,214,0,0.25)', color: '#0C8A3E' }}>
+                style={{ background: 'rgba(12, 138, 62,0.08)', border: '1.5px dashed rgba(12, 138, 62,0.25)', color: '#0C8A3E' }}>
                 <Camera size={15} /> {photoFiles.length > 0 ? 'Add More Photos' : 'Upload Proof Photos'}
               </button>
             )}
@@ -1068,7 +1068,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleSend} disabled={!items || !deliveryCharge || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-xl py-3 transition-all active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #C4D600, #C4D600)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(196,214,0,0.35)' }}>
+              style={{ background: 'linear-gradient(135deg, #C4D600, #C4D600)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(12, 138, 62,0.35)' }}>
               {uploading ? 'Uploading...' : 'Send'}
             </button>
           </div>
@@ -1086,7 +1086,7 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
-        <h3 className="text-lg font-bold text-[#0F1A14] text-center">Rate {targetName}</h3>
+        <h3 className="text-lg font-bold text-[#F5F7F6] text-center">Rate {targetName}</h3>
         <p className="mt-1 mb-6 text-sm text-center" style={{ color: 'rgba(255,255,255,0.4)' }}>How was your experience?</p>
         <div className="mb-2 flex justify-center gap-3">
           {[1, 2, 3, 4, 5].map(i => (
@@ -1183,11 +1183,11 @@ function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
   return (
     <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
+        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-black/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
           <div className="flex items-center gap-2">
             <CreditCard size={20} style={{ color: '#0C8A3E' }} />
-            <h3 className="text-lg font-bold text-[#0F1A14]">Request Advance Payment</h3>
+            <h3 className="text-lg font-bold text-[#F5F7F6]">Request Advance Payment</h3>
           </div>
           <p className="text-sm text-black/50">Send a premium payment card to the customer inside this chat. The customer will upload their payment proof here.</p>
           <div>
@@ -1303,11 +1303,11 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, requ
   return (
     <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
+        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-black/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
           <div className="flex items-center gap-2">
             <Upload size={20} style={{ color: '#0C8A3E' }} />
-            <h3 className="text-lg font-bold text-[#0F1A14]">Upload Payment Proof</h3>
+            <h3 className="text-lg font-bold text-[#F5F7F6]">Upload Payment Proof</h3>
           </div>
           <p className="text-sm text-black/50">Upload your payment screenshot and enter your UPI reference number or transaction ID.</p>
           <div>
@@ -1355,11 +1355,11 @@ function RejectPaymentModal({ onClose, advancePaymentId, dpId, onReject }: {
   return (
     <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
+        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-black/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
           <div className="flex items-center gap-2">
             <AlertCircle size={20} style={{ color: '#f87171' }} />
-            <h3 className="text-lg font-bold text-[#0F1A14]">Reject Payment</h3>
+            <h3 className="text-lg font-bold text-[#F5F7F6]">Reject Payment</h3>
           </div>
           <p className="text-sm text-black/50">Please provide a reason for rejecting this payment. This is mandatory.</p>
           <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Payment amount does not match, invalid screenshot..." className="input min-h-24 resize-none" />
@@ -1392,18 +1392,18 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
 
   const Row = ({ icon, label, value }: { icon: any; label: string; value: string }) => (
     <div className="flex items-start gap-2 py-1.5">
-      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg" style={{ background: 'rgba(196,214,0,0.1)' }}>
+      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg" style={{ background: 'rgba(12, 138, 62,0.1)' }}>
         {icon}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.35)' }}>{label}</p>
-        <p className="text-sm text-[#0F1A14] break-words">{value}</p>
+        <p className="text-sm text-[#F5F7F6] break-words">{value}</p>
       </div>
     </div>
   )
 
   return (
-    <div className="shrink-0 px-4 pt-3 pb-1" style={{ background: 'rgba(196,214,0,0.04)', borderBottom: '1px solid rgba(196,214,0,0.12)' }}>
+    <div className="shrink-0 px-4 pt-3 pb-1" style={{ background: 'rgba(12, 138, 62,0.04)', borderBottom: '1px solid rgba(12, 138, 62,0.12)' }}>
       <div className="mx-auto max-w-md">
         <button
           onClick={() => setExpanded(v => !v)}
@@ -1411,10 +1411,10 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
         >
           <div className="flex items-center gap-2">
             <ClipboardList size={15} style={{ color: '#0C8A3E' }} />
-            <span className="text-sm font-bold text-[#0F1A14]">Advance Task Summary</span>
+            <span className="text-sm font-bold text-[#F5F7F6]">Advance Task Summary</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: '#0C8A3E', border: '1px solid rgba(196,214,0,0.25)' }}>
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(12, 138, 62,0.15)', color: '#0C8A3E', border: '1px solid rgba(12, 138, 62,0.25)' }}>
               {statusLabel}
             </span>
             {expanded ? <ChevronUp size={16} style={{ color: 'rgba(255,255,255,0.4)' }} /> : <ChevronDown size={16} style={{ color: 'rgba(255,255,255,0.4)' }} />}
@@ -1446,14 +1446,14 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
             )}
 
             {hasVoice && (
-              <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(196,214,0,0.06)' }}>
+              <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(12, 138, 62,0.06)' }}>
                 <Volume2 size={14} style={{ color: '#0C8A3E' }} />
                 <span className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Voice note attached</span>
                 <a href={request.voice_note_url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs font-semibold" style={{ color: '#0C8A3E' }}>Play</a>
               </div>
             )}
 
-            <div className="mt-3 flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(196,214,0,0.06)' }}>
+            <div className="mt-3 flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(12, 138, 62,0.06)' }}>
               <CheckCircle size={12} style={{ color: '#0C8A3E' }} />
               <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Current Status: <span className="font-bold" style={{ color: '#0C8A3E' }}>{statusLabel}</span></p>
             </div>

@@ -90,7 +90,7 @@ export default function AdminLayout() {
               <Icon size={18} style={{ color: active ? pg.lime : pg.text3 }} />
               <span className="flex-1 text-sm font-bold" style={{ color: active ? pg.lime : pg.text2 }}>{item.label}</span>
               {item.badge > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#0F1A14]">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#F5F7F6]">
                   {item.badge > 99 ? '99+' : item.badge}
                 </span>
               )}
@@ -136,13 +136,13 @@ export default function AdminLayout() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-3 md:hidden" style={{ background: 'rgba(255,255,255,0.95)', borderBottom: `1px solid ${pg.line}` }}>
+        <div className="flex items-center gap-3 px-4 py-3 md:hidden" style={{ background: 'rgba(0,0,0,0.95)', borderBottom: `1px solid ${pg.line}` }}>
           <button type="button" onClick={() => setSidebarOpen(!sidebarOpen)} className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.surface2, color: pg.ink }}>
             {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
           <p className="text-sm font-extrabold">Admin</p>
           {(unreadCount + pendingDps + pendingReceipts) > 0 && (
-            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#0F1A14]">
+            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#F5F7F6]">
               {unreadCount + pendingDps + pendingReceipts}
             </span>
           )}

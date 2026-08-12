@@ -220,12 +220,12 @@ export default function AdminNotifications() {
         <div className="flex items-start gap-3">
           <Bell size={18} className="mt-0.5 text-primary-400" />
           <div className="text-sm text-black/65 leading-relaxed">
-            <p className="font-semibold text-[#0F1A14] mb-1">Where does Notify go?</p>
+            <p className="font-semibold text-[#F5F7F6] mb-1">Where does Notify go?</p>
             <p>
-              Messages land in the <span className="text-[#0F1A14]">Alerts</span> tab for customers and partners.
-              Mobile <span className="text-[#0F1A14]">push</span> is sent via FCM for every notification (set
-              <span className="text-[#0F1A14]"> FCM_SERVER_KEY</span> or <span className="text-[#0F1A14]">FCM_SERVICE_ACCOUNT_JSON</span> on edge functions).
-              Email goes through <span className="text-[#0F1A14]">Resend</span> when the profile has an email.
+              Messages land in the <span className="text-[#F5F7F6]">Alerts</span> tab for customers and partners.
+              Mobile <span className="text-[#F5F7F6]">push</span> is sent via FCM for every notification (set
+              <span className="text-[#F5F7F6]"> FCM_SERVER_KEY</span> or <span className="text-[#F5F7F6]">FCM_SERVICE_ACCOUNT_JSON</span> on edge functions).
+              Email goes through <span className="text-[#F5F7F6]">Resend</span> when the profile has an email.
               Tapping an offer opens the full details page with image.
             </p>
           </div>
@@ -233,7 +233,7 @@ export default function AdminNotifications() {
       </div>
 
       <div className="card mb-6 p-5">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0F1A14]">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#F5F7F6]">
           <Send size={18} className="text-primary-400" /> Compose Notification
         </h2>
 
@@ -246,7 +246,7 @@ export default function AdminNotifications() {
                 <button key={opt.value} onClick={() => { setTargetType(opt.value); setTargetUserId(''); setUserSearch('') }}
                   className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all ${
                     targetType === opt.value
-                      ? 'border-primary-400 bg-primary-500/10 text-[#0F1A14]'
+                      ? 'border-primary-400 bg-primary-500/10 text-[#F5F7F6]'
                       : 'border-black/10 bg-black/5 text-black/50 hover:border-black/10'
                   }`}>
                   <Icon size={20} />
@@ -275,7 +275,7 @@ export default function AdminNotifications() {
                       {u.role === 'dp' ? <Bike size={14} /> : <UserCheck size={14} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#0F1A14] truncate">{u.full_name}</p>
+                      <p className="text-sm font-medium text-[#F5F7F6] truncate">{u.full_name}</p>
                       <p className="text-xs text-black/40">{u.phone || 'No phone'} · {u.role}</p>
                     </div>
                   </button>
@@ -285,7 +285,7 @@ export default function AdminNotifications() {
             {targetUserId && (
               <div className="mt-2 flex items-center gap-2 rounded-xl bg-primary-50 px-3 py-2 dark:bg-primary-900/20">
                 <CheckCircle size={16} className="text-success-500" />
-                <span className="text-sm text-[#0F1A14]">User selected</span>
+                <span className="text-sm text-[#F5F7F6]">User selected</span>
                 <button onClick={() => { setTargetUserId(''); setUserSearch('') }} className="ml-auto">
                   <X size={14} className="text-black/40" />
                 </button>
@@ -308,7 +308,7 @@ export default function AdminNotifications() {
         </div>
 
         <div className="mb-4 rounded-xl border border-primary-400/40 bg-primary-500/10 p-4">
-          <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#0F1A14]">
+          <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#F5F7F6]">
             <CalendarClock size={16} className="text-primary-400" />
             Notify time *
           </label>
@@ -322,7 +322,7 @@ export default function AdminNotifications() {
                 setScheduleMode('now')
                 setScheduledFor(toLocalInputValue(new Date()))
               }}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'now' ? 'border border-primary-400 bg-primary-500/20 text-[#0F1A14]' : 'border border-black/10 text-black/50'}`}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'now' ? 'border border-primary-400 bg-primary-500/20 text-[#F5F7F6]' : 'border border-black/10 text-black/50'}`}
             >
               Send now
             </button>
@@ -332,7 +332,7 @@ export default function AdminNotifications() {
                 setScheduleMode('later')
                 setScheduledFor(toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)))
               }}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'later' ? 'border border-primary-400 bg-primary-500/20 text-[#0F1A14]' : 'border border-black/10 text-black/50'}`}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold ${scheduleMode === 'later' ? 'border border-primary-400 bg-primary-500/20 text-[#F5F7F6]' : 'border border-black/10 text-black/50'}`}
             >
               Schedule for later
             </button>
@@ -355,7 +355,7 @@ export default function AdminNotifications() {
             <div className="relative w-40 h-28 rounded-xl overflow-hidden border border-black/10">
               <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
               <button onClick={removeImage}
-                className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#000000]/70 text-[#0F1A14]">
+                className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#000000]/70 text-[#F5F7F6]">
                 <X size={12} />
               </button>
             </div>
@@ -375,7 +375,7 @@ export default function AdminNotifications() {
       </div>
 
       <div className="card p-5">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0F1A14]">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#F5F7F6]">
           <Clock size={18} className="text-primary-400" /> Broadcast history
         </h2>
         {logsLoading ? (
@@ -392,13 +392,13 @@ export default function AdminNotifications() {
                     ? <Clock size={16} className="mt-0.5 shrink-0 text-amber-300" />
                     : <XCircle size={16} className="mt-0.5 shrink-0 text-error-400" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#0F1A14] truncate">{row.title}</p>
+                  <p className="text-sm font-medium text-[#F5F7F6] truncate">{row.title}</p>
                   <p className="text-xs text-black/50">
                     {row.target_type} · {row.status}
                     {row.recipient_count != null ? ` · ${row.recipient_count} recipients` : ''}
                   </p>
                   {row.error_message && <p className="truncate text-xs text-error-300">{row.error_message}</p>}
-                  <p className="text-[11px] text-[#0F1A14]/35 mt-1">
+                  <p className="text-[11px] text-[#F5F7F6]/35 mt-1">
                     {row.status === 'pending'
                       ? `Scheduled ${formatTime(row.scheduled_for)}`
                       : formatTime(row.sent_at || row.created_at)}

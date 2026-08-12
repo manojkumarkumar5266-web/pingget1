@@ -95,7 +95,7 @@ export default function AdminInfoCards() {
                 </div>
                 <div className="text-2xl">{card.icon}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[#0F1A14]">{card.title}</p>
+                  <p className="font-bold text-[#F5F7F6]">{card.title}</p>
                   <p className="text-sm text-black/50 line-clamp-2">{card.description}</p>
                   <p className="mt-1 text-xs text-black/30">Order: {card.sort_order}</p>
                 </div>
@@ -105,7 +105,7 @@ export default function AdminInfoCards() {
                       ? <ToggleRight size={24} style={{ color: '#0C8A3E' }} />
                       : <ToggleLeft size={24} className="text-black/30" />}
                   </button>
-                  <button onClick={() => openEdit(card)} className="rounded-lg px-2 py-1 text-xs font-semibold text-black/55 hover:text-[#0F1A14]"
+                  <button onClick={() => openEdit(card)} className="rounded-lg px-2 py-1 text-xs font-semibold text-black/55 hover:text-[#F5F7F6]"
                     style={{ background: 'rgba(255,255,255,0.06)' }}>Edit</button>
                   <button onClick={() => deleteCard(card.id)} className="rounded-lg p-1.5 hover:bg-red-500/10">
                     <Trash2 size={15} className="text-red-400" />
@@ -121,7 +121,7 @@ export default function AdminInfoCards() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 animate-fade-in" onClick={() => setShowModal(false)}>
           <div className="w-full max-w-md rounded-t-3xl p-5 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#0F1A14]">{editing ? 'Edit Card' : 'New Card'}</h3>
+              <h3 className="text-lg font-bold text-[#F5F7F6]">{editing ? 'Edit Card' : 'New Card'}</h3>
               <button onClick={() => setShowModal(false)}><X size={20} className="text-black/40" /></button>
             </div>
             <div className="space-y-3">

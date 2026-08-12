@@ -150,7 +150,7 @@ export default function AdminCities() {
               <div className="flex items-start justify-between p-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-[#0F1A14]">{city.name}</p>
+                    <p className="font-semibold text-[#F5F7F6]">{city.name}</p>
                     <span className={`badge ${city.is_active ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-black/40'}`}>
                       {city.is_active ? 'Active' : 'Inactive'}
                     </span>
@@ -219,7 +219,7 @@ export default function AdminCities() {
                           </div>
                         ) : (
                           <div>
-                            <span className="font-mono font-semibold text-[#0F1A14]">{p.pincode}</span>
+                            <span className="font-mono font-semibold text-[#F5F7F6]">{p.pincode}</span>
                             {p.area_name && <span className="ml-2 text-xs text-gray-500">{p.area_name}</span>}
                           </div>
                         )}
@@ -250,7 +250,7 @@ export default function AdminCities() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setShowAdd(false)}>
           <div className="card w-full max-w-md p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-[#0F1A14]">Add City</h3>
+              <h3 className="text-lg font-bold text-[#F5F7F6]">Add City</h3>
               <button onClick={() => setShowAdd(false)} className="btn-ghost p-1"><X size={20} /></button>
             </div>
             <div className="space-y-3">

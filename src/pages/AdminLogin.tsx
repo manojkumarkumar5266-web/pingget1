@@ -67,7 +67,7 @@ export default function AdminLogin() {
         </button>
         {resetSent ? (
           <div className="rounded-2xl px-4 py-4 text-sm" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
-            <div className="flex items-center gap-2 text-[#0F1A14]">
+            <div className="flex items-center gap-2 text-[#F5F7F6]">
               <CheckCircle size={16} className="shrink-0 text-green-400" />
               Reset link sent! Check your email.
             </div>

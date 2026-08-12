@@ -59,7 +59,7 @@ export default function FullOrderDetails() {
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: pg.bg }}>
       <div
         className="flex items-center gap-3 px-4 py-3.5"
-        style={{ borderBottom: `1px solid ${pg.line}`, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)' }}
+        style={{ borderBottom: `1px solid ${pg.line}`, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(20px)' }}
       >
         <IconButton onClick={() => navigate(-1)} className="!h-10 !w-10">
           <ArrowLeft size={18} />
