@@ -129,7 +129,7 @@ export default function AdminAdvanceSettings() {
       <div className="card p-4 mb-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-semibold text-[#0F1A14]">Enable Advance Requests</p>
+            <p className="font-semibold text-[#F5F7F6]">Enable Advance Requests</p>
             <p className="text-sm text-black/40">Allow customers to schedule tasks in advance</p>
           </div>
           <Toggle value={s.enabled} onChange={v => update('enabled', v)} />
@@ -140,7 +140,7 @@ export default function AdminAdvanceSettings() {
       <div className="card p-4 mb-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-semibold text-[#0F1A14]">Enable Recurring Requests</p>
+            <p className="font-semibold text-[#F5F7F6]">Enable Recurring Requests</p>
             <p className="text-sm text-black/40">Allow customers to set repeat schedules (daily/weekly/monthly)</p>
           </div>
           <Toggle value={s.recurring_enabled} onChange={v => update('recurring_enabled', v)} />
@@ -228,7 +228,7 @@ export default function AdminAdvanceSettings() {
       <SectionTitle title="Optional Charges" />
       <div className="card p-4 mb-4 space-y-4">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-[#0F1A14]">Weekend Charge</p>
+          <p className="text-sm font-semibold text-[#F5F7F6]">Weekend Charge</p>
           <Toggle value={s.weekend_charge_enabled} onChange={v => update('weekend_charge_enabled', v)} />
         </div>
         {s.weekend_charge_enabled && <NumberField label="Weekend Charge Amount" value={s.weekend_charge} onChange={v => update('weekend_charge', v)} min={0} />}
@@ -253,7 +253,7 @@ export default function AdminAdvanceSettings() {
         <NumberField label="Free Cancellation Cutoff (minutes before scheduled time)" value={s.cancellation_cutoff_minutes} onChange={v => update('cancellation_cutoff_minutes', v)} min={0} />
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-[#0F1A14]">Admin Override Cancellation</p>
+            <p className="text-sm font-semibold text-[#F5F7F6]">Admin Override Cancellation</p>
             <p className="text-sm text-black/40">Allow admins to cancel any request without fees</p>
           </div>
           <Toggle value={s.admin_override_cancellation} onChange={v => update('admin_override_cancellation', v)} />
@@ -279,7 +279,7 @@ export default function AdminAdvanceSettings() {
           { key: 'reminder_5m' as const, label: '5 Minutes Before' },
         ].map(r => (
           <div key={r.key} className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-[#0F1A14]">{r.label}</p>
+            <p className="text-sm font-semibold text-[#F5F7F6]">{r.label}</p>
             <Toggle value={s[r.key]} onChange={v => update(r.key, v)} />
           </div>
         ))}
@@ -293,7 +293,7 @@ export default function AdminAdvanceSettings() {
         <NumberField label="Payment Deadline (minutes)" value={s.payment_deadline_minutes} onChange={v => update('payment_deadline_minutes', v)} min={5} />
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-[#0F1A14]">Auto Re-search on DP Cancel</p>
+            <p className="text-sm font-semibold text-[#F5F7F6]">Auto Re-search on DP Cancel</p>
             <p className="text-sm text-black/40">Automatically search for a new DP if the reserved DP cancels</p>
           </div>
           <Toggle value={s.dp_cancel_research} onChange={v => update('dp_cancel_research', v)} />
@@ -305,7 +305,7 @@ export default function AdminAdvanceSettings() {
       <div className="card p-4 mb-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-[#0F1A14]">Expand Search Radius</p>
+            <p className="text-sm font-semibold text-[#F5F7F6]">Expand Search Radius</p>
             <p className="text-sm text-black/40">Gradually expand search if no DP accepts</p>
           </div>
           <Toggle value={s.expand_search_radius} onChange={v => update('expand_search_radius', v)} />
@@ -354,7 +354,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
     <button onClick={() => onChange(!value)}
       className="relative h-7 w-12 rounded-full transition-all"
       style={{ background: value ? '#0C8A3E' : 'rgba(255,255,255,0.15)' }}>
-      <div className="absolute top-1 h-5 w-5 rounded-full bg-white transition-all" style={{ left: value ? 24 : 4 }} />
+      <div className="absolute top-1 h-5 w-5 rounded-full bg-black transition-all" style={{ left: value ? 24 : 4 }} />
     </button>
   )
 }

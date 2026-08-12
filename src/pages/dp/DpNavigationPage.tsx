@@ -290,7 +290,7 @@ export default function DpNavigationPage() {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6" style={{ background: pg.bg }}>
         <img src={Images.thankYouRating} alt="Thank you for rating" className="w-full max-w-sm object-contain" draggable={false} style={{ background: 'transparent' }} />
-        <p className="text-center text-base font-extrabold text-[#0F1A14]">Customer rated your delivery</p>
+        <p className="text-center text-base font-extrabold text-[#F5F7F6]">Customer rated your delivery</p>
         <CTA type="button" onClick={() => navigate('/dp', { replace: true })} className="w-full max-w-sm">
           Go Home
         </CTA>
@@ -302,7 +302,7 @@ export default function DpNavigationPage() {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 px-6" style={{ background: pg.bg }}>
         <img src={Images.paymentReceived} alt="Payment accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: 'transparent' }} />
-        <p className="text-center text-base font-extrabold text-[#0F1A14]">Payment accepted</p>
+        <p className="text-center text-base font-extrabold text-[#F5F7F6]">Payment accepted</p>
         <p className="text-center text-sm text-black/50">Waiting for customer rating…</p>
       </div>
     )
@@ -320,7 +320,7 @@ export default function DpNavigationPage() {
           <ArrowLeft size={18} />
         </button>
         <div className="text-center">
-          <p className="text-base font-extrabold text-[#0F1A14]">Order tracking</p>
+          <p className="text-base font-extrabold text-[#F5F7F6]">Order tracking</p>
           <p className="text-xs" style={{ color: pg.text3 }}>{STATUS_LABELS[request.status] || request.status}</p>
         </div>
       </div>
@@ -352,7 +352,7 @@ export default function DpNavigationPage() {
               {liveEtaLabel && (
                 <div
                   className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                  style={{ background: 'rgba(255,255,255,0.94)', color: pg.lime, border: '1px solid rgba(12, 138, 62, 0.35)' }}
+                  style={{ background: 'rgba(0,0,0,0.94)', color: pg.lime, border: '1px solid rgba(12, 138, 62, 0.35)' }}
                 >
                   ETA to customer · {liveEtaLabel}
                 </div>
@@ -390,7 +390,7 @@ export default function DpNavigationPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-[#0F1A14]">{userProfile.full_name}</p>
+                  <p className="truncate font-bold text-[#F5F7F6]">{userProfile.full_name}</p>
                   <p className="text-xs text-black/40">{userProfile.phone || 'No phone'}</p>
                 </div>
                 <button type="button" onClick={() => { window.location.href = `tel:${userProfile.phone || ''}` }}
@@ -414,7 +414,7 @@ export default function DpNavigationPage() {
           <Surface className="p-4">
             <div className="mb-3 flex items-center gap-2">
               <MapPin size={16} className="text-red-400" />
-              <p className="text-sm font-bold text-[#0F1A14]">Delivery Address</p>
+              <p className="text-sm font-bold text-[#F5F7F6]">Delivery Address</p>
             </div>
             <p className="mb-3 text-sm leading-relaxed text-black/75">{request.delivery_address || 'Not specified'}</p>
             <CTA type="button" onClick={openGoogleMaps} className="w-full">
@@ -468,7 +468,7 @@ export default function DpNavigationPage() {
                   {photoPreviews.map((preview, idx) => (
                     <div key={idx} className="relative">
                       <img src={preview} alt={`Proof ${idx + 1}`} className="h-20 w-20 rounded-xl object-cover" />
-                      <button type="button" onClick={() => removePhoto(idx)} className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1 text-[#0F1A14] shadow">
+                      <button type="button" onClick={() => removePhoto(idx)} className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1 text-[#F5F7F6] shadow">
                         <X size={10} />
                       </button>
                     </div>
@@ -492,7 +492,7 @@ export default function DpNavigationPage() {
           {isDelivered && !isCompleted && !request.payment_completed_at && (
             <Surface className="p-4 text-center">
               <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: pg.lime }} />
-              <p className="font-bold text-[#0F1A14]">Waiting for customer to accept delivery</p>
+              <p className="font-bold text-[#F5F7F6]">Waiting for customer to accept delivery</p>
               <p className="mt-1 text-xs" style={{ color: pg.text3 }}>You'll continue after the customer confirms receipt</p>
             </Surface>
           )}

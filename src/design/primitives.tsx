@@ -69,10 +69,10 @@ export function Surface({
       className={`w-full text-left ${className}`}
       style={{
         background: pg.surface,
-        color: pg.ink,
-        border: `1px solid ${accent ? 'rgba(12, 138, 62, 0.35)' : 'rgba(15, 40, 25, 0.08)'}`,
+        color: pg.text,
+        border: `1px solid ${accent ? 'rgba(12, 138, 62, 0.4)' : pg.line}`,
         borderRadius: pg.radius.lg,
-        boxShadow: accent ? '0 8px 24px rgba(12, 138, 62, 0.12)' : '0 2px 12px rgba(0, 0, 0, 0.35)',
+        boxShadow: 'none',
         ...style,
       }}
     >
@@ -184,9 +184,9 @@ export function MediaTile({
       className="overflow-hidden text-left transition active:scale-[0.98]"
       style={{
         background: pg.surface,
-        color: pg.ink,
+        color: pg.text,
         borderRadius: pg.radius.xl,
-        border: `1px solid rgba(15, 40, 25, 0.08)`,
+        border: `1px solid ${pg.line}`,
       }}
     >
       <div className="relative">
@@ -230,10 +230,10 @@ export function Dock({ children }: { children: ReactNode }) {
       <div
         className="mx-auto flex max-w-lg items-center justify-between gap-1 px-2 py-2"
         style={{
-          background: 'rgba(255,255,255,0.96)',
+          background: 'rgba(0,0,0,0.96)',
           border: `1px solid ${pg.lineStrong}`,
           borderRadius: 28,
-          boxShadow: '0 12px 36px rgba(15, 26, 20, 0.12)',
+          boxShadow: '0 12px 36px rgba(0,0,0,0.8)',
           backdropFilter: 'blur(20px)',
         }}
       >
@@ -290,7 +290,7 @@ export function DockItem({
         {label}
       </span>
       {!!badge && badge > 0 && (
-        <span className="absolute right-1 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-[#0F1A14]">
+        <span className="absolute right-1 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-[#F5F7F6]">
           {badge > 99 ? '99+' : badge}
         </span>
       )}
@@ -312,7 +312,7 @@ export function EmptyBlock({
   return (
     <div
       className="flex flex-col items-center px-6 py-10 text-center"
-      style={{ background: pg.surface, color: pg.ink, borderRadius: pg.radius.xl, border: `1px solid ${pg.line}` }}
+      style={{ background: pg.surface, color: pg.text, borderRadius: pg.radius.xl, border: `1px solid ${pg.line}` }}
     >
       {image && <img src={image} alt="" className="mb-4 h-36 w-36 object-contain" draggable={false} />}
       <p className="text-lg font-extrabold">{title}</p>

@@ -29,7 +29,7 @@ function DpPendingScreen() {
       <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl glass">
         <Clock size={48} className="text-yellow-400" />
       </div>
-      <h1 className="mb-2 text-2xl font-bold text-[#0F1A14]">Awaiting Approval</h1>
+      <h1 className="mb-2 text-2xl font-bold text-[#F5F7F6]">Awaiting Approval</h1>
       <p className="mb-6 max-w-sm text-sm text-black/55">
         Your delivery partner application is under review. You will be notified once an admin approves it.
       </p>
@@ -52,7 +52,7 @@ function DpRejectedScreen() {
       <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl glass">
         <XCircle size={48} className="text-red-400" />
       </div>
-      <h1 className="mb-2 text-2xl font-bold text-[#0F1A14]">Application Not Approved</h1>
+      <h1 className="mb-2 text-2xl font-bold text-[#F5F7F6]">Application Not Approved</h1>
       <p className="mb-6 max-w-sm text-sm text-black/55">
         Your delivery partner application was not approved. Please contact support for more details.
       </p>

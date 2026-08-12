@@ -15,7 +15,7 @@ export function NotificationBadge({ count, size = 22, className = '' }: Notifica
     <div className={`relative ${className}`}>
       <Bell size={size} />
       {count > 0 && (
-        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-500 px-1 text-[9px] font-bold text-[#0F1A14] animate-pulse">
+        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-error-500 px-1 text-[9px] font-bold text-[#F5F7F6] animate-pulse">
           {count > 99 ? '99+' : count}
         </span>
       )}

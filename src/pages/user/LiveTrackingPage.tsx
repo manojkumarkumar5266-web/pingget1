@@ -342,7 +342,7 @@ export default function LiveTrackingPage() {
     return (
       <MobileFrame overlay className="items-center justify-center overflow-hidden px-6">
         <img src={Images.paymentReceived} alt="Payment accepted" className="mb-4 w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: 'transparent' }} />
-        <p className="text-base font-extrabold text-[#0F1A14]">Payment accepted</p>
+        <p className="text-base font-extrabold text-[#F5F7F6]">Payment accepted</p>
         <p className="mt-1 text-sm text-black/50">Opening rating…</p>
       </MobileFrame>
     )
@@ -353,7 +353,7 @@ export default function LiveTrackingPage() {
       <MobileFrame overlay className="items-center justify-center overflow-y-auto px-6 py-8">
         <div className="w-full max-w-sm">
           <Surface className="rounded-[28px] p-6 text-center">
-            <h2 className="mb-1 text-xl font-bold text-[#0F1A14]">Rate Your Delivery</h2>
+            <h2 className="mb-1 text-xl font-bold text-[#F5F7F6]">Rate Your Delivery</h2>
             <p className="mb-5 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
               How was {dpProfile?.full_name?.split(' ')[0] || 'your partner'}'s service?
             </p>
@@ -390,7 +390,7 @@ export default function LiveTrackingPage() {
           </button>
           <div className="flex-1 text-center pr-11">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>Live</p>
-            <p className="text-sm font-extrabold text-[#0F1A14]">Order tracking</p>
+            <p className="text-sm font-extrabold text-[#F5F7F6]">Order tracking</p>
           </div>
         </div>
       </div>
@@ -399,11 +399,11 @@ export default function LiveTrackingPage() {
         {isPending ? (
           <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-[#000000] px-6">
             <img src={Images.userWaiting} alt="" className="mb-3 h-40 w-40 object-contain" />
-            <p className="text-lg font-bold text-[#0F1A14]">Waiting for partner</p>
+            <p className="text-lg font-bold text-[#F5F7F6]">Waiting for partner</p>
           </div>
         ) : isCancelled ? (
           <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-[#000000] px-6">
-            <p className="text-lg font-bold text-[#0F1A14]">Order Cancelled</p>
+            <p className="text-lg font-bold text-[#F5F7F6]">Order Cancelled</p>
             <button type="button" onClick={() => navigate('/app')} className="btn-primary mt-4">Back Home</button>
           </div>
         ) : showLiveMap ? (
@@ -432,7 +432,7 @@ export default function LiveTrackingPage() {
               {liveEtaLabel && (
                 <div
                   className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                  style={{ background: 'rgba(255,255,255,0.94)', color: pg.lime, border: `1px solid rgba(12, 138, 62, 0.35)` }}
+                  style={{ background: 'rgba(0,0,0,0.94)', color: pg.lime, border: `1px solid rgba(12, 138, 62, 0.35)` }}
                 >
                   ETA {liveEtaLabel}
                 </div>
@@ -461,21 +461,21 @@ export default function LiveTrackingPage() {
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(251,191,36,0.15)' }}>
                     <Star size={16} style={{ color: pg.lime }} fill={pg.lime} />
                   </div>
-                  <p className="text-base font-bold text-[#0F1A14]">{dpData?.rating_avg?.toFixed(1) || '0.0'}</p>
+                  <p className="text-base font-bold text-[#F5F7F6]">{dpData?.rating_avg?.toFixed(1) || '0.0'}</p>
                   <p className="text-[10px]" style={{ color: pg.text3 }}>{dpData?.rating_count || 0} reviews</p>
                 </Surface>
                 <Surface className="p-3 text-center">
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: pg.limeDim }}>
                     <VehicleIcon size={16} style={{ color: pg.lime }} />
                   </div>
-                  <p className="text-base font-bold text-[#0F1A14] capitalize">{dpData?.vehicle_type || 'Bike'}</p>
+                  <p className="text-base font-bold text-[#F5F7F6] capitalize">{dpData?.vehicle_type || 'Bike'}</p>
                   <p className="text-[10px]" style={{ color: pg.text3 }}>Vehicle</p>
                 </Surface>
                 <Surface className="p-3 text-center">
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(59,130,246,0.15)' }}>
                     <Clock size={16} style={{ color: pg.lime }} />
                   </div>
-                  <p className="text-base font-bold text-[#0F1A14]">{etaLabel}</p>
+                  <p className="text-base font-bold text-[#F5F7F6]">{etaLabel}</p>
                   <p className="text-[10px]" style={{ color: pg.text3 }}>ETA</p>
                 </Surface>
               </div>
@@ -490,7 +490,7 @@ export default function LiveTrackingPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[#0F1A14] truncate">{dpProfile.full_name}</p>
+                    <p className="font-bold text-[#F5F7F6] truncate">{dpProfile.full_name}</p>
                     <p className="text-xs text-black/40">{STATUS_LABELS[request.status] || request.status}</p>
                   </div>
                   {!isCompleted && (
@@ -555,7 +555,7 @@ export default function LiveTrackingPage() {
               <div className="mb-3 flex items-center gap-2">
                 <PackageCheck size={20} className="text-green-400" />
                 <div>
-                  <p className="font-bold text-[#0F1A14]">Order has been delivered!</p>
+                  <p className="font-bold text-[#F5F7F6]">Order has been delivered!</p>
                   <p className="text-xs text-black/40">Confirm receipt to continue</p>
                 </div>
               </div>

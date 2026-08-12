@@ -249,7 +249,7 @@ export default function AdminPayments() {
             <IndianRupee size={15} />
             <span className="text-xs font-semibold">Admin Commission</span>
           </div>
-          <p className="text-xl font-bold text-[#0F1A14]">{formatCurrency(confirmedCommissionTotal)}</p>
+          <p className="text-xl font-bold text-[#F5F7F6]">{formatCurrency(confirmedCommissionTotal)}</p>
           <p className="text-xs text-black/40">Confirmed receipts only</p>
         </div>
         <div className="card p-4">
@@ -257,7 +257,7 @@ export default function AdminPayments() {
             <IndianRupee size={15} />
             <span className="text-xs font-semibold">DP Earnings</span>
           </div>
-          <p className="text-xl font-bold text-[#0F1A14]">{formatCurrency(totalDpEarnings)}</p>
+          <p className="text-xl font-bold text-[#F5F7F6]">{formatCurrency(totalDpEarnings)}</p>
         </div>
         {totalOutstanding > 0 && (
           <div className="card p-4 border-2 border-error-300 dark:border-error-700">
@@ -265,7 +265,7 @@ export default function AdminPayments() {
               <AlertTriangle size={15} />
               <span className="text-xs font-semibold">Pending from DPs</span>
             </div>
-            <p className="text-xl font-bold text-[#0F1A14]">{formatCurrency(totalOutstanding)}</p>
+            <p className="text-xl font-bold text-[#F5F7F6]">{formatCurrency(totalOutstanding)}</p>
             <button onClick={() => setTab('pending')} className="text-xs text-error-600 underline mt-0.5">{dpPending.length} DPs owe</button>
           </div>
         )}
@@ -275,7 +275,7 @@ export default function AdminPayments() {
               <Clock size={15} />
               <span className="text-xs font-semibold">Pending Receipts</span>
             </div>
-            <p className="text-xl font-bold text-[#0F1A14]">{pendingReceiptsCount}</p>
+            <p className="text-xl font-bold text-[#F5F7F6]">{pendingReceiptsCount}</p>
             <button onClick={() => setTab('receipts')} className="text-xs text-warning-600 underline mt-0.5">Review now</button>
           </div>
         )}
@@ -319,7 +319,7 @@ export default function AdminPayments() {
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {orderCommissions.map(o => (
                     <tr key={o.id} className="glass">
-                      <td className="px-4 py-3 font-medium text-[#0F1A14]">{o.dp_name}</td>
+                      <td className="px-4 py-3 font-medium text-[#F5F7F6]">{o.dp_name}</td>
                       <td className="px-4 py-3 text-black/50 max-w-[120px] truncate">{o.items_summary || 'Delivery'}</td>
                       <td className="px-4 py-3 text-right text-black/75">{formatCurrency(o.delivery_charge)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-success-600 dark:text-success-400">
@@ -362,7 +362,7 @@ export default function AdminPayments() {
                   {dpEarnings.map(d => (
                     <tr key={d.dp_id} className="glass">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-[#0F1A14]">{d.dp_name}</p>
+                        <p className="font-medium text-[#F5F7F6]">{d.dp_name}</p>
                         {d.dp_phone && <p className="text-xs text-black/40">{d.dp_phone}</p>}
                       </td>
                       <td className="px-4 py-3 text-right text-black/75">{d.orders}</td>
@@ -405,7 +405,7 @@ export default function AdminPayments() {
                   {dpPending.map(d => (
                     <tr key={d.dp_id} className="glass">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-[#0F1A14]">{d.dp_name}</p>
+                        <p className="font-medium text-[#F5F7F6]">{d.dp_name}</p>
                         {d.dp_phone && <p className="text-xs text-black/40">{d.dp_phone}</p>}
                       </td>
                       <td className="px-4 py-3 text-right text-black/75">{d.orders}</td>
@@ -440,7 +440,7 @@ export default function AdminPayments() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-[#0F1A14]">{(r._dp as any)?.full_name || 'Unknown'}</p>
+                        <p className="font-semibold text-[#F5F7F6]">{(r._dp as any)?.full_name || 'Unknown'}</p>
                         <span className={`badge flex items-center gap-1 ${
                           r.status === 'confirmed' ? 'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300'
                           : r.status === 'rejected' ? 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300'
@@ -450,7 +450,7 @@ export default function AdminPayments() {
                           {r.status === 'confirmed' ? 'Confirmed' : r.status === 'rejected' ? 'Rejected' : 'Pending'}
                         </span>
                       </div>
-                      <p className="text-lg font-bold text-[#0F1A14] mt-0.5">{formatCurrency(r.amount)}</p>
+                      <p className="text-lg font-bold text-[#F5F7F6] mt-0.5">{formatCurrency(r.amount)}</p>
                       <p className="text-xs text-black/40">UPI Ref: <span className="font-mono">{r.upi_ref}</span></p>
                       <p className="text-xs text-black/40">{formatTime(r.submitted_at)}</p>
                       {r.reject_reason && <p className="text-xs text-error-600 mt-1">Reason: {r.reject_reason}</p>}
@@ -480,7 +480,7 @@ export default function AdminPayments() {
                           </button>
                           <button
                             onClick={() => confirmReceipt(r.id)}
-                            className="rounded-lg bg-success-600 px-3 py-1.5 text-xs font-semibold text-[#0F1A14]"
+                            className="rounded-lg bg-success-600 px-3 py-1.5 text-xs font-semibold text-[#F5F7F6]"
                           >
                             Confirm
                           </button>
@@ -499,7 +499,7 @@ export default function AdminPayments() {
       {rejectId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#000000]/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setRejectId(null)}>
           <div className="card w-full max-w-sm p-5 animate-scale-in" onClick={e => e.stopPropagation()}>
-            <h3 className="mb-3 text-base font-bold text-[#0F1A14]">Reject Receipt</h3>
+            <h3 className="mb-3 text-base font-bold text-[#F5F7F6]">Reject Receipt</h3>
             <label className="label">Reason (optional)</label>
             <input className="input" value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="e.g. Amount mismatch, wrong reference" />
             <div className="mt-4 flex gap-2">

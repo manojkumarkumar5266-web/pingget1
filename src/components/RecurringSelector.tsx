@@ -42,7 +42,7 @@ export default function RecurringSelector({
     <div className="rounded-3xl p-5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
       <div className="flex items-center gap-2 mb-4">
         <Repeat size={16} style={{ color: '#0C8A3E' }} />
-        <span className="text-sm font-semibold text-[#0F1A14]">Repeat Request</span>
+        <span className="text-sm font-semibold text-[#F5F7F6]">Repeat Request</span>
         <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>(optional)</span>
       </div>
 

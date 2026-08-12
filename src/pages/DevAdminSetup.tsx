@@ -59,7 +59,7 @@ export default function DevAdminSetup() {
         <p className="mb-1 text-sm text-gray-400">
           Signed in as
         </p>
-        <p className="mb-6 truncate text-base font-semibold text-[#0F1A14]">
+        <p className="mb-6 truncate text-base font-semibold text-[#F5F7F6]">
           {user?.email ?? <span className="italic text-gray-500">Not signed in</span>}
         </p>
 
@@ -70,7 +70,7 @@ export default function DevAdminSetup() {
             </div>
             <button
               onClick={handleSignOut}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-black/5 px-4 py-3 text-sm font-semibold text-[#0F1A14] hover:bg-white/15 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-black/5 px-4 py-3 text-sm font-semibold text-[#F5F7F6] hover:bg-black/15 transition-colors"
             >
               <LogOut size={16} />
               Sign Out &amp; Sign In Again

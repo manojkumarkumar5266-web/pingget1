@@ -132,7 +132,7 @@ export default function AdminDashboard() {
       <div className="mb-7 flex items-center justify-between animate-fade-in-up">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: '#0C8A3E' }}>Operations</p>
-          <h1 className="text-[28px] font-extrabold tracking-tight text-[#0F1A14]">Dashboard</h1>
+          <h1 className="text-[28px] font-extrabold tracking-tight text-[#F5F7F6]">Dashboard</h1>
           <div className="mt-1 flex items-center gap-2">
             <span className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>Live overview</span>
             <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold"
@@ -147,7 +147,7 @@ export default function AdminDashboard() {
             style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)' }}>
             <Bell size={16} /> Alerts
             {unreadCount > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#0F1A14] animate-pulse">
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#F5F7F6] animate-pulse">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
               <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: s.bg }}>
                 <Icon size={18} style={{ color: s.color }} />
               </div>
-              <p className="text-2xl font-bold text-[#0F1A14]"><CountUp value={s.value} /></p>
+              <p className="text-2xl font-bold text-[#F5F7F6]"><CountUp value={s.value} /></p>
               <p className="mt-0.5 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</p>
             </div>
           )
@@ -193,7 +193,7 @@ export default function AdminDashboard() {
             <IndianRupee size={16} className="text-green-400" />
             <p className="text-xs font-semibold text-green-400">Today's Revenue</p>
           </div>
-          <p className="text-3xl font-bold text-[#0F1A14]"><CountUp value={stats.todayRevenue} prefix="₹" /></p>
+          <p className="text-3xl font-bold text-[#F5F7F6]"><CountUp value={stats.todayRevenue} prefix="₹" /></p>
         </div>
         <div className="relative overflow-hidden rounded-3xl p-5 animate-slide-up"
           style={{ background: 'linear-gradient(135deg,rgba(196,214,0,0.15),rgba(196,214,0,0.07))', border: '1px solid rgba(196,214,0,0.2)', animationDelay: '360ms' }}>
@@ -201,7 +201,7 @@ export default function AdminDashboard() {
             <TrendingUp size={16} style={{ color: '#0C8A3E' }} />
             <p className="text-xs font-semibold" style={{ color: '#0C8A3E' }}>Month Revenue</p>
           </div>
-          <p className="text-3xl font-bold text-[#0F1A14]"><CountUp value={stats.monthRevenue} prefix="₹" /></p>
+          <p className="text-3xl font-bold text-[#F5F7F6]"><CountUp value={stats.monthRevenue} prefix="₹" /></p>
         </div>
       </div>
 
@@ -212,14 +212,14 @@ export default function AdminDashboard() {
             <CheckCircle size={16} className="text-green-400" />
             <p className="text-xs font-semibold text-green-400">Commission Collected</p>
           </div>
-          <p className="text-2xl font-bold text-[#0F1A14]">{formatCurrency(stats.commissionCollected)}</p>
+          <p className="text-2xl font-bold text-[#F5F7F6]">{formatCurrency(stats.commissionCollected)}</p>
         </div>
         <div className="card p-5 animate-slide-up" style={{ animationDelay: '440ms' }}>
           <div className="flex items-center gap-2 mb-2">
             <Clock size={16} className="text-yellow-400" />
             <p className="text-xs font-semibold text-yellow-400">Pending Commission</p>
           </div>
-          <p className="text-2xl font-bold text-[#0F1A14]">{formatCurrency(stats.pendingCommission)}</p>
+          <p className="text-2xl font-bold text-[#F5F7F6]">{formatCurrency(stats.pendingCommission)}</p>
           {stats.pendingCommission === 0 && stats.completedOrders > 0 && (
             <p className="mt-1 text-xs text-green-400">All collected!</p>
           )}
@@ -234,7 +234,7 @@ export default function AdminDashboard() {
         <div className="card p-5 animate-slide-up" style={{ animationDelay: '480ms' }}>
           <div className="mb-4 flex items-center gap-2">
             <Star size={15} style={{ color: '#fbbf24' }} />
-            <h3 className="text-sm font-bold text-[#0F1A14]">Top Delivery Partners</h3>
+            <h3 className="text-sm font-bold text-[#F5F7F6]">Top Delivery Partners</h3>
           </div>
           {topDps.length === 0 ? (
             <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>No data yet.</p>
@@ -248,7 +248,7 @@ export default function AdminDashboard() {
                       style={i === 0 ? { background: '#0C8A3E', color: '#0B0B0B' } : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
                       {i + 1}
                     </span>
-                    <span className="text-sm font-medium text-[#0F1A14]">{dp.name}</span>
+                    <span className="text-sm font-medium text-[#F5F7F6]">{dp.name}</span>
                   </div>
                   <span className="text-sm font-bold" style={{ color: '#0C8A3E' }}>{dp.deliveries} <span className="text-xs font-normal" style={{ color: 'rgba(255,255,255,0.4)' }}>orders</span></span>
                 </div>
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
         <div className="card p-5 animate-slide-up" style={{ animationDelay: '520ms' }}>
           <div className="mb-4 flex items-center gap-2">
             <Zap size={15} style={{ color: '#0C8A3E' }} />
-            <h3 className="text-sm font-bold text-[#0F1A14]">Recent Orders</h3>
+            <h3 className="text-sm font-bold text-[#F5F7F6]">Recent Orders</h3>
           </div>
           {recentOrders.length === 0 ? (
             <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>No completed orders yet.</p>
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
               {recentOrders.map((o) => (
                 <div key={o.id} className="flex items-center justify-between rounded-2xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.03)' }}>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#0F1A14] truncate">{o.items_summary || 'Delivery'}</p>
+                    <p className="text-sm font-medium text-[#F5F7F6] truncate">{o.items_summary || 'Delivery'}</p>
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{formatTime(o.created_at)}</p>
                   </div>
                   <span className="text-sm font-bold text-green-400">{formatCurrency(o.delivery_charge)}</span>
@@ -290,8 +290,8 @@ export default function AdminDashboard() {
               style={{ background: 'rgba(18,18,18,0.95)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               <div className="flex items-center gap-2">
                 <Bell size={18} style={{ color: '#0C8A3E' }} />
-                <h2 className="text-base font-bold text-[#0F1A14]">Notifications</h2>
-                {unreadCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#0F1A14]">{unreadCount}</span>}
+                <h2 className="text-base font-bold text-[#F5F7F6]">Notifications</h2>
+                {unreadCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#F5F7F6]">{unreadCount}</span>}
               </div>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && <button onClick={markAllRead} className="text-xs font-semibold" style={{ color: '#0C8A3E' }}>Mark all read</button>}
@@ -402,7 +402,7 @@ function AdvanceAnalytics() {
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-4">
         <BarChart3 size={20} style={{ color: '#0C8A3E' }} />
-        <h2 className="text-lg font-bold text-[#0F1A14]">Advance Request Analytics</h2>
+        <h2 className="text-lg font-bold text-[#F5F7F6]">Advance Request Analytics</h2>
       </div>
 
       {/* Status Cards */}
@@ -415,7 +415,7 @@ function AdvanceAnalytics() {
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: `${c.color}1a` }}>
                   <Icon size={16} style={{ color: c.color }} />
                 </div>
-                <span className="text-2xl font-bold text-[#0F1A14]">{c.value}</span>
+                <span className="text-2xl font-bold text-[#F5F7F6]">{c.value}</span>
               </div>
               <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>{c.label}</p>
             </div>
@@ -462,7 +462,7 @@ function AdvanceAnalytics() {
                 <div className="flex-1 h-6 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
                   <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: bar.color }} />
                 </div>
-                <span className="w-8 text-right text-xs font-bold text-[#0F1A14]">{bar.count}</span>
+                <span className="w-8 text-right text-xs font-bold text-[#F5F7F6]">{bar.count}</span>
               </div>
             )
           })}

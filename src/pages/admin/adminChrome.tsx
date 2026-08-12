@@ -25,7 +25,7 @@ export function AdminHeader({
         <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
           {eyebrow}
         </p>
-        <h1 className="truncate text-[28px] font-extrabold tracking-tight text-[#0F1A14]">{title}</h1>
+        <h1 className="truncate text-[28px] font-extrabold tracking-tight text-[#F5F7F6]">{title}</h1>
       </div>
       {action}
     </div>

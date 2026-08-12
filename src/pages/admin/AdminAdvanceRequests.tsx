@@ -139,7 +139,7 @@ export default function AdminAdvanceRequests() {
                       </span>
                     )}
                   </div>
-                  <p className="font-semibold text-[#0F1A14] truncate">
+                  <p className="font-semibold text-[#F5F7F6] truncate">
                     {r.description?.split('\n')[0]?.trim() || 'Scheduled Task'}
                   </p>
                   <p className="mt-0.5 text-xs text-black/40">ID: {r.id.slice(0, 12)}...</p>
@@ -257,20 +257,20 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
           <div className="rounded-2xl border border-black/10 p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Tag size={14} style={{ color: '#0C8A3E' }} />
-              <span className="text-sm font-semibold text-[#0F1A14]">{request.request_category || 'Advance Request'}</span>
+              <span className="text-sm font-semibold text-[#F5F7F6]">{request.request_category || 'Advance Request'}</span>
             </div>
             {request.scheduled_date && (
               <div className="flex items-center gap-2 text-sm">
                 <CalendarClock size={14} style={{ color: '#0C8A3E' }} />
                 <span className="text-black/55">Scheduled: </span>
-                <span className="font-medium text-[#0F1A14]">{request.scheduled_date} at {request.scheduled_slot || request.scheduled_time}</span>
+                <span className="font-medium text-[#F5F7F6]">{request.scheduled_date} at {request.scheduled_slot || request.scheduled_time}</span>
               </div>
             )}
             {request.estimated_task_duration && (
               <div className="flex items-center gap-2 text-sm">
                 <Clock size={14} style={{ color: '#0C8A3E' }} />
                 <span className="text-black/55">Est. Duration: </span>
-                <span className="font-medium text-[#0F1A14]">
+                <span className="font-medium text-[#F5F7F6]">
                   {request.estimated_task_duration < 60 ? `${request.estimated_task_duration} min` : `${request.estimated_task_duration / 60} hr`}
                 </span>
               </div>
@@ -304,18 +304,18 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
             {request.preferred_shop && (
               <div className="flex items-start gap-2 text-sm">
                 <Package size={14} className="mt-0.5 shrink-0 text-accent-500" />
-                <span className="text-black/55">Shop: <span className="font-medium text-[#0F1A14]">{request.preferred_shop}</span></span>
+                <span className="text-black/55">Shop: <span className="font-medium text-[#F5F7F6]">{request.preferred_shop}</span></span>
               </div>
             )}
             {request.pickup_address && (
               <div className="flex items-start gap-2 text-sm">
                 <MapPin size={14} className="mt-0.5 shrink-0 text-warning-500" />
-                <span className="text-black/55">Pickup: <span className="font-medium text-[#0F1A14]">{request.pickup_address}</span></span>
+                <span className="text-black/55">Pickup: <span className="font-medium text-[#F5F7F6]">{request.pickup_address}</span></span>
               </div>
             )}
             <div className="flex items-start gap-2 text-sm">
               <MapPin size={14} className="mt-0.5 shrink-0 text-error-500" />
-              <span className="text-black/55">Deliver to: <span className="font-medium text-[#0F1A14]">{request.delivery_address}</span></span>
+              <span className="text-black/55">Deliver to: <span className="font-medium text-[#F5F7F6]">{request.delivery_address}</span></span>
             </div>
           </div>
 
@@ -328,13 +328,13 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
                   val !== 0 && (
                     <div key={key} className="flex justify-between">
                       <span className="text-black/50">{key}</span>
-                      <span className="font-semibold text-[#0F1A14]">{formatCurrency(val)}</span>
+                      <span className="font-semibold text-[#F5F7F6]">{formatCurrency(val)}</span>
                     </div>
                   )
                 ))}
                 {request.estimated_total_charge != null && (
                   <div className="flex justify-between border-t border-black/10 pt-2 mt-2">
-                    <span className="font-bold text-[#0F1A14]">Total</span>
+                    <span className="font-bold text-[#F5F7F6]">Total</span>
                     <span className="font-bold" style={{ color: '#0C8A3E' }}>{formatCurrency(request.estimated_total_charge)}</span>
                   </div>
                 )}
@@ -360,14 +360,14 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
               <div className="flex items-center gap-1.5 mb-2 text-xs text-black/40"><User size={12} /> Customer</div>
-              <p className="text-sm font-semibold text-[#0F1A14]">{userProfile?.full_name || '...'}</p>
+              <p className="text-sm font-semibold text-[#F5F7F6]">{userProfile?.full_name || '...'}</p>
               <p className="text-xs text-gray-500">{userProfile?.phone || ''}</p>
             </div>
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
               <div className="flex items-center gap-1.5 mb-2 text-xs text-black/40"><Bike size={12} /> Delivery Partner</div>
               {dpProfile ? (
                 <>
-                  <p className="text-sm font-semibold text-[#0F1A14]">{dpProfile?.full_name || '...'}</p>
+                  <p className="text-sm font-semibold text-[#F5F7F6]">{dpProfile?.full_name || '...'}</p>
                   <p className="text-xs text-gray-500">{dpProfile?.phone || ''}</p>
                 </>
               ) : (

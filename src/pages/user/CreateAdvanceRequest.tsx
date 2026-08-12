@@ -679,7 +679,7 @@ export default function CreateAdvanceRequest() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <img src={getCategoryImage(sheetCategory)} alt="" className="h-8 w-8 rounded-lg object-cover" />
-                      <h3 className="text-base font-bold text-[#0F1A14]">{sheetCategory}</h3>
+                      <h3 className="text-base font-bold text-[#F5F7F6]">{sheetCategory}</h3>
                     </div>
                     <button type="button" onClick={() => setSheetCategory(null)} className="h-8 w-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.06)' }}>
                       <X size={16} className="text-black/50" />
@@ -868,7 +868,7 @@ export default function CreateAdvanceRequest() {
                         <div key={idx} className="relative">
                           <img src={preview} alt={`Photo ${idx + 1}`} className="h-20 w-20 rounded-2xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
                           <button onClick={() => removePhoto(idx)}
-                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[#0F1A14] shadow-lg">
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[#F5F7F6] shadow-lg">
                             <X size={10} />
                           </button>
                         </div>
@@ -959,7 +959,7 @@ export default function CreateAdvanceRequest() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Deliver To</p>
-                      <p className="text-sm font-medium text-[#0F1A14] truncate">{shortAddressText || fullAddressText}</p>
+                      <p className="text-sm font-medium text-[#F5F7F6] truncate">{shortAddressText || fullAddressText}</p>
                     </div>
                     <button onClick={() => setShowAddressList(true)}
                       className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
@@ -971,7 +971,7 @@ export default function CreateAdvanceRequest() {
               ) : showAddressList && !showAddressForm ? (
                 <div className="rounded-2xl p-4 space-y-3 animate-slide-up" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-[#0F1A14]">Your Addresses ({addresses.length}/{MAX_ADDRESSES})</h3>
+                    <h3 className="text-sm font-bold text-[#F5F7F6]">Your Addresses ({addresses.length}/{MAX_ADDRESSES})</h3>
                     <button onClick={() => { setShowAddressList(false); resetAddrForm() }}
                       className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
                       <X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} />
@@ -994,7 +994,7 @@ export default function CreateAdvanceRequest() {
                               <button onClick={() => { setSelectedAddressId(addr.id); setShowAddressList(false) }} className="flex-1 text-left min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
                                   <Home size={14} className="text-black/40 shrink-0" />
-                                  <p className="text-sm font-semibold text-[#0F1A14] truncate">{addr.label || 'Address'}</p>
+                                  <p className="text-sm font-semibold text-[#F5F7F6] truncate">{addr.label || 'Address'}</p>
                                   {selectedAddressId === addr.id && <span className="text-[10px] font-bold" style={{ color: '#0C8A3E' }}>SELECTED</span>}
                                 </div>
                                 <p className="text-xs text-black/50 truncate">{addrFull}</p>
@@ -1033,7 +1033,7 @@ export default function CreateAdvanceRequest() {
               ) : showAddressForm ? (
                 <div className="rounded-2xl p-4 space-y-3 animate-slide-up" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-[#0F1A14]">{editingAddressId ? 'Edit Address' : 'New Address'}</h3>
+                    <h3 className="text-sm font-bold text-[#F5F7F6]">{editingAddressId ? 'Edit Address' : 'New Address'}</h3>
                     <button onClick={() => { setShowAddressForm(false); resetAddrForm() }}
                       className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
                       <X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} />
@@ -1084,7 +1084,7 @@ export default function CreateAdvanceRequest() {
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Category</p>
-                    <p className="text-sm font-semibold text-[#0F1A14]">{category}</p>
+                    <p className="text-sm font-semibold text-[#F5F7F6]">{category}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -1093,7 +1093,7 @@ export default function CreateAdvanceRequest() {
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Date</p>
-                    <p className="text-sm font-semibold text-[#0F1A14]">
+                    <p className="text-sm font-semibold text-[#F5F7F6]">
                       {selectedDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                     </p>
                   </div>
@@ -1104,7 +1104,7 @@ export default function CreateAdvanceRequest() {
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Time Slot</p>
-                    <p className="text-sm font-semibold text-[#0F1A14]">{selectedSlot?.replace('-', ' to ')}</p>
+                    <p className="text-sm font-semibold text-[#F5F7F6]">{selectedSlot?.replace('-', ' to ')}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -1113,7 +1113,7 @@ export default function CreateAdvanceRequest() {
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Delivery Address</p>
-                    <p className="text-sm font-semibold text-[#0F1A14] truncate">{shortAddressText || fullAddressText}</p>
+                    <p className="text-sm font-semibold text-[#F5F7F6] truncate">{shortAddressText || fullAddressText}</p>
                   </div>
                 </div>
                 {shopName && (
@@ -1123,7 +1123,7 @@ export default function CreateAdvanceRequest() {
                     </div>
                     <div className="flex-1">
                       <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Shop</p>
-                      <p className="text-sm font-semibold text-[#0F1A14]">{shopName}</p>
+                      <p className="text-sm font-semibold text-[#F5F7F6]">{shopName}</p>
                     </div>
                   </div>
                 )}
@@ -1133,7 +1133,7 @@ export default function CreateAdvanceRequest() {
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Estimated Duration</p>
-                    <p className="text-sm font-semibold text-[#0F1A14]">{taskDuration < 60 ? `${taskDuration} minutes` : `${taskDuration / 60} hour`}</p>
+                    <p className="text-sm font-semibold text-[#F5F7F6]">{taskDuration < 60 ? `${taskDuration} minutes` : `${taskDuration / 60} hour`}</p>
                   </div>
                 </div>
               </div>
@@ -1146,7 +1146,7 @@ export default function CreateAdvanceRequest() {
                   <Repeat size={14} style={{ color: '#818cf8' }} />
                   <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#818cf8' }}>Recurring Request</p>
                 </div>
-                <p className="text-sm font-semibold text-[#0F1A14]">
+                <p className="text-sm font-semibold text-[#F5F7F6]">
                   {recurringType === 'daily' && 'Repeats every day'}
                   {recurringType === 'weekly' && `Repeats every ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][recurringWeekday ?? 1]}`}
                   {recurringType === 'monthly' && `Repeats on day ${recurringMonthDay} of each month`}
@@ -1164,12 +1164,12 @@ export default function CreateAdvanceRequest() {
                   val !== 0 && (
                     <div key={key} className="flex justify-between text-sm">
                       <span style={{ color: 'rgba(255,255,255,0.6)' }}>{key}</span>
-                      <span className="font-semibold text-[#0F1A14]">₹{val.toFixed(2)}</span>
+                      <span className="font-semibold text-[#F5F7F6]">₹{val.toFixed(2)}</span>
                     </div>
                   )
                 ))}
                 <div className="flex justify-between pt-2 mt-2" style={{ borderTop: '1px solid rgba(196,214,0,0.2)' }}>
-                  <span className="text-sm font-bold text-[#0F1A14]">Estimated Total</span>
+                  <span className="text-sm font-bold text-[#F5F7F6]">Estimated Total</span>
                   <span className="text-lg font-bold" style={{ color: '#0C8A3E' }}>₹{charges.total.toFixed(2)}</span>
                 </div>
               </div>

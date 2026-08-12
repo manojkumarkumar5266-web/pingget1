@@ -489,7 +489,7 @@ export default function DpSignup() {
                 {aadhaarPreview ? (
                   <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
                     {aadhaarFile?.type.startsWith('image') ? <img src={aadhaarPreview} alt="Aadhaar" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg "><FileText size={24} className="text-green-400" /></div>}
-                    <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#0F1A14]">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
+                    <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#F5F7F6]">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
                     <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                   </div>
                 ) : (
@@ -503,7 +503,7 @@ export default function DpSignup() {
                   {licensePreview ? (
                     <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
                       {licenseFile?.type.startsWith('image') ? <img src={licensePreview} alt="Licence" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg "><FileText size={24} className="text-green-400" /></div>}
-                      <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#0F1A14]">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
+                      <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#F5F7F6]">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
                       <button type="button" onClick={() => licenseInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
                     </div>
                   ) : (

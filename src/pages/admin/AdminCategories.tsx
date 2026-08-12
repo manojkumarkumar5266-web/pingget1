@@ -117,7 +117,7 @@ export default function AdminCategories() {
                       {isOpen ? <ChevronDown size={16} className="text-black/40" /> : <ChevronRight size={16} className="text-black/40" />}
                       <span className="text-xl">{cat.icon}</span>
                       <div>
-                        <p className="text-sm font-bold text-[#0F1A14]">{cat.name}</p>
+                        <p className="text-sm font-bold text-[#F5F7F6]">{cat.name}</p>
                         <p className="text-xs text-black/40">{catItems.length} item{catItems.length === 1 ? '' : 's'} · {cat.is_active ? 'Active' : 'Inactive'}</p>
                       </div>
                     </button>
@@ -150,7 +150,7 @@ export default function AdminCategories() {
                             value={newItemName}
                             onChange={e => setNewItemName(e.target.value)}
                             placeholder="Item name"
-                            className="flex-1 rounded-lg px-3 py-2 text-sm text-[#0F1A14] outline-none"
+                            className="flex-1 rounded-lg px-3 py-2 text-sm text-[#F5F7F6] outline-none"
                             style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
                             onKeyDown={e => { if (e.key === 'Enter') addItem(cat.id) }}
                           />
@@ -180,7 +180,7 @@ export default function AdminCategories() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#000000]/60" onClick={() => setShowAddCat(false)}>
           <div className="mx-4 w-full max-w-sm rounded-2xl p-5" style={{ background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(255,255,255,0.12)' }} onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-[#0F1A14]">Add Category</h2>
+              <h2 className="text-lg font-bold text-[#F5F7F6]">Add Category</h2>
               <button onClick={() => setShowAddCat(false)} className="text-black/40"><X size={20} /></button>
             </div>
             <div className="space-y-3">

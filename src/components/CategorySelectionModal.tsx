@@ -101,7 +101,7 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
           <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-full active:scale-90 transition-transform" style={{ background: 'rgba(255,255,255,0.08)' }}>
             <X size={20} className="text-black/65" />
           </button>
-          <h2 className="text-lg font-bold text-[#0F1A14]">{category}</h2>
+          <h2 className="text-lg font-bold text-[#F5F7F6]">{category}</h2>
         </div>
         {selectedCount > 0 && (
           <span className="rounded-full px-3 py-1 text-xs font-bold" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
@@ -119,7 +119,7 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={`Search ${category.toLowerCase()}...`}
-            className="flex-1 bg-transparent text-sm text-[#0F1A14] outline-none placeholder:text-black/40"
+            className="flex-1 bg-transparent text-sm text-[#F5F7F6] outline-none placeholder:text-black/40"
           />
           {search && (
             <button onClick={() => setSearch('')} className="text-black/40">
@@ -150,7 +150,7 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
                     : { border: '1px solid rgba(255,255,255,0.08)' }}>
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-[#0F1A14]">{item.name}</p>
+                      <p className="text-sm font-semibold text-[#F5F7F6]">{item.name}</p>
                     </div>
                     {sel ? (
                       <div className="flex items-center gap-2">
@@ -159,7 +159,7 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
                           style={{ background: 'rgba(255,255,255,0.1)' }}>
                           <Minus size={14} className="text-black/65" />
                         </button>
-                        <span className="min-w-[24px] text-center text-sm font-bold text-[#0F1A14]">{sel.quantity}</span>
+                        <span className="min-w-[24px] text-center text-sm font-bold text-[#F5F7F6]">{sel.quantity}</span>
                         <button onClick={() => updateQty(item.name, 1)}
                           className="flex h-7 w-7 items-center justify-center rounded-full active:scale-90 transition-transform"
                           style={{ background: '#facc15' }}>
@@ -182,7 +182,7 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
                         value={sel.price || ''}
                         onChange={e => updatePrice(item.name, Number(e.target.value))}
                         placeholder="0"
-                        className="w-24 rounded-lg px-2 py-1 text-sm text-[#0F1A14] outline-none"
+                        className="w-24 rounded-lg px-2 py-1 text-sm text-[#F5F7F6] outline-none"
                         style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
                       />
                       {sel.price > 0 && (

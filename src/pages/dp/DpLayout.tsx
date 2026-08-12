@@ -101,7 +101,7 @@ export default function DpLayout() {
       <div className="relative mx-auto flex h-full w-full max-w-lg flex-col">
       <header
         className="z-10 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]"
-        style={{ background: 'rgba(255,255,255,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+        style={{ background: 'rgba(0,0,0,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
       >
         <div className="flex items-center justify-between gap-3">
           <BrandWordmark size="xs" showTagline={false} align="left" />
@@ -116,7 +116,7 @@ export default function DpLayout() {
                 ? { background: 'rgba(245,165,36,0.16)', color: '#FCD34D', border: '1px solid rgba(245,165,36,0.35)' }
                 : { background: pg.surface2, color: pg.text3, border: `1px solid ${pg.line}` }}
             >
-              <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${dp.is_online ? 'animate-pulse' : 'bg-white/30'}`} style={dp.is_online ? { background: pg.olive } : undefined} />
+              <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${dp.is_online ? 'animate-pulse' : 'bg-black/30'}`} style={dp.is_online ? { background: pg.olive } : undefined} />
               {dp.is_online ? 'Online' : commissionOwed > 0 ? 'Pay due' : 'Go online'}
             </button>
             <button type="button" onClick={() => signOut()} className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.surface2, color: pg.text3 }}>
