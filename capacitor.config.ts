@@ -7,7 +7,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
  * Both share one Supabase project.
  */
 const config: CapacitorConfig = {
-  appId: 'com.pingget.app',
+  appId: 'com.pingget.customer',
   appName: 'PingGET',
   webDir: 'dist-user',
   server: {
