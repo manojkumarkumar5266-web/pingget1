@@ -8,7 +8,7 @@ import { Surface } from '../design/primitives'
 
 const SUPPORT_EMAIL_FALLBACK = 'support@pingget.in'
 
-/** Need help — email + live chat with admin (user & DP tracking pages) */
+/** Need help — email + live chat with support team (user & DP tracking pages) */
 export default function NeedHelpCard({
   requestId,
   chatBasePath,
@@ -82,7 +82,7 @@ export default function NeedHelpCard({
         </p>
       </div>
       <p className="mb-3 text-sm" style={{ color: pg.text2 }}>
-        Customer support — email us or chat live with an admin.
+        Customer support — email us or chat live with the support team.
       </p>
       <div className="grid grid-cols-2 gap-2">
         <a
@@ -100,7 +100,7 @@ export default function NeedHelpCard({
           style={{ background: pg.lime, color: pg.limeText }}
         >
           <MessageCircle size={16} />
-          {opening ? 'Opening…' : 'Chat with admin'}
+          {opening ? 'Opening…' : 'Chat with support team'}
           {unread > 0 && (
             <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
               {unread > 99 ? '99+' : unread}
