@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { ErrorBanner } from '../../components/ui'
 import { getSelectedDeliveryAddress } from '../../components/AddressPicker'
 import { Camera, Mic, MicOff, X, Play, Pause, ArrowLeft } from 'lucide-react'
-import { Screen, TopChrome, Surface, CTA, SectionLabel, IconButton } from '../../design/primitives'
+import { Screen, TopChrome, Surface, CTA, IconButton } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { uploadMediaFile } from '../../lib/uploadMedia'
 
@@ -176,44 +176,19 @@ export default function CreateRequest() {
       />
 
       <Screen pad className="flex-1 overflow-y-auto pb-28 pt-0">
-        <section className="mb-5">
-          <SectionLabel title="Photos" />
-          <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
-          <div className="flex flex-wrap gap-2">
-            {photoPreviews.map((preview, idx) => (
-              <div key={idx} className="relative">
-                <img
-                  src={preview}
-                  alt=""
-                  className="h-20 w-20 rounded-2xl object-cover"
-                  style={{ border: `1px solid ${pg.line}` }}
-                  draggable={false}
-                />
-                <button
-                  type="button"
-                  onClick={() => removePhoto(idx)}
-                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[#F5F7F6]"
-                >
-                  <X size={10} />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => photoInputRef.current?.click()}
-              className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-2xl transition active:scale-95"
-              style={{ background: pg.surface, border: `1.5px dashed rgba(196,214,0,0.35)`, color: pg.lime }}
-            >
-              <Camera size={20} />
-              <span className="text-[10px] font-extrabold">Add</span>
-            </button>
-          </div>
-        </section>
+        <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
 
         <Surface className="relative p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.lime }}>Notes</p>
             <div className="flex items-center gap-2">
+              <CTA
+                variant="secondary"
+                className="min-h-0 rounded-xl px-3 py-1.5 text-xs"
+                onClick={() => photoInputRef.current?.click()}
+              >
+                <Camera size={14} /> Photo
+              </CTA>
               {recording ? (
                 <CTA variant="danger" className="min-h-0 rounded-xl px-3 py-1.5 text-xs" onClick={stopRecording}>
                   <MicOff size={14} /> Stop {fmtDur(voiceDuration)}
@@ -227,9 +202,24 @@ export default function CreateRequest() {
           </div>
 
           {photoPreviews.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {photoPreviews.map((p, i) => (
-                <img key={i} src={p} alt="" className="h-12 w-12 rounded-xl object-cover opacity-90" draggable={false} />
+            <div className="mb-3 flex flex-wrap gap-2">
+              {photoPreviews.map((preview, idx) => (
+                <div key={idx} className="relative">
+                  <img
+                    src={preview}
+                    alt=""
+                    className="h-16 w-16 rounded-xl object-cover"
+                    style={{ border: `1px solid ${pg.line}` }}
+                    draggable={false}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(idx)}
+                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[#F5F7F6]"
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
               ))}
             </div>
           )}

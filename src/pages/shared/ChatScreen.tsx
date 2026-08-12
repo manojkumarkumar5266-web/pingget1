@@ -41,7 +41,8 @@ export default function ChatScreen() {
   const [paymentRemarks, setPaymentRemarks] = useState('')
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null)
-  const [uploadingProof, setUploadingProof] = useState(false)
+  const [chatClosedAt, setChatClosedAt] = useState<string | null>(null)
+  const [closingChat, setClosingChat] = useState(false)
   const [recording, setRecording] = useState(false)
   const [voiceDuration, setVoiceDuration] = useState(0)
   const [otherTyping, setOtherTyping] = useState(false)
@@ -109,6 +110,10 @@ export default function ChatScreen() {
       const { data: roomData, error: roomError } = await supabase.from('chat_rooms').select('*').eq('id', roomId).maybeSingle()
       if (roomError || !roomData) { setError('Chat not found'); setLoading(false); return }
       setRoom(roomData as ChatRoom)
+      const closed =
+        (roomData as any).closed_at ||
+        (typeof window !== 'undefined' ? localStorage.getItem(`chat_closed_${roomId}`) : null)
+      setChatClosedAt(closed || null)
       const otherUserId = isUser ? roomData.dp_id : roomData.user_id
       const { data: otherProfile } = await supabase.from('profiles').select('id, full_name, photo_url, role, city, address, pincode').eq('id', otherUserId).maybeSingle()
       setOtherUser(otherProfile as unknown as Profile)
@@ -386,9 +391,34 @@ export default function ChatScreen() {
   if (loading) return <FullScreenLoader />
   if (error) return <div className="p-4"><ErrorBanner message={error} /></div>
 
-  const chatLocked = order?.status === 'completed'
+  const chatLocked = order?.status === 'completed' || !!chatClosedAt
   const lastOwnMsg = [...messages].reverse().find(m => m.sender_id === profile?.id)
   const isCompleted = order?.status === 'completed'
+  const canCloseAdvanceChat =
+    !chatLocked &&
+    fullOrderData?.order_type === 'advance' &&
+    ['payment_verified', 'booking_confirmed'].includes(fullOrderData?.status)
+
+  const closeAdvanceChat = async () => {
+    if (!room || closingChat) return
+    setClosingChat(true)
+    const now = new Date().toISOString()
+    try {
+      await supabase.from('messages').insert({
+        chat_room_id: room.id,
+        sender_id: profile!.id,
+        message_type: 'text',
+        content: 'Chat closed. Booking is confirmed — see you on the scheduled date.',
+      })
+      await supabase.from('chat_rooms').update({ closed_at: now, closed_by: profile!.id }).eq('id', room.id)
+    } catch {
+      // Column may be missing until migration — still lock locally
+    }
+    localStorage.setItem(`chat_closed_${room.id}`, now)
+    setChatClosedAt(now)
+    setClosingChat(false)
+    navigate(isUser ? '/app/orders' : '/dp/orders', { replace: true })
+  }
 
   return (
     <div className="flex h-screen flex-col" style={{ background: pg.bg }}>
@@ -423,7 +453,19 @@ export default function ChatScreen() {
           )}
         </div>
         {order && <StatusBadge status={order.status} />}
-        {!isCompleted && isUser && !order && (
+        {!order && fullOrderData?.status && <StatusBadge status={fullOrderData.status} />}
+        {canCloseAdvanceChat && (
+          <button
+            type="button"
+            onClick={() => void closeAdvanceChat()}
+            disabled={closingChat}
+            className="shrink-0 rounded-2xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+            style={{ background: pg.limeDim, border: '1px solid rgba(196,214,0,0.35)', color: pg.lime }}
+          >
+            {closingChat ? 'Closing…' : 'Close chat'}
+          </button>
+        )}
+        {!isCompleted && isUser && !order && !canCloseAdvanceChat && (
           <button
             onClick={async () => {
               if (!room) return
@@ -598,8 +640,8 @@ export default function ChatScreen() {
                             await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: 'Advance Confirmation Payment Verified. Your booking has been successfully reserved. See you on the scheduled date and time.' })
                             await supabase.from('notifications').insert({ user_id: fullOrderData?.user_id, title: 'Payment Verified', body: 'Your advance payment has been verified. Booking confirmed!', type: 'payment_verified', related_id: fullOrderData?.id })
                             kickPushDelivery()
+                            setFullOrderData((prev: any) => (prev ? { ...prev, status: 'booking_confirmed' } : prev))
                             fetchMessages()
-                            navigate('/dp', { replace: true })
                           }}
                             className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
                             style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
@@ -732,9 +774,11 @@ export default function ChatScreen() {
 
       {/* Input area — WhatsApp style: Photo | Voice | Type message */}
       {chatLocked ? (
-        <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-4" style={{ background: pg.bg, borderTop: `1px solid ${pg.line}` }}>
-          <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Conversation ended — order completed.
+        <div className="shrink-0 flex flex-col items-center justify-center gap-1 px-4 py-4" style={{ background: pg.bg, borderTop: `1px solid ${pg.line}` }}>
+          <p className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.55)' }}>
+            {chatClosedAt && order?.status !== 'completed'
+              ? 'Chat closed — booking confirmed.'
+              : 'Conversation ended — order completed.'}
           </p>
         </div>
       ) : (
@@ -878,7 +922,7 @@ export default function ChatScreen() {
                 .then(({ data }) => { if (data) setAdvancePaymentData(data) })
             }
             if (fullOrderData?.id) {
-              setFullOrderData((prev: any) => (prev ? { ...prev, status: 'payment_verified' } : prev))
+              setFullOrderData((prev: any) => (prev ? { ...prev, status: 'waiting_payment' } : prev))
             }
           }}
         />
@@ -1189,13 +1233,13 @@ function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
             <CreditCard size={20} style={{ color: '#0C8A3E' }} />
             <h3 className="text-lg font-bold text-[#F5F7F6]">Request Advance Payment</h3>
           </div>
-          <p className="text-sm text-black/50">Send a premium payment card to the customer inside this chat. The customer will upload their payment proof here.</p>
+          <p className="text-sm" style={{ color: 'rgba(245,247,246,0.65)' }}>Send a premium payment card to the customer inside this chat. The customer will upload their payment proof here.</p>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">Amount (₹)</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(245,247,246,0.45)' }}>Amount (₹)</label>
             <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="200" className="input" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">Payment Deadline (minutes)</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(245,247,246,0.45)' }}>Payment Deadline (minutes)</label>
             <input type="number" value={deadline} onChange={e => setDeadline(e.target.value)} placeholder="120" className="input" />
           </div>
           <div className="flex gap-2">
@@ -1264,7 +1308,8 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, requ
       }
 
       if (requestId) {
-        await supabase.from('requests').update({ status: 'payment_verified' }).eq('id', requestId)
+        // Keep request in waiting_payment until DP verifies
+        await supabase.from('requests').update({ status: 'waiting_payment' }).eq('id', requestId)
       }
 
       await supabase.from('messages').insert({
@@ -1303,37 +1348,38 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, requ
   return (
     <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-black/20" /></div>
+        <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full" style={{ background: 'rgba(255,255,255,0.25)' }} /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
           <div className="flex items-center gap-2">
-            <Upload size={20} style={{ color: '#0C8A3E' }} />
+            <Upload size={20} style={{ color: '#C4D600' }} />
             <h3 className="text-lg font-bold text-[#F5F7F6]">Upload Payment Proof</h3>
           </div>
-          <p className="text-sm text-black/50">Upload your payment screenshot and enter your UPI reference number or transaction ID.</p>
+          <p className="text-sm" style={{ color: 'rgba(245,247,246,0.65)' }}>Upload your payment screenshot and enter your UPI reference number or transaction ID.</p>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">Payment Screenshot</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(245,247,246,0.45)' }}>Payment Screenshot</label>
             <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} className="hidden" id="proof-file" />
-            <label htmlFor="proof-file" className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-black/10 py-6 text-sm text-black/50 transition-all hover:border-[#C4D600] hover:text-[#0C8A3E]">
-              {preview ? <img src={preview} alt="Preview" className="h-24 rounded-lg object-cover" /> : <><Camera size={20} /> Tap to upload screenshot</>}
+            <label htmlFor="proof-file" className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed py-6 text-sm transition-all"
+              style={{ borderColor: 'rgba(255,255,255,0.18)', color: 'rgba(245,247,246,0.7)', background: 'rgba(255,255,255,0.04)' }}>
+              {preview ? <img src={preview} alt="Preview" className="h-24 rounded-lg object-cover" /> : <><Camera size={20} style={{ color: '#C4D600' }} /> Tap to upload screenshot</>}
             </label>
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">UPI Reference Number</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(245,247,246,0.45)' }}>UPI Reference Number</label>
             <input value={upiRef} onChange={e => setUpiRef(e.target.value)} placeholder="e.g. 9876543210" className="input" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">Transaction ID (optional)</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(245,247,246,0.45)' }}>Transaction ID (optional)</label>
             <input value={txnId} onChange={e => setTxnId(e.target.value)} placeholder="Bank transaction ID" className="input" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-black/40">Remarks (optional)</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(245,247,246,0.45)' }}>Remarks (optional)</label>
             <textarea value={remarks} onChange={e => setRemarks(e.target.value)} placeholder="Any notes for the delivery partner" className="input min-h-16 resize-none" />
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleSubmit} disabled={uploading || !file}
               className="flex-1 rounded-xl py-3 font-bold transition-all active:scale-95 disabled:opacity-50"
-              style={{ background: '#0C8A3E', color: '#0B0B0B' }}>
+              style={{ background: '#C4D600', color: '#0B0B0B' }}>
               {uploading ? 'Uploading...' : 'Submit Proof'}
             </button>
           </div>
@@ -1361,7 +1407,7 @@ function RejectPaymentModal({ onClose, advancePaymentId, dpId, onReject }: {
             <AlertCircle size={20} style={{ color: '#f87171' }} />
             <h3 className="text-lg font-bold text-[#F5F7F6]">Reject Payment</h3>
           </div>
-          <p className="text-sm text-black/50">Please provide a reason for rejecting this payment. This is mandatory.</p>
+          <p className="text-sm" style={{ color: 'rgba(245,247,246,0.65)' }}>Please provide a reason for rejecting this payment. This is mandatory.</p>
           <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Payment amount does not match, invalid screenshot..." className="input min-h-24 resize-none" />
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
