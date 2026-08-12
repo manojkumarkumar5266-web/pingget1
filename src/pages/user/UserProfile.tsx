@@ -78,7 +78,7 @@ export default function UserProfile() {
       <div className="mb-5 space-y-2">
         {infoRows.map(row => (
           <Surface key={row.label} className="flex items-center gap-3 p-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: pg.surface2 }}>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: pg.surface2, color: pg.ink }}>
               <row.icon size={18} style={{ color: pg.text3 }} />
             </div>
             <div className="min-w-0">
@@ -90,7 +90,7 @@ export default function UserProfile() {
 
         <Surface className="p-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: pg.surface2 }}>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: pg.surface2, color: pg.ink }}>
               <MapPin size={18} style={{ color: pg.text3 }} />
             </div>
             <div className="min-w-0 flex-1">
@@ -143,7 +143,7 @@ export default function UserProfile() {
         <a
           href="mailto:support@pingget.in"
           className="flex items-center gap-3 rounded-2xl px-4 py-3.5 transition active:scale-[0.98]"
-          style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}
+          style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}
         >
           <Mail size={16} style={{ color: pg.lime }} />
           <span className="text-sm font-extrabold" style={{ color: pg.lime }}>support@pingget.in</span>

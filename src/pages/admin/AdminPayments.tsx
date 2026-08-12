@@ -497,7 +497,7 @@ export default function AdminPayments() {
 
       {/* Reject reason modal */}
       {rejectId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F4F6F5]/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setRejectId(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#000000]/50 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setRejectId(null)}>
           <div className="card w-full max-w-sm p-5 animate-scale-in" onClick={e => e.stopPropagation()}>
             <h3 className="mb-3 text-base font-bold text-[#0F1A14]">Reject Receipt</h3>
             <label className="label">Reason (optional)</label>

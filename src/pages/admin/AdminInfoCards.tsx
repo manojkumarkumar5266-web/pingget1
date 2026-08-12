@@ -118,7 +118,7 @@ export default function AdminInfoCards() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/60 animate-fade-in" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 animate-fade-in" onClick={() => setShowModal(false)}>
           <div className="w-full max-w-md rounded-t-3xl p-5 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold text-[#0F1A14]">{editing ? 'Edit Card' : 'New Card'}</h3>

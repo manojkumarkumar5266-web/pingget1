@@ -355,7 +355,7 @@ export default function AdminNotifications() {
             <div className="relative w-40 h-28 rounded-xl overflow-hidden border border-black/10">
               <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
               <button onClick={removeImage}
-                className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#F4F6F5]/70 text-[#0F1A14]">
+                className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#000000]/70 text-[#0F1A14]">
                 <X size={12} />
               </button>
             </div>

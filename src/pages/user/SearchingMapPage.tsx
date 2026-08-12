@@ -149,7 +149,7 @@ export default function SearchingMapPage() {
       <div className="shrink-0 px-4 pb-8 pt-3" style={{ background: pg.bg }}>
         <div className="mx-auto max-w-md space-y-3">
           {phase === 'scanning' && (
-            <div className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+            <div className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}>
               <Loader2 size={20} className="animate-spin" style={{ color: pg.lime }} />
               <div>
                 <p className="text-sm font-extrabold text-[#0F1A14]">Scanning nearby…</p>
@@ -158,7 +158,7 @@ export default function SearchingMapPage() {
             </div>
           )}
           {phase === 'found' && dps.map((dp: any) => (
-            <div key={dp.dp_user_id || dp.id} className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+            <div key={dp.dp_user_id || dp.id} className="flex items-center gap-3 rounded-2xl px-4 py-3" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: pg.limeDim }}>
                 <Bike size={18} style={{ color: pg.lime }} />
               </div>
@@ -172,7 +172,7 @@ export default function SearchingMapPage() {
             </div>
           ))}
           {phase === 'none' && (
-            <div className="rounded-2xl px-4 py-5 text-center" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
+            <div className="rounded-2xl px-4 py-5 text-center" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}>
               <Search size={22} className="mx-auto mb-2" style={{ color: pg.text3 }} />
               <p className="font-extrabold text-[#0F1A14]">No partners nearby</p>
               <p className="mt-1 text-xs" style={{ color: pg.text3 }}>Try again or wait — your request stays live.</p>

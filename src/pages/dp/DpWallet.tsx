@@ -263,7 +263,7 @@ function SubmitReceiptModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/60 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 p-4" onClick={onClose}>
       <div className="w-full max-w-md" onClick={e => e.stopPropagation()}>
       <Surface
         className="max-h-[90vh] overflow-y-auto p-6"
@@ -320,7 +320,7 @@ function SubmitReceiptModal({
                 <button
                   type="button"
                   onClick={() => { setScreenshot(null); setScreenshotPreview(null) }}
-                  className="absolute right-2 top-2 rounded-full bg-[#F4F6F5]/70 p-1.5 text-[#0F1A14]"
+                  className="absolute right-2 top-2 rounded-full bg-[#000000]/70 p-1.5 text-[#0F1A14]"
                 >
                   <X size={14} />
                 </button>

@@ -499,7 +499,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
       {roleDropdownOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setRoleDropdownOpen(false)} />
-          <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl animate-fade-in" style={{ background: pg.surface2, border: `1px solid ${pg.lineStrong}` }}>
+          <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl animate-fade-in" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.lineStrong}` }}>
             <button type="button" onClick={() => { setRole('user'); setRoleDropdownOpen(false); setError(null); resetAllSignupFields() }} className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-black/5">
               <User size={18} className="mt-0.5 shrink-0" style={{ color: pg.lime }} />
               <div><p className="text-sm font-extrabold text-[#0F1A14]">User</p><p className="text-xs" style={{ color: pg.text3 }}>Order groceries, medicines, parcels & more</p></div>
@@ -591,7 +591,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
       <AuthLayout title="Forgot Password" subtitle="Enter your email and we'll send a reset link.">
         <button type="button" onClick={() => { setMode('signin'); setError(null); setResetSent(false) }} className="mb-5 flex items-center gap-1 text-sm font-bold" style={{ color: pg.lime }}>← Back to Sign In</button>
         {resetSent ? (
-          <div className="rounded-2xl px-4 py-4 text-sm" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+          <div className="rounded-2xl px-4 py-4 text-sm" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
             <div className="flex items-center gap-2 text-[#0F1A14]"><CheckCircle size={16} className="shrink-0 text-green-400" /> Reset link sent! Check your inbox.</div>
           </div>
         ) : (
@@ -776,7 +776,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
                     <label className="label flex items-center gap-1.5"><Upload size={13} /> Aadhaar Proof *</label>
                     <input ref={aadhaarInputRef} type="file" className="hidden" accept="image/*,application/pdf" onChange={e => e.target.files?.[0] && pickDpFile(e.target.files[0], 'aadhaar')} />
                     {aadhaarPreview ? (
-                      <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+                      <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
                         {aadhaarFile?.type.startsWith('image') ? <img src={aadhaarPreview} alt="Aadhaar" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg"><FileText size={24} className="text-green-400" /></div>}
                         <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#0F1A14]">{aadhaarFile?.name}</p><p className="text-xs text-green-400">Aadhaar uploaded</p></div>
                         <button type="button" onClick={() => aadhaarInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>
@@ -790,7 +790,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
                       <label className="label flex items-center gap-1.5"><FileText size={13} /> Driving Licence *</label>
                       <input ref={licenseInputRef} type="file" className="hidden" accept="image/*,application/pdf" onChange={e => e.target.files?.[0] && pickDpFile(e.target.files[0], 'license')} />
                       {licensePreview ? (
-                        <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+                        <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
                           {licenseFile?.type.startsWith('image') ? <img src={licensePreview} alt="Licence" className="h-14 w-14 rounded-lg object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-lg"><FileText size={24} className="text-green-400" /></div>}
                           <div className="flex-1 min-w-0"><p className="truncate text-sm font-medium text-[#0F1A14]">{licenseFile?.name}</p><p className="text-xs text-green-400">Licence uploaded</p></div>
                           <button type="button" onClick={() => licenseInputRef.current?.click()} className="btn-ghost p-2"><Upload size={16} /></button>

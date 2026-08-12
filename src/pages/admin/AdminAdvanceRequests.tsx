@@ -238,7 +238,7 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
   }, [request])
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#F4F6F5]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-3xl glass bottom-sheet"
         onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1">

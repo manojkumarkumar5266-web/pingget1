@@ -22,7 +22,7 @@ export default function AuthLayout({
       </div>
       <div
         className="w-full max-w-md rounded-[28px] p-5"
-        style={{ background: pg.surface, border: `1px solid ${pg.line}` }}
+        style={{ background: pg.surface, color: pg.ink, border: `1px solid rgba(15, 40, 25, 0.08)` }}
       >
         {children}
       </div>

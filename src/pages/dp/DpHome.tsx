@@ -125,7 +125,7 @@ function StatsGrid({
         <div
           key={s.label}
           className="rounded-[20px] px-2 py-3.5 text-center"
-          style={{ background: pg.surface, border: `1px solid ${pg.line}` }}
+          style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}
         >
           <div
             className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl"
@@ -532,7 +532,7 @@ export default function DpHome() {
           title="You're offline"
           body="Tap Go Online in the header to start receiving delivery requests near you."
           action={
-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
               <WifiOff size={32} style={{ color: pg.text4 }} />
             </div>
           }

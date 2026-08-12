@@ -51,10 +51,10 @@ export function BrandWordmark({
         className={`font-extrabold tracking-tight ${wordScale[size]}`}
         style={{ fontFamily: "'Outfit', 'DM Sans', system-ui, sans-serif" }}
       >
-        <span style={{ color: '#0F1A14' }}>pin</span>
+        <span style={{ color: '#F5F7F6' }}>pin</span>
         <span style={{ color: '#2EAD5A' }}>G</span>
         <span style={{ color: '#0C8A3E' }}>G</span>
-        <span style={{ color: '#0F1A14' }}>et</span>
+        <span style={{ color: '#F5F7F6' }}>et</span>
       </div>
       {showTagline && (
         <div

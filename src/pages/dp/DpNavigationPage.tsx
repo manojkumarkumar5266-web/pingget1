@@ -214,9 +214,9 @@ export default function DpNavigationPage() {
     return dpPos || userPos
   }, [dpPos, userPos])
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#F4F6F5] text-black/40">Loading...</div>
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#000000] text-black/40">Loading...</div>
   if (!request) return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F4F6F5]">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#000000]">
       <p className="text-black/50">Order not found</p>
       <button type="button" onClick={() => navigate('/dp')} className="btn-primary">Back</button>
     </div>

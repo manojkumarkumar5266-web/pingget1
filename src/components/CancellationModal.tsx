@@ -49,7 +49,7 @@ export default function CancellationModal({
     >
       <div
         className="w-full max-w-md overflow-hidden animate-slide-up rounded-t-[28px] sm:rounded-[28px]"
-        style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}
+        style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.lineStrong}` }}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 px-5 py-4" style={{ borderBottom: `1px solid ${pg.line}` }}>

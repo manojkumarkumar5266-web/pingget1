@@ -109,7 +109,7 @@ export default function AdminOperationsMap() {
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: pg.bg }}>
       <div className="px-4 pt-12 pb-3" style={{ borderBottom: `1px solid ${pg.line}`, background: 'rgba(5,5,5,0.92)', backdropFilter: 'blur(16px)' }}>
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/admin')} className="flex h-11 w-11 items-center justify-center rounded-2xl active:scale-90 transition-transform" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+          <button onClick={() => navigate('/admin')} className="flex h-11 w-11 items-center justify-center rounded-2xl active:scale-90 transition-transform" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
             <ArrowLeft size={18} style={{ color: pg.text2 }} />
           </button>
           <div className="flex-1">
@@ -214,7 +214,7 @@ export default function AdminOperationsMap() {
       {/* Selected DP popup card */}
       {selectedDp && (
         <div className="fixed inset-0 z-[1001] flex items-end" onClick={() => setSelectedDp(null)}>
-          <div className="absolute inset-0 bg-[#F4F6F5]/40" />
+          <div className="absolute inset-0 bg-[#000000]/40" />
           <div className="relative w-full mx-auto max-w-md p-4 pb-6 animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="rounded-2xl p-5" style={{ background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(20px)' }}>
               <div className="bottom-sheet-handle" />

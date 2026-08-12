@@ -252,7 +252,7 @@ export function BottomSheet({ open, onClose, title, children }: { open: boolean;
       style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}
       onClick={onClose}>
       <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom"
-        style={{ background: pg.surface, border: `1px solid ${pg.line}`, maxHeight: '88vh' }}
+        style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}`, maxHeight: '88vh' }}
         onClick={e => e.stopPropagation()}>
         <div className="px-5 pb-1 pt-3">
           <div className="bottom-sheet-handle" />
@@ -335,7 +335,7 @@ export function Chip({ label, active, onClick, icon }: { label: string; active?:
 export function ProgressBar({ value, max = 100 }: { value: number; max?: number; color?: string; height?: string }) {
   const pct = Math.min(100, (value / max) * 100)
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+    <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
       <div
         className="h-full rounded-full transition-all duration-700 ease-out"
         style={{ width: `${pct}%`, background: pg.lime, boxShadow: '0 0 12px rgba(196,214,0,0.45)' }}
@@ -389,7 +389,7 @@ export function EarningsCard({ today, week, deliveries }: { today: number; week:
   return (
     <div
       className="relative overflow-hidden rounded-[28px] p-5 text-[#0F1A14] animate-slide-up"
-      style={{ background: pg.surface, border: `1px solid rgba(196,214,0,0.22)`, boxShadow: '0 12px 40px rgba(0,0,0,0.45)' }}
+      style={{ background: pg.surface, color: pg.ink, border: `1px solid rgba(196,214,0,0.22)`, boxShadow: '0 12px 40px rgba(0,0,0,0.45)' }}
     >
       <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-25 blur-3xl" style={{ background: pg.lime }} />
       <div className="relative z-10">

@@ -112,10 +112,10 @@ export default function ServiceAreaNotice() {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-[#F4F6F5]/75" onClick={dismiss} />
+      <div className="absolute inset-0 bg-[#000000]/75" onClick={dismiss} />
       <div
         className="relative z-10 w-full max-w-sm animate-slide-in-bottom rounded-[28px] p-5"
-        style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}
+        style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.lineStrong}` }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="service-area-title"

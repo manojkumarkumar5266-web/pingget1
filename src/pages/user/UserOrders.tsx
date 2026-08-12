@@ -225,7 +225,7 @@ export default function UserOrders() {
                 )}
 
                 {req.status === 'pending' && (
-                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.surface2 }}>
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.surface2, color: pg.ink }}>
                     <div className="h-2 w-2 animate-pulse rounded-full" style={{ background: pg.text3 }} />
                     <p className="text-xs" style={{ color: pg.text3 }}>Waiting for a partner to accept...</p>
                   </div>
@@ -275,7 +275,7 @@ export default function UserOrders() {
                 )}
 
                 {req._dp && (
-                  <div className="mb-2 flex items-center gap-2.5 rounded-2xl px-3 py-2.5" style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+                  <div className="mb-2 flex items-center gap-2.5 rounded-2xl px-3 py-2.5" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
                     <Avatar url={req._dp.photo_url} name={req._dp.full_name || 'Partner'} size={36} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-extrabold">{req._dp.full_name}</p>

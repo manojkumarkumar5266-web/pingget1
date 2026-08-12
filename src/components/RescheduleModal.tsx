@@ -72,12 +72,12 @@ export default function RescheduleModal({ open, onClose, onConfirm, request, set
       <div className="flex min-h-full items-center justify-center p-4">
         <div
           className="w-full max-w-md overflow-hidden animate-slide-up rounded-[28px]"
-          style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}
+          style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.lineStrong}` }}
           onClick={e => e.stopPropagation()}
         >
           <div
             className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 py-4"
-            style={{ background: pg.surface, borderBottom: `1px solid ${pg.line}` }}
+            style={{ background: pg.surface, color: pg.ink, borderBottom: `1px solid ${pg.line}` }}
           >
             <div className="flex items-center gap-2.5">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.limeDim }}>

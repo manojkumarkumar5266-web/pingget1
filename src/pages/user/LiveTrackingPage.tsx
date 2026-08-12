@@ -305,7 +305,7 @@ export default function LiveTrackingPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F4F6F5]">
+      <div className="flex min-h-screen items-center justify-center bg-[#000000]">
         <div className="text-black/40">Loading tracking...</div>
       </div>
     )
@@ -313,7 +313,7 @@ export default function LiveTrackingPage() {
 
   if (!request) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F4F6F5]">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#000000]">
         <p className="text-black/50">Order not found</p>
         <button type="button" onClick={() => navigate('/app')} className="btn-primary">Back Home</button>
       </div>
@@ -397,12 +397,12 @@ export default function LiveTrackingPage() {
 
       <div className="relative flex-shrink-0">
         {isPending ? (
-          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-[#F4F6F5] px-6">
+          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-[#000000] px-6">
             <img src={Images.userWaiting} alt="" className="mb-3 h-40 w-40 object-contain" />
             <p className="text-lg font-bold text-[#0F1A14]">Waiting for partner</p>
           </div>
         ) : isCancelled ? (
-          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-[#F4F6F5] px-6">
+          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-[#000000] px-6">
             <p className="text-lg font-bold text-[#0F1A14]">Order Cancelled</p>
             <button type="button" onClick={() => navigate('/app')} className="btn-primary mt-4">Back Home</button>
           </div>

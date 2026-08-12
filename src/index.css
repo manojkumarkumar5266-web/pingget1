@@ -3,16 +3,17 @@
 @tailwind utilities;
 
 :root {
-  --pg-bg: #F4F6F5;
+  --pg-bg: #000000;
   --pg-surface: #FFFFFF;
   --pg-surface-2: #EEF2EF;
-  --pg-line: rgba(15, 40, 25, 0.08);
+  --pg-line: rgba(255, 255, 255, 0.12);
   --pg-lime: #0C8A3E;
   --pg-lime-text: #FFFFFF;
   --pg-olive: #2EAD5A;
-  --pg-text: #0F1A14;
-  --pg-text-2: rgba(15, 26, 20, 0.72);
-  --pg-text-3: rgba(15, 26, 20, 0.48);
+  --pg-text: #F5F7F6;
+  --pg-text-2: rgba(245, 247, 246, 0.72);
+  --pg-text-3: rgba(245, 247, 246, 0.48);
+  --pg-ink: #0F1A14;
 }
 
 @layer base {
@@ -85,9 +86,9 @@
     border-radius: 16px;
     padding: 0.85rem 1rem;
     font-size: 0.875rem;
-    color: var(--pg-text);
+    color: var(--pg-ink);
     background: #FFFFFF;
-    border: 1.5px solid var(--pg-line);
+    border: 1.5px solid rgba(15, 40, 25, 0.12);
     outline: none;
   }
   .input:focus {

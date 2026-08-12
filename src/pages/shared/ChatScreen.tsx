@@ -753,11 +753,11 @@ export default function ChatScreen() {
 
           <div
             className="mx-auto flex max-w-md items-center gap-2 rounded-[28px] px-2 py-2"
-            style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}
+            style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.lineStrong}` }}
           >
             <button type="button" onClick={() => imageInputRef.current?.click()}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl active:scale-90"
-              style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+              style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
               <Camera size={18} style={{ color: pg.text2 }} />
             </button>
 
@@ -771,7 +771,7 @@ export default function ChatScreen() {
               <>
                 <button type="button" onClick={startVoiceRecord}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl active:scale-90"
-                  style={{ background: pg.surface2, border: `1px solid ${pg.line}` }}>
+                  style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
                   <Mic size={18} style={{ color: pg.text2 }} />
                 </button>
                 <input value={input} onChange={handleInputChange}
@@ -837,7 +837,7 @@ export default function ChatScreen() {
 
       {/* Image lightbox */}
       {lightboxImage && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#F4F6F5]/90 animate-fade-in" onClick={() => setLightboxImage(null)}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#000000]/90 animate-fade-in" onClick={() => setLightboxImage(null)}>
           <button className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/5" onClick={() => setLightboxImage(null)}>
             <X size={20} className="text-[#0F1A14]" />
           </button>
@@ -946,7 +946,7 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
   }
   const handleSubmit = async () => { if (!file) return; setUploading(true); await onSubmit(file); setUploading(false) }
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/60 p-4 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 p-4 animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
         <h3 className="mb-1 text-lg font-bold text-[#0F1A14]">Pickup Proof</h3>
@@ -1020,7 +1020,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
     }
   }
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/60 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
         <div className="px-5 pt-4 pb-2">
           <div className="bottom-sheet-handle" />
@@ -1083,7 +1083,7 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
   const [review, setReview] = useState('')
   const labels = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent']
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#F4F6F5]/60 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
         <h3 className="text-lg font-bold text-[#0F1A14] text-center">Rate {targetName}</h3>
@@ -1181,7 +1181,7 @@ function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
   }
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#F4F6F5]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
@@ -1301,7 +1301,7 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, requ
   }
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#F4F6F5]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
@@ -1353,7 +1353,7 @@ function RejectPaymentModal({ onClose, advancePaymentId, dpId, onReject }: {
   const [reason, setReason] = useState('')
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#F4F6F5]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-white/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">

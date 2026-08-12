@@ -95,7 +95,7 @@ export default function UserLayout() {
 
       {acceptedToast && (
         <div className="fixed left-4 right-4 top-4 z-50 mx-auto max-w-lg">
-          <div className="flex items-start gap-3 rounded-[22px] p-4" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
+          <div className="flex items-start gap-3 rounded-[22px] p-4" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.lineStrong}` }}>
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: 'rgba(34,197,94,0.16)' }}>
               <MessageCircle size={18} className="text-green-400" />
             </div>
@@ -121,10 +121,10 @@ export default function UserLayout() {
           className="fixed inset-0 z-40 flex items-center justify-center px-4"
           onClick={() => setShowBookingMenu(false)}
         >
-          <div className="absolute inset-0 bg-[#F4F6F5]/70" />
+          <div className="absolute inset-0 bg-[#000000]/70" />
           <div
             className="relative z-10 w-full max-w-[400px] animate-slide-in-bottom rounded-[28px] p-4"
-            style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}
+            style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.lineStrong}` }}
             onClick={e => e.stopPropagation()}
           >
             <p className="mb-4 text-center text-base font-extrabold">What do you need?</p>
