@@ -147,9 +147,9 @@ export function SupportChatScreen({ homePath }: { homePath: string }) {
           <ArrowLeft size={18} style={{ color: pg.text }} />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold">Chat with admin</p>
+          <p className="truncate text-sm font-bold">Chat with support team</p>
           <p className="truncate text-[11px]" style={{ color: pg.text3 }}>
-            Customer support · live chat
+            Support team · live chat
           </p>
         </div>
         <Link to={homePath} className="text-xs font-semibold" style={{ color: pg.lime }}>
