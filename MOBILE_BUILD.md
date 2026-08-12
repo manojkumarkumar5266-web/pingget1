@@ -1,5 +1,12 @@
 # PingGET — Mobile App Build Guide (Capacitor)
 
+PingGet ships **two** Android apps (same Supabase backend):
+
+| App | Config | Native folder | Package / Play ID |
+|-----|--------|---------------|-------------------|
+| Customer | `capacitor.config.ts` | `android-customer/` | `com.pingget.customer` |
+| Delivery Partner | `capacitor.dp.config.ts` | `android-dp/` | `com.pingget.dp` |
+
 ## Prerequisites
 
 Install these on your local machine before starting:
@@ -45,112 +52,84 @@ npm install
 
 ---
 
-## Step 3 — Build the web app
+## Step 3 — Firebase `google-services.json` (required for FCM)
 
-```bash
-npm run build
-```
+In Firebase Console, create **two** Android apps (or download existing ones):
 
-This produces the `dist/` folder that Capacitor packages into native apps.
+1. Package **`com.pingget.customer`** → save as:
+
+   ```
+   android-customer/app/google-services.json
+   ```
+
+2. Package **`com.pingget.dp`** → save as:
+
+   ```
+   android-dp/app/google-services.json
+   ```
+
+Do **not** reuse the old `com.pingget.app` file or only change `package_name` — FCM `mobilesdk_app_id` must match each app.
+
+See `android-customer/app/README-google-services.md`, `android-dp/app/README-google-services.md`, and `docs/firebase/README.md`.
 
 ---
 
-## Step 4 — Add native platforms (first time only)
+## Step 4 — Build web targets
 
 ```bash
-# Android
-npm run cap:add:android
-
-# iOS (macOS only)
-npm run cap:add:ios
+npm run build:user   # → dist-user/  (customer Capacitor webDir)
+npm run build:dp     # → dist-dp/    (partner Capacitor webDir)
 ```
+
+Or unified web (Vercel): `npm run build:web` → `dist/`.
 
 ---
 
-## Step 5 — Apply Android API 35 configuration
+## Step 5 — Sync / open Android projects
 
-After `cap add android` generates the `android/` folder, apply these changes:
+Native folders already exist in the repo. After web changes:
 
-### `android/variables.gradle` — update SDK versions
+```bash
+npm run build:android:user   # build:user + cap sync → android-customer
+npm run build:android:dp     # build:dp + cap sync → android-dp
+
+npm run cap:open:android:user
+npm run cap:open:android:dp
+```
+
+Equivalent sync-only helpers: `npm run cap:sync:user` / `npm run cap:sync:dp`.
+
+Capacitor 6 only loads `capacitor.config.ts`. DP commands use `scripts/run-cap.mjs` to temporarily apply `capacitor.dp.config.ts` (then restore).
+
+**In Android Studio:**
+1. Open the folder (`android-customer` or `android-dp`)
+2. Wait for Gradle sync
+3. **Build > Select Build Variant** → `release` for Play uploads
+
+---
+
+## Step 6 — Android API / Gradle notes
+
+Both projects use the same Gradle layout. Prefer keeping SDK versions aligned in each project's `variables.gradle`:
 
 ```groovy
 ext {
     minSdkVersion = 23
     compileSdkVersion = 35
     targetSdkVersion = 35
-    androidxActivityVersion = '1.9.3'
-    androidxAppCompatVersion = '1.7.0'
-    androidxCoordinatorLayoutVersion = '1.2.0'
-    androidxCoreVersion = '1.15.0'
-    androidxFragmentVersion = '1.8.5'
-    junitVersion = '4.13.2'
-    androidxJunitVersion = '1.2.1'
-    androidxEspressoCoreVersion = '1.5.0'
-    cordovaAndroidVersion = '10.0.0'
+    // ... androidx versions as in repo
 }
 ```
 
-### `android/build.gradle` — update Android Gradle Plugin
-
-Find the `dependencies` block in the **project-level** `build.gradle` and set:
-
-```groovy
-classpath 'com.android.tools.build:gradle:8.7.3'
-```
-
-### `android/gradle/wrapper/gradle-wrapper.properties` — update Gradle wrapper
-
-```properties
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.9-all.zip
-```
-
-### `android/app/build.gradle` — confirm SDK values are read from variables
-
-The app-level `build.gradle` should already reference the variables. Verify it contains:
-
-```groovy
-compileSdkVersion rootProject.ext.compileSdkVersion
-defaultConfig {
-    ...
-    minSdkVersion rootProject.ext.minSdkVersion
-    targetSdkVersion rootProject.ext.targetSdkVersion
-    ...
-}
-```
-
----
-
-## Step 6 — Sync web assets to native projects
-
-Run this every time you change the web app:
-
-```bash
-npm run cap:sync
-```
-
----
-
-## Build for Android
-
-```bash
-# Build web + sync in one command
-npm run build:android
-
-# Open in Android Studio
-npm run cap:open:android
-```
-
-**In Android Studio:**
-1. Wait for Gradle sync to finish (can take a few minutes first time)
-2. Make sure **Build > Select Build Variant** is set to `release`
+Project-level AGP / Google Services classpaths live in each `android-*/build.gradle`.
 
 ---
 
 ## Generate Signed Android App Bundle (.aab) for Google Play
 
-### Create a keystore (first time only)
+Use a **separate** keystore (or at least a separate alias) per Play listing if you publish two apps.
 
-Run this in your terminal and **keep the keystore file and passwords safe**:
+### Create a keystore (first time only)
 
 ```bash
 keytool -genkey -v \
@@ -161,68 +140,37 @@ keytool -genkey -v \
   -validity 10000
 ```
 
-You will be prompted for a keystore password, key password, and certificate details.
-
 ### Option A — Sign via Android Studio (recommended)
 
 1. **Build → Generate Signed Bundle / APK**
 2. Select **Android App Bundle (.aab)**
-3. Point to your `pingget-release.keystore` file
-4. Enter the keystore password, key alias (`pingget`), and key password
-5. Select `release` build variant
-6. Click **Finish** — the `.aab` will be in `android/app/release/`
+3. Point to your keystore
+4. Select `release` build variant
+5. Finish — `.aab` under `android-customer/app/release/` or `android-dp/app/release/`
 
-### Option B — Sign via command line (CI/CD)
+### Option B — Sign via command line
 
-Add signing config to `android/app/build.gradle`:
-
-```groovy
-android {
-    signingConfigs {
-        release {
-            storeFile file("../../pingget-release.keystore")
-            storePassword System.getenv("KEYSTORE_PASSWORD")
-            keyAlias "pingget"
-            keyPassword System.getenv("KEY_PASSWORD")
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-}
-```
-
-Then build:
+Add signing config to `android-customer/app/build.gradle` or `android-dp/app/build.gradle`, then:
 
 ```bash
-cd android
+cd android-customer   # or android-dp
 KEYSTORE_PASSWORD=your_ks_pass KEY_PASSWORD=your_key_pass ./gradlew bundleRelease
 ```
 
-Output: `android/app/build/outputs/bundle/release/app-release.aab`
+Output example: `android-customer/app/build/outputs/bundle/release/app-release.aab`
 
 ---
 
 ## Build for iOS
 
 ```bash
-# Build web + sync in one command
-npm run build:ios
-
-# Open in Xcode
 npm run cap:open:ios
 ```
 
 **In Xcode:**
 1. Select your Apple Developer Team under **Signing & Capabilities**
-2. Set Bundle Identifier to `com.pingget.app`
-3. **Product > Archive**
-4. In the Organizer window: **Distribute App > App Store Connect**
-5. Follow the upload wizard
+2. Customer bundle ID: `com.pingget.customer` (partner: `com.pingget.dp` when you add a second iOS target)
+3. **Product > Archive** → Distribute to App Store Connect
 
 ---
 
@@ -244,6 +192,8 @@ Required source files:
 | `assets/icon-foreground.png` | 1024×1024 px | PNG (adaptive icon foreground) |
 | `assets/icon-background.png` | 1024×1024 px | PNG (adaptive icon background) |
 
+Run generate once per Capacitor config / native project as needed.
+
 ---
 
 ## Environment variables
@@ -255,33 +205,25 @@ VITE_SUPABASE_URL=https://xxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 ```
 
-These are already populated. Do not commit `.env` to source control.
+Do not commit `.env` to source control.
 
 ---
 
 ## Google Play Store checklist
 
-- [ ] App signed with release keystore (keep keystore file and passwords safe)
-- [ ] Android App Bundle (.aab) generated
-- [ ] `compileSdkVersion` = 35 (set in `android/variables.gradle`)
-- [ ] `targetSdkVersion` = 35 (set in `android/variables.gradle`)
-- [ ] App icon 512×512 PNG uploaded in Play Console
-- [ ] Screenshots: phone (at least 2), 7-inch tablet, 10-inch tablet
-- [ ] Short description (80 chars) and full description
-- [ ] Privacy policy URL
-- [ ] Content rating questionnaire completed
+- [ ] Two Play listings (or internal tracks) for `com.pingget.customer` and `com.pingget.dp`
+- [ ] Each app has its own `google-services.json`
+- [ ] App signed with release keystore
+- [ ] Android App Bundle (.aab) generated per app
+- [ ] `compileSdkVersion` / `targetSdkVersion` = 35 in each `variables.gradle`
+- [ ] Icons, screenshots, privacy policy, content rating
 - [ ] MSG91 credentials set in Supabase Edge Function secrets
 
 ## Apple App Store checklist
 
-- [ ] Apple Developer account active ($99/year)
-- [ ] Provisioning profile and signing certificate set up
-- [ ] Bundle ID `com.pingget.app` registered in Apple Developer portal
-- [ ] App archived and uploaded via Xcode Organizer
-- [ ] Screenshots for iPhone 6.5", iPhone 5.5", iPad Pro 12.9" (if supporting iPad)
-- [ ] App Review Information filled (demo account if needed)
-- [ ] Privacy policy URL
-- [ ] Export compliance information (No encryption beyond HTTPS)
+- [ ] Apple Developer account active
+- [ ] Bundle IDs registered (`com.pingget.customer`, and partner when ready)
+- [ ] Screenshots, privacy policy, review info
 - [ ] MSG91 credentials set in Supabase Edge Function secrets
 
 ---
@@ -293,15 +235,13 @@ These are already populated. Do not commit `.env` to source control.
 - Check the template is approved in MSG91 dashboard
 - Check Edge Function logs: Supabase Dashboard → Edge Functions → send-phone-otp → Logs
 
+**Push / FCM not working:**
+- Confirm `google-services.json` package_name matches `applicationId` exactly
+- Confirm server uses the same Firebase project and the correct Android app
+
 **Gradle sync fails:**
 - Make sure Java JDK 17 is selected in Android Studio → Settings → Build → Gradle → Gradle JDK
-- Confirm `gradle-wrapper.properties` points to Gradle 8.9
-
-**`compileSdkVersion 35` not found:**
-- Make sure Android SDK Platform 35 is installed: Android Studio → SDK Manager → Android 15.0 (VanillaIceCream)
-
-**iOS build signing error:**
-- Ensure your Apple Developer account is added in Xcode → Settings → Accounts
 
 **White screen on device:**
-- Run `npm run build` then `npm run cap:sync` before opening in IDE
+- Run `npm run build:android:user` or `npm run build:android:dp` before opening in Android Studio
+- Confirm you opened the matching folder (`android-customer` vs `android-dp`)
