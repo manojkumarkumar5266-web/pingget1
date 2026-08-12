@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Headphones, Mail, MessageCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { openOrCreateSupportChat } from '../lib/supportChat'
 import { pg } from '../design/tokens'
 import { Surface } from '../design/primitives'
 
@@ -45,7 +46,7 @@ export default function NeedHelpCard({
     }
     loadUnread()
     const channel = supabase
-      .channel('need-help-unread')
+      .channel(`need-help-unread-${Math.random().toString(36).slice(2, 8)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_chats' }, () => loadUnread())
       .subscribe()
     return () => {
@@ -57,14 +58,16 @@ export default function NeedHelpCard({
   const openSupportChat = async () => {
     setOpening(true)
     try {
-      const { data, error } = await supabase.rpc('open_support_chat', {
-        p_related_request_id: requestId || null,
-      })
-      if (error) throw error
-      if (data) navigate(`${chatBasePath}/${data}`)
-    } catch (e) {
+      const chatId = await openOrCreateSupportChat(requestId || null)
+      navigate(`${chatBasePath}/${chatId}`)
+    } catch (e: any) {
       console.error('[NeedHelp] open chat failed', e)
-      alert('Could not open support chat. Please try email instead.')
+      const msg = String(e?.message || '')
+      if (/relation .* does not exist|Could not find the (table|function)|schema cache/i.test(msg)) {
+        alert('Support chat is not set up on the server yet. Please email support@pingget.in — admin must apply the support_chat SQL migration.')
+      } else {
+        alert(msg || 'Could not open support chat. Please try email instead.')
+      }
     } finally {
       setOpening(false)
     }

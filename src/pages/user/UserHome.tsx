@@ -90,11 +90,7 @@ export default function UserHome() {
     <Screen className="mx-auto max-w-lg animate-fade-in-up">
       <ServiceStatusBanner cityName={profile?.city} />
 
-      <GreetingHeader firstName={firstName} />
-
-      <div className="mb-5">
-        <AddressPicker />
-      </div>
+      <GreetingHeader firstName={firstName} aside={<AddressPicker inline />} />
 
       <div className="mb-7 grid grid-cols-3 gap-2.5">
         {[

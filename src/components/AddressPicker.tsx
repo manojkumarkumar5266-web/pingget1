@@ -48,7 +48,14 @@ function AddressFormHeader({ title, onClose }: { title: string; onClose: () => v
 }
 
 /** Compact address picker for User Home — selection persisted for Instant/Advance requests. */
-export default function AddressPicker({ compact = true }: { compact?: boolean }) {
+export default function AddressPicker({
+  compact = true,
+  inline = false,
+}: {
+  compact?: boolean
+  /** Compact chip for greeting header row */
+  inline?: boolean
+}) {
   const { profile } = useAuth()
   const [addresses, setAddresses] = useState<SavedAddress[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
@@ -182,8 +189,8 @@ export default function AddressPicker({ compact = true }: { compact?: boolean })
   }
 
   if (showForm) {
-    return (
-      <Surface className={`${compact ? 'mb-4' : 'mb-5'} p-4`}>
+    const form = (
+      <Surface className={`${compact || inline ? 'mb-4' : 'mb-5'} p-4`}>
         <AddressFormHeader title={editingId ? 'Edit Address' : 'New Address'} onClose={() => { setShowForm(false); resetForm() }} />
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -208,11 +215,15 @@ export default function AddressPicker({ compact = true }: { compact?: boolean })
         </div>
       </Surface>
     )
+    if (inline) {
+      return <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">{form}</div>
+    }
+    return form
   }
 
   if (showList) {
-    return (
-      <Surface className={`${compact ? 'mb-4' : 'mb-5'} p-4`}>
+    const list = (
+      <Surface className={`${compact || inline ? 'mb-4' : 'mb-5'} p-4`}>
         <AddressFormHeader title="Select Address" onClose={() => setShowList(false)} />
         <div className="mb-3 max-h-64 space-y-2 overflow-y-auto">
           {addresses.map(addr => (
@@ -247,33 +258,49 @@ export default function AddressPicker({ compact = true }: { compact?: boolean })
         )}
       </Surface>
     )
+    if (inline) {
+      return <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">{list}</div>
+    }
+    return list
   }
 
   return (
-    <div className={compact ? 'mb-4' : 'mb-5'}>
-      <SectionLabel title="Select Address" />
+    <div className={inline ? '' : compact ? 'mb-4' : 'mb-5'}>
+      {!inline && <SectionLabel title="Select Address" />}
       {selected ? (
-        <Surface className="flex items-center gap-3 p-3.5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" style={{ background: pg.limeDim }}>
-            <Home size={18} style={{ color: pg.lime }} />
+        <Surface
+          className={`flex items-center gap-2 ${inline ? 'p-2.5' : 'gap-3 p-3.5'}`}
+          onClick={inline ? () => setShowList(true) : undefined}
+        >
+          <div
+            className={`flex shrink-0 items-center justify-center rounded-xl ${inline ? 'h-9 w-9' : 'h-11 w-11 rounded-2xl'}`}
+            style={{ background: pg.limeDim }}
+          >
+            <Home size={inline ? 15 : 18} style={{ color: pg.lime }} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.12em]" style={{ color: pg.text3 }}>Deliver To</p>
-            <p className="truncate text-sm font-bold">{formatShortAddress(selected) || formatAddress(selected)}</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.12em]" style={{ color: pg.text3 }}>
+              Deliver To
+            </p>
+            <p className={`font-bold ${inline ? 'line-clamp-2 text-xs leading-snug' : 'truncate text-sm'}`}>
+              {formatShortAddress(selected) || formatAddress(selected)}
+            </p>
           </div>
-          <CTA type="button" onClick={() => setShowList(true)} className="!min-h-[36px] !rounded-xl !px-3 !py-1.5 !text-xs">
-            <MapPin size={12} /> Select
-          </CTA>
+          {!inline && (
+            <CTA type="button" onClick={() => setShowList(true)} className="!min-h-[36px] !rounded-xl !px-3 !py-1.5 !text-xs">
+              <MapPin size={12} /> Select
+            </CTA>
+          )}
         </Surface>
       ) : (
         <CTA
           type="button"
           variant="secondary"
           onClick={() => setShowForm(true)}
-          className="w-full border-dashed"
+          className={inline ? '!min-h-[44px] !rounded-xl !px-3 !py-2 !text-xs' : 'w-full border-dashed'}
           style={{ border: `1.5px dashed rgba(196,214,0,0.35)`, color: pg.lime, background: pg.limeDim }}
         >
-          <Plus size={16} /> Add delivery address
+          <Plus size={inline ? 14 : 16} /> {inline ? 'Add address' : 'Add delivery address'}
         </CTA>
       )}
     </div>
