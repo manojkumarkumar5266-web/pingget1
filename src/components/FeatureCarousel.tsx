@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { Images } from '../lib/customImages'
 import { pg } from '../design/tokens'
 
@@ -15,19 +15,22 @@ const FEATURES = [
 ]
 
 /**
- * Discover carousel — auto-moves.
- * Press/hold pauses on the current card; release resumes. No full-screen expand.
+ * Discover carousel — auto-moves; swipe left/right; hold pauses.
  */
 export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: number }) {
   const [index, setIndex] = useState(0)
   const [holding, setHolding] = useState(false)
+  const [dragPx, setDragPx] = useState(0)
   const pauseUntil = useRef(0)
+  const pointer = useRef<{ id: number; x: number; y: number; swiping: boolean } | null>(null)
+  const widthRef = useRef(1)
+  const trackRef = useRef<HTMLDivElement>(null)
   const n = FEATURES.length
 
   useEffect(() => {
     if (n <= 1) return
     const id = window.setInterval(() => {
-      if (holding) return
+      if (holding || pointer.current) return
       if (Date.now() < pauseUntil.current) return
       setIndex((i) => (i + 1) % n)
     }, intervalMs)
@@ -37,12 +40,43 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
   const go = (next: number) => {
     pauseUntil.current = Date.now() + 4000
     setIndex(((next % n) + n) % n)
+    setDragPx(0)
   }
 
-  const holdStart = () => setHolding(true)
-  const holdEnd = () => {
+  const onPointerDown = (e: ReactPointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return
+    widthRef.current = trackRef.current?.clientWidth || 1
+    pointer.current = { id: e.pointerId, x: e.clientX, y: e.clientY, swiping: false }
+    ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+    setHolding(true)
+  }
+
+  const onPointerMove = (e: ReactPointerEvent) => {
+    const p = pointer.current
+    if (!p || p.id !== e.pointerId) return
+    const dx = e.clientX - p.x
+    const dy = e.clientY - p.y
+    if (!p.swiping && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+      p.swiping = true
+    }
+    if (p.swiping) {
+      setDragPx(dx)
+    }
+  }
+
+  const endPointer = (e: ReactPointerEvent) => {
+    const p = pointer.current
+    if (!p || p.id !== e.pointerId) return
+    const dx = e.clientX - p.x
+    const threshold = Math.min(72, widthRef.current * 0.18)
+    if (p.swiping && Math.abs(dx) >= threshold) {
+      go(dx < 0 ? index + 1 : index - 1)
+    } else {
+      setDragPx(0)
+      pauseUntil.current = Date.now() + 800
+    }
+    pointer.current = null
     setHolding(false)
-    pauseUntil.current = Date.now() + 800
   }
 
   return (
@@ -58,60 +92,63 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
           We serve you
         </h2>
         <p className="mt-0.5 text-xs" style={{ color: pg.text3 }}>
-          Hold a card to pause — release to continue
+          Swipe left or right · hold to pause
         </p>
       </div>
 
       <div
-        className="relative overflow-hidden rounded-[1.35rem] touch-manipulation select-none"
+        ref={trackRef}
+        className="relative overflow-hidden rounded-[1.35rem] touch-pan-y select-none"
         style={{
           border: `1px solid ${pg.line}`,
           background: '#000000',
           boxShadow: holding ? `0 0 0 2px ${pg.olive}` : undefined,
+          touchAction: 'pan-y',
         }}
-        onPointerDown={holdStart}
-        onPointerUp={holdEnd}
-        onPointerCancel={holdEnd}
-        onPointerLeave={holdEnd}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endPointer}
+        onPointerCancel={endPointer}
       >
         <div
-          className="flex transition-transform duration-500 ease-out"
-          style={{ transform: `translateX(-${index * 100}%)` }}
+          className="flex"
+          style={{
+            transform: `translateX(calc(-${index * 100}% + ${dragPx}px))`,
+            transition: pointer.current?.swiping || dragPx !== 0 ? 'none' : 'transform 0.45s ease-out',
+          }}
         >
           {FEATURES.map((f, i) => {
             const near = Math.abs(i - index) <= 1 || (index === 0 && i === n - 1) || (index === n - 1 && i === 0)
             return (
-            <article key={f.title} className="relative min-w-full shrink-0">
-              <div className="relative aspect-[5/4] w-full overflow-hidden sm:aspect-[4/3]">
-                {near ? (
-                  <img
-                    src={f.image}
-                    alt={f.title}
-                    className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
-                    style={{ background: 'transparent' }}
-                    loading={i === index ? 'eager' : 'lazy'}
-                    decoding="async"
-                    fetchPriority={i === index ? 'high' : 'low'}
-                    draggable={false}
-                    width={800}
-                    height={640}
-                  />
-                ) : (
-                  <div className="absolute inset-0" style={{ background: '#000000' }} />
-                )}
-                <div
-                  className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3.5 pt-12"
-                  style={{
-                    background: 'linear-gradient(180deg, transparent, rgba(15,26,20,0.88) 62%)',
-                  }}
-                >
-                  <p className="text-[16px] font-extrabold tracking-tight text-white">{f.title}</p>
-                  <p className="mt-0.5 text-xs text-white/75">
-                    {f.subtitle}
-                  </p>
+              <article key={f.title} className="relative min-w-full shrink-0">
+                <div className="relative aspect-[5/4] w-full overflow-hidden sm:aspect-[4/3]">
+                  {near ? (
+                    <img
+                      src={f.image}
+                      alt={f.title}
+                      className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+                      style={{ background: 'transparent' }}
+                      loading={i === index ? 'eager' : 'lazy'}
+                      decoding="async"
+                      fetchPriority={i === index ? 'high' : 'low'}
+                      draggable={false}
+                      width={800}
+                      height={640}
+                    />
+                  ) : (
+                    <div className="absolute inset-0" style={{ background: '#000000' }} />
+                  )}
+                  <div
+                    className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3.5 pt-12"
+                    style={{
+                      background: 'linear-gradient(180deg, transparent, rgba(15,26,20,0.88) 62%)',
+                    }}
+                  >
+                    <p className="text-[16px] font-extrabold tracking-tight text-white">{f.title}</p>
+                    <p className="mt-0.5 text-xs text-white/75">{f.subtitle}</p>
+                  </div>
                 </div>
-              </div>
-            </article>
+              </article>
             )
           })}
         </div>

@@ -488,8 +488,12 @@ export default function LiveTrackingPage() {
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(251,191,36,0.15)' }}>
                     <Star size={16} style={{ color: pg.lime }} fill={pg.lime} />
                   </div>
-                  <p className="text-base font-bold text-[#F5F7F6]">{dpData?.rating_avg?.toFixed(1) || '0.0'}</p>
-                  <p className="text-[10px]" style={{ color: pg.text3 }}>{dpData?.rating_count || 0} reviews</p>
+                  <p className="text-base font-bold text-[#F5F7F6]">
+                    {dpData?.rating_avg && Number(dpData.rating_avg) > 0 ? Number(dpData.rating_avg).toFixed(1) : '—'}
+                  </p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text3 }}>
+                    Rating{dpData?.rating_count ? ` (${dpData.rating_count})` : ''}
+                  </p>
                 </Surface>
                 <Surface className="p-3 text-center">
                   <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: pg.limeDim }}>

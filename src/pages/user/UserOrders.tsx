@@ -12,8 +12,25 @@ import { Screen, PageTitle, Surface, Chip, CTA, EmptyBlock } from '../../design/
 import { pg } from '../../design/tokens'
 import { Images } from '../../lib/customImages'
 
-type Tab = 'active' | 'completed' | 'cancelled'
+type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
 type RequestWithDp = DeliveryRequest & { _dp?: Profile }
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'active', label: 'Active' },
+  { key: 'reserved', label: 'Reserved' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'cancelled', label: 'Cancelled' },
+]
+
+const INSTANT_ACTIVE = [
+  'pending', 'searching_dp', 'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received',
+]
+
+const ADVANCE_RESERVED = [
+  'pending', 'searching_dp', 'scheduled', 'rescheduled', 'dp_reserved', 'waiting_payment', 'payment_verified',
+  'booking_confirmed', 'task_started', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived',
+  'delivered', 'cash_received', 'task_completed', 'no_dp_found',
+]
 
 const STEPS = [
   { key: 'accepted', label: 'Accepted', icon: CheckCircle2 },
@@ -85,16 +102,21 @@ export default function UserOrders() {
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     let query = supabase.from('requests').select('*').eq('user_id', profile!.id)
-    if (tab === 'active')
-      query = query.in('status', [
-        'pending', 'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered',
-        'cash_received', 'scheduled', 'rescheduled', 'dp_reserved', 'waiting_payment', 'payment_verified',
-        'booking_confirmed', 'task_started', 'task_completed', 'no_dp_found',
-      ])
-    else if (tab === 'completed') query = query.eq('status', 'completed')
-    else query = query.in('status', ['cancelled', 'expired'])
+    if (tab === 'active' || tab === 'reserved') {
+      const statuses = tab === 'active' ? INSTANT_ACTIVE : ADVANCE_RESERVED
+      query = query.in('status', statuses)
+    } else if (tab === 'completed') {
+      query = query.eq('status', 'completed')
+    } else {
+      query = query.in('status', ['cancelled', 'expired'])
+    }
     const { data } = await query.order('created_at', { ascending: false })
-    const requests = (data as DeliveryRequest[]) || []
+    let requests = (data as DeliveryRequest[]) || []
+    if (tab === 'active') {
+      requests = requests.filter(r => (r as any).order_type !== 'advance')
+    } else if (tab === 'reserved') {
+      requests = requests.filter(r => (r as any).order_type === 'advance')
+    }
     const dpIds = [...new Set(requests.map(r => r.accepted_dp_id).filter(Boolean))] as string[]
     let dpMap = new Map<string, Profile>()
     if (dpIds.length > 0) {
@@ -167,23 +189,19 @@ export default function UserOrders() {
     openTracking(req)
   }
 
-  const tabs = [
-    { key: 'active' as Tab, label: 'Active' },
-    { key: 'completed' as Tab, label: 'Completed' },
-    { key: 'cancelled' as Tab, label: 'Cancelled' },
-  ]
+  const tabs = TABS
 
   return (
     <Screen className="mx-auto max-w-lg animate-fade-in-up">
       <PageTitle eyebrow="Customer" title="My Orders" />
 
-      <div className="mb-5 flex gap-2">
+      <div className="mb-5 flex gap-1.5 overflow-x-auto pb-0.5">
         {tabs.map(t => (
           <button
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
-            className="flex-1 rounded-2xl py-3 text-sm font-extrabold transition-all active:scale-[0.98]"
+            className="shrink-0 rounded-2xl px-3.5 py-2.5 text-sm font-extrabold transition-all active:scale-[0.98]"
             style={
               tab === t.key
                 ? { background: pg.limeDim, border: `1px solid rgba(12, 138, 62, 0.35)`, color: pg.lime }
@@ -201,15 +219,21 @@ export default function UserOrders() {
         <EmptyBlock
           image={Images.emptyState}
           title={`No ${tab} orders`}
-          body={tab === 'active' ? 'Your active deliveries will appear here.' : `No ${tab} orders yet.`}
+          body={
+            tab === 'active'
+              ? 'Your instant deliveries will appear here.'
+              : tab === 'reserved'
+                ? 'Advance bookings stay here until completed.'
+                : `No ${tab} orders yet.`
+          }
         />
       ) : (
         <div className="space-y-3 pb-4">
           {orders.map((req, i) => (
             <Surface
               key={req.id}
-              onClick={tab === 'active' ? () => { void openActiveOrder(req) } : undefined}
-              className={`overflow-hidden animate-slide-up ${tab === 'active' ? 'active:scale-[0.99]' : ''}`}
+              onClick={tab === 'active' || tab === 'reserved' ? () => { void openActiveOrder(req) } : undefined}
+              className={`overflow-hidden animate-slide-up ${tab === 'active' || tab === 'reserved' ? 'active:scale-[0.99]' : ''}`}
               style={{ animationDelay: `${i * 50}ms` }}
             >
               <div className="p-4">
@@ -220,7 +244,7 @@ export default function UserOrders() {
                   <StatusBadge status={req.status} />
                 </div>
 
-                {tab === 'active' && !['pending', 'cancelled', 'scheduled', 'rescheduled'].includes(req.status) && (
+                {(tab === 'active' || tab === 'reserved') && !['pending', 'cancelled', 'scheduled', 'rescheduled', 'booking_confirmed', 'payment_verified', 'waiting_payment', 'dp_reserved', 'searching_dp'].includes(req.status) && (
                   <OrderTimeline status={req.status} />
                 )}
 
@@ -311,7 +335,7 @@ export default function UserOrders() {
                 </div>
               </div>
 
-              {tab === 'active' && (
+              {(tab === 'active' || tab === 'reserved') && (
                 <div className="flex flex-wrap gap-2 border-t px-4 py-3" style={{ borderColor: pg.line }} onClick={e => e.stopPropagation()}>
                   {req.accepted_dp_id && (
                     <CTA

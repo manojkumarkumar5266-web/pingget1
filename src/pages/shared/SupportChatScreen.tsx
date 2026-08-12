@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context'
 import { pg } from '../../design/tokens'
+import { openOrCreateSupportChat } from '../../lib/supportChat'
 
 type Msg = {
   id: string
@@ -51,9 +52,7 @@ export function SupportChatScreen({ homePath }: { homePath: string }) {
     try {
       let id = routeChatId || null
       if (!id) {
-        const { data, error: rpcErr } = await supabase.rpc('open_support_chat')
-        if (rpcErr) throw rpcErr
-        id = String(data)
+        id = await openOrCreateSupportChat()
         navigate(`${homePath}/support/${id}`, { replace: true })
       }
       const { data: meta } = await supabase

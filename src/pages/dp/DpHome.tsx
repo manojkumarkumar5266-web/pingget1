@@ -505,7 +505,30 @@ export default function DpHome() {
     )
   }
 
-  const greetingHeader = <GreetingHeader firstName={dpFirstName} />
+  const greetingHeader = (
+    <GreetingHeader
+      firstName={dpFirstName}
+      aside={
+        pendingCommission > 0 ? (
+          <button
+            type="button"
+            onClick={() => navigate('/dp/wallet')}
+            className="flex w-full items-center gap-2 rounded-2xl px-2.5 py-2 text-left transition active:scale-[0.99]"
+            style={{ background: 'rgba(245,165,36,0.12)', border: '1px solid rgba(245,165,36,0.25)' }}
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(245,165,36,0.16)' }}>
+              <Wallet size={16} className="text-amber-300" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-extrabold leading-tight text-amber-200">Due {formatCurrency(pendingCommission)}</p>
+              <p className="text-[10px]" style={{ color: pg.text3 }}>Pay admin</p>
+            </div>
+            <ChevronRight size={14} style={{ color: pg.text4 }} />
+          </button>
+        ) : undefined
+      }
+    />
+  )
 
   if (!dp?.is_online) {
     return (
@@ -546,24 +569,6 @@ export default function DpHome() {
       <ServiceStatusBanner cityName={profile?.city} />
       <GpsBanner gps={gps} />
       {greetingHeader}
-
-      {pendingCommission > 0 && (
-        <button
-          type="button"
-          onClick={() => navigate('/dp/wallet')}
-          className="mb-4 flex w-full items-center gap-3 rounded-[22px] px-4 py-3.5 text-left transition active:scale-[0.99]"
-          style={{ background: 'rgba(245,165,36,0.12)', border: '1px solid rgba(245,165,36,0.25)' }}
-        >
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: 'rgba(245,165,36,0.16)' }}>
-            <Wallet size={20} className="text-amber-300" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-extrabold text-amber-200">Commission due: {formatCurrency(pendingCommission)}</p>
-            <p className="text-xs" style={{ color: pg.text3 }}>Tap to pay admin via UPI</p>
-          </div>
-          <ChevronRight size={18} style={{ color: pg.text4 }} />
-        </button>
-      )}
 
       {toast && (
         <div
