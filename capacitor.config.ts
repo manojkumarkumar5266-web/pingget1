@@ -8,7 +8,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
  */
 const config: CapacitorConfig = {
   appId: 'com.pingget.customer',
-  appName: 'PingGET',
+  appName: 'pinGGet',
   webDir: 'dist-user',
   server: {
     androidScheme: 'https',
