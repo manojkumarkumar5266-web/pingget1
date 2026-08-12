@@ -1,11 +1,12 @@
 import { useAuth } from '../../context'
 import { Avatar, StarRating } from '../../components/ui'
-import { Mail, Phone, MapPin, Bike, LogOut, Shield, Headphones, ChevronRight, Edit2, Camera, X, Check } from 'lucide-react'
+import { Phone, MapPin, Bike, LogOut, Shield, Edit2, Camera, X, Check } from 'lucide-react'
 import { useEffect, useState, useRef, type ReactNode } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { uploadProfilePhoto } from '../../lib/uploadProfilePhoto'
 import { Screen, PageTitle, Surface, CTA, Chip } from '../../design/primitives'
 import { pg } from '../../design/tokens'
+import NeedHelpCard from '../../components/NeedHelpCard'
 
 export default function DpProfile() {
   const { profile, signOut, refreshProfile } = useAuth()
@@ -187,26 +188,9 @@ export default function DpProfile() {
         </Surface>
       )}
 
-      <Surface className="mb-5 p-4">
-        <div className="mb-3 flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: pg.limeDim }}>
-            <Headphones size={16} style={{ color: pg.lime }} />
-          </div>
-          <h3 className="text-sm font-extrabold">Customer service</h3>
-        </div>
-        <p className="mb-3 text-xs leading-relaxed" style={{ color: pg.text3 }}>
-          Send us an email with your request and our customer care executive will reach out to you shortly.
-        </p>
-        <a
-          href="mailto:support@pingget.in"
-          className="flex items-center gap-3 rounded-2xl px-4 py-3.5 transition active:scale-[0.99]"
-          style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.22)` }}
-        >
-          <Mail size={16} style={{ color: pg.lime }} />
-          <span className="text-sm font-extrabold" style={{ color: pg.lime }}>support@pingget.in</span>
-          <ChevronRight size={16} className="ml-auto" style={{ color: pg.text4 }} />
-        </a>
-      </Surface>
+      <div className="mb-5">
+        <NeedHelpCard chatBasePath="/dp/support" />
+      </div>
 
       <CTA variant="danger" className="w-full" onClick={() => signOut()}>
         <LogOut size={18} /> Sign out

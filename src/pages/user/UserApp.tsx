@@ -14,6 +14,7 @@ const FullOrderDetails = lazy(() => import('../shared/FullOrderDetails'))
 const UserProfile = lazy(() => import('./UserProfile'))
 const UserNotifications = lazy(() => import('./UserNotifications'))
 const OfferDetailPage = lazy(() => import('../shared/OfferDetailPage'))
+const SupportChatScreen = lazy(() => import('../shared/SupportChatScreen'))
 
 function Lazy({ children }: { children: ReactNode }) {
   return <Suspense fallback={<FullScreenLoader />}>{children}</Suspense>
@@ -35,6 +36,8 @@ export default function UserApp() {
       </Route>
       <Route path="/chat/:roomId" element={<Lazy><ChatScreen /></Lazy>} />
       <Route path="/chat/:roomId/order" element={<Lazy><FullOrderDetails /></Lazy>} />
+      <Route path="/support" element={<Lazy><SupportChatScreen homePath="/app" /></Lazy>} />
+      <Route path="/support/:chatId" element={<Lazy><SupportChatScreen homePath="/app" /></Lazy>} />
       <Route path="*" element={<Navigate to="/app" replace />} />
     </Routes>
   )

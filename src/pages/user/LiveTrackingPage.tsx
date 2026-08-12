@@ -11,6 +11,7 @@ import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
 import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck } from 'lucide-react'
 import { pg } from '../../design/tokens'
 import { CTA, Surface, MobileFrame } from '../../design/primitives'
+import NeedHelpCard from '../../components/NeedHelpCard'
 
 function vehicleIcon(v: string | null | undefined) {
   const s = (v || '').toLowerCase()
@@ -55,14 +56,22 @@ export default function LiveTrackingPage() {
         setPayPhase('awaiting_user_payment')
       }
       if (req.accepted_dp_id) {
-        const [dpProf, dp] = await Promise.all([
+        const [dpProf, dp, stats] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', req.accepted_dp_id).maybeSingle(),
           supabase.from('delivery_partners').select('*').eq('user_id', req.accepted_dp_id).maybeSingle(),
+          supabase.rpc('get_dp_public_stats', { p_dp_user_id: req.accepted_dp_id }),
         ])
         setDpProfile(dpProf.data as Profile | null)
-        setDpData(dp.data as DeliveryPartner | null)
+        const pub = (stats.data || {}) as { rating_avg?: number; rating_count?: number; vehicle_type?: string }
+        const merged = {
+          ...((dp.data as DeliveryPartner | null) || { user_id: req.accepted_dp_id } as DeliveryPartner),
+          rating_avg: Number(pub.rating_avg ?? (dp.data as any)?.rating_avg ?? 0),
+          rating_count: Number(pub.rating_count ?? (dp.data as any)?.rating_count ?? 0),
+          vehicle_type: (pub.vehicle_type || (dp.data as any)?.vehicle_type || 'bike') as string,
+        } as DeliveryPartner
+        setDpData(merged)
         const p = dpProf.data as Profile | null
-        const d = dp.data as DeliveryPartner | null
+        const d = merged
         const lat = (req as any).dp_lat ?? d?.current_lat ?? p?.gps_lat
         const lng = (req as any).dp_lng ?? d?.current_lng ?? p?.gps_lng
         if (lat != null && lng != null) setDpLive({ lat: Number(lat), lng: Number(lng) })
@@ -86,12 +95,20 @@ export default function LiveTrackingPage() {
           const lng = (next as any).dp_lng
           if (lat != null && lng != null) setDpLive({ lat: Number(lat), lng: Number(lng) })
           if (payload.new.accepted_dp_id && !dpProfile) {
-            const [dpProf, dp] = await Promise.all([
-              supabase.from('profiles').select('*').eq('id', payload.new.accepted_dp_id).maybeSingle(),
-              supabase.from('delivery_partners').select('*').eq('user_id', payload.new.accepted_dp_id).maybeSingle(),
+            const dpId = payload.new.accepted_dp_id
+            const [dpProf, dp, stats] = await Promise.all([
+              supabase.from('profiles').select('*').eq('id', dpId).maybeSingle(),
+              supabase.from('delivery_partners').select('*').eq('user_id', dpId).maybeSingle(),
+              supabase.rpc('get_dp_public_stats', { p_dp_user_id: dpId }),
             ])
             setDpProfile(dpProf.data as Profile | null)
-            setDpData(dp.data as DeliveryPartner | null)
+            const pub = (stats.data || {}) as { rating_avg?: number; rating_count?: number; vehicle_type?: string }
+            setDpData({
+              ...((dp.data as DeliveryPartner | null) || { user_id: dpId } as DeliveryPartner),
+              rating_avg: Number(pub.rating_avg ?? (dp.data as any)?.rating_avg ?? 0),
+              rating_count: Number(pub.rating_count ?? (dp.data as any)?.rating_count ?? 0),
+              vehicle_type: (pub.vehicle_type || (dp.data as any)?.vehicle_type || 'bike') as string,
+            } as DeliveryPartner)
           }
         })
       .subscribe()
@@ -104,14 +121,24 @@ export default function LiveTrackingPage() {
     if (!dpId || !request || !LIVE_STATUSES.has(request.status)) return
 
     const pull = async () => {
-      const [prof, dp] = await Promise.all([
+      const [prof, dp, stats] = await Promise.all([
         supabase.from('profiles').select('gps_lat,gps_lng,photo_url,full_name,phone').eq('id', dpId).maybeSingle(),
         supabase.from('delivery_partners').select('current_lat,current_lng,vehicle_type,rating_avg,rating_count').eq('user_id', dpId).maybeSingle(),
+        supabase.rpc('get_dp_public_stats', { p_dp_user_id: dpId }),
       ])
       if (prof.data) {
         setDpProfile(prev => ({ ...(prev || {}), ...prof.data } as Profile))
       }
-      if (dp.data) setDpData(prev => ({ ...(prev || {}), ...dp.data } as DeliveryPartner))
+      const pub = (stats.data || {}) as { rating_avg?: number; rating_count?: number; vehicle_type?: string }
+      setDpData(prev => ({
+        ...(prev || {}),
+        ...(dp.data || {}),
+        rating_avg: Number(pub.rating_avg ?? (dp.data as any)?.rating_avg ?? prev?.rating_avg ?? 0),
+        rating_count: Number(pub.rating_count ?? (dp.data as any)?.rating_count ?? prev?.rating_count ?? 0),
+        vehicle_type: (pub.vehicle_type || (dp.data as any)?.vehicle_type || prev?.vehicle_type || 'bike') as string,
+        current_lat: (dp.data as any)?.current_lat ?? prev?.current_lat,
+        current_lng: (dp.data as any)?.current_lng ?? prev?.current_lng,
+      } as DeliveryPartner))
       const lat = (dp.data as any)?.current_lat ?? prof.data?.gps_lat ?? (request as any).dp_lat
       const lng = (dp.data as any)?.current_lng ?? prof.data?.gps_lng ?? (request as any).dp_lng
       if (lat != null && lng != null) setDpLive({ lat: Number(lat), lng: Number(lng) })
@@ -481,17 +508,20 @@ export default function LiveTrackingPage() {
               </div>
 
               <Surface className="mb-4 p-4">
+                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>
+                  Delivery Partner
+                </div>
                 <div className="flex items-center gap-3">
-                  <div className="relative h-16 w-16 overflow-hidden rounded-2xl bg-black/5 shrink-0">
+                  <div className="relative h-16 w-16 overflow-hidden rounded-2xl shrink-0" style={{ background: pg.surface2 }}>
                     {dpProfile.photo_url ? (
                       <img src={dpProfile.photo_url} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-black/30"><Bike size={24} /></div>
+                      <div className="flex h-full w-full items-center justify-center" style={{ color: pg.text3 }}><Bike size={24} /></div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-[#F5F7F6] truncate">{dpProfile.full_name}</p>
-                    <p className="text-xs text-black/40">{STATUS_LABELS[request.status] || request.status}</p>
+                    <p className="text-xs" style={{ color: pg.text3 }}>{STATUS_LABELS[request.status] || request.status}</p>
                   </div>
                   {!isCompleted && (
                     <>
@@ -515,10 +545,14 @@ export default function LiveTrackingPage() {
               <Surface className="mb-4 p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <MapPin size={16} className="text-red-400" />
-                  <p className="text-xs font-bold uppercase tracking-wider text-black/55">Delivery Address</p>
+                  <p className="text-xs font-bold uppercase tracking-wider" style={{ color: pg.text3 }}>Delivery Address</p>
                 </div>
-                <p className="text-sm leading-relaxed" style={{ color: pg.text2 }}>{request.delivery_address || 'Not specified'}</p>
+                <p className="text-sm leading-relaxed" style={{ color: pg.text }}>{request.delivery_address || 'Not specified'}</p>
               </Surface>
+
+              <div className="mb-4">
+                <NeedHelpCard requestId={requestId} chatBasePath="/app/support" />
+              </div>
 
               {Array.isArray((request as any).photo_urls) && (request as any).photo_urls.length > 0 && (
                 <Surface className="mb-4 p-4">

@@ -1,11 +1,12 @@
 import { useAuth } from '../../context'
 import { Avatar } from '../../components/ui'
-import { Mail, Phone, MapPin, Globe, LogOut, Headphones, Edit2, X, Check, Camera } from 'lucide-react'
+import { Mail, Phone, MapPin, Globe, LogOut, Edit2, X, Check, Camera } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { uploadProfilePhoto } from '../../lib/uploadProfilePhoto'
 import { Screen, PageTitle, Surface, CTA } from '../../design/primitives'
 import { pg } from '../../design/tokens'
+import NeedHelpCard from '../../components/NeedHelpCard'
 
 export default function UserProfile() {
   const { profile, signOut, refreshProfile } = useAuth()
@@ -127,28 +128,9 @@ export default function UserProfile() {
         </Surface>
       </div>
 
-      <Surface className="mb-5 p-4">
-        <div className="mb-3 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl" style={{ background: pg.limeDim }}>
-            <Headphones size={18} style={{ color: pg.lime }} />
-          </div>
-          <div>
-            <h3 className="text-sm font-extrabold">Customer Service</h3>
-            <p className="text-xs" style={{ color: pg.text3 }}>We&apos;ll reach out shortly</p>
-          </div>
-        </div>
-        <p className="mb-3 text-xs leading-relaxed" style={{ color: pg.text3 }}>
-          Send us an email with your request and our customer care executive will reach out to you shortly.
-        </p>
-        <a
-          href="mailto:support@pingget.in"
-          className="flex items-center gap-3 rounded-2xl px-4 py-3.5 transition active:scale-[0.98]"
-          style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}
-        >
-          <Mail size={16} style={{ color: pg.lime }} />
-          <span className="text-sm font-extrabold" style={{ color: pg.lime }}>support@pingget.in</span>
-        </a>
-      </Surface>
+      <div className="mb-5">
+        <NeedHelpCard chatBasePath="/app/support" />
+      </div>
 
       <CTA variant="danger" className="w-full" onClick={() => signOut()}>
         <LogOut size={18} /> Sign Out

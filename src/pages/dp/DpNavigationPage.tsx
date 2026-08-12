@@ -16,6 +16,7 @@ import {
 import { pg } from '../../design/tokens'
 import { CTA, Surface } from '../../design/primitives'
 import { uploadMediaFile } from '../../lib/uploadMedia'
+import NeedHelpCard from '../../components/NeedHelpCard'
 
 const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string; notifBody: string; icon: any }[] = [
   { from: 'accepted', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
@@ -416,11 +417,13 @@ export default function DpNavigationPage() {
               <MapPin size={16} className="text-red-400" />
               <p className="text-sm font-bold text-[#F5F7F6]">Delivery Address</p>
             </div>
-            <p className="mb-3 text-sm leading-relaxed text-black/75">{request.delivery_address || 'Not specified'}</p>
+            <p className="mb-3 text-sm leading-relaxed" style={{ color: pg.text }}>{request.delivery_address || 'Not specified'}</p>
             <CTA type="button" onClick={openGoogleMaps} className="w-full">
               <Navigation size={18} /> Open in Google Maps
             </CTA>
           </Surface>
+
+          <NeedHelpCard requestId={requestId} chatBasePath="/dp/support" />
 
           {Array.isArray(request.photo_urls) && request.photo_urls.length > 0 && (
             <Surface className="p-4">

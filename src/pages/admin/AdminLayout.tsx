@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase } from '../../lib/supabase'
-import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity, Menu, X, CalendarClock, Settings, Inbox } from 'lucide-react'
+import { LayoutDashboard, Users, MapPin, ClipboardList, LogOut, CreditCard, UserCheck, Bell, Activity, Menu, X, CalendarClock, Settings, Inbox, MessageCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { BrandWordmark } from '../../components/Brand'
@@ -16,24 +16,29 @@ export default function AdminLayout() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [pendingDps, setPendingDps] = useState(0)
   const [pendingReceipts, setPendingReceipts] = useState(0)
+  const [supportUnread, setSupportUnread] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     const fetchCounts = async () => {
-      const [notifRes, dpRes, receiptRes] = await Promise.all([
+      const [notifRes, dpRes, receiptRes, supportRes] = await Promise.all([
         supabase.from('admin_notifications').select('id', { count: 'exact', head: true }).eq('is_read', false),
         supabase.from('delivery_partners').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('dp_commission_receipts').select('id', { count: 'exact', head: true }).eq('status', 'submitted'),
+        supabase.from('support_chats').select('admin_unread').gt('admin_unread', 0),
       ])
       setUnreadCount(notifRes.count || 0)
       setPendingDps(dpRes.count || 0)
       setPendingReceipts(receiptRes.count || 0)
+      setSupportUnread((supportRes.data || []).reduce((s: number, r: { admin_unread?: number }) => s + (r.admin_unread || 0), 0))
     }
     fetchCounts()
     const channel = supabase.channel('admin-layout-counts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_notifications' }, fetchCounts)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'delivery_partners' }, fetchCounts)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dp_commission_receipts' }, fetchCounts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_chats' }, fetchCounts)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, fetchCounts)
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [])
@@ -58,6 +63,7 @@ export default function AdminLayout() {
     { path: '/admin/advance-requests', label: 'Advance', icon: CalendarClock, badge: 0 },
     { path: '/admin/advance-settings', label: 'Adv Settings', icon: Settings, badge: 0 },
     { path: '/admin/payments', label: 'Payments', icon: CreditCard, badge: pendingReceipts },
+    { path: '/admin/support', label: 'Support', icon: MessageCircle, badge: supportUnread },
     { path: '/admin/notifications', label: 'Notify', icon: Bell, badge: 0 },
     { path: '/admin/operations', label: 'Live Ops', icon: Activity, badge: 0 },
   ]
