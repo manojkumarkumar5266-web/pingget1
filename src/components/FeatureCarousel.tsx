@@ -78,18 +78,27 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${index * 100}%)` }}
         >
-          {FEATURES.map((f) => (
+          {FEATURES.map((f, i) => {
+            const near = Math.abs(i - index) <= 1 || (index === 0 && i === n - 1) || (index === n - 1 && i === 0)
+            return (
             <article key={f.title} className="relative min-w-full shrink-0">
               <div className="relative aspect-[5/4] w-full overflow-hidden sm:aspect-[4/3]">
-                <img
-                  src={f.image}
-                  alt={f.title}
-                  className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
-                  style={{ background: 'transparent' }}
-                  loading="lazy"
-                  decoding="async"
-                  draggable={false}
-                />
+                {near ? (
+                  <img
+                    src={f.image}
+                    alt={f.title}
+                    className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+                    style={{ background: 'transparent' }}
+                    loading={i === index ? 'eager' : 'lazy'}
+                    decoding="async"
+                    fetchPriority={i === index ? 'high' : 'low'}
+                    draggable={false}
+                    width={800}
+                    height={640}
+                  />
+                ) : (
+                  <div className="absolute inset-0" style={{ background: '#0A0C10' }} />
+                )}
                 <div
                   className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3.5 pt-12"
                   style={{
@@ -103,7 +112,8 @@ export default function FeatureCarousel({ intervalMs = 3400 }: { intervalMs?: nu
                 </div>
               </div>
             </article>
-          ))}
+            )
+          })}
         </div>
       </div>
 

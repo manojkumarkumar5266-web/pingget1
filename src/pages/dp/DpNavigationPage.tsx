@@ -63,7 +63,7 @@ export default function DpNavigationPage() {
         setPhotoPreviews(existingPhotos)
         setPhotoFiles([])
       }
-      if ((req as any).payment_accepted_at) {
+      if (req.payment_accepted_at) {
         setEndPhase('payment_accepted')
       }
       setLoading(false)
@@ -76,7 +76,7 @@ export default function DpNavigationPage() {
         (payload: any) => {
           const next = payload.new as DeliveryRequest
           setRequest(next)
-          if ((next as any).payment_accepted_at) setEndPhase(prev => (prev === 'thanks_rating' ? prev : 'payment_accepted'))
+          if (next.payment_accepted_at) setEndPhase(prev => (prev === 'thanks_rating' ? prev : 'payment_accepted'))
         })
       .subscribe()
 
@@ -89,8 +89,8 @@ export default function DpNavigationPage() {
         .maybeSingle()
       if (!req) return
       setRequest(prev => (prev ? ({ ...prev, ...req } as DeliveryRequest) : prev))
-      if ((req as any).payment_accepted_at) setEndPhase(prev => (prev === 'thanks_rating' ? prev : 'payment_accepted'))
-    }, 3000)
+      if (req.payment_accepted_at) setEndPhase(prev => (prev === 'thanks_rating' ? prev : 'payment_accepted'))
+    }, 2000)
 
     return () => {
       supabase.removeChannel(channel)
@@ -160,7 +160,7 @@ export default function DpNavigationPage() {
   // Stay on tracking until customer finishes rating — then thank-you → home
   useEffect(() => {
     if (!requestId || !profile?.id) return
-    if (endPhase !== 'payment_accepted' && !((request as any)?.payment_accepted_at)) return
+    if (endPhase !== 'payment_accepted' && !(request?.payment_accepted_at)) return
 
     let cancelled = false
     const goThanks = () => {
@@ -200,7 +200,7 @@ export default function DpNavigationPage() {
       window.clearInterval(poll)
       supabase.removeChannel(channel)
     }
-  }, [endPhase, requestId, profile?.id, (request as any)?.payment_accepted_at])
+  }, [endPhase, requestId, profile?.id, request?.payment_accepted_at])
 
   const mapMarkers: MapMarker[] = useMemo(() => {
     const list: MapMarker[] = []
@@ -298,7 +298,7 @@ export default function DpNavigationPage() {
     )
   }
 
-  if (endPhase === 'payment_accepted' || (request as any).payment_accepted_at) {
+  if (endPhase === 'payment_accepted' || request.payment_accepted_at) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 px-6" style={{ background: pg.bg }}>
         <img src={Images.paymentReceived} alt="Payment accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: '#000' }} />
@@ -489,7 +489,7 @@ export default function DpNavigationPage() {
             </Surface>
           )}
 
-          {isDelivered && !isCompleted && !(request as any).payment_completed_at && (
+          {isDelivered && !isCompleted && !request.payment_completed_at && (
             <Surface className="p-4 text-center">
               <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: pg.lime }} />
               <p className="font-bold text-white">Waiting for customer to accept delivery</p>
@@ -497,7 +497,7 @@ export default function DpNavigationPage() {
             </Surface>
           )}
 
-          {(isCompleted || isDelivered) && !(request as any).payment_completed_at && !(request as any).payment_accepted_at && isCompleted && (
+          {(isCompleted || isDelivered) && !request.payment_completed_at && !request.payment_accepted_at && isCompleted && (
             <Surface className="p-4 text-center">
               <Clock size={24} className="mx-auto mb-2 animate-pulse" style={{ color: pg.lime }} />
               <p className="font-bold text-white">Waiting for customer payment</p>
@@ -505,7 +505,7 @@ export default function DpNavigationPage() {
             </Surface>
           )}
 
-          {!!(request as any).payment_completed_at && !(request as any).payment_accepted_at && (
+          {!!request.payment_completed_at && !request.payment_accepted_at && (
             <Surface accent className="p-4">
               <p className="mb-1 text-sm font-extrabold" style={{ color: pg.lime }}>Payment completed by customer</p>
               <p className="mb-3 text-xs" style={{ color: pg.text3 }}>Accept payment to continue — customer will rate next</p>
@@ -513,10 +513,15 @@ export default function DpNavigationPage() {
                 type="button"
                 onClick={async () => {
                   const now = new Date().toISOString()
-                  await supabase.from('requests').update({
+                  const { error } = await supabase.from('requests').update({
                     payment_accepted_at: now,
-                  } as any).eq('id', requestId)
-                  setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now } as any) : prev)
+                  }).eq('id', requestId)
+                  if (error) {
+                    console.error('[DpNav] payment_accepted_at update failed:', error)
+                    alert('Could not accept payment. Please try again.')
+                    return
+                  }
+                  setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now }) : prev)
                   await supabase.from('notifications').insert({
                     user_id: request.user_id,
                     title: 'Payment Accepted',

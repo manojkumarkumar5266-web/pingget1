@@ -538,7 +538,13 @@ export default function ChatScreen() {
                   )}
 
                   {/* Advance Payment Card */}
-                  {msg.message_type === 'advance_payment' && msg.quotation_data && (
+                  {msg.message_type === 'advance_payment' && msg.quotation_data && (() => {
+                    const payStatus = (
+                      advancePaymentData && msg.advance_payment_id === advancePaymentData.id
+                        ? advancePaymentData.status
+                        : msg.quotation_data.status
+                    ) as string
+                    return (
                     <div className="w-72 space-y-3 p-4 rounded-2xl"
                       style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(196,214,0,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(196,214,0,0.2)'}` }}>
                       <div className="flex items-center gap-2">
@@ -561,14 +567,14 @@ export default function ChatScreen() {
                         <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Purpose</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>Advance Booking Confirmation</span></div>
                         <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Status</span>
                           <span className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                            style={{ background: msg.quotation_data.status === 'verified' ? 'rgba(16,185,129,0.2)' : msg.quotation_data.status === 'proof_uploaded' ? 'rgba(59,130,246,0.2)' : msg.quotation_data.status === 'rejected' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
-                              color: msg.quotation_data.status === 'verified' ? '#34d399' : msg.quotation_data.status === 'proof_uploaded' ? '#60a5fa' : msg.quotation_data.status === 'rejected' ? '#f87171' : '#f59e0b' }}>
-                            {msg.quotation_data.status === 'waiting' ? 'Waiting For Payment' : msg.quotation_data.status === 'proof_uploaded' ? 'Proof Uploaded' : msg.quotation_data.status === 'verified' ? 'Payment Verified' : msg.quotation_data.status === 'rejected' ? 'Rejected' : 'Expired'}
+                            style={{ background: payStatus === 'verified' ? 'rgba(16,185,129,0.2)' : payStatus === 'proof_uploaded' ? 'rgba(59,130,246,0.2)' : payStatus === 'rejected' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
+                              color: payStatus === 'verified' ? '#34d399' : payStatus === 'proof_uploaded' ? '#60a5fa' : payStatus === 'rejected' ? '#f87171' : '#f59e0b' }}>
+                            {payStatus === 'waiting' ? 'Waiting For Payment' : payStatus === 'proof_uploaded' ? 'Proof Uploaded' : payStatus === 'verified' ? 'Payment Verified' : payStatus === 'rejected' ? 'Rejected' : 'Expired'}
                           </span>
                         </div>
                       </div>
                       {/* Customer: Upload payment proof button (also after rejection so they can re-upload) */}
-                      {isUser && (msg.quotation_data.status === 'waiting' || msg.quotation_data.status === 'rejected') && msg.advance_payment_id && (
+                      {isUser && (payStatus === 'waiting' || payStatus === 'rejected') && msg.advance_payment_id && (
                         <button onClick={() => { setShowPaymentProof(msg.advance_payment_id); setAdvancePaymentData(msg.quotation_data) }}
                           className="w-full rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
                           style={{ background: '#C4D600', color: '#0B0B0B' }}>
@@ -576,7 +582,7 @@ export default function ChatScreen() {
                         </button>
                       )}
                       {/* DP: Verify/Reject buttons when proof uploaded */}
-                      {!isUser && msg.quotation_data.status === 'proof_uploaded' && msg.advance_payment_id && (
+                      {!isUser && payStatus === 'proof_uploaded' && msg.advance_payment_id && (
                         <div className="flex gap-2">
                           <button onClick={() => setShowRejectModal(msg.advance_payment_id)}
                             className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
@@ -586,6 +592,9 @@ export default function ChatScreen() {
                           <button onClick={async () => {
                             await supabase.from('advance_payments').update({ status: 'verified', verified_by: profile!.id, verified_at: new Date().toISOString() }).eq('id', msg.advance_payment_id)
                             await supabase.from('requests').update({ status: 'booking_confirmed' }).eq('advance_payment_id', msg.advance_payment_id)
+                            await supabase.from('messages').update({
+                              quotation_data: { ...msg.quotation_data, status: 'verified' },
+                            }).eq('id', msg.id)
                             await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: 'Advance Confirmation Payment Verified. Your booking has been successfully reserved. See you on the scheduled date and time.' })
                             await supabase.from('notifications').insert({ user_id: fullOrderData?.user_id, title: 'Payment Verified', body: 'Your advance payment has been verified. Booking confirmed!', type: 'payment_verified', related_id: fullOrderData?.id })
                             kickPushDelivery()
@@ -599,9 +608,12 @@ export default function ChatScreen() {
                         </div>
                       )}
                       {/* DP: Request Another Proof after rejection */}
-                      {!isUser && msg.quotation_data.status === 'rejected' && msg.advance_payment_id && (
+                      {!isUser && payStatus === 'rejected' && msg.advance_payment_id && (
                         <button onClick={async () => {
                           await supabase.from('advance_payments').update({ status: 'waiting', reject_reason: null }).eq('id', msg.advance_payment_id)
+                          await supabase.from('messages').update({
+                            quotation_data: { ...msg.quotation_data, status: 'waiting' },
+                          }).eq('id', msg.id)
                           await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: 'Please re-upload the payment proof with the correct details.' })
                           fetchMessages()
                         }}
@@ -611,11 +623,14 @@ export default function ChatScreen() {
                         </button>
                       )}
                       {/* Admin Override: Force verify or reject */}
-                      {profile?.role === 'admin' && msg.advance_payment_id && msg.quotation_data.status !== 'verified' && (
+                      {profile?.role === 'admin' && msg.advance_payment_id && payStatus !== 'verified' && (
                         <div className="flex gap-2">
                           <button onClick={async () => {
                             await supabase.from('advance_payments').update({ status: 'verified', verified_by: profile!.id, verified_at: new Date().toISOString(), admin_override: true }).eq('id', msg.advance_payment_id)
                             await supabase.from('requests').update({ status: 'booking_confirmed' }).eq('advance_payment_id', msg.advance_payment_id)
+                            await supabase.from('messages').update({
+                              quotation_data: { ...msg.quotation_data, status: 'verified' },
+                            }).eq('id', msg.id)
                             await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: '[Admin Override] Payment verified by admin. Booking confirmed.' })
                             fetchMessages()
                             navigate(isUser ? '/app' : '/dp', { replace: true })
@@ -626,6 +641,9 @@ export default function ChatScreen() {
                           </button>
                           <button onClick={async () => {
                             await supabase.from('advance_payments').update({ status: 'rejected', verified_by: profile!.id, verified_at: new Date().toISOString(), admin_override: true, reject_reason: 'Rejected by admin' }).eq('id', msg.advance_payment_id)
+                            await supabase.from('messages').update({
+                              quotation_data: { ...msg.quotation_data, status: 'rejected' },
+                            }).eq('id', msg.id)
                             await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: '[Admin Override] Payment rejected by admin.' })
                             fetchMessages()
                           }}
@@ -636,7 +654,8 @@ export default function ChatScreen() {
                         </div>
                       )}
                     </div>
-                  )}
+                    )
+                  })()}
 
                   {/* Payment Proof Card */}
                   {msg.message_type === 'payment_proof' && msg.quotation_data && (
@@ -844,7 +863,24 @@ export default function ChatScreen() {
           roomId={room.id}
           advancePaymentId={showPaymentProof}
           customerId={profile!.id}
-          onSent={() => { setShowPaymentProof(null); setPaymentProofFile(null); setPaymentProofPreview(null); setUpiRef(''); setTransactionId(''); setPaymentRemarks(''); fetchMessages() }}
+          requestId={fullOrderData?.id || room.request_id}
+          dpId={fullOrderData?.reserved_dp_id || fullOrderData?.accepted_dp_id || null}
+          onSent={() => {
+            setShowPaymentProof(null)
+            setPaymentProofFile(null)
+            setPaymentProofPreview(null)
+            setUpiRef('')
+            setTransactionId('')
+            setPaymentRemarks('')
+            fetchMessages()
+            if (fullOrderData?.advance_payment_id) {
+              supabase.from('advance_payments').select('*').eq('id', fullOrderData.advance_payment_id).maybeSingle()
+                .then(({ data }) => { if (data) setAdvancePaymentData(data) })
+            }
+            if (fullOrderData?.id) {
+              setFullOrderData(prev => prev ? { ...prev, status: 'payment_verified' } : prev)
+            }
+          }}
         />
       )}
 
@@ -1177,11 +1213,13 @@ function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
 }
 
 // V3: Payment Proof Modal — Customer uploads payment screenshot and reference
-function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, onSent }: {
+function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, requestId, dpId, onSent }: {
   onClose: () => void
   roomId: string
   advancePaymentId: string
   customerId: string
+  requestId?: string | null
+  dpId?: string | null
   onSent: () => void
 }) {
   const [file, setFile] = useState<File | null>(null)
@@ -1203,7 +1241,7 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, onSe
       const ts = Date.now()
       const screenshotUrl = await uploadMediaFile(file, `payment-proofs/${customerId}/${ts}`)
 
-      await supabase.from('advance_payments').update({
+      const { error: apErr } = await supabase.from('advance_payments').update({
         status: 'proof_uploaded',
         screenshot_url: screenshotUrl,
         upi_ref: upiRef || null,
@@ -1211,6 +1249,23 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, onSe
         customer_remarks: remarks || null,
         uploaded_at: new Date().toISOString(),
       }).eq('id', advancePaymentId)
+      if (apErr) throw apErr
+
+      // Keep chat card in sync so DP immediately sees Verify (not stale "Waiting For Payment")
+      const { data: payMsgs } = await supabase
+        .from('messages')
+        .select('id, quotation_data')
+        .eq('advance_payment_id', advancePaymentId)
+        .eq('message_type', 'advance_payment')
+      for (const m of payMsgs || []) {
+        await supabase.from('messages').update({
+          quotation_data: { ...(m.quotation_data || {}), status: 'proof_uploaded' },
+        }).eq('id', m.id)
+      }
+
+      if (requestId) {
+        await supabase.from('requests').update({ status: 'payment_verified' }).eq('id', requestId)
+      }
 
       await supabase.from('messages').insert({
         chat_room_id: roomId,
@@ -1224,6 +1279,17 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, onSe
           customer_remarks: remarks || null,
         },
       })
+
+      if (dpId) {
+        await supabase.from('notifications').insert({
+          user_id: dpId,
+          title: 'Payment proof uploaded',
+          body: 'Customer uploaded advance payment proof. Please verify.',
+          type: 'payment_proof_uploaded',
+          related_id: requestId || advancePaymentId,
+        })
+        kickPushDelivery()
+      }
 
       onSent()
     } catch (e) {

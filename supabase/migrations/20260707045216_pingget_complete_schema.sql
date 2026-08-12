@@ -6017,3 +6017,17 @@ CREATE POLICY "service_area_waitlist_update_own_email"
 -- =============================================================================
 -- END: service_area_waitlist
 -- =============================================================================
+
+-- =============================================================================
+-- BEGIN: instant COD payment completion columns
+-- =============================================================================
+
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS payment_completed_at timestamptz;
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS payment_accepted_at timestamptz;
+
+COMMENT ON COLUMN requests.payment_completed_at IS 'Customer tapped Payment Completed after delivery';
+COMMENT ON COLUMN requests.payment_accepted_at IS 'DP tapped Accept Payment after customer marked paid';
+
+-- =============================================================================
+-- END: instant COD payment completion columns
+-- =============================================================================

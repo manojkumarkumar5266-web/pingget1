@@ -142,6 +142,10 @@ export type DeliveryRequest = {
   task_completed_at: string | null
   dp_cancelled_count: number
   search_radius_current: number | null
+  /** Customer confirmed they paid the DP (instant COD) */
+  payment_completed_at: string | null
+  /** DP accepted the customer's payment confirmation */
+  payment_accepted_at: string | null
 }
 
 export type AdvancePayment = {
