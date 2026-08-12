@@ -878,7 +878,7 @@ export default function ChatScreen() {
                 .then(({ data }) => { if (data) setAdvancePaymentData(data) })
             }
             if (fullOrderData?.id) {
-              setFullOrderData(prev => prev ? { ...prev, status: 'payment_verified' } : prev)
+              setFullOrderData((prev: any) => (prev ? { ...prev, status: 'payment_verified' } : prev))
             }
           }}
         />
