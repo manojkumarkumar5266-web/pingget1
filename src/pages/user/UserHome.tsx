@@ -170,8 +170,7 @@ export default function UserHome() {
         <SkeletonList count={2} lines={3} />
       ) : activeOrders.length === 0 ? (
         <EmptyBlock
-          image={Images.emptyState}
-          title="Nothing live yet"
+          title="No active orders yet"
           body="Book Instant or Advance to get your first delivery moving."
         />
       ) : (

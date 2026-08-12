@@ -14,6 +14,7 @@ const AdminPayments = lazy(() => import('./AdminPayments'))
 const AdminUsers = lazy(() => import('./AdminUsers'))
 const AdminNotifications = lazy(() => import('./AdminNotifications'))
 const AdminOperationsMap = lazy(() => import('./AdminOperationsMap'))
+const AdminSupportPage = lazy(() => import('./AdminSupportPage'))
 
 function Lazy({ children }: { children: ReactNode }) {
   return <Suspense fallback={<FullScreenLoader />}>{children}</Suspense>
@@ -32,6 +33,7 @@ export default function AdminApp() {
         <Route path="/advance-requests" element={<Lazy><AdminAdvanceRequests /></Lazy>} />
         <Route path="/advance-settings" element={<Lazy><AdminAdvanceSettings /></Lazy>} />
         <Route path="/payments" element={<Lazy><AdminPayments /></Lazy>} />
+        <Route path="/support" element={<Lazy><AdminSupportPage /></Lazy>} />
         <Route path="/notifications" element={<Lazy><AdminNotifications /></Lazy>} />
       </Route>
       <Route path="/operations" element={<Lazy><AdminOperationsMap /></Lazy>} />

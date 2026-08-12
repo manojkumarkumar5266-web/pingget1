@@ -12,6 +12,7 @@ const DpProfile = lazy(() => import('./DpProfile'))
 const DpNavigationPage = lazy(() => import('./DpNavigationPage'))
 const DpNotifications = lazy(() => import('./DpNotifications'))
 const OfferDetailPage = lazy(() => import('../shared/OfferDetailPage'))
+const SupportChatScreen = lazy(() => import('../shared/SupportChatScreen'))
 
 function Lazy({ children }: { children: ReactNode }) {
   return <Suspense fallback={<FullScreenLoader />}>{children}</Suspense>
@@ -35,6 +36,8 @@ export default function DpApp() {
       <Route path="/dp/chat/:roomId" element={<Lazy><ChatScreen /></Lazy>} />
       <Route path="/dp/chat/:roomId/order" element={<Lazy><FullOrderDetails /></Lazy>} />
       <Route path="/dp/navigate/:requestId" element={<Lazy><DpNavigationPage /></Lazy>} />
+      <Route path="/dp/support" element={<Lazy><SupportChatScreen homePath="/dp" /></Lazy>} />
+      <Route path="/dp/support/:chatId" element={<Lazy><SupportChatScreen homePath="/dp" /></Lazy>} />
       <Route path="*" element={<Navigate to="/dp" replace />} />
     </Routes>
   )
