@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { pg } from '../design/tokens'
+import { BrandPersonName } from './Brand'
 
 function timeOfDay(): 'morning' | 'afternoon' | 'evening' {
   const h = new Date().getHours()
@@ -31,9 +32,13 @@ export default function GreetingHeader({
           >
             Good {period}
           </p>
-          <h1 className="truncate text-[28px] font-extrabold leading-[1.05] tracking-[-0.04em] sm:text-[34px]" style={{ color: pg.text }}>
+          <BrandPersonName
+            as="h1"
+            className="truncate text-[28px] leading-[1.05] tracking-[-0.04em] sm:text-[34px]"
+            style={{ color: pg.text }}
+          >
             {name}
-          </h1>
+          </BrandPersonName>
           <div
             className="mt-2.5 h-[2px] w-10 rounded-full"
             style={{ background: pg.lime }}

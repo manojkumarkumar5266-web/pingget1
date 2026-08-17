@@ -7,6 +7,7 @@ import { uploadProfilePhoto } from '../../lib/uploadProfilePhoto'
 import { Screen, PageTitle, Surface, CTA } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import NeedHelpCard from '../../components/NeedHelpCard'
+import { BrandPersonName } from '../../components/Brand'
 
 export default function UserProfile() {
   const { profile, signOut, refreshProfile } = useAuth()
@@ -71,7 +72,9 @@ export default function UserProfile() {
             <input ref={cameraRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoCapture} />
           </div>
           {uploadingPhoto && <p className="mb-1 text-xs" style={{ color: pg.text3 }}>Updating photo...</p>}
-          <h2 className="text-2xl font-extrabold tracking-tight">{profile?.full_name}</h2>
+          <BrandPersonName as="h2" className="text-2xl" style={{ color: pg.text }}>
+            {profile?.full_name}
+          </BrandPersonName>
           <p className="mt-1 text-sm capitalize" style={{ color: pg.text3 }}>{profile?.role} account</p>
         </div>
       </Surface>

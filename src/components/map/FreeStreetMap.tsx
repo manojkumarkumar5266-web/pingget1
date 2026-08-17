@@ -210,22 +210,26 @@ function VehiclePin({ vehicle, size = 44 }: { vehicle?: string | null; size?: nu
   return <BikePin size={size} color="#0C8A3E" />
 }
 
-type TileProvider = 'carto' | 'esri'
+type TileProvider = 'carto_dark' | 'carto_dark_alt' | 'esri_dark'
 
 function tileUrl(provider: TileProvider, z: number, x: number, y: number) {
-  if (provider === 'esri') {
-    // Esri XYZ uses /z/y/x
-    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`
+  if (provider === 'esri_dark') {
+    // Esri Dark Gray Canvas (XYZ uses /z/y/x)
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${x}`
   }
-  return `https://a.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}.png`
+  if (provider === 'carto_dark_alt') {
+    return `https://b.basemaps.cartocdn.com/dark_nolabels/${z}/${x}/${y}.png`
+  }
+  // Black basemap with light roads/streets
+  return `https://a.basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`
 }
 
 /**
- * Reliable street basemap — Carto Voyager with Esri fallback.
- * No heavy CSS filters (those were washing maps to white).
+ * Black street basemap for scanning + tracking.
+ * Roads/streets stay visible as light lines; markers sit on top in brand colours.
  */
 function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
-  const [provider, setProvider] = useState<TileProvider>('carto')
+  const [provider, setProvider] = useState<TileProvider>('carto_dark')
   const failCount = useRef(0)
   const z = Math.max(12, Math.min(16, Math.round(zoom)))
   const { x: cx, y: cy } = latLngToTile(center.lat, center.lng, z)
@@ -239,14 +243,17 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
 
   const onTileError = () => {
     failCount.current += 1
-    if (provider === 'carto' && failCount.current >= 2) {
-      setProvider('esri')
-      failCount.current = 0
-    }
+    if (failCount.current < 2) return
+    failCount.current = 0
+    setProvider(prev => {
+      if (prev === 'carto_dark') return 'carto_dark_alt'
+      if (prev === 'carto_dark_alt') return 'esri_dark'
+      return prev
+    })
   }
 
   return (
-    <div className="absolute inset-0 overflow-hidden" style={{ background: '#C5D0D8' }}>
+    <div className="absolute inset-0 overflow-hidden" style={{ background: '#000000' }}>
       <div
         className="absolute"
         style={{
@@ -287,10 +294,10 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
           }),
         )}
       </div>
-      {/* Subtle darken so road lines read clearly on phone screens */}
+      {/* Slight contrast lift so street lines pop on OLED blacks */}
       <div
         className="pointer-events-none absolute inset-0"
-        style={{ background: 'rgba(15, 30, 45, 0.06)' }}
+        style={{ background: 'rgba(0, 0, 0, 0.12)' }}
       />
     </div>
   )
@@ -352,7 +359,7 @@ export default function FreeStreetMap({
         width: '100%',
         height: '100%',
         minHeight: 200,
-        background: '#C5D0D8',
+        background: '#000000',
         ...style,
       }}
     >
@@ -363,8 +370,8 @@ export default function FreeStreetMap({
           <polyline
             points={routeSvgPoints}
             fill="none"
-            stroke="#0C8A3E"
-            strokeWidth="1.4"
+            stroke="#C4D600"
+            strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
@@ -373,13 +380,23 @@ export default function FreeStreetMap({
           <polyline
             points={routeSvgPoints}
             fill="none"
-            stroke="#E53935"
-            strokeWidth="0.6"
+            stroke="#0C8A3E"
+            strokeWidth="1.1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+            opacity={1}
+          />
+          <polyline
+            points={routeSvgPoints}
+            fill="none"
+            stroke="#FF4D4F"
+            strokeWidth="0.55"
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray="2 1.4"
             vectorEffect="non-scaling-stroke"
-            opacity={0.9}
+            opacity={0.95}
           />
         </svg>
       )}
