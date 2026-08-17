@@ -1,0 +1,9 @@
+# Local / deploy config for Supabase Edge Functions.
+# signup-user is called before the user has a session — disable JWT gate
+# so a stale browser session cannot block account creation with a 401.
+
+[functions.signup-user]
+verify_jwt = false
+
+[functions.check-email]
+verify_jwt = false

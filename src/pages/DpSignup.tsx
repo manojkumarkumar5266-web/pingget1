@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
+import { invokeEdgeFunction } from '../lib/invokeEdgeFunction'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 import { pg } from '../design/tokens'
@@ -195,16 +196,39 @@ export default function DpSignup() {
       }
 
       // Create user + profile + delivery_partner record server-side (bypasses RLS)
-      const { data: signupData, error: signupError } = await supabase.functions.invoke('signup-user', {
-        body: {
+      const { data: signupData, error: signupError } = await invokeEdgeFunction<{ success?: boolean; user_id?: string; error?: string }>(
+        'signup-user',
+        {
           email: email.trim(), password, role: 'dp', full_name: fullName.trim(),
           phone: phoneDigits, pincode,
           vehicle_type: vehicleType, aadhaar_number: aadhaarNumber, emergency_contact: emergencyContact,
         },
-      })
+        { useAnonAuth: true },
+      )
       if (signupError || !signupData?.success) {
+        // Recover if auth/profile was created before the function error
+        const { data: existingProfile } = await supabase
+          .from('profiles').select('id, role').ilike('email', email.trim()).maybeSingle()
+        if (existingProfile?.id) {
+          const userId = existingProfile.id
+          if (photoFile) {
+            const photoUrl = await uploadFile(photoFile, `${userId}/photo`, 'avatars')
+            if (photoUrl) await supabase.from('profiles').update({ photo_url: photoUrl }).eq('id', userId)
+          }
+          if (aadhaarFile) {
+            const aadhaarUrl = await uploadFile(aadhaarFile, `${userId}/aadhaar`, 'media')
+            if (aadhaarUrl) await supabase.from('delivery_partners').update({ aadhaar_url: aadhaarUrl }).eq('user_id', userId)
+          }
+          if (needsLicense && licenseFile) {
+            const licenseUrl = await uploadFile(licenseFile, `${userId}/license`, 'media')
+            if (licenseUrl) await supabase.from('delivery_partners').update({ driving_license_url: licenseUrl }).eq('user_id', userId)
+          }
+          setStep(4)
+          setLoading(false)
+          return
+        }
         const msg = signupError?.message || signupData?.error || 'Failed to create account.'
-        if (msg.includes('already') || msg.includes('duplicate')) {
+        if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('duplicate')) {
           setError('An account with this email already exists. Please sign in instead.')
         } else {
           setError(msg)

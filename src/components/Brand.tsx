@@ -27,8 +27,14 @@ const tagScale: Record<BrandSize, string> = {
   hero: 'text-[11px] tracking-[0.28em] sm:text-xs',
 }
 
+/** App green — used for 1st G and et */
+export const BRAND_GREEN = '#0C8A3E'
+/** White — used for pin and 2nd G on black UI */
+export const BRAND_WHITE = '#FFFFFF'
+
 /**
- * pinGGet wordmark — 1st G orange · 2nd G green
+ * pinGGet wordmark — pin white · 1st G green · 2nd G white · et green
+ * Shared across User, DP, and Admin.
  */
 export function BrandWordmark({
   className = '',
@@ -50,15 +56,15 @@ export function BrandWordmark({
         className={`font-extrabold tracking-tight ${wordScale[size]}`}
         style={{ fontFamily: "'Outfit', 'DM Sans', system-ui, sans-serif" }}
       >
-        <span style={{ color: '#F5F7F6' }}>pin</span>
-        <span style={{ color: '#FF8A00' }}>G</span>
-        <span style={{ color: '#0C8A3E' }}>G</span>
-        <span style={{ color: '#F5F7F6' }}>et</span>
+        <span style={{ color: BRAND_WHITE }}>pin</span>
+        <span style={{ color: BRAND_GREEN }}>G</span>
+        <span style={{ color: BRAND_WHITE }}>G</span>
+        <span style={{ color: BRAND_GREEN }}>et</span>
       </div>
       {showTagline && (
         <div
           className={`mt-1.5 font-semibold uppercase ${tagScale[size]}`}
-          style={{ color: '#0C8A3E' }}
+          style={{ color: BRAND_GREEN }}
         >
           boy next door
         </div>
