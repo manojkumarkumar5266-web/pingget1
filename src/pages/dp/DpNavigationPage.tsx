@@ -18,6 +18,7 @@ import { CTA, Surface } from '../../design/primitives'
 import { uploadMediaFile } from '../../lib/uploadMedia'
 import NeedHelpCard from '../../components/NeedHelpCard'
 import { openRequestChatRoom } from '../../lib/openRequestChat'
+import { acceptDpPayment } from '../../lib/acceptDpPayment'
 
 const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string; notifBody: string; icon: any }[] = [
   { from: 'accepted', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
@@ -529,24 +530,14 @@ export default function DpNavigationPage() {
                 <CTA
                   type="button"
                   onClick={async () => {
-                    const now = new Date().toISOString()
-                    const { data: rpcData, error: rpcErr } = await supabase.rpc('mark_dp_payment_accepted', {
-                      p_request_id: requestId,
-                    })
-                    if (!rpcErr && rpcData && (rpcData as any).ok !== false) {
-                      const acceptedAt = (rpcData as any).payment_accepted_at || now
-                      setRequest(prev => prev ? ({ ...prev, payment_accepted_at: acceptedAt }) : prev)
-                    } else {
-                      const { error } = await supabase.from('requests').update({
-                        payment_accepted_at: now,
-                      }).eq('id', requestId)
-                      if (error) {
-                        console.error('[DpNav] payment_accepted_at update failed:', rpcErr || error)
-                        alert('Could not accept payment. Please try again.')
-                        return
-                      }
-                      setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now }) : prev)
+                    const errMsg = await acceptDpPayment(requestId!)
+                    if (errMsg) {
+                      console.error('[DpNav] accept payment failed:', errMsg)
+                      alert(errMsg)
+                      return
                     }
+                    const now = new Date().toISOString()
+                    setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now, status: 'cash_received' as any }) : prev)
                     await supabase.from('notifications').insert({
                       user_id: request.user_id,
                       title: 'Payment Accepted',
