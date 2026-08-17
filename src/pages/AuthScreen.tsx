@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
+import { invokeEdgeFunction } from '../lib/invokeEdgeFunction'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 import { pg } from '../design/tokens'
@@ -304,20 +305,14 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
       cityName = cityData?.name || null
     }
 
-    let signupData: any = null
-    let signupError: any = null
-    try {
-      const result = await supabase.functions.invoke('signup-user', {
-        body: {
-          email: email.trim(), password, role: 'user', full_name: fullName.trim(),
-          phone: phoneDigits, pincode, city: cityName,
-        },
-      })
-      signupData = result.data
-      signupError = result.error
-    } catch (err: any) {
-      signupError = err
-    }
+    const { data: signupData, error: signupError } = await invokeEdgeFunction<{ success?: boolean; user_id?: string; error?: string }>(
+      'signup-user',
+      {
+        email: email.trim(), password, role: 'user', full_name: fullName.trim(),
+        phone: phoneDigits, pincode, city: cityName,
+      },
+      { useAnonAuth: true },
+    )
 
     if (signupError || !signupData?.success) {
       // The edge function may have failed AFTER creating the account.
@@ -326,20 +321,23 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
         .from('profiles').select('id, role').ilike('email', email.trim()).maybeSingle()
       if (existingProfile) {
         // Account was created — don't treat the edge function error as a signup failure
-        supabase.functions.invoke('send-email', { body: { to: email.trim(), type: 'welcome', data: { name: fullName.trim(), role: 'user' } } })
+        invokeEdgeFunction('send-email', { to: email.trim(), type: 'welcome', data: { name: fullName.trim(), role: 'user' } })
           .catch(() => {})
         setLoading(false); submittingRef.current = false
         setMode('signup_success')
         return
       }
       const msg = signupError?.message || signupData?.error || 'Failed to create account.'
-      if (msg.includes('already') || msg.includes('duplicate')) setError('An account with this email already exists.')
-      else setError(msg)
+      if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('duplicate')) {
+        setError('An account with this email already exists.')
+      } else {
+        setError(msg)
+      }
       setLoading(false); submittingRef.current = false; return
     }
 
     // Welcome email is best-effort — never block signup success on it
-    supabase.functions.invoke('send-email', { body: { to: email.trim(), type: 'welcome', data: { name: fullName.trim(), role: 'user' } } })
+    invokeEdgeFunction('send-email', { to: email.trim(), type: 'welcome', data: { name: fullName.trim(), role: 'user' } })
       .catch(() => {})
 
     setLoading(false)
@@ -386,21 +384,15 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
       const emailBlocked = await checkEmailAvailable(email, 'dp')
       if (emailBlocked) { setError(emailBlocked); setLoading(false); submittingRef.current = false; return }
 
-      let signupData: any = null
-      let signupError: any = null
-      try {
-        const result = await supabase.functions.invoke('signup-user', {
-          body: {
-            email: email.trim(), password, role: 'dp', full_name: fullName.trim(),
-            phone: phoneDigits, pincode,
-            vehicle_type: vehicleType, aadhaar_number: aadhaarNumber, emergency_contact: emergencyContact,
-          },
-        })
-        signupData = result.data
-        signupError = result.error
-      } catch (err: any) {
-        signupError = err
-      }
+      const { data: signupData, error: signupError } = await invokeEdgeFunction<{ success?: boolean; user_id?: string; error?: string }>(
+        'signup-user',
+        {
+          email: email.trim(), password, role: 'dp', full_name: fullName.trim(),
+          phone: phoneDigits, pincode,
+          vehicle_type: vehicleType, aadhaar_number: aadhaarNumber, emergency_contact: emergencyContact,
+        },
+        { useAnonAuth: true },
+      )
 
       if (signupError || !signupData?.success) {
         // The edge function may have failed AFTER creating the account.
@@ -426,8 +418,11 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
           return
         }
         const msg = signupError?.message || signupData?.error || 'Failed to create account.'
-        if (msg.includes('already') || msg.includes('duplicate')) setError('An account with this email already exists.')
-        else setError(msg)
+        if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('duplicate')) {
+          setError('An account with this email already exists.')
+        } else {
+          setError(msg)
+        }
         setLoading(false); submittingRef.current = false; return
       }
 
