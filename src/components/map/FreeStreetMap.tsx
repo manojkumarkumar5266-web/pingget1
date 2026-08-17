@@ -29,7 +29,7 @@ type Props = {
 
 export const MAP_VIEW_RADIUS_M = 4_000
 export const SCAN_BACKEND_RADIUS_M = 10_000
-const DEFAULT_ZOOM = 14
+const DEFAULT_ZOOM = 15
 const TILE = 256
 
 function project(lat: number, lng: number, center: LatLng, zoom: number, widthPx: number, heightPx: number) {
@@ -210,28 +210,29 @@ function VehiclePin({ vehicle, size = 44 }: { vehicle?: string | null; size?: nu
   return <BikePin size={size} color="#0C8A3E" />
 }
 
-type TileProvider = 'carto_dark' | 'carto_dark_alt' | 'esri_dark'
+type TileProvider = 'voyager' | 'osm' | 'esri_street'
 
 function tileUrl(provider: TileProvider, z: number, x: number, y: number) {
-  if (provider === 'esri_dark') {
-    // Esri Dark Gray Canvas (XYZ uses /z/y/x)
-    return `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/${z}/${y}/${x}`
+  if (provider === 'esri_street') {
+    // Esri World Street Map — roads, buildings, parks (XYZ uses /z/y/x)
+    return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${z}/${y}/${x}`
   }
-  if (provider === 'carto_dark_alt') {
-    return `https://b.basemaps.cartocdn.com/dark_nolabels/${z}/${x}/${y}.png`
+  if (provider === 'osm') {
+    return `https://tile.openstreetmap.org/${z}/${x}/${y}.png`
   }
-  // Black basemap with light roads/streets
-  return `https://a.basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`
+  // Carto Voyager — dark-grey roads, greenery, building blocks
+  return `https://a.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}.png`
 }
 
 /**
- * Black street basemap for scanning + tracking.
- * Roads/streets stay visible as light lines; markers sit on top in brand colours.
+ * GPS basemap for scanning + tracking (User + DP).
+ * Voyager tiles (roads, greenery, buildings) rendered in a dark theme so
+ * street lines read as light grey/white while parks and blocks stay visible.
  */
 function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
-  const [provider, setProvider] = useState<TileProvider>('carto_dark')
+  const [provider, setProvider] = useState<TileProvider>('voyager')
   const failCount = useRef(0)
-  const z = Math.max(12, Math.min(16, Math.round(zoom)))
+  const z = Math.max(13, Math.min(16, Math.round(zoom)))
   const { x: cx, y: cy } = latLngToTile(center.lat, center.lng, z)
   const tileX = Math.floor(cx)
   const tileY = Math.floor(cy)
@@ -246,14 +247,14 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
     if (failCount.current < 2) return
     failCount.current = 0
     setProvider(prev => {
-      if (prev === 'carto_dark') return 'carto_dark_alt'
-      if (prev === 'carto_dark_alt') return 'esri_dark'
+      if (prev === 'voyager') return 'osm'
+      if (prev === 'osm') return 'esri_street'
       return prev
     })
   }
 
   return (
-    <div className="absolute inset-0 overflow-hidden" style={{ background: '#000000' }}>
+    <div className="absolute inset-0 overflow-hidden" style={{ background: '#0A0F14' }}>
       <div
         className="absolute"
         style={{
@@ -261,6 +262,8 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
           top: `${originTop}%`,
           width: '300%',
           height: '300%',
+          // Invert Voyager → dark canvas + light/white-grey roads; hue-rotate keeps parks greenish
+          filter: 'invert(92%) hue-rotate(180deg) brightness(0.95) contrast(1.08) saturate(0.9)',
         }}
       >
         {range.map((dy) =>
@@ -294,10 +297,9 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
           }),
         )}
       </div>
-      {/* Slight contrast lift so street lines pop on OLED blacks */}
       <div
         className="pointer-events-none absolute inset-0"
-        style={{ background: 'rgba(0, 0, 0, 0.12)' }}
+        style={{ background: 'rgba(0, 0, 0, 0.08)' }}
       />
     </div>
   )
@@ -324,7 +326,7 @@ export default function FreeStreetMap({
     { lat: 17.385, lng: 78.4867 }
 
   const viewRadius = Math.min(Math.max(radiusMeters, 2_000), 5_000)
-  const z = Math.max(13, Math.min(15, Math.round(zoom || DEFAULT_ZOOM)))
+  const z = Math.max(14, Math.min(16, Math.round(zoom || DEFAULT_ZOOM)))
 
   const W = 390
   const H = 520
@@ -359,7 +361,7 @@ export default function FreeStreetMap({
         width: '100%',
         height: '100%',
         minHeight: 200,
-        background: '#000000',
+        background: '#0A0F14',
         ...style,
       }}
     >
@@ -370,18 +372,18 @@ export default function FreeStreetMap({
           <polyline
             points={routeSvgPoints}
             fill="none"
-            stroke="#C4D600"
-            strokeWidth="2.2"
+            stroke="#FFFFFF"
+            strokeWidth="3.4"
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
-            opacity={0.95}
+            opacity={0.98}
           />
           <polyline
             points={routeSvgPoints}
             fill="none"
-            stroke="#0C8A3E"
-            strokeWidth="1.1"
+            stroke="#C4D600"
+            strokeWidth="2.1"
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
@@ -391,7 +393,7 @@ export default function FreeStreetMap({
             points={routeSvgPoints}
             fill="none"
             stroke="#FF4D4F"
-            strokeWidth="0.55"
+            strokeWidth="0.75"
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray="2 1.4"
