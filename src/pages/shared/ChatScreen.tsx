@@ -9,6 +9,7 @@ import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera
 import { pg } from '../../design/tokens'
 import { IconButton } from '../../design/primitives'
 import { uploadMediaFile } from '../../lib/uploadMedia'
+import { BrandPersonName } from '../../components/Brand'
 
 export default function ChatScreen() {
   const { roomId } = useParams()
@@ -506,7 +507,9 @@ export default function ChatScreen() {
         </IconButton>
         <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={42} />
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-[#F5F7F6] leading-snug">{otherUser?.full_name || 'User'}</p>
+          <BrandPersonName as="p" className="leading-snug text-base" style={{ color: '#F5F7F6' }}>
+            {otherUser?.full_name || 'User'}
+          </BrandPersonName>
           {otherTyping ? (
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-medium" style={{ color: '#0C8A3E' }}>typing</span>

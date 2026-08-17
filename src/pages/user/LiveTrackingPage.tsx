@@ -15,6 +15,7 @@ import { CTA, Surface, MobileFrame } from '../../design/primitives'
 import NeedHelpCard from '../../components/NeedHelpCard'
 import AddressPicker, { formatAddress, type SavedAddress } from '../../components/AddressPicker'
 import { openRequestChatRoom } from '../../lib/openRequestChat'
+import { BrandPersonName } from '../../components/Brand'
 
 function vehicleIcon(v: string | null | undefined) {
   const s = (v || '').toLowerCase()
@@ -573,7 +574,9 @@ export default function LiveTrackingPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[#F5F7F6] truncate">{dpProfile.full_name}</p>
+                    <BrandPersonName as="p" className="truncate text-base" style={{ color: '#F5F7F6' }}>
+                      {dpProfile.full_name}
+                    </BrandPersonName>
                     <p className="text-xs" style={{ color: pg.text3 }}>{STATUS_LABELS[request.status] || request.status}</p>
                   </div>
                   {!isCompleted && (

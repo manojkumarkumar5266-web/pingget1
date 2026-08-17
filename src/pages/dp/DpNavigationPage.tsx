@@ -9,6 +9,7 @@ import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../componen
 import VisualTracking, { STATUS_PROGRESS } from '../../components/VisualTracking'
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
+import { BrandPersonName } from '../../components/Brand'
 import {
   ArrowLeft, Navigation, MapPin, MessageCircle, Package, CheckCircle2,
   Bike, Phone, Camera, X, Clock, User as UserIcon, Store,
@@ -400,7 +401,9 @@ export default function DpNavigationPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-[#F5F7F6]">{userProfile.full_name}</p>
+                  <BrandPersonName as="p" className="truncate text-base" style={{ color: '#F5F7F6' }}>
+                    {userProfile.full_name}
+                  </BrandPersonName>
                   <p className="text-xs text-black/40">{userProfile.phone || 'No phone'}</p>
                 </div>
                 <button type="button" onClick={() => { window.location.href = `tel:${userProfile.phone || ''}` }}

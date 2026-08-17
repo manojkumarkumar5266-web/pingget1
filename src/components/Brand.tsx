@@ -32,6 +32,34 @@ export const BRAND_GREEN = '#0C8A3E'
 /** White — used for pin and 2nd G on black UI */
 export const BRAND_WHITE = '#FFFFFF'
 
+/** Official brand typeface — use for person names too (colour stays theme/default). */
+export const BRAND_FONT = "'Outfit', 'DM Sans', system-ui, sans-serif"
+
+/**
+ * Person name in pinGGet wordmark typography (Outfit / extrabold / tight tracking).
+ * Colour is unchanged — pass `style.color` or inherit from parent.
+ */
+export function BrandPersonName({
+  children,
+  className = '',
+  style,
+  as: Tag = 'span',
+}: {
+  children: React.ReactNode
+  className?: string
+  style?: React.CSSProperties
+  as?: 'span' | 'h1' | 'h2' | 'h3' | 'p'
+}) {
+  return (
+    <Tag
+      className={`font-extrabold tracking-tight ${className}`}
+      style={{ fontFamily: BRAND_FONT, ...style }}
+    >
+      {children}
+    </Tag>
+  )
+}
+
 /**
  * pinGGet wordmark — pin white · 1st G green · 2nd G white · et green
  * Shared across User, DP, and Admin.
@@ -54,7 +82,7 @@ export function BrandWordmark({
     >
       <div
         className={`font-extrabold tracking-tight ${wordScale[size]}`}
-        style={{ fontFamily: "'Outfit', 'DM Sans', system-ui, sans-serif" }}
+        style={{ fontFamily: BRAND_FONT }}
       >
         <span style={{ color: BRAND_WHITE }}>pin</span>
         <span style={{ color: BRAND_GREEN }}>G</span>

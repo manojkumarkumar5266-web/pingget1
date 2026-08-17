@@ -7,6 +7,7 @@ import { uploadProfilePhoto } from '../../lib/uploadProfilePhoto'
 import { Screen, PageTitle, Surface, CTA, Chip } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import NeedHelpCard from '../../components/NeedHelpCard'
+import { BrandPersonName } from '../../components/Brand'
 
 export default function DpProfile() {
   const { profile, signOut, refreshProfile } = useAuth()
@@ -105,7 +106,9 @@ export default function DpProfile() {
           </div>
 
           <div className="mt-4">
-            <h2 className="text-xl font-extrabold tracking-tight">{profile?.full_name}</h2>
+            <BrandPersonName as="h2" className="text-xl" style={{ color: pg.text }}>
+              {profile?.full_name}
+            </BrandPersonName>
             <p className="text-sm" style={{ color: pg.text3 }}>Delivery Partner</p>
             {photoRequired && (
               <p className="mt-2 text-xs font-extrabold" style={{ color: pg.warning }}>
