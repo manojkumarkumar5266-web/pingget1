@@ -263,10 +263,10 @@ function SubmitReceiptModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#000000]/65 p-4" onClick={onClose}>
       <div className="w-full max-w-md" onClick={e => e.stopPropagation()}>
       <Surface
-        className="max-h-[90vh] overflow-y-auto p-6"
+        className="max-h-[85vh] overflow-y-auto p-6"
         style={{ borderRadius: pg.radius.xl }}
       >
         <h3 className="text-lg font-extrabold tracking-tight">Submit commission payment</h3>

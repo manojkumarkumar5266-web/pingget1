@@ -582,14 +582,18 @@ export default function ChatScreen() {
           {messages.map((msg, index) => {
             const isOwn = msg.sender_id === profile!.id
             const showAvatar = !isOwn && (index === 0 || messages[index - 1].sender_id !== msg.sender_id)
+            const isWideCard = ['advance_payment', 'payment_proof', 'quotation', 'order_summary'].includes(msg.message_type)
             return (
               <div key={msg.id} className={`flex items-end gap-2 ${isOwn ? 'justify-end' : 'justify-start'} animate-slide-up`}>
                 {!isOwn && (
-                  <div style={{ width: 28 }}>
+                  <div className="shrink-0" style={{ width: 28 }}>
                     {showAvatar && <Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={28} />}
                   </div>
                 )}
-                <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 ${isOwn ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+                <div
+                  className={`min-w-0 rounded-2xl px-3.5 py-2.5 ${isOwn ? 'rounded-br-sm' : 'rounded-bl-sm'} ${
+                    isWideCard ? 'w-[min(100%,20rem)] max-w-[calc(100%-2.5rem)]' : 'max-w-[75%]'
+                  }`}
                   style={isOwn
                     ? { background: pg.lime, boxShadow: '0 4px 16px rgba(12, 138, 62,0.2)' }
                     : { background: pg.surface, border: `1px solid ${pg.line}` }}>
@@ -665,28 +669,28 @@ export default function ChatScreen() {
                         : msg.quotation_data.status
                     ) as string
                     return (
-                    <div className="w-72 space-y-3 p-4 rounded-2xl"
+                    <div className="w-full min-w-0 space-y-3 p-3.5 rounded-2xl"
                       style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(12, 138, 62,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(12, 138, 62,0.2)'}` }}>
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(12, 138, 62,0.2)' }}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: 'rgba(12, 138, 62,0.2)' }}>
                           <CreditCard size={16} style={{ color: '#0C8A3E' }} />
                         </div>
-                        <div>
-                          <p className="text-sm font-bold" style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }}>Advance Booking Confirmation</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold leading-snug" style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }}>Advance Booking Confirmation</p>
                           <p className="text-[10px]" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)' }}>Payment Request</p>
                         </div>
                       </div>
                       <div className="space-y-1.5 text-xs">
-                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Booking ID</span><span className="font-mono font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{(msg.quotation_data.booking_id || '').slice(0, 8)}...</span></div>
-                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Date</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_date || 'N/A'}</span></div>
-                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Time</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_time || 'N/A'}</span></div>
-                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Amount</span><span className="font-bold" style={{ color: '#0C8A3E' }}>{formatCurrency(msg.quotation_data.amount)}</span></div>
+                        <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Booking ID</span><span className="font-mono font-semibold truncate text-right" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{(msg.quotation_data.booking_id || '').slice(0, 8)}...</span></div>
+                        <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Date</span><span className="font-semibold truncate text-right" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_date || 'N/A'}</span></div>
+                        <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Time</span><span className="font-semibold truncate text-right" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_time || 'N/A'}</span></div>
+                        <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Amount</span><span className="font-bold" style={{ color: '#0C8A3E' }}>{formatCurrency(msg.quotation_data.amount)}</span></div>
                         {msg.quotation_data.payment_deadline && (
-                          <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Deadline</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.payment_deadline}</span></div>
+                          <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Deadline</span><span className="font-semibold truncate text-right" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.payment_deadline}</span></div>
                         )}
-                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Purpose</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>Advance Booking Confirmation</span></div>
-                        <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Status</span>
-                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Purpose</span><span className="font-semibold text-right leading-snug" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>Advance Booking Confirmation</span></div>
+                        <div className="flex justify-between gap-2 items-center"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Status</span>
+                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0"
                             style={{ background: payStatus === 'verified' ? 'rgba(16,185,129,0.2)' : payStatus === 'proof_uploaded' ? 'rgba(59,130,246,0.2)' : payStatus === 'rejected' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
                               color: payStatus === 'verified' ? '#34d399' : payStatus === 'proof_uploaded' ? '#60a5fa' : payStatus === 'rejected' ? '#f87171' : '#f59e0b' }}>
                             {payStatus === 'waiting' ? 'Waiting For Payment' : payStatus === 'proof_uploaded' ? 'Proof Uploaded' : payStatus === 'verified' ? 'Payment Verified' : payStatus === 'rejected' ? 'Rejected' : 'Expired'}
@@ -769,7 +773,7 @@ export default function ChatScreen() {
 
                   {/* Payment Proof Card */}
                   {msg.message_type === 'payment_proof' && msg.quotation_data && (
-                    <div className="w-72 space-y-3 p-4 rounded-2xl"
+                    <div className="w-full min-w-0 space-y-3 p-3.5 rounded-2xl"
                       style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(59,130,246,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(59,130,246,0.2)'}` }}>
                       <div className="flex items-center gap-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'rgba(59,130,246,0.2)' }}>
