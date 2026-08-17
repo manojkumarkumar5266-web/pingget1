@@ -3,6 +3,10 @@
  * Cards, chrome, and image wells are black; green CTAs for actions.
  */
 export const pg = {
+  /** Bright header chrome (User / DP / Admin) — elevated vs pure black canvas */
+  header: '#121212',
+  headerElevated: '#1A1A1A',
+  headerBorder: 'rgba(12, 138, 62, 0.35)',
   bg: '#000000',
   bgElevated: '#000000',
   surface: '#000000',

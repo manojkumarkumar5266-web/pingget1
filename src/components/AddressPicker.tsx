@@ -52,17 +52,23 @@ function AddressFormHeader({ title, onClose }: { title: string; onClose: () => v
 export default function AddressPicker({
   compact = true,
   inline = false,
+  onSelect,
+  defaultOpenList = false,
 }: {
   compact?: boolean
   /** Compact chip for greeting header row */
   inline?: boolean
+  /** Called when user picks an address (Home + tracking update) */
+  onSelect?: (addr: SavedAddress) => void
+  /** Open the address list immediately (tracking “Change address”) */
+  defaultOpenList?: boolean
 }) {
   const { profile } = useAuth()
   const [addresses, setAddresses] = useState<SavedAddress[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
     () => localStorage.getItem(SELECTED_ADDRESS_KEY)
   )
-  const [showList, setShowList] = useState(false)
+  const [showList, setShowList] = useState(defaultOpenList)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -104,6 +110,13 @@ export default function AddressPicker({
   useEffect(() => {
     if (selectedAddressId) localStorage.setItem(SELECTED_ADDRESS_KEY, selectedAddressId)
   }, [selectedAddressId])
+
+  const pickAddress = (addr: SavedAddress) => {
+    setSelectedAddressId(addr.id)
+    localStorage.setItem(SELECTED_ADDRESS_KEY, addr.id)
+    setShowList(false)
+    onSelect?.(addr)
+  }
 
   const selected = addresses.find(a => a.id === selectedAddressId) || null
 
@@ -182,8 +195,7 @@ export default function AddressPicker({
     setSaving(false)
     if (data) {
       await fetchAddresses()
-      setSelectedAddressId(data.id)
-      localStorage.setItem(SELECTED_ADDRESS_KEY, data.id)
+      pickAddress(data)
       setShowForm(false)
       resetForm()
     }
@@ -230,7 +242,7 @@ export default function AddressPicker({
               className="!flex items-start gap-2 p-3"
               style={selectedAddressId !== addr.id ? { background: pg.bgElevated } : undefined}
             >
-              <button type="button" className="min-w-0 flex-1 text-left" onClick={() => { setSelectedAddressId(addr.id); localStorage.setItem(SELECTED_ADDRESS_KEY, addr.id); setShowList(false) }}>
+              <button type="button" className="min-w-0 flex-1 text-left" onClick={() => pickAddress(addr)}>
                 <p className="truncate text-sm font-extrabold">{addr.label || 'Address'}</p>
                 <p className="truncate text-xs" style={{ color: pg.text3 }}>{formatAddress(addr)}</p>
               </button>
@@ -298,11 +310,7 @@ export default function AddressPicker({
             <button
               type="button"
               className="min-w-0 flex-1 text-left"
-              onClick={() => {
-                setSelectedAddressId(addr.id)
-                localStorage.setItem(SELECTED_ADDRESS_KEY, addr.id)
-                setShowList(false)
-              }}
+              onClick={() => pickAddress(addr)}
             >
               <p className="truncate text-sm font-extrabold">{addr.label || 'Address'}</p>
               <p className="truncate text-xs" style={{ color: pg.text3 }}>{formatAddress(addr)}</p>
@@ -335,10 +343,10 @@ export default function AddressPicker({
   const popup = inline && (showList || showForm)
     ? createPortal(
         <div
-          className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           onClick={() => { setShowList(false); setShowForm(false); resetForm() }}
         >
-          <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto rounded-[24px]" onClick={e => e.stopPropagation()}>
             {showForm ? popupForm : popupList}
           </div>
         </div>,

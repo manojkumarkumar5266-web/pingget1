@@ -67,6 +67,12 @@ export default function DpNotifications() {
 
   useEffect(() => {
     fetchNotifs()
+    // Clear red badge immediately when Alerts is opened
+    void (async () => {
+      await supabase.from('notifications').update({ is_read: true })
+        .eq('user_id', profile!.id).eq('is_read', false).is('deleted_at', null)
+      setNotifs(prev => prev.map(n => ({ ...n, is_read: true })))
+    })()
     const channel = supabase.channel('dp-notifs-page')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile!.id}` }, fetchNotifs)
       .subscribe()

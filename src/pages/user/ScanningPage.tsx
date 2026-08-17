@@ -201,7 +201,13 @@ export default function ScanningPage() {
     const list: MapMarker[] = []
     if (center) list.push({ id: 'user', position: center, kind: 'user' })
     spots.forEach(s => {
-      list.push({ id: s.id, position: { lat: s.lat, lng: s.lng }, kind: 'bike', label: s.full_name })
+      list.push({
+        id: s.id,
+        position: { lat: s.lat, lng: s.lng },
+        kind: 'bike',
+        label: s.full_name,
+        vehicleType: s.vehicle_type,
+      })
     })
     return list
   }, [center, spots])

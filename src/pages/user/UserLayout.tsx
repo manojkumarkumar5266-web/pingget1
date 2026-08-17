@@ -87,7 +87,7 @@ export default function UserLayout() {
       {!hideNav && (
         <header
           className="z-10 flex items-center px-4 pb-2 pt-[max(10px,env(safe-area-inset-top))]"
-          style={{ background: 'rgba(0,0,0,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+          style={{ background: pg.header, borderBottom: `1px solid ${pg.headerBorder}`, boxShadow: '0 8px 24px rgba(12,138,62,0.12)' }}
         >
           <BrandWordmark size="xs" showTagline={false} align="left" />
         </header>
@@ -167,7 +167,7 @@ export default function UserLayout() {
           <DockItem label="Home" icon={<Home size={20} />} active={isActive('/app')} onClick={() => go('/app')} />
           <DockItem label="Orders" icon={<ClipboardList size={20} />} active={isActive('/app/orders')} onClick={() => go('/app/orders')} />
           <DockItem label="New" icon={<Plus size={28} strokeWidth={2.5} />} center onClick={() => setShowBookingMenu(true)} />
-          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/app/notifications')} badge={unreadCount} onClick={() => go('/app/notifications')} />
+          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/app/notifications')} badge={unreadCount} onClick={() => { setUnreadCount(0); go('/app/notifications') }} />
           <DockItem label="You" icon={<User size={20} />} active={isActive('/app/profile')} onClick={() => go('/app/profile')} />
         </Dock>
       )}

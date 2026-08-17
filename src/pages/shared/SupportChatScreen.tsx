@@ -22,6 +22,15 @@ type ChatMeta = {
   status: string
 }
 
+const SUPPORT_TOPICS = [
+  { id: 'money', label: 'Money / payment issue' },
+  { id: 'account', label: 'Account related' },
+  { id: 'item', label: 'Item / order related' },
+  { id: 'delivery', label: 'Delivery partner / tracking' },
+  { id: 'advance', label: 'Advance booking' },
+  { id: 'other', label: 'Something else' },
+] as const
+
 export function SupportChatScreen({ homePath }: { homePath: string }) {
   const { chatId: routeChatId } = useParams<{ chatId?: string }>()
   const { user } = useAuth()
@@ -32,6 +41,7 @@ export function SupportChatScreen({ homePath }: { homePath: string }) {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [topicPicked, setTopicPicked] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const loadMessages = useCallback(async (id: string) => {
@@ -41,7 +51,9 @@ export function SupportChatScreen({ homePath }: { homePath: string }) {
       .eq('chat_id', id)
       .order('created_at', { ascending: true })
       .limit(300)
-    setMessages((msgs as Msg[]) || [])
+    const list = (msgs as Msg[]) || []
+    setMessages(list)
+    if (list.length > 0) setTopicPicked(true)
     await supabase.rpc('mark_support_chat_read', { p_chat_id: id })
   }, [])
 
@@ -83,26 +95,25 @@ export function SupportChatScreen({ homePath }: { homePath: string }) {
         (payload) => {
           const row = payload.new as Msg
           setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]))
-          if (row.sender_id !== user?.id) {
-            void supabase.rpc('mark_support_chat_read', { p_chat_id: chat.id })
-          }
+          setTopicPicked(true)
+          void supabase.rpc('mark_support_chat_read', { p_chat_id: chat.id })
         },
       )
       .subscribe()
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [chat?.id, user?.id])
+  }, [chat?.id])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages.length])
+  }, [messages, topicPicked])
 
-  const send = async () => {
-    const body = draft.trim()
+  const send = async (text?: string) => {
+    const body = (text ?? draft).trim()
     if (!body || !chat || sending) return
     setSending(true)
-    setDraft('')
+    if (!text) setDraft('')
     try {
       const { data: msgId, error: rpcErr } = await supabase.rpc('send_support_message', {
         p_chat_id: chat.id,
@@ -126,17 +137,25 @@ export function SupportChatScreen({ homePath }: { homePath: string }) {
               ],
         )
       }
+      setTopicPicked(true)
     } catch (e: any) {
       setError(e?.message || 'Failed to send')
-      setDraft(body)
+      if (!text) setDraft(body)
     } finally {
       setSending(false)
     }
   }
 
+  const pickTopic = async (label: string) => {
+    setTopicPicked(true)
+    await send(`Hi — I need help with: ${label}`)
+  }
+
+  const showTopics = !loading && !topicPicked && messages.length === 0
+
   return (
     <div className="flex h-[100dvh] flex-col" style={{ background: pg.bg, color: pg.text }}>
-      <header className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: `1px solid ${pg.line}` }}>
+      <header className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: `1px solid ${pg.headerBorder}`, background: pg.header }}>
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -168,11 +187,39 @@ export function SupportChatScreen({ homePath }: { homePath: string }) {
             {error}
           </p>
         ) : null}
-        {!loading && messages.length === 0 ? (
-          <p className="rounded-2xl px-4 py-3 text-sm" style={{ border: `1px solid ${pg.line}`, background: pg.surface, color: pg.text3 }}>
-            Say hello — an admin will reply here. Your name and user ID are visible on the admin side.
-          </p>
+
+        {showTopics ? (
+          <>
+            <div className="flex justify-start">
+              <div
+                className="max-w-[90%] rounded-2xl px-3 py-2 text-sm"
+                style={{ border: `1px solid ${pg.line}`, background: pg.surface, color: pg.text }}
+              >
+                <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide" style={{ color: pg.text3 }}>
+                  Support team
+                </p>
+                <p className="whitespace-pre-wrap break-words">
+                  Hi! Welcome to pinGGet support. How can we help you today? Please choose a topic below — then you can chat with our team.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-2 pt-1">
+              {SUPPORT_TOPICS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  disabled={sending}
+                  onClick={() => void pickTopic(t.label)}
+                  className="rounded-2xl px-4 py-3 text-left text-sm font-bold transition-all active:scale-[0.99] disabled:opacity-50"
+                  style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}`, color: pg.text }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </>
         ) : null}
+
         {messages.map((m) => {
           const mine = m.sender_id === user?.id
           return (
@@ -207,7 +254,7 @@ export function SupportChatScreen({ homePath }: { homePath: string }) {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={1}
-            placeholder="Type a message…"
+            placeholder={showTopics ? 'Or type your own message…' : 'Type a message…'}
             className="max-h-28 flex-1 resize-none rounded-2xl px-3 py-2.5 text-sm outline-none"
             style={{ border: `1px solid ${pg.line}`, background: pg.surface, color: pg.text }}
             onKeyDown={(e) => {

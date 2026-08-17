@@ -195,6 +195,8 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
           <div className="space-y-4">
             <Section title="Contact" icon={<Phone size={16} />}>
               <Row label="Phone" value={dp.profile?.phone || 'Not provided'} />
+              <Row label="Email" value={(dp.profile as any)?.email || 'Not provided'} />
+              <Row label="Pincode" value={(dp.profile as any)?.pincode || 'Not provided'} />
               <Row label="City" value={dp.profile?.city || 'Not provided'} />
               <Row label="Address" value={dp.profile?.address || 'Not provided'} />
               <Row label="Emergency Contact" value={dp.emergency_contact || 'Not provided'} />
@@ -215,30 +217,38 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
             <Section title="Identity" icon={<FileText size={16} />}>
               <Row label="Aadhaar Number" value={dp.aadhaar_number ? `****${dp.aadhaar_number.slice(-4)}` : 'Not provided'} />
               {(dp as any).aadhaar_url ? (
-                <div className="mt-2">
-                  <p className="text-xs text-gray-500 mb-1">Aadhaar Document</p>
-                  <a
-                    href={(dp as any).aadhaar_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-sm font-medium text-primary-700 dark:border-primary-800 dark:bg-primary-900/30 dark:text-primary-300"
-                  >
-                    <FileText size={14} /> View Aadhaar
+                <div className="mt-2 space-y-2">
+                  <p className="text-xs text-gray-500">Aadhaar Document</p>
+                  <a href={(dp as any).aadhaar_url} target="_blank" rel="noopener noreferrer" className="block">
+                    <img
+                      src={(dp as any).aadhaar_url}
+                      alt="Aadhaar"
+                      className="max-h-48 w-full rounded-xl object-contain"
+                      style={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)' }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                    <span className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: pg.lime }}>
+                      <FileText size={14} /> Open Aadhaar file
+                    </span>
                   </a>
                 </div>
               ) : (
                 <Row label="Aadhaar Document" value="Not uploaded" />
               )}
               {dp.driving_license_url ? (
-                <div className="mt-2">
-                  <p className="text-xs text-gray-500 mb-1">Driving Licence</p>
-                  <a
-                    href={dp.driving_license_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-3 py-1.5 text-sm font-medium text-accent-700 dark:border-accent-800 dark:bg-accent-900/30 dark:text-accent-300"
-                  >
-                    <FileText size={14} /> View Driving Licence
+                <div className="mt-2 space-y-2">
+                  <p className="text-xs text-gray-500">Driving Licence</p>
+                  <a href={dp.driving_license_url} target="_blank" rel="noopener noreferrer" className="block">
+                    <img
+                      src={dp.driving_license_url}
+                      alt="Driving licence"
+                      className="max-h-48 w-full rounded-xl object-contain"
+                      style={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)' }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                    <span className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: pg.lime }}>
+                      <FileText size={14} /> Open licence file
+                    </span>
                   </a>
                 </div>
               ) : (
