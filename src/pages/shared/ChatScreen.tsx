@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, Message, ChatRoom, Order, Profile, DeliveryPartner } from '../../lib/supabase'
 import { kickPushDelivery } from '../../lib/notify'
-import { Avatar, StatusBadge, ErrorBanner, FullScreenLoader } from '../../components/ui'
+import { Avatar, StatusBadge, ErrorBanner, FullScreenLoader, InteractiveStarRating } from '../../components/ui'
 import { formatCurrency, timeOfDay, STATUS_LABELS } from '../../lib/utils'
 import { ArrowLeft, Send, FileText, Check, CheckCheck, Star, IndianRupee, Camera, Mic, MicOff, X, Play, Pause, Paperclip, PackageCheck, CheckCircle, ClipboardList, CreditCard, Upload, ShieldCheck, AlertCircle, CalendarClock, Clock, RotateCcw, Shield, MapPin, Navigation, Tag, Volume2, ChevronDown, ChevronUp } from 'lucide-react'
 import { pg } from '../../design/tokens'
@@ -41,6 +41,9 @@ export default function ChatScreen() {
   const [paymentRemarks, setPaymentRemarks] = useState('')
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null)
+  const [showAcceptPaymentPopup, setShowAcceptPaymentPopup] = useState(false)
+  const [acceptingAdvancePayment, setAcceptingAdvancePayment] = useState(false)
+  const requestStatusRef = useRef<string | null>(null)
   const [chatClosedAt, setChatClosedAt] = useState<string | null>(null)
   const [closingChat, setClosingChat] = useState(false)
   const [recording, setRecording] = useState(false)
@@ -130,6 +133,7 @@ export default function ChatScreen() {
       const { data: reqData } = await supabase.from('requests').select('*').eq('id', roomData.request_id).maybeSingle()
       setRequestDescription((reqData as any)?.description || '')
       setFullOrderData(reqData as any)
+      if ((reqData as any)?.status) requestStatusRef.current = (reqData as any).status
       // Fetch advance payment if exists
       if ((reqData as any)?.advance_payment_id) {
         const { data: apData } = await supabase.from('advance_payments').select('*').eq('id', (reqData as any).advance_payment_id).maybeSingle()
@@ -209,22 +213,24 @@ export default function ChatScreen() {
         (payload: any) => {
           const updated = payload.new as any
           const prev = payload.old as any
+          const prevStatus = prev?.status || requestStatusRef.current
+          if (updated.status) requestStatusRef.current = updated.status
           if (updated.status === 'cancelled') navigate(isUser ? '/app' : '/dp')
-          // Advance confirmation payment verified → both sides go home; order stays active until task day
+          // Advance confirmation payment accepted → both sides go home; booking stays reserved until task day
           if (
             updated.status === 'booking_confirmed' &&
-            prev?.status &&
-            prev.status !== 'booking_confirmed'
+            prevStatus !== 'booking_confirmed'
           ) {
+            setFullOrderData(updated)
             navigate(isUser ? '/app' : '/dp', { replace: true })
             return
           }
           // Task day started (or instant quotation accepted) → tracking on both sides
           if (
             (updated.status === 'confirmed' || updated.status === 'task_started') &&
-            prev?.status &&
-            prev.status !== updated.status &&
-            ['accepted', 'pending', 'dp_reserved', 'waiting_payment', 'booking_confirmed', 'payment_verified'].includes(prev.status)
+            prevStatus &&
+            prevStatus !== updated.status &&
+            ['accepted', 'pending', 'dp_reserved', 'waiting_payment', 'booking_confirmed', 'payment_verified'].includes(prevStatus)
           ) {
             navigate(
               isUser ? `/app/track/${room.request_id}` : `/dp/navigate/${room.request_id}`,
@@ -257,6 +263,74 @@ export default function ChatScreen() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [room?.request_id, fullOrderData?.advance_payment_id, profile?.id])
+
+  // DP: auto-open Accept Payment popup when customer uploads payment proof
+  useEffect(() => {
+    if (isUser) return
+    if (advancePaymentData?.status === 'proof_uploaded' && fullOrderData?.order_type === 'advance') {
+      setShowAcceptPaymentPopup(true)
+    } else if (advancePaymentData?.status === 'verified') {
+      setShowAcceptPaymentPopup(false)
+    }
+  }, [advancePaymentData?.status, isUser, fullOrderData?.order_type])
+
+  const acceptAdvanceConfirmationPayment = async () => {
+    if (!advancePaymentData?.id || !profile?.id || !room) return
+    setAcceptingAdvancePayment(true)
+    try {
+      const apId = advancePaymentData.id
+      const { error: apErr } = await supabase.from('advance_payments').update({
+        status: 'verified',
+        verified_by: profile.id,
+        verified_at: new Date().toISOString(),
+      }).eq('id', apId)
+      if (apErr) throw apErr
+
+      // Keep booking reserved (booking_confirmed) until task day — do not start delivery yet
+      await supabase.from('requests').update({ status: 'booking_confirmed' }).eq('id', fullOrderData?.id || room.request_id)
+
+      const { data: payMsgs } = await supabase
+        .from('messages')
+        .select('id, quotation_data')
+        .eq('advance_payment_id', apId)
+        .eq('message_type', 'advance_payment')
+      for (const m of payMsgs || []) {
+        await supabase.from('messages').update({
+          quotation_data: { ...(m.quotation_data || {}), status: 'verified' },
+        }).eq('id', m.id)
+      }
+
+      await supabase.from('messages').insert({
+        chat_room_id: room.id,
+        sender_id: profile.id,
+        message_type: 'text',
+        content: 'Advance confirmation payment accepted. Your booking is reserved. Both of you will get reminders on the task day.',
+      })
+
+      if (fullOrderData?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id: fullOrderData.user_id,
+          title: 'Payment accepted — booking reserved',
+          body: 'Your advance payment was accepted. The booking stays reserved until task day.',
+          type: 'payment_verified',
+          related_id: fullOrderData.id,
+        })
+        kickPushDelivery()
+      }
+
+      setAdvancePaymentData((prev: any) => (prev ? { ...prev, status: 'verified' } : prev))
+      setFullOrderData((prev: any) => (prev ? { ...prev, status: 'booking_confirmed' } : prev))
+      requestStatusRef.current = 'booking_confirmed'
+      setShowAcceptPaymentPopup(false)
+      // Leave chat → home; order remains under Reserved until task day
+      navigate(isUser ? '/app' : '/dp', { replace: true })
+    } catch (e: any) {
+      console.error('[Chat] accept advance payment failed:', e)
+      alert(e?.message || 'Could not accept payment. Please try again.')
+    } finally {
+      setAcceptingAdvancePayment(false)
+    }
+  }
 
   useEffect(() => {
     if (!roomId || !profile?.id) return
@@ -627,7 +701,7 @@ export default function ChatScreen() {
                           <Upload size={12} className="inline mr-1" /> Upload Payment Proof
                         </button>
                       )}
-                      {/* DP: Verify/Reject buttons when proof uploaded */}
+                      {/* DP: Accept Payment / Reject when proof uploaded */}
                       {!isUser && payStatus === 'proof_uploaded' && msg.advance_payment_id && (
                         <div className="flex gap-2">
                           <button onClick={() => setShowRejectModal(msg.advance_payment_id)}
@@ -635,21 +709,10 @@ export default function ChatScreen() {
                             style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
                             Reject
                           </button>
-                          <button onClick={async () => {
-                            await supabase.from('advance_payments').update({ status: 'verified', verified_by: profile!.id, verified_at: new Date().toISOString() }).eq('id', msg.advance_payment_id)
-                            await supabase.from('requests').update({ status: 'booking_confirmed' }).eq('advance_payment_id', msg.advance_payment_id)
-                            await supabase.from('messages').update({
-                              quotation_data: { ...msg.quotation_data, status: 'verified' },
-                            }).eq('id', msg.id)
-                            await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: 'Advance Confirmation Payment Verified. Your booking has been successfully reserved. See you on the scheduled date and time.' })
-                            await supabase.from('notifications').insert({ user_id: fullOrderData?.user_id, title: 'Payment Verified', body: 'Your advance payment has been verified. Booking confirmed!', type: 'payment_verified', related_id: fullOrderData?.id })
-                            kickPushDelivery()
-                            setFullOrderData((prev: any) => (prev ? { ...prev, status: 'booking_confirmed' } : prev))
-                            fetchMessages()
-                          }}
+                          <button onClick={() => setShowAcceptPaymentPopup(true)}
                             className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
-                            style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
-                            <ShieldCheck size={12} className="inline mr-1" /> Verify
+                            style={{ background: '#0C8A3E', color: '#0B0B0B' }}>
+                            <ShieldCheck size={12} className="inline mr-1" /> Accept Payment
                           </button>
                         </div>
                       )}
@@ -677,7 +740,8 @@ export default function ChatScreen() {
                             await supabase.from('messages').update({
                               quotation_data: { ...msg.quotation_data, status: 'verified' },
                             }).eq('id', msg.id)
-                            await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: '[Admin Override] Payment verified by admin. Booking confirmed.' })
+                            await supabase.from('messages').insert({ chat_room_id: room!.id, sender_id: profile!.id, message_type: 'text', content: '[Admin Override] Payment verified by admin. Booking reserved until task day.' })
+                            requestStatusRef.current = 'booking_confirmed'
                             fetchMessages()
                             navigate(isUser ? '/app' : '/dp', { replace: true })
                           }}
@@ -726,6 +790,16 @@ export default function ChatScreen() {
                         {msg.quotation_data.transaction_id && <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Transaction ID</span><span className="font-mono font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.transaction_id}</span></div>}
                         {msg.quotation_data.customer_remarks && <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Remarks</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.customer_remarks}</span></div>}
                       </div>
+                      {!isUser && advancePaymentData?.status === 'proof_uploaded' && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAcceptPaymentPopup(true)}
+                          className="w-full rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
+                          style={{ background: '#0C8A3E', color: '#0B0B0B' }}
+                        >
+                          <ShieldCheck size={12} className="inline mr-1" /> Accept Payment
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -932,6 +1006,60 @@ export default function ChatScreen() {
         />
       )}
 
+      {/* Advance: Accept Payment popup (DP confirms payment bill) */}
+      {showAcceptPaymentPopup && !isUser && advancePaymentData?.status === 'proof_uploaded' && (
+        <div className="fixed inset-0 z-[160] flex items-center justify-center bg-[#000000]/65 px-5 animate-fade-in">
+          <div
+            className="w-full max-w-sm rounded-3xl p-6 text-center"
+            style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full" style={{ background: 'rgba(12,138,62,0.18)' }}>
+              <IndianRupee size={26} style={{ color: '#0C8A3E' }} />
+            </div>
+            <h3 className="text-lg font-bold text-[#F5F7F6]">Accept Payment</h3>
+            <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Customer uploaded the booking payment bill. Accept to reserve this advance booking until task day.
+            </p>
+            {advancePaymentData?.amount != null && (
+              <p className="mt-4 text-2xl font-extrabold" style={{ color: '#0C8A3E' }}>
+                {formatCurrency(Number(advancePaymentData.amount))}
+              </p>
+            )}
+            {(advancePaymentData?.screenshot_url || advancePaymentData?.upi_ref) && (
+              <div className="mt-4 space-y-2 text-left text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                {advancePaymentData.screenshot_url && (
+                  <a href={advancePaymentData.screenshot_url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl">
+                    <img src={advancePaymentData.screenshot_url} alt="Payment bill" className="h-28 w-full object-cover" />
+                  </a>
+                )}
+                {advancePaymentData.upi_ref && <p>UPI: <span className="font-mono text-[#F5F7F6]">{advancePaymentData.upi_ref}</span></p>}
+                {advancePaymentData.transaction_id && <p>Txn: <span className="font-mono text-[#F5F7F6]">{advancePaymentData.transaction_id}</span></p>}
+              </div>
+            )}
+            <div className="mt-6 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAcceptPaymentPopup(false)}
+                className="flex-1 rounded-xl py-3 text-sm font-bold"
+                style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)' }}
+              >
+                Later
+              </button>
+              <button
+                type="button"
+                disabled={acceptingAdvancePayment}
+                onClick={() => void acceptAdvanceConfirmationPayment()}
+                className="flex-1 rounded-xl py-3 text-sm font-extrabold transition active:scale-95 disabled:opacity-60"
+                style={{ background: '#0C8A3E', color: '#0B0B0B' }}
+              >
+                {acceptingAdvancePayment ? 'Accepting…' : 'Accept Payment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* V3: Reject Payment Modal (DP rejects with reason) */}
       {showRejectModal && room && (
         <RejectPaymentModal
@@ -1136,16 +1264,8 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
         <div className="bottom-sheet-handle" />
         <h3 className="text-lg font-bold text-[#F5F7F6] text-center">Rate {targetName}</h3>
         <p className="mt-1 mb-6 text-sm text-center" style={{ color: 'rgba(255,255,255,0.4)' }}>How was your experience?</p>
-        <div className="mb-2 flex justify-center gap-3">
-          {[1, 2, 3, 4, 5].map(i => (
-            <button key={i} onClick={() => setStars(i)} className="transition-transform active:scale-90">
-              <svg width={40} height={40} viewBox="0 0 24 24" fill={i <= stars ? '#0C8A3E' : 'none'} stroke={i <= stars ? '#0C8A3E' : 'rgba(255,255,255,0.2)'} strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-              </svg>
-            </button>
-          ))}
-        </div>
-        <p className="mb-4 text-center font-semibold" style={{ color: '#0C8A3E' }}>{labels[stars]}</p>
+        <InteractiveStarRating value={stars} onChange={setStars} size={40} />
+        <p className="mb-4 mt-3 text-center font-semibold" style={{ color: '#FBBF24' }}>{labels[stars]}</p>
         <textarea className="input min-h-20 resize-none mb-4" value={review} onChange={e => setReview(e.target.value)} placeholder="Leave a review (optional)" />
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Skip</button>
@@ -1333,7 +1453,7 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, requ
         await supabase.from('notifications').insert({
           user_id: dpId,
           title: 'Payment proof uploaded',
-          body: 'Customer uploaded advance payment proof. Please verify.',
+          body: 'Customer uploaded advance payment proof. Tap Accept Payment in chat.',
           type: 'payment_proof_uploaded',
           related_id: requestId || advancePaymentId,
         })

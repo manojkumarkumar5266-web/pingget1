@@ -9,6 +9,7 @@ import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../componen
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
 import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck, Pencil } from 'lucide-react'
+import { InteractiveStarRating } from '../../components/ui'
 import { pg } from '../../design/tokens'
 import { CTA, Surface, MobileFrame } from '../../design/primitives'
 import NeedHelpCard from '../../components/NeedHelpCard'
@@ -432,14 +433,14 @@ export default function LiveTrackingPage() {
             <p className="mb-5 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
               How was {dpProfile?.full_name?.split(' ')[0] || 'your partner'}'s service?
             </p>
-            <div className="mb-5 flex items-center justify-center gap-3">
-              {[1, 2, 3, 4, 5].map(n => (
-                <button key={n} type="button" onClick={() => setRatingStars(n)} className="active:scale-90">
-                  <Star size={36} fill={n <= ratingStars ? '#FBBF24' : 'none'}
-                    className={n <= ratingStars ? 'text-[#0C8A3E]' : 'text-black/20'} />
-                </button>
-              ))}
+            <div className="mb-2">
+              <InteractiveStarRating value={ratingStars} onChange={setRatingStars} size={40} />
             </div>
+            <p className="mb-5 text-center text-sm font-semibold" style={{ color: ratingStars ? '#FBBF24' : 'rgba(255,255,255,0.35)' }}>
+              {ratingStars === 0
+                ? 'Tap a star to rate'
+                : ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][ratingStars]}
+            </p>
             <textarea
               value={ratingFeedback}
               onChange={e => setRatingFeedback(e.target.value)}

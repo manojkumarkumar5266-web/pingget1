@@ -4,6 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest } from '../../lib/supabase'
 import { StatusBadge, ServiceStatusBanner, SkeletonList } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
+import { ensureAdvanceTaskDayReminders } from '../../lib/advanceTaskReminders'
 import { Clock, MapPin, CheckCircle2, ChevronRight, Zap, CalendarClock, Package, Bike } from 'lucide-react'
 import { Images } from '../../lib/customImages'
 import FeatureCarousel from '../../components/FeatureCarousel'
@@ -59,6 +60,7 @@ export default function UserHome() {
       const nextCompleted = (completedRes.data as DeliveryRequest[]) || []
       setActiveOrders(nextActive)
       setRecentCompleted(nextCompleted)
+      void ensureAdvanceTaskDayReminders(profile.id, 'user')
       const [total, completedCount, activeCount] = await Promise.all([
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('status','completed'),

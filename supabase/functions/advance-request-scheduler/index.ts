@@ -169,6 +169,46 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // 4b. Task-day morning notice for reserved bookings scheduled today
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+    const { data: taskDayRows } = await supabase
+      .from("requests")
+      .select("id, user_id, accepted_dp_id, reserved_dp_id, request_category, scheduled_time, scheduled_slot")
+      .eq("order_type", "advance")
+      .eq("scheduled_date", todayStr)
+      .in("status", ["booking_confirmed", "payment_verified"]);
+
+    if (taskDayRows && taskDayRows.length > 0) {
+      for (const req of taskDayRows) {
+        const recipients = [req.user_id, req.accepted_dp_id || req.reserved_dp_id].filter(Boolean) as string[];
+        for (const recipientId of [...new Set(recipients)]) {
+          const { data: existing } = await supabase
+            .from("notifications")
+            .select("id")
+            .eq("user_id", recipientId)
+            .eq("related_id", req.id)
+            .eq("type", "advance_reminder_task_day")
+            .maybeSingle();
+          if (existing) continue;
+          const isDp = recipientId !== req.user_id;
+          const timeLabel = req.scheduled_slot || req.scheduled_time || "your slot";
+          await supabase.from("notifications").insert({
+            user_id: recipientId,
+            title: "Advance booking — task day",
+            body: isDp
+              ? `Your reserved ${req.request_category || "delivery"} task is today at ${timeLabel}. Open Orders and tap Start task when ready.`
+              : `Your ${req.request_category || "delivery"} booking is today at ${timeLabel}. Your partner will start the task on time.`,
+            type: "advance_reminder_task_day",
+            related_id: req.id,
+          });
+        }
+      }
+    }
+
     // Process due admin scheduled broadcasts → User/DP Alerts (+ Resend + FCM)
     let broadcastsSent = 0;
     let pushProcessed = 0;

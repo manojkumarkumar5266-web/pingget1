@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
 import { kickPushDelivery } from '../../lib/notify'
+import { ensureAdvanceTaskDayReminders } from '../../lib/advanceTaskReminders'
 import { useGps } from '../../hooks/useGps'
 import { ServiceStatusBanner, SkeletonList, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency, STATUS_LABELS, STATUS_COLORS } from '../../lib/utils'
@@ -217,6 +218,7 @@ export default function DpHome() {
       setTodayOrders(orders.filter(o => o.completed_at && o.completed_at >= todayStart))
       setWeekOrders(orders.filter(o => o.completed_at && o.completed_at >= weekStart))
       setTotalOrders(orders.length)
+      void ensureAdvanceTaskDayReminders(profile.id, 'dp')
     }
     fetchStats()
   }, [dpLoading, profile])
