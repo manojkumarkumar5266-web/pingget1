@@ -359,9 +359,12 @@ export default function CreateAdvanceRequest() {
   }
   const selectableDates = getSelectableDates()
 
-  const timeSlots = settings
-    ? generateTimeSlots(settings.business_hours_start, settings.business_hours_end, settings.slot_duration_minutes)
-    : []
+  // Customer advance booking: available slots 5:00 AM – 11:00 PM
+  const timeSlots = generateTimeSlots(
+    '05:00',
+    '23:00',
+    settings?.slot_duration_minutes || 30,
+  )
 
   // Charge calculation — enhanced with weekend charge + percentage support
   const calculateCharges = (): { breakdown: Record<string, number>; total: number } => {
