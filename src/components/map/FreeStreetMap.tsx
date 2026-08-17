@@ -226,7 +226,8 @@ function tileUrl(provider: TileProvider, z: number, x: number, y: number) {
 
 /**
  * GPS basemap for scanning + tracking (User + DP).
- * Shows dark-grey/white-contrast street lines, greenery/parks, and building blocks.
+ * Voyager tiles (roads, greenery, buildings) rendered in a dark theme so
+ * street lines read as light grey/white while parks and blocks stay visible.
  */
 function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
   const [provider, setProvider] = useState<TileProvider>('voyager')
@@ -253,7 +254,7 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
   }
 
   return (
-    <div className="absolute inset-0 overflow-hidden" style={{ background: '#D6E0E8' }}>
+    <div className="absolute inset-0 overflow-hidden" style={{ background: '#0A0F14' }}>
       <div
         className="absolute"
         style={{
@@ -261,6 +262,8 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
           top: `${originTop}%`,
           width: '300%',
           height: '300%',
+          // Invert Voyager → dark canvas + light/white-grey roads; hue-rotate keeps parks greenish
+          filter: 'invert(92%) hue-rotate(180deg) brightness(0.95) contrast(1.08) saturate(0.9)',
         }}
       >
         {range.map((dy) =>
@@ -284,8 +287,6 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
                   width: `${100 / 3}%`,
                   height: `${100 / 3}%`,
                   imageRendering: 'auto',
-                  // Boost street-line contrast without washing out greenery/buildings
-                  filter: 'contrast(1.12) saturate(1.08) brightness(0.98)',
                 }}
                 loading="eager"
                 decoding="async"
@@ -296,10 +297,9 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
           }),
         )}
       </div>
-      {/* Very light cool wash — keeps roads dark-grey and parks/buildings readable */}
       <div
         className="pointer-events-none absolute inset-0"
-        style={{ background: 'rgba(8, 18, 28, 0.04)' }}
+        style={{ background: 'rgba(0, 0, 0, 0.08)' }}
       />
     </div>
   )
@@ -361,7 +361,7 @@ export default function FreeStreetMap({
         width: '100%',
         height: '100%',
         minHeight: 200,
-        background: '#D6E0E8',
+        background: '#0A0F14',
         ...style,
       }}
     >
@@ -373,17 +373,17 @@ export default function FreeStreetMap({
             points={routeSvgPoints}
             fill="none"
             stroke="#FFFFFF"
-            strokeWidth="3.2"
+            strokeWidth="3.4"
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
-            opacity={0.95}
+            opacity={0.98}
           />
           <polyline
             points={routeSvgPoints}
             fill="none"
-            stroke="#0C8A3E"
-            strokeWidth="2"
+            stroke="#C4D600"
+            strokeWidth="2.1"
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
@@ -392,8 +392,8 @@ export default function FreeStreetMap({
           <polyline
             points={routeSvgPoints}
             fill="none"
-            stroke="#E53935"
-            strokeWidth="0.7"
+            stroke="#FF4D4F"
+            strokeWidth="0.75"
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray="2 1.4"
