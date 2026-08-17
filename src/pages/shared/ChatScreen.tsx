@@ -448,7 +448,11 @@ export default function ChatScreen() {
             </p>
           ) : (
             <p className="flex items-center gap-1 text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              {lastOwnMsg?.read_at ? <><CheckCheck size={11} style={{ color: '#0C8A3E' }} /> Seen</> : lastOwnMsg ? <><Check size={11} /> Delivered</> : 'Chat'}
+              {lastOwnMsg?.read_at
+                ? <><CheckCheck size={12} style={{ color: '#34B7F1' }} /> Seen</>
+                : lastOwnMsg
+                  ? <><Check size={11} /> Delivered</>
+                  : 'Chat'}
             </p>
           )}
         </div>
@@ -730,8 +734,8 @@ export default function ChatScreen() {
                     style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.3)' }}>
                     {timeOfDay(msg.created_at)}
                     {isOwn && (
-                      <span style={{ color: msg.read_at ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)' }}>
-                        {msg.read_at ? <CheckCheck size={12} /> : <Check size={12} />}
+                      <span title={msg.read_at ? 'Seen' : 'Delivered'} style={{ color: msg.read_at ? '#34B7F1' : 'rgba(0,0,0,0.45)' }}>
+                        {msg.read_at ? <CheckCheck size={14} /> : <Check size={14} />}
                       </span>
                     )}
                   </div>

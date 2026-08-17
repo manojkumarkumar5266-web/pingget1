@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { invokeEdgeFunction } from '../lib/invokeEdgeFunction'
+import { uploadDpSignupDocuments } from '../lib/uploadDpSignupDocs'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 import { pg } from '../design/tokens'
@@ -400,19 +401,13 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
         const { data: existingProfile } = await supabase
           .from('profiles').select('id, role').ilike('email', email.trim()).maybeSingle()
         if (existingProfile) {
-          // Account was created — proceed to upload docs and show success
-          const userId = existingProfile.id
-          if (photoFile) {
-            const photoUrl = await uploadFile(photoFile, `${userId}/photo`, 'avatars')
-            if (photoUrl) await supabase.from('profiles').update({ photo_url: photoUrl }).eq('id', userId)
-          }
-          if (aadhaarFile) {
-            const aadhaarUrl = await uploadFile(aadhaarFile, `${userId}/aadhaar`, 'media')
-            if (aadhaarUrl) await supabase.from('delivery_partners').update({ aadhaar_url: aadhaarUrl }).eq('user_id', userId)
-          }
-          if (needsLicense && licenseFile) {
-            const licenseUrl = await uploadFile(licenseFile, `${userId}/license`, 'media')
-            if (licenseUrl) await supabase.from('delivery_partners').update({ driving_license_url: licenseUrl }).eq('user_id', userId)
+          const up = await uploadDpSignupDocuments({
+            email, password, userId: existingProfile.id,
+            photoFile, aadhaarFile, licenseFile, needsLicense,
+          })
+          if (!up.ok) {
+            setError(up.error || 'Account created but documents failed to upload.')
+            setLoading(false); submittingRef.current = false; return
           }
           setMode('dp_success')
           return
@@ -426,19 +421,14 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
         setLoading(false); submittingRef.current = false; return
       }
 
-      const userId = signupData.user_id
-
-      if (photoFile) {
-        const photoUrl = await uploadFile(photoFile, `${userId}/photo`, 'avatars')
-        if (photoUrl) await supabase.from('profiles').update({ photo_url: photoUrl }).eq('id', userId)
-      }
-      if (aadhaarFile) {
-        const aadhaarUrl = await uploadFile(aadhaarFile, `${userId}/aadhaar`, 'media')
-        if (aadhaarUrl) await supabase.from('delivery_partners').update({ aadhaar_url: aadhaarUrl }).eq('user_id', userId)
-      }
-      if (needsLicense && licenseFile) {
-        const licenseUrl = await uploadFile(licenseFile, `${userId}/license`, 'media')
-        if (licenseUrl) await supabase.from('delivery_partners').update({ driving_license_url: licenseUrl }).eq('user_id', userId)
+      const userId = signupData.user_id!
+      const up = await uploadDpSignupDocuments({
+        email, password, userId,
+        photoFile, aadhaarFile, licenseFile, needsLicense,
+      })
+      if (!up.ok) {
+        setError(up.error || 'Account created but documents failed to upload.')
+        setLoading(false); submittingRef.current = false; return
       }
 
       setMode('dp_success')

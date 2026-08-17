@@ -8,10 +8,12 @@ import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/Vi
 import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
-import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck } from 'lucide-react'
+import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck, Pencil } from 'lucide-react'
 import { pg } from '../../design/tokens'
 import { CTA, Surface, MobileFrame } from '../../design/primitives'
 import NeedHelpCard from '../../components/NeedHelpCard'
+import AddressPicker, { formatAddress, type SavedAddress } from '../../components/AddressPicker'
+import { openRequestChatRoom } from '../../lib/openRequestChat'
 
 function vehicleIcon(v: string | null | undefined) {
   const s = (v || '').toLowerCase()
@@ -40,6 +42,7 @@ export default function LiveTrackingPage() {
   const [ratingStars, setRatingStars] = useState(0)
   const [ratingFeedback, setRatingFeedback] = useState('')
   const [ratingSubmitting, setRatingSubmitting] = useState(false)
+  const [changingAddress, setChangingAddress] = useState(false)
   const lastEtaWrite = useRef(0)
 
   useEffect(() => {
@@ -162,9 +165,15 @@ export default function LiveTrackingPage() {
   const mapMarkers: MapMarker[] = useMemo(() => {
     const list: MapMarker[] = []
     if (userPos) list.push({ id: 'user', position: userPos, kind: 'user' })
-    if (dpLive) list.push({ id: 'dp', position: dpLive, kind: 'bike', label: dpProfile?.full_name?.split(' ')[0] })
+    if (dpLive) list.push({
+      id: 'dp',
+      position: dpLive,
+      kind: 'bike',
+      label: dpProfile?.full_name?.split(' ')[0],
+      vehicleType: dpData?.vehicle_type,
+    })
     return list
-  }, [userPos, dpLive, dpProfile?.full_name])
+  }, [userPos, dpLive, dpProfile?.full_name, dpData?.vehicle_type])
 
   const mapCenter = useMemo(() => {
     if (dpLive && userPos) {
@@ -241,9 +250,48 @@ export default function LiveTrackingPage() {
   }, [payPhase])
 
   const confirmDelivery = async () => {
-    await supabase.from('requests').update({ status: 'completed' }).eq('id', requestId)
-    await supabase.from('orders').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('request_id', requestId)
+    const now = new Date().toISOString()
+    // Prefer status update; delivery_accepted_at is optional on older DBs
+    const { error } = await supabase.from('requests').update({
+      status: 'completed',
+      delivery_accepted_at: now,
+    }).eq('id', requestId)
+    if (error) {
+      await supabase.from('requests').update({ status: 'completed' }).eq('id', requestId)
+    }
+    await supabase.from('orders').update({ status: 'completed', completed_at: now }).eq('request_id', requestId)
+    setRequest(prev => prev ? { ...prev, status: 'completed' } : prev)
     setPayPhase('awaiting_user_payment')
+  }
+
+  const applyDeliveryAddress = async (addr: SavedAddress) => {
+    const line = formatAddress(addr)
+    const { error } = await supabase.from('requests').update({
+      delivery_address: line,
+      delivery_lat: addr.lat,
+      delivery_lng: addr.lng,
+    }).eq('id', requestId)
+    if (error) {
+      alert(error.message || 'Could not update address')
+      return
+    }
+    setRequest(prev => prev ? {
+      ...prev,
+      delivery_address: line,
+      delivery_lat: addr.lat,
+      delivery_lng: addr.lng,
+    } : prev)
+    setChangingAddress(false)
+    if (request?.accepted_dp_id) {
+      await supabase.from('notifications').insert({
+        user_id: request.accepted_dp_id,
+        title: 'Delivery address updated',
+        body: `Customer updated delivery address to: ${line}`,
+        type: 'order_status',
+        related_id: requestId,
+      })
+      kickPushDelivery()
+    }
   }
 
   const markPaymentCompleted = async () => {
@@ -535,8 +583,13 @@ export default function LiveTrackingPage() {
                         <Phone size={18} />
                       </button>
                       <button type="button" onClick={async () => {
-                        const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
-                        if (data) navigate(`/app/chat/${data.id}`)
+                        if (!request || !request.accepted_dp_id || !request.user_id) return
+                        const roomId = await openRequestChatRoom({
+                          requestId: request.id,
+                          userId: request.user_id,
+                          dpId: request.accepted_dp_id,
+                        })
+                        if (roomId) navigate(`/app/chat/${roomId}`)
                       }} className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0"
                         style={{ background: pg.lime, color: pg.limeText }}>
                         <MessageCircle size={18} />
@@ -547,12 +600,41 @@ export default function LiveTrackingPage() {
               </Surface>
 
               <Surface className="mb-4 p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <MapPin size={16} className="text-red-400" />
-                  <p className="text-xs font-bold uppercase tracking-wider" style={{ color: pg.text3 }}>Delivery Address</p>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin size={16} className="text-red-400" />
+                    <p className="text-xs font-bold uppercase tracking-wider" style={{ color: pg.text3 }}>Delivery Address</p>
+                  </div>
+                  {!isCompleted && (
+                    <button
+                      type="button"
+                      onClick={() => setChangingAddress(true)}
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold"
+                      style={{ background: pg.limeDim, color: pg.lime }}
+                    >
+                      <Pencil size={12} /> Change
+                    </button>
+                  )}
                 </div>
                 <p className="text-sm leading-relaxed" style={{ color: pg.text }}>{request.delivery_address || 'Not specified'}</p>
               </Surface>
+
+              {changingAddress && (
+                <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+                  <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto rounded-[24px]" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
+                    <div className="flex items-center justify-between px-4 pt-4">
+                      <p className="text-sm font-extrabold">Update delivery address</p>
+                      <button type="button" onClick={() => setChangingAddress(false)} className="text-xs font-bold" style={{ color: pg.text3 }}>Close</button>
+                    </div>
+                    <div className="p-4">
+                      <AddressPicker
+                        defaultOpenList
+                        onSelect={(addr) => { void applyDeliveryAddress(addr) }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="mb-4">
                 <NeedHelpCard requestId={requestId} chatBasePath="/app/support" />
@@ -589,34 +671,37 @@ export default function LiveTrackingPage() {
           )}
 
           {isDelivered && payPhase === 'idle' && request.status !== 'completed' && (
-            <div className="mb-4 rounded-2xl border border-green-500/20 bg-green-500/5 p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <PackageCheck size={20} className="text-green-400" />
-                <div>
-                  <p className="font-bold text-[#F5F7F6]">Order has been delivered!</p>
-                  <p className="text-xs text-black/40">Confirm receipt to continue</p>
-                </div>
+            <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
+                <PackageCheck size={40} className="mx-auto mb-3 text-green-400" />
+                <p className="text-lg font-extrabold text-[#F5F7F6]">Order delivered</p>
+                <p className="mt-1 mb-5 text-sm" style={{ color: pg.text3 }}>Please accept delivery to continue</p>
+                <CTA type="button" onClick={confirmDelivery} className="w-full" style={{ background: pg.success, color: '#fff', boxShadow: 'none' }}>
+                  Accept Delivery
+                </CTA>
               </div>
-              <CTA type="button" onClick={confirmDelivery} className="w-full" style={{ background: pg.success, color: '#fff', boxShadow: 'none' }}>
-                Accept Delivery
-              </CTA>
             </div>
           )}
 
           {(payPhase === 'awaiting_user_payment' || (request.status === 'completed' && payPhase === 'idle')) && (
-            <Surface accent className="mb-4 p-4">
-              <p className="mb-3 text-sm" style={{ color: pg.text2 }}>Confirm you have paid your partner.</p>
-              <CTA type="button" onClick={markPaymentCompleted} className="w-full">
-                Payment Completed
-              </CTA>
-            </Surface>
+            <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
+                <p className="text-lg font-extrabold text-[#F5F7F6]">Payment completed?</p>
+                <p className="mt-1 mb-5 text-sm" style={{ color: pg.text3 }}>Confirm you have paid your delivery partner</p>
+                <CTA type="button" onClick={markPaymentCompleted} className="w-full">
+                  Payment Completed
+                </CTA>
+              </div>
+            </div>
           )}
 
           {payPhase === 'awaiting_dp_accept' && (
-            <Surface accent className="mb-4 p-4 text-center">
-              <p className="font-extrabold">Waiting for partner to Accept Payment…</p>
-              <p className="mt-1 text-xs" style={{ color: pg.text3 }}>You will rate the delivery next</p>
-            </Surface>
+            <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
+                <p className="font-extrabold text-[#F5F7F6]">Waiting for partner…</p>
+                <p className="mt-2 text-sm" style={{ color: pg.text3 }}>Partner will Accept Payment next — then you can rate</p>
+              </div>
+            </div>
           )}
 
           {isCancelled && (

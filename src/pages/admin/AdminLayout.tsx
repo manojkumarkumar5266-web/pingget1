@@ -48,9 +48,16 @@ export default function AdminLayout() {
       supabase.from('admin_notifications').update({ is_read: true, read_at: new Date().toISOString() }).eq('is_read', false)
         .then(() => setUnreadCount(0))
     }
-  }, [location.pathname])
+  }, [location.pathname, unreadCount])
   useEffect(() => { if (location.pathname === '/admin/dps') setPendingDps(0) }, [location.pathname])
   useEffect(() => { if (location.pathname === '/admin/payments') setPendingReceipts(0) }, [location.pathname])
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin/support') && supportUnread > 0) {
+      // Mark support chats read when Support page is opened
+      supabase.from('support_chats').update({ admin_unread: 0 }).gt('admin_unread', 0)
+        .then(() => setSupportUnread(0))
+    }
+  }, [location.pathname, supportUnread])
   useEffect(() => { setSidebarOpen(false) }, [location.pathname])
 
   const navItems = [
@@ -72,7 +79,7 @@ export default function AdminLayout() {
 
   const Sidebar = () => (
     <div className="flex h-full flex-col" style={{ background: pg.surface, color: pg.ink }}>
-      <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: `1px solid ${pg.line}` }}>
+      <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: `1px solid ${pg.headerBorder}`, background: pg.headerElevated }}>
         <div>
           <BrandWordmark size="sm" showTagline={false} align="left" className="mb-1" />
           <p className="text-sm font-extrabold">Admin Console</p>
@@ -142,7 +149,7 @@ export default function AdminLayout() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-3 md:hidden" style={{ background: 'rgba(0,0,0,0.95)', borderBottom: `1px solid ${pg.line}` }}>
+        <div className="flex items-center gap-3 px-4 py-3 md:hidden" style={{ background: pg.header, borderBottom: `1px solid ${pg.headerBorder}`, boxShadow: '0 8px 24px rgba(12,138,62,0.12)' }}>
           <button type="button" onClick={() => setSidebarOpen(!sidebarOpen)} className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.surface2, color: pg.ink }}>
             {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </button>

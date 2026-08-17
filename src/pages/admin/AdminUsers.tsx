@@ -224,6 +224,9 @@ function UserActionDrawer({
           </div>
 
           <InfoPanel className="mb-4">
+            <InfoRow label="Email" value={(user as any).email || 'Not set'} />
+            <InfoRow label="Phone" value={user.phone || 'Not set'} />
+            <InfoRow label="Pincode" value={(user as any).pincode || 'Not set'} />
             <InfoRow label="City" value={user.city || 'Not set'} />
             <InfoRow label="Address" value={user.address || 'Not set'} />
             <InfoRow label="Preferred Language" value={(user as any).preferred_language || 'en'} />

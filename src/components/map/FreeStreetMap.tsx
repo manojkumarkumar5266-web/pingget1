@@ -1,11 +1,14 @@
 import { useMemo, useRef } from 'react'
-import type { LatLng } from '../../lib/mapUtils'
+import type { LatLng, VehicleType } from '../../lib/mapUtils'
+import { normalizeVehicle } from '../../lib/mapUtils'
 
 export type MapMarker = {
   id: string
   position: LatLng
   kind?: 'user' | 'bike' | 'pickup' | 'destination' | 'dp'
   label?: string
+  /** DP vehicle — drives map pin art */
+  vehicleType?: string | null
 }
 
 type Props = {
@@ -87,27 +90,120 @@ function RedUserPin() {
   )
 }
 
-/** Coded bike marker — no PNG / no broken checkerboard */
-function BikePin({ size = 34 }: { size?: number }) {
+function PinShell({ color, children, size = 40 }: { color: string; children: React.ReactNode; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden className="drop-shadow-md">
-      <circle cx="20" cy="20" r="19" fill="#0C8A3E" />
-      <circle cx="20" cy="20" r="19" fill="none" stroke="#140F05" strokeOpacity="0.12" strokeWidth="1.5" />
-      <g fill="none" stroke="#140F05" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="20" cy="20" r="19" fill={color} />
+      <circle cx="20" cy="20" r="19" fill="none" stroke="#0B0B0B" strokeOpacity="0.2" strokeWidth="1.5" />
+      {children}
+    </svg>
+  )
+}
+
+/** Motorbike / scooter silhouette */
+function BikePin({ size = 40, color = '#0C8A3E' }: { size?: number; color?: string }) {
+  return (
+    <PinShell color={color} size={size}>
+      <g fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="26" r="5" />
         <circle cx="28" cy="26" r="5" />
         <path d="M12 26h7l4-9h5" />
         <path d="M19 26l4-9" />
         <path d="M23 17h5" />
         <path d="M16 17h4" />
-        <circle cx="20" cy="17" r="1.6" fill="#140F05" stroke="none" />
+        <circle cx="20" cy="17" r="1.6" fill="#FFFFFF" stroke="none" />
       </g>
-    </svg>
+    </PinShell>
   )
 }
 
+function BicyclePin({ size = 40 }: { size?: number }) {
+  return (
+    <PinShell color="#22c55e" size={size}>
+      <g fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="25" r="5.5" />
+        <circle cx="29" cy="25" r="5.5" />
+        <path d="M11 25h6l4-8h4" />
+        <path d="M17 25l3-8" />
+        <path d="M21 17h6" />
+        <path d="M24 17v-3" />
+        <path d="M14 17h5" />
+      </g>
+    </PinShell>
+  )
+}
+
+function CarPin({ size = 40 }: { size?: number }) {
+  return (
+    <PinShell color="#f59e0b" size={size}>
+      <g fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 24h24" />
+        <path d="M10 24l2-8h16l2 8" />
+        <path d="M12 16l2-4h12l2 4" />
+        <circle cx="13" cy="24" r="2.5" fill="#FFFFFF" stroke="none" />
+        <circle cx="27" cy="24" r="2.5" fill="#FFFFFF" stroke="none" />
+        <path d="M14 16h4M22 16h4" />
+      </g>
+    </PinShell>
+  )
+}
+
+function AutoPin({ size = 40 }: { size?: number }) {
+  return (
+    <PinShell color="#ef4444" size={size}>
+      <g fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 25h18" />
+        <path d="M12 25l1.5-7h13L28 25" />
+        <path d="M14 18l1.5-4h9L26 18" />
+        <circle cx="14.5" cy="25" r="2.4" fill="#FFFFFF" stroke="none" />
+        <circle cx="25.5" cy="25" r="2.4" fill="#FFFFFF" stroke="none" />
+        <path d="M20 14v4" />
+      </g>
+    </PinShell>
+  )
+}
+
+function TruckPin({ size = 40 }: { size?: number }) {
+  return (
+    <PinShell color="#6b7280" size={size}>
+      <g fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 24h16v-10H8z" />
+        <path d="M24 18h5l3 4v2h-8z" />
+        <circle cx="13" cy="26" r="2.5" fill="#FFFFFF" stroke="none" />
+        <circle cx="27" cy="26" r="2.5" fill="#FFFFFF" stroke="none" />
+      </g>
+    </PinShell>
+  )
+}
+
+function WalkingPin({ size = 40 }: { size?: number }) {
+  return (
+    <PinShell color="#8b5cf6" size={size}>
+      <g fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="20" cy="12" r="3" />
+        <path d="M20 15v7" />
+        <path d="M20 22l-4 6" />
+        <path d="M20 22l4 6" />
+        <path d="M16 18h8" />
+      </g>
+    </PinShell>
+  )
+}
+
+function VehiclePin({ vehicle, size = 40 }: { vehicle?: string | null; size?: number }) {
+  const v: VehicleType = normalizeVehicle(vehicle || null)
+  if (v === 'bicycle') return <BicyclePin size={size} />
+  if (v === 'car') return <CarPin size={size} />
+  if (v === 'auto') return <AutoPin size={size} />
+  if (v === 'truck') return <TruckPin size={size} />
+  if (v === 'walking') return <WalkingPin size={size} />
+  if (v === 'scooter') return <BikePin size={size} color="#3b82f6" />
+  return <BikePin size={size} color="#0C8A3E" />
+}
+
 /**
- * Real street / area tiles (Carto light) — roads & localities, not CSS grid lines.
+ * Street tiles — OSM standard has darker road lines than Carto Voyager.
+ * Extra contrast filter further darkens roadways for readability.
  */
 function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
   const z = Math.max(11, Math.min(16, Math.round(zoom)))
@@ -117,12 +213,11 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
   const fracX = cx - tileX
   const fracY = cy - tileY
   const range = [-1, 0, 1]
-  // Position mosaic so center of map = center lat/lng
   const originLeft = 50 - (fracX + 1) * (100 / 3)
   const originTop = 50 - (fracY + 1) * (100 / 3)
 
   return (
-    <div className="absolute inset-0 overflow-hidden" style={{ background: '#E8EEF2' }}>
+    <div className="absolute inset-0 overflow-hidden" style={{ background: '#D9E2EC' }}>
       <div
         className="absolute"
         style={{
@@ -130,6 +225,7 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
           top: `${originTop}%`,
           width: '300%',
           height: '300%',
+          filter: 'contrast(1.42) saturate(1.08) brightness(0.88)',
         }}
       >
         {range.map((dy) =>
@@ -139,6 +235,7 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
             const n = Math.pow(2, z)
             if (ty < 0 || ty >= n) return null
             const wx = ((tx % n) + n) % n
+            // Carto Voyager + contrast filter → darker, clearer road lines
             const src = `https://a.basemaps.cartocdn.com/rastertiles/voyager/${z}/${wx}/${ty}.png`
             return (
               <img
@@ -161,15 +258,6 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
           }),
         )}
       </div>
-      {/* Soft wash — keep streets readable, mute heavy greenery */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,248,220,0.12) 50%, rgba(255,255,255,0.18))',
-          mixBlendMode: 'soft-light',
-        }}
-      />
     </div>
   )
 }
@@ -201,11 +289,8 @@ export default function FreeStreetMap({
     null
   const pickup = markers.find(m => m.kind === 'pickup')?.position || null
 
-  // Cap visual area at 2–5 km — never zoom out to a 10 km frame
   const viewRadius = Math.min(Math.max(radiusMeters, 2_000), 5_000)
   const z = Math.max(13, Math.min(15, Math.round(zoom || DEFAULT_ZOOM)))
-
-  // Always prefer real street/area tiles over CSS grids or iframe lag
   const useStreetTiles = true
 
   const googleSrc = useMemo(() => {
@@ -236,7 +321,6 @@ export default function FreeStreetMap({
 
   const routeSvgPoints = useMemo(() => {
     if (!routeLine || routeLine.length < 2) return ''
-    // Downsample long OSRM polylines for SVG perf
     const step = Math.max(1, Math.floor(routeLine.length / 48))
     const pts = routeLine.filter((_, i) => i % step === 0 || i === routeLine.length - 1)
     return pts
@@ -254,7 +338,7 @@ export default function FreeStreetMap({
         width: '100%',
         height: '100%',
         minHeight: 200,
-        background: light || useStreetTiles ? '#E8EEF2' : '#0B0B0B',
+        background: light || useStreetTiles ? '#D9E2EC' : '#0B0B0B',
         ...style,
       }}
     >
@@ -338,7 +422,7 @@ export default function FreeStreetMap({
               </div>
             ) : isDp ? (
               <div className="translate-y-1/2">
-                <BikePin size={32} />
+                <VehiclePin vehicle={m.vehicleType} size={40} />
               </div>
             ) : (
               <div

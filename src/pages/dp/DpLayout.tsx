@@ -101,7 +101,7 @@ export default function DpLayout() {
       <div className="relative mx-auto flex h-full w-full max-w-lg flex-col">
       <header
         className="z-10 px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))]"
-        style={{ background: 'rgba(0,0,0,0.94)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+        style={{ background: pg.header, borderBottom: `1px solid ${pg.headerBorder}`, boxShadow: '0 8px 24px rgba(12,138,62,0.12)' }}
       >
         <div className="flex items-center justify-between gap-3">
           <BrandWordmark size="xs" showTagline={false} align="left" />
@@ -152,7 +152,7 @@ export default function DpLayout() {
         <Dock>
           <DockItem label="Requests" icon={<Home size={20} />} active={isActive('/dp')} onClick={() => go('/dp')} />
           <DockItem label="Orders" icon={<ClipboardList size={20} />} active={isActive('/dp/orders')} onClick={() => go('/dp/orders')} />
-          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/dp/notifications')} badge={unreadCount} onClick={() => go('/dp/notifications')} />
+          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/dp/notifications')} badge={unreadCount} onClick={() => { setUnreadCount(0); go('/dp/notifications') }} />
           <DockItem label="Wallet" icon={<Wallet size={20} />} active={isActive('/dp/wallet')} onClick={() => go('/dp/wallet')} />
           <DockItem label="You" icon={<User size={20} />} active={isActive('/dp/profile')} onClick={() => go('/dp/profile')} />
         </Dock>

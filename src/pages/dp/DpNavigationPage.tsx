@@ -17,6 +17,7 @@ import { pg } from '../../design/tokens'
 import { CTA, Surface } from '../../design/primitives'
 import { uploadMediaFile } from '../../lib/uploadMedia'
 import NeedHelpCard from '../../components/NeedHelpCard'
+import { openRequestChatRoom } from '../../lib/openRequestChat'
 
 const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string; notifBody: string; icon: any }[] = [
   { from: 'accepted', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
@@ -39,6 +40,7 @@ export default function DpNavigationPage() {
 
   const [request, setRequest] = useState<DeliveryRequest | null>(null)
   const [userProfile, setUserProfile] = useState<Profile | null>(null)
+  const [vehicleType, setVehicleType] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
@@ -58,6 +60,10 @@ export default function DpNavigationPage() {
       if (req.user_id) {
         const { data: userProf } = await supabase.from('profiles').select('*').eq('id', req.user_id).maybeSingle()
         setUserProfile(userProf as Profile | null)
+      }
+      if (profile?.id) {
+        const { data: dpRow } = await supabase.from('delivery_partners').select('vehicle_type').eq('user_id', profile.id).maybeSingle()
+        setVehicleType((dpRow as any)?.vehicle_type || null)
       }
       const existingPhotos = (req as any)?.delivery_proof_photos as string[] | null
       if (existingPhotos && existingPhotos.length > 0) {
@@ -206,9 +212,9 @@ export default function DpNavigationPage() {
   const mapMarkers: MapMarker[] = useMemo(() => {
     const list: MapMarker[] = []
     if (userPos) list.push({ id: 'user', position: userPos, kind: 'user', label: 'Customer' })
-    if (dpPos) list.push({ id: 'dp', position: dpPos, kind: 'bike', label: 'You' })
+    if (dpPos) list.push({ id: 'dp', position: dpPos, kind: 'bike', label: 'You', vehicleType })
     return list
-  }, [userPos, dpPos])
+  }, [userPos, dpPos, vehicleType])
 
   const mapCenter = useMemo(() => {
     if (dpPos && userPos) return { lat: (dpPos.lat + userPos.lat) / 2, lng: (dpPos.lng + userPos.lng) / 2 }
@@ -290,11 +296,13 @@ export default function DpNavigationPage() {
   if (endPhase === 'thanks_rating') {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 px-6" style={{ background: pg.bg }}>
-        <img src={Images.thankYouRating} alt="Thank you for rating" className="w-full max-w-sm object-contain" draggable={false} style={{ background: 'transparent' }} />
-        <p className="text-center text-base font-extrabold text-[#F5F7F6]">Customer rated your delivery</p>
-        <CTA type="button" onClick={() => navigate('/dp', { replace: true })} className="w-full max-w-sm">
-          Go Home
-        </CTA>
+        <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
+          <p className="mb-2 text-lg font-extrabold text-[#F5F7F6]">Customer rated your delivery</p>
+          <p className="mb-5 text-sm" style={{ color: pg.text3 }}>Thank them to finish this order</p>
+          <CTA type="button" onClick={() => navigate('/dp', { replace: true })} className="w-full">
+            Thank You
+          </CTA>
+        </div>
       </div>
     )
   }
@@ -401,8 +409,13 @@ export default function DpNavigationPage() {
                   <Phone size={16} />
                 </button>
                 <button type="button" onClick={async () => {
-                  const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', requestId).maybeSingle()
-                  if (data) navigate(`/dp/chat/${data.id}`)
+                  if (!request || !profile?.id || !request.user_id) return
+                  const roomId = await openRequestChatRoom({
+                    requestId: request.id,
+                    userId: request.user_id,
+                    dpId: profile.id,
+                  })
+                  if (roomId) navigate(`/dp/chat/${roomId}`)
                 }} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl active:scale-95 disabled:opacity-30"
                   style={{ background: pg.lime, color: pg.limeText }}
                   disabled={isCompleted}>
@@ -509,45 +522,47 @@ export default function DpNavigationPage() {
           )}
 
           {(!!request.payment_completed_at || request.status === 'cash_received') && !request.payment_accepted_at && (
-            <Surface accent className="p-4">
-              <p className="mb-1 text-sm font-extrabold" style={{ color: pg.lime }}>Payment completed by customer</p>
-              <p className="mb-3 text-xs" style={{ color: pg.text3 }}>Accept payment to continue — customer will rate next</p>
-              <CTA
-                type="button"
-                onClick={async () => {
-                  const now = new Date().toISOString()
-                  const { data: rpcData, error: rpcErr } = await supabase.rpc('mark_dp_payment_accepted', {
-                    p_request_id: requestId,
-                  })
-                  if (!rpcErr && rpcData && (rpcData as any).ok !== false) {
-                    const acceptedAt = (rpcData as any).payment_accepted_at || now
-                    setRequest(prev => prev ? ({ ...prev, payment_accepted_at: acceptedAt }) : prev)
-                  } else {
-                    const { error } = await supabase.from('requests').update({
-                      payment_accepted_at: now,
-                    }).eq('id', requestId)
-                    if (error) {
-                      console.error('[DpNav] payment_accepted_at update failed:', rpcErr || error)
-                      alert('Could not accept payment. Please try again.')
-                      return
+            <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
+                <p className="mb-1 text-lg font-extrabold" style={{ color: pg.lime }}>Payment completed</p>
+                <p className="mb-5 text-sm" style={{ color: pg.text3 }}>Customer marked payment complete. Accept to continue.</p>
+                <CTA
+                  type="button"
+                  onClick={async () => {
+                    const now = new Date().toISOString()
+                    const { data: rpcData, error: rpcErr } = await supabase.rpc('mark_dp_payment_accepted', {
+                      p_request_id: requestId,
+                    })
+                    if (!rpcErr && rpcData && (rpcData as any).ok !== false) {
+                      const acceptedAt = (rpcData as any).payment_accepted_at || now
+                      setRequest(prev => prev ? ({ ...prev, payment_accepted_at: acceptedAt }) : prev)
+                    } else {
+                      const { error } = await supabase.from('requests').update({
+                        payment_accepted_at: now,
+                      }).eq('id', requestId)
+                      if (error) {
+                        console.error('[DpNav] payment_accepted_at update failed:', rpcErr || error)
+                        alert('Could not accept payment. Please try again.')
+                        return
+                      }
+                      setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now }) : prev)
                     }
-                    setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now }) : prev)
-                  }
-                  await supabase.from('notifications').insert({
-                    user_id: request.user_id,
-                    title: 'Payment Accepted',
-                    body: 'Partner accepted your payment. Please rate the delivery.',
-                    type: 'payment_accepted',
-                    related_id: requestId,
-                  })
-                  kickPushDelivery()
-                  setEndPhase('payment_accepted')
-                }}
-                className="w-full"
-              >
-                Accept Payment
-              </CTA>
-            </Surface>
+                    await supabase.from('notifications').insert({
+                      user_id: request.user_id,
+                      title: 'Payment Accepted',
+                      body: 'Partner accepted your payment. Please rate the delivery.',
+                      type: 'payment_accepted',
+                      related_id: requestId,
+                    })
+                    kickPushDelivery()
+                    setEndPhase('payment_accepted')
+                  }}
+                  className="w-full"
+                >
+                  Accept Payment
+                </CTA>
+              </div>
+            </div>
           )}
         </div>
       </div>

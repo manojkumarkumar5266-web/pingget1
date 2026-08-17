@@ -87,6 +87,7 @@ export default function SearchingMapPage() {
         id: dp.dp_user_id,
         position: { lat: dp.current_lat, lng: dp.current_lng },
         kind: 'bike',
+        vehicleType: dp.vehicle_type,
       })
     })
     return list
