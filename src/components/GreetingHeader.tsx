@@ -41,7 +41,7 @@ export default function GreetingHeader({
           </BrandPersonName>
           <div
             className="mt-2.5 h-[2px] w-10 rounded-full"
-            style={{ background: pg.lime }}
+            style={{ background: pg.gold }}
           />
         </div>
         {aside ? <div className="max-w-[52%] shrink-0 pt-0.5 sm:max-w-[48%]">{aside}</div> : null}

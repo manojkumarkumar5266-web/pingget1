@@ -4,11 +4,9 @@ import { useAuth } from '../context'
 import { supabase } from '../lib/supabase'
 import { ErrorBanner } from './ui'
 import { SELECTED_ADDRESS_KEY } from '../lib/customImages'
-import { MapPin, Home, Plus, X, Edit2, Trash2, Navigation, Map } from 'lucide-react'
+import { MapPin, Home, Plus, X, Edit2, Trash2 } from 'lucide-react'
 import { pg } from '../design/tokens'
 import { Surface, CTA, IconButton, SectionLabel } from '../design/primitives'
-import FreeStreetMap from './map/FreeStreetMap'
-import { reverseGeocode, searchPlace } from '../lib/reverseGeocode'
 
 export type SavedAddress = {
   id: string
@@ -50,6 +48,43 @@ function AddressFormHeader({ title, onClose }: { title: string; onClose: () => v
   )
 }
 
+function ManualAddressFields({
+  addrHouse, setAddrHouse,
+  addrFlat, setAddrFlat,
+  addrBuilding, setAddrBuilding,
+  addrLandmark, setAddrLandmark,
+  addrStreet, setAddrStreet,
+  addrArea, setAddrArea,
+  addrCity, setAddrCity,
+  addrPincode, setAddrPincode,
+}: {
+  addrHouse: string; setAddrHouse: (v: string) => void
+  addrFlat: string; setAddrFlat: (v: string) => void
+  addrBuilding: string; setAddrBuilding: (v: string) => void
+  addrLandmark: string; setAddrLandmark: (v: string) => void
+  addrStreet: string; setAddrStreet: (v: string) => void
+  addrArea: string; setAddrArea: (v: string) => void
+  addrCity: string; setAddrCity: (v: string) => void
+  addrPincode: string; setAddrPincode: (v: string) => void
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <div><label className="label">House No.</label><input className="input" value={addrHouse} onChange={e => setAddrHouse(e.target.value)} /></div>
+        <div><label className="label">Flat No.</label><input className="input" value={addrFlat} onChange={e => setAddrFlat(e.target.value)} /></div>
+      </div>
+      <div><label className="label">Building</label><input className="input" value={addrBuilding} onChange={e => setAddrBuilding(e.target.value)} /></div>
+      <div><label className="label">Landmark</label><input className="input" value={addrLandmark} onChange={e => setAddrLandmark(e.target.value)} /></div>
+      <div><label className="label">Street</label><input className="input" value={addrStreet} onChange={e => setAddrStreet(e.target.value)} /></div>
+      <div><label className="label">Area</label><input className="input" value={addrArea} onChange={e => setAddrArea(e.target.value)} /></div>
+      <div className="grid grid-cols-2 gap-2">
+        <div><label className="label">City</label><input className="input" value={addrCity} onChange={e => setAddrCity(e.target.value)} /></div>
+        <div><label className="label">PIN</label><input className="input" value={addrPincode} onChange={e => setAddrPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} maxLength={6} inputMode="numeric" /></div>
+      </div>
+    </div>
+  )
+}
+
 /** Compact address picker for User Home — selection persisted for Instant/Advance requests. */
 export default function AddressPicker({
   compact = true,
@@ -84,12 +119,6 @@ export default function AddressPicker({
   const [addrArea, setAddrArea] = useState('')
   const [addrCity, setAddrCity] = useState('')
   const [addrPincode, setAddrPincode] = useState('')
-  const [addrLat, setAddrLat] = useState<number | null>(null)
-  const [addrLng, setAddrLng] = useState<number | null>(null)
-  const [showMapPick, setShowMapPick] = useState(false)
-  const [geoLoading, setGeoLoading] = useState(false)
-  const [placeQuery, setPlaceQuery] = useState('')
-  const [placeHits, setPlaceHits] = useState<{ lat: number; lng: number; display: string }[]>([])
 
   const fetchAddresses = async () => {
     if (!profile?.id) return
@@ -129,7 +158,7 @@ export default function AddressPicker({
   const resetForm = () => {
     setAddrHouse(''); setAddrFlat(''); setAddrBuilding(''); setAddrLandmark('')
     setAddrStreet(''); setAddrArea(''); setAddrCity(''); setAddrPincode('')
-    setAddrLat(null); setAddrLng(null); setEditingId(null); setError(null)
+    setEditingId(null); setError(null)
   }
 
   const startEdit = (addr: SavedAddress) => {
@@ -138,7 +167,6 @@ export default function AddressPicker({
     setAddrBuilding(addr.building_name || ''); setAddrLandmark(addr.landmark || '')
     setAddrStreet(addr.street || ''); setAddrArea(addr.area || '')
     setAddrCity(addr.city || ''); setAddrPincode(addr.pincode || '')
-    setAddrLat(addr.lat); setAddrLng(addr.lng)
     setShowList(false); setShowForm(true)
   }
 
@@ -152,55 +180,10 @@ export default function AddressPicker({
     await fetchAddresses()
   }
 
-  const applyGeo = async (lat: number, lng: number) => {
-    setAddrLat(lat)
-    setAddrLng(lng)
-    setGeoLoading(true)
-    try {
-      const parts = await reverseGeocode(lat, lng)
-      if (parts) {
-        if (parts.house_no) setAddrHouse(parts.house_no)
-        if (parts.street) setAddrStreet(parts.street)
-        if (parts.area) setAddrArea(parts.area)
-        if (parts.city) setAddrCity(parts.city)
-        if (parts.pincode) setAddrPincode(parts.pincode)
-        if (parts.landmark) setAddrLandmark(parts.landmark)
-        setError(null)
-      }
-    } catch {
-      setError('Could not read area from map — fill pincode and area manually.')
-    } finally {
-      setGeoLoading(false)
-    }
-  }
-
-  const pickLocation = () => {
-    if (!navigator.geolocation) { setError('Location not supported'); return }
-    setGeoLoading(true)
-    navigator.geolocation.getCurrentPosition(
-      async pos => {
-        await applyGeo(pos.coords.latitude, pos.coords.longitude)
-      },
-      () => { setGeoLoading(false); setError('Could not get your location') },
-      { enableHighAccuracy: true, timeout: 12000 }
-    )
-  }
-
-  const runPlaceSearch = async () => {
-    setGeoLoading(true)
-    try {
-      const hits = await searchPlace(placeQuery)
-      setPlaceHits(hits)
-      if (hits.length === 0) setError('No matching place. Try pincode or area name.')
-    } finally {
-      setGeoLoading(false)
-    }
-  }
-
   const saveAddress = async () => {
     if (!profile?.id) return
     if (!addrHouse.trim() && !addrFlat.trim() && !addrBuilding.trim() && !addrArea.trim() && !addrStreet.trim()) {
-      setError('Please enter house/area or pick a map location'); return
+      setError('Please enter house, flat, building, or area'); return
     }
     if (!addrPincode || addrPincode.length !== 6) {
       setError('Please enter a 6-digit pincode'); return
@@ -220,8 +203,8 @@ export default function AddressPicker({
       area: addrArea.trim() || null,
       city: addrCity.trim() || null,
       pincode: addrPincode,
-      lat: addrLat,
-      lng: addrLng,
+      lat: null,
+      lng: null,
     }
     let data: SavedAddress | null = null
     if (editingId) {
@@ -243,95 +226,89 @@ export default function AddressPicker({
     }
   }
 
-  const mapTools = (
-    <div className="space-y-2">
-      <CTA type="button" variant="secondary" onClick={pickLocation} className="w-full !min-h-[48px] border-dashed" style={{ border: `1.5px dashed rgba(196,214,0,0.35)`, color: pg.lime, background: pg.limeDim }}>
-        <Navigation size={15} /> {geoLoading ? 'Reading location…' : addrLat ? 'Refresh current location' : 'Use current location'}
-      </CTA>
-      <CTA type="button" variant="secondary" onClick={() => setShowMapPick(true)} className="w-full !min-h-[48px]" style={{ border: `1px solid ${pg.line}`, color: pg.gold, background: pg.goldDim }}>
-        <Map size={15} /> Other — add location on map
-      </CTA>
-      {addrLat != null && addrLng != null && (
-        <p className="text-[11px]" style={{ color: pg.text4 }}>Pin set · {addrLat.toFixed(5)}, {addrLng.toFixed(5)}</p>
-      )}
-    </div>
+  const fieldProps = {
+    addrHouse, setAddrHouse,
+    addrFlat, setAddrFlat,
+    addrBuilding, setAddrBuilding,
+    addrLandmark, setAddrLandmark,
+    addrStreet, setAddrStreet,
+    addrArea, setAddrArea,
+    addrCity, setAddrCity,
+    addrPincode, setAddrPincode,
+  }
+
+  const formBody = (
+    <Surface className="p-4">
+      <AddressFormHeader title={editingId ? 'Edit Address' : 'New Address'} onClose={() => { setShowForm(false); resetForm() }} />
+      <div className="space-y-3">
+        <ManualAddressFields {...fieldProps} />
+        {error && <ErrorBanner message={error} />}
+        <CTA type="button" onClick={saveAddress} disabled={saving} className="w-full">
+          {saving ? 'Saving...' : 'Save Address'}
+        </CTA>
+      </div>
+    </Surface>
   )
 
-  const mapPickerModal = showMapPick ? createPortal(
-    <div className="fixed inset-0 z-[260] flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4" onClick={() => setShowMapPick(false)}>
-      <div className="flex h-[88dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] sm:rounded-[28px]" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${pg.line}` }}>
-          <p className="text-sm font-extrabold">Pick location</p>
-          <IconButton onClick={() => setShowMapPick(false)} className="!h-9 !w-9"><X size={16} /></IconButton>
-        </div>
-        <div className="space-y-2 px-4 py-3">
-          <div className="flex gap-2">
-            <input className="input flex-1" placeholder="Search area, pincode, landmark" value={placeQuery} onChange={e => setPlaceQuery(e.target.value)} />
-            <CTA type="button" className="!min-h-[44px] !px-3" onClick={() => void runPlaceSearch()} disabled={geoLoading}>Search</CTA>
-          </div>
-          {placeHits.length > 0 && (
-            <div className="max-h-28 space-y-1 overflow-y-auto">
-              {placeHits.map(h => (
-                <button key={`${h.lat}-${h.lng}-${h.display}`} type="button" className="w-full rounded-xl px-3 py-2 text-left text-xs" style={{ background: pg.surface2, color: pg.text2 }} onClick={() => { void applyGeo(h.lat, h.lng); setPlaceHits([]) }}>
-                  {h.display}
-                </button>
-              ))}
-            </div>
-          )}
-          <p className="text-[11px]" style={{ color: pg.text4 }}>Tap the map to drop a pin. Pincode and area fill automatically — you can still edit them.</p>
-        </div>
-        <div className="relative min-h-0 flex-1">
-          <FreeStreetMap
-            center={addrLat != null && addrLng != null ? { lat: addrLat, lng: addrLng } : null}
-            hideRadius
-            hideBadge
-            markers={addrLat != null && addrLng != null ? [{ id: 'pick', position: { lat: addrLat, lng: addrLng }, kind: 'user' }] : []}
-            onPick={(ll) => { void applyGeo(ll.lat, ll.lng) }}
-          />
-        </div>
-        <div className="p-4">
-          <CTA type="button" className="w-full" onClick={() => setShowMapPick(false)} disabled={geoLoading}>
-            {geoLoading ? 'Filling address…' : 'Use this pin'}
-          </CTA>
-        </div>
+  const listBody = (showDone: boolean) => (
+    <Surface className="p-4">
+      <AddressFormHeader title="Select Address" onClose={() => setShowList(false)} />
+      <div className="mb-3 max-h-64 space-y-2 overflow-y-auto">
+        {addresses.map(addr => (
+          <Surface
+            key={addr.id}
+            accent={selectedAddressId === addr.id}
+            className="!flex items-start gap-2 p-3"
+            style={selectedAddressId !== addr.id ? { background: pg.bgElevated } : undefined}
+          >
+            <button type="button" className="min-w-0 flex-1 text-left" onClick={() => pickAddress(addr)}>
+              <p className="truncate text-sm font-extrabold">{addr.label || 'Address'}</p>
+              <p className="truncate text-xs" style={{ color: pg.text3 }}>{formatAddress(addr)}</p>
+            </button>
+            <IconButton onClick={() => startEdit(addr)} className="!h-8 !w-8 !rounded-xl">
+              <Edit2 size={12} />
+            </IconButton>
+            <button
+              type="button"
+              onClick={() => deleteAddress(addr.id)}
+              className="flex h-8 w-8 items-center justify-center rounded-xl transition active:scale-90"
+              style={{ background: 'rgba(255,77,79,0.12)', border: '1px solid rgba(255,77,79,0.2)', color: pg.danger }}
+            >
+              <Trash2 size={12} />
+            </button>
+          </Surface>
+        ))}
       </div>
-    </div>,
-    document.body,
-  ) : null
+      {addresses.length < MAX_ADDRESSES && (
+        <CTA type="button" variant="secondary" onClick={() => { resetForm(); setShowForm(true); setShowList(false) }} className="w-full">
+          <Plus size={16} /> Add New Address
+        </CTA>
+      )}
+      {showDone && (
+        <CTA type="button" className="mt-2 w-full" onClick={() => setShowList(false)}>
+          Done
+        </CTA>
+      )}
+    </Surface>
+  )
 
   if (showForm && !inline) {
     return (
-      <>
       <Surface className={`${compact ? 'mb-4' : 'mb-5'} p-4`}>
         <AddressFormHeader title={editingId ? 'Edit Address' : 'New Address'} onClose={() => { setShowForm(false); resetForm() }} />
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className="label">House No.</label><input className="input" value={addrHouse} onChange={e => setAddrHouse(e.target.value)} /></div>
-            <div><label className="label">Flat No.</label><input className="input" value={addrFlat} onChange={e => setAddrFlat(e.target.value)} /></div>
-          </div>
-          <div><label className="label">Building</label><input className="input" value={addrBuilding} onChange={e => setAddrBuilding(e.target.value)} /></div>
-          <div><label className="label">Landmark</label><input className="input" value={addrLandmark} onChange={e => setAddrLandmark(e.target.value)} /></div>
-          <div><label className="label">Street</label><input className="input" value={addrStreet} onChange={e => setAddrStreet(e.target.value)} /></div>
-          <div><label className="label">Area</label><input className="input" value={addrArea} onChange={e => setAddrArea(e.target.value)} /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className="label">City</label><input className="input" value={addrCity} onChange={e => setAddrCity(e.target.value)} /></div>
-            <div><label className="label">PIN</label><input className="input" value={addrPincode} onChange={e => setAddrPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} maxLength={6} /></div>
-          </div>
-          {mapTools}
+          <ManualAddressFields {...fieldProps} />
           {error && <ErrorBanner message={error} />}
           <CTA type="button" onClick={saveAddress} disabled={saving} className="w-full">
             {saving ? 'Saving...' : 'Save Address'}
           </CTA>
         </div>
       </Surface>
-      {mapPickerModal}
-      </>
     )
   }
 
   if (showList && !inline) {
     return (
-      <>
       <Surface className={`${compact ? 'mb-4' : 'mb-5'} p-4`}>
         <AddressFormHeader title="Select Address" onClose={() => setShowList(false)} />
         <div className="mb-3 max-h-64 space-y-2 overflow-y-auto">
@@ -361,94 +338,13 @@ export default function AddressPicker({
           ))}
         </div>
         {addresses.length < MAX_ADDRESSES && (
-          <CTA type="button" onClick={() => { resetForm(); setShowForm(true); setShowList(false); setShowMapPick(true) }} className="w-full">
-            <Plus size={16} /> Other — add location on map
-          </CTA>
-        )}
-        {addresses.length < MAX_ADDRESSES && (
-          <CTA type="button" variant="secondary" onClick={() => { resetForm(); setShowForm(true); setShowList(false) }} className="mt-2 w-full">
+          <CTA type="button" variant="secondary" onClick={() => { resetForm(); setShowForm(true); setShowList(false) }} className="w-full">
             <Plus size={16} /> Add New Address
           </CTA>
         )}
       </Surface>
-      {mapPickerModal}
-      </>
     )
   }
-
-  const popupForm = (
-    <Surface className="p-4">
-      <AddressFormHeader title={editingId ? 'Edit Address' : 'New Address'} onClose={() => { setShowForm(false); resetForm() }} />
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-2">
-          <div><label className="label">House No.</label><input className="input" value={addrHouse} onChange={e => setAddrHouse(e.target.value)} /></div>
-          <div><label className="label">Flat No.</label><input className="input" value={addrFlat} onChange={e => setAddrFlat(e.target.value)} /></div>
-        </div>
-        <div><label className="label">Building</label><input className="input" value={addrBuilding} onChange={e => setAddrBuilding(e.target.value)} /></div>
-        <div><label className="label">Landmark</label><input className="input" value={addrLandmark} onChange={e => setAddrLandmark(e.target.value)} /></div>
-        <div><label className="label">Street</label><input className="input" value={addrStreet} onChange={e => setAddrStreet(e.target.value)} /></div>
-        <div><label className="label">Area</label><input className="input" value={addrArea} onChange={e => setAddrArea(e.target.value)} /></div>
-        <div className="grid grid-cols-2 gap-2">
-          <div><label className="label">City</label><input className="input" value={addrCity} onChange={e => setAddrCity(e.target.value)} /></div>
-          <div><label className="label">PIN</label><input className="input" value={addrPincode} onChange={e => setAddrPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} maxLength={6} /></div>
-        </div>
-        {mapTools}
-        {error && <ErrorBanner message={error} />}
-        <CTA type="button" onClick={saveAddress} disabled={saving} className="w-full">
-          {saving ? 'Saving...' : 'Save Address'}
-        </CTA>
-      </div>
-    </Surface>
-  )
-
-  const popupList = (
-    <Surface className="p-4">
-      <AddressFormHeader title="Select Address" onClose={() => setShowList(false)} />
-      <div className="mb-3 max-h-64 space-y-2 overflow-y-auto">
-        {addresses.map(addr => (
-          <Surface
-            key={addr.id}
-            accent={selectedAddressId === addr.id}
-            className="!flex items-start gap-2 p-3"
-            style={selectedAddressId !== addr.id ? { background: pg.bgElevated } : undefined}
-          >
-            <button
-              type="button"
-              className="min-w-0 flex-1 text-left"
-              onClick={() => pickAddress(addr)}
-            >
-              <p className="truncate text-sm font-extrabold">{addr.label || 'Address'}</p>
-              <p className="truncate text-xs" style={{ color: pg.text3 }}>{formatAddress(addr)}</p>
-            </button>
-            <IconButton onClick={() => { startEdit(addr); setShowList(false); setShowForm(true) }} className="!h-8 !w-8 !rounded-xl">
-              <Edit2 size={12} />
-            </IconButton>
-            <button
-              type="button"
-              onClick={() => deleteAddress(addr.id)}
-              className="flex h-8 w-8 items-center justify-center rounded-xl transition active:scale-90"
-              style={{ background: 'rgba(255,77,79,0.12)', border: '1px solid rgba(255,77,79,0.2)', color: pg.danger }}
-            >
-              <Trash2 size={12} />
-            </button>
-          </Surface>
-        ))}
-      </div>
-      {addresses.length < MAX_ADDRESSES && (
-        <CTA type="button" onClick={() => { resetForm(); setShowForm(true); setShowList(false); setShowMapPick(true) }} className="w-full">
-          <Plus size={16} /> Other — add location on map
-        </CTA>
-      )}
-      {addresses.length < MAX_ADDRESSES && (
-        <CTA type="button" variant="secondary" onClick={() => { resetForm(); setShowForm(true); setShowList(false) }} className="mt-2 w-full">
-          <Plus size={16} /> Add New Address
-        </CTA>
-      )}
-      <CTA type="button" className="mt-2 w-full" onClick={() => setShowList(false)}>
-        Done
-      </CTA>
-    </Surface>
-  )
 
   const popup = inline && (showList || showForm)
     ? createPortal(
@@ -457,7 +353,7 @@ export default function AddressPicker({
           onClick={() => { setShowList(false); setShowForm(false); resetForm() }}
         >
           <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto rounded-[24px]" onClick={e => e.stopPropagation()}>
-            {showForm ? popupForm : popupList}
+            {showForm ? formBody : listBody(true)}
           </div>
         </div>,
         document.body,
@@ -475,9 +371,9 @@ export default function AddressPicker({
           >
             <div
               className={`flex shrink-0 items-center justify-center rounded-xl ${inline ? 'h-9 w-9' : 'h-11 w-11 rounded-2xl'}`}
-              style={{ background: pg.limeDim }}
+              style={{ background: pg.goldDim }}
             >
-              <Home size={inline ? 15 : 18} style={{ color: pg.lime }} />
+              <Home size={inline ? 15 : 18} style={{ color: pg.gold }} />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-extrabold uppercase tracking-[0.12em]" style={{ color: pg.text3 }}>
@@ -499,14 +395,13 @@ export default function AddressPicker({
             variant="secondary"
             onClick={() => setShowForm(true)}
             className={inline ? '!min-h-[44px] !rounded-xl !px-3 !py-2 !text-xs' : 'w-full border-dashed'}
-            style={{ border: `1.5px dashed rgba(196,214,0,0.35)`, color: pg.lime, background: pg.limeDim }}
+            style={{ border: `1.5px dashed ${pg.gold}`, color: pg.gold, background: pg.goldDim }}
           >
             <Plus size={inline ? 14 : 16} /> {inline ? 'Add address' : 'Add delivery address'}
           </CTA>
         )}
       </div>
       {popup}
-      {mapPickerModal}
     </>
   )
 }

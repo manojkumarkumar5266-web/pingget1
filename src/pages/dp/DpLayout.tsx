@@ -8,6 +8,7 @@ import { formatCurrency } from '../../lib/utils'
 import { useGps } from '../../hooks/useGps'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { BrandWordmark } from '../../components/Brand'
+import { unlockRequestAlertSound } from '../../lib/requestAlertSound'
 import { Dock, DockItem, CTA } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { fetchDpCommissionBreakdown } from '../../lib/commission'
@@ -40,6 +41,12 @@ export default function DpLayout() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [profile])
+
+  useEffect(() => {
+    const armAudio = () => { void unlockRequestAlertSound() }
+    window.addEventListener('pointerdown', armAudio)
+    return () => window.removeEventListener('pointerdown', armAudio)
+  }, [])
 
   useEffect(() => {
     if (!dpLoaded || !profile) return
@@ -95,6 +102,7 @@ export default function DpLayout() {
   const handleToggleOnline = async () => {
     if (!dp.is_online && commissionDueNow > 0) { go('/dp/wallet'); return }
     const newVal = !dp.is_online
+    if (newVal) void unlockRequestAlertSound()
     await supabase.from('delivery_partners').update({ is_online: newVal }).eq('id', dp.id)
     setDp({ ...dp, is_online: newVal })
   }
@@ -107,7 +115,7 @@ export default function DpLayout() {
         style={{ background: pg.header, borderBottom: `1px solid ${pg.headerBorder}`, boxShadow: '0 8px 24px rgba(12,138,62,0.12)' }}
       >
         <div className="flex items-center justify-between gap-3">
-          <BrandWordmark size="xs" showTagline align="left" />
+          <BrandWordmark size="xs" showTagline={false} align="left" />
           <div className="flex items-center gap-2">
             <button
               type="button"

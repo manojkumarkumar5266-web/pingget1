@@ -240,7 +240,15 @@ export default function DpHome() {
 
   useEffect(() => {
     if (dpLoading) return
-    if (!dp?.is_online) { setLoading(false); setRequests([]); setIncoming(null); return }
+    if (!dp?.is_online) {
+      try { stopAlertRef.current?.() } catch { /* ignore */ }
+      stopAlertRef.current = null
+      knownIdsRef.current = new Set()
+      setLoading(false)
+      setRequests([])
+      setIncoming(null)
+      return
+    }
     const fetchRequests = async (silent = true) => {
       if (!silent) setLoading(true)
       const { data, error } = await supabase.rpc('get_nearby_requests', { p_dp_user_id: profile!.id })
@@ -271,21 +279,19 @@ export default function DpHome() {
           user_profile: profileMap.get(r.user_id),
         }
       })
-      const primed = knownIdsRef.current.size > 0 || knownIdsRef.current.has('__primed__')
-      if (!primed) {
-        knownIdsRef.current = new Set(['__primed__', ...next.map(r => r.id)])
-      } else {
-        const fresh = next.filter(r => !knownIdsRef.current.has(r.id))
-        knownIdsRef.current = new Set(['__primed__', ...next.map(r => r.id)])
-        if (fresh.length > 0) {
-          const newest = fresh[0]
-          const kind = isAdvanceNearbyRequest(newest)
-          const rec = (newest as any).recurring_type && (newest as any).recurring_type !== 'none'
-          showToast(rec ? 'New recurring booking nearby!' : kind ? 'New advance booking nearby!' : 'New delivery request nearby!')
-          try { stopAlertRef.current?.() } catch { /* ignore */ }
-          stopAlertRef.current = playRequestAlert(REQUEST_ALERT_DURATION_MS)
-          setIncoming(newest)
-        }
+      const firstOnlineFetch = knownIdsRef.current.size === 0
+      const fresh = firstOnlineFetch
+        ? next
+        : next.filter(r => !knownIdsRef.current.has(r.id))
+      knownIdsRef.current = new Set(next.map(r => r.id))
+      if (fresh.length > 0) {
+        const newest = fresh[0]
+        const kind = isAdvanceNearbyRequest(newest)
+        const rec = (newest as any).recurring_type && (newest as any).recurring_type !== 'none'
+        showToast(rec ? 'New recurring booking nearby!' : kind ? 'New advance booking nearby!' : 'New delivery request nearby!')
+        try { stopAlertRef.current?.() } catch { /* ignore */ }
+        stopAlertRef.current = playRequestAlert(REQUEST_ALERT_DURATION_MS)
+        setIncoming(newest)
       }
       setIncoming(cur => (cur && !next.some(r => r.id === cur.id) ? null : cur))
       setRequests(next)
