@@ -146,6 +146,7 @@ export default function CreateAdvanceRequest() {
   const [recurringIntervalDays, setRecurringIntervalDays] = useState(1)
   const [recurringWeekday, setRecurringWeekday] = useState<number | null>(null)
   const [recurringMonthDay, setRecurringMonthDay] = useState<number | null>(1)
+  const [recurringMaxOccurrences, setRecurringMaxOccurrences] = useState(15)
 
   const [photoFiles, setPhotoFiles] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
@@ -536,6 +537,7 @@ export default function CreateAdvanceRequest() {
         recurring_weekday: recurringType === 'weekly' ? recurringWeekday : null,
         recurring_month_day: recurringType === 'monthly' ? recurringMonthDay : null,
         recurring_count: 0,
+        recurring_max_occurrences: recurringType !== 'none' ? recurringMaxOccurrences : null,
       }).select('id').single()
 
       if (insertError) throw insertError
@@ -812,13 +814,21 @@ export default function CreateAdvanceRequest() {
             {settings?.recurring_enabled && selectedDate && selectedSlot && (
               <RecurringSelector
                 recurringType={recurringType}
-                onTypeChange={setRecurringType}
+                onTypeChange={(t) => {
+                  setRecurringType(t)
+                  if (t === 'daily') setRecurringMaxOccurrences(15)
+                  else if (t === 'weekly') setRecurringMaxOccurrences(4)
+                  else if (t === 'monthly') setRecurringMaxOccurrences(3)
+                  else if (t === 'custom') setRecurringMaxOccurrences(15)
+                }}
                 intervalDays={recurringIntervalDays}
                 onIntervalChange={setRecurringIntervalDays}
                 weekday={recurringWeekday}
                 onWeekdayChange={setRecurringWeekday}
                 monthDay={recurringMonthDay}
                 onMonthDayChange={setRecurringMonthDay}
+                maxOccurrences={recurringMaxOccurrences}
+                onMaxOccurrencesChange={setRecurringMaxOccurrences}
                 enabled={settings.recurring_enabled}
               />
             )}
@@ -1150,13 +1160,13 @@ export default function CreateAdvanceRequest() {
                   <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#818cf8' }}>Recurring Request</p>
                 </div>
                 <p className="text-sm font-semibold text-[#F5F7F6]">
-                  {recurringType === 'daily' && 'Repeats every day'}
-                  {recurringType === 'weekly' && `Repeats every ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][recurringWeekday ?? 1]}`}
-                  {recurringType === 'monthly' && `Repeats on day ${recurringMonthDay} of each month`}
-                  {recurringType === 'custom' && `Repeats every ${recurringIntervalDays} days`}
+                  {recurringType === 'daily' && `Daily for ${recurringMaxOccurrences} days`}
+                  {recurringType === 'weekly' && `Every ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][recurringWeekday ?? 1]} · ${recurringMaxOccurrences} weeks`}
+                  {recurringType === 'monthly' && `Day ${recurringMonthDay} each month · ${recurringMaxOccurrences} months`}
+                  {recurringType === 'custom' && `Every ${recurringIntervalDays} days · ${recurringMaxOccurrences} times`}
                 </p>
                 <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  New scheduled requests will be created automatically for each occurrence.
+                  Your partner is notified for each occurrence. Discuss and pay for the series in advance when they accept.
                 </p>
               </div>
             )}

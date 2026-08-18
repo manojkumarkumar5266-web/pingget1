@@ -168,8 +168,8 @@ export default function UserHome() {
         <SkeletonList count={2} lines={3} />
       ) : activeOrders.length === 0 ? (
         <EmptyBlock
-          title="No active orders yet"
-          body="Book Instant or Advance to get your first delivery moving."
+          title="No order"
+          body="Book Instant or Advance when you need a delivery."
         />
       ) : (
         <div className="space-y-3">

@@ -4,6 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
 import { kickPushDelivery } from '../../lib/notify'
 import { ensureAdvanceTaskDayReminders } from '../../lib/advanceTaskReminders'
+import { playRequestAlert } from '../../lib/requestAlertSound'
 import { useGps } from '../../hooks/useGps'
 import { ServiceStatusBanner, SkeletonList, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency, STATUS_LABELS, STATUS_COLORS } from '../../lib/utils'
@@ -181,6 +182,7 @@ export default function DpHome() {
   const [rangeKm, setRangeKm] = useState(5)
   const rangeInitialised = useRef(false)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stopAlertRef = useRef<(() => void) | null>(null)
   const [todayOrders, setTodayOrders] = useState<Order[]>([])
   const [weekOrders, setWeekOrders] = useState<Order[]>([])
   const [totalOrders, setTotalOrders] = useState(0)
@@ -275,13 +277,33 @@ export default function DpHome() {
           if (newStatus === 'pending') showToast('New delivery request nearby!')
           else if (newStatus === 'searching_dp') showToast('New advance booking nearby!')
           else return
+          // Sound alert ~5s to grab attention (stops earlier if they leave / accept)
+          try { stopAlertRef.current?.() } catch { /* ignore */ }
+          stopAlertRef.current = playRequestAlert(5000)
           fetchRequests()
         })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' }, () => fetchRequests())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' },
+        (payload: any) => {
+          const prev = payload?.old?.status
+          const next = payload?.new?.status
+          if (
+            (next === 'pending' || next === 'searching_dp') &&
+            prev !== next
+          ) {
+            showToast(next === 'pending' ? 'New delivery request nearby!' : 'New advance booking nearby!')
+            try { stopAlertRef.current?.() } catch { /* ignore */ }
+            stopAlertRef.current = playRequestAlert(5000)
+          }
+          fetchRequests()
+        })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, () => fetchRequests())
       .subscribe()
     const pollInterval = setInterval(fetchRequests, 10000)
-    return () => { supabase.removeChannel(channel); clearInterval(pollInterval) }
+    return () => {
+      try { stopAlertRef.current?.() } catch { /* ignore */ }
+      supabase.removeChannel(channel)
+      clearInterval(pollInterval)
+    }
   }, [dp?.is_online, dpLoading, profile])
 
   useEffect(() => {
@@ -312,6 +334,8 @@ export default function DpHome() {
 
   const acceptRequest = async (req: RequestWithUser) => {
     if (reservingId) return
+    try { stopAlertRef.current?.() } catch { /* ignore */ }
+    stopAlertRef.current = null
     if (!profile?.id) {
       showToast('Not signed in')
       return

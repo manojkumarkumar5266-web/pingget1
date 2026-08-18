@@ -10,7 +10,7 @@ import RescheduleModal from '../../components/RescheduleModal'
 import { Clock, MapPin, MessageCircle, Bike, CheckCircle2, Package, ShoppingBag, Truck, ChevronRight, CalendarClock, CalendarPlus, CreditCard } from 'lucide-react'
 import { Screen, PageTitle, Surface, Chip, CTA, EmptyBlock } from '../../design/primitives'
 import { pg } from '../../design/tokens'
-import { Images } from '../../lib/customImages'
+import { canStartAdvanceTask, advanceTaskUnlockLabel } from '../../lib/advanceTaskGate'
 
 type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
 type RequestWithDp = DeliveryRequest & { _dp?: Profile }
@@ -217,14 +217,13 @@ export default function UserOrders() {
         <SkeletonList count={3} lines={4} />
       ) : orders.length === 0 ? (
         <EmptyBlock
-          image={Images.emptyState}
-          title={`No ${tab} orders`}
+          title="No order"
           body={
             tab === 'active'
-              ? 'Your instant deliveries will appear here.'
+              ? 'No active orders right now.'
               : tab === 'reserved'
-                ? 'Advance bookings stay here until completed.'
-                : `No ${tab} orders yet.`
+                ? 'No reserved advance bookings.'
+                : 'No completed orders yet.'
           }
         />
       ) : (
@@ -282,9 +281,17 @@ export default function UserOrders() {
                   </div>
                 )}
                 {req.status === 'booking_confirmed' && (
-                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                    <CheckCircle2 size={14} className="text-green-400" />
-                    <p className="text-xs font-bold text-green-400">Booking confirmed! See you on the scheduled date.</p>
+                  <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{
+                    background: canStartAdvanceTask(req) ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)',
+                    border: canStartAdvanceTask(req) ? '1px solid rgba(34,197,94,0.2)' : '1px solid rgba(255,255,255,0.08)',
+                    opacity: canStartAdvanceTask(req) ? 1 : 0.75,
+                  }}>
+                    <CheckCircle2 size={14} className={canStartAdvanceTask(req) ? 'text-green-400' : ''} style={{ color: canStartAdvanceTask(req) ? undefined : 'rgba(255,255,255,0.35)' }} />
+                    <p className="text-xs font-bold" style={{ color: canStartAdvanceTask(req) ? '#4ade80' : 'rgba(255,255,255,0.45)' }}>
+                      {canStartAdvanceTask(req)
+                        ? 'Task day — your partner can Start task now.'
+                        : `Reserved — ${advanceTaskUnlockLabel(req)}. Start task stays locked until then.`}
+                    </p>
                   </div>
                 )}
                 {req.order_type === 'advance' && req.cancel_requested_by === 'dp' && (

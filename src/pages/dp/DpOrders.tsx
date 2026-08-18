@@ -12,6 +12,7 @@ import {
   Play, CalendarClock, CreditCard, ChevronRight, Handshake,
 } from 'lucide-react'
 import DeliveryProofUploader from '../../components/DeliveryProofUploader'
+import { canStartAdvanceTask, advanceTaskUnlockLabel } from '../../lib/advanceTaskGate'
 
 type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
 
@@ -128,9 +129,9 @@ export default function DpOrders() {
   }
 
   const emptyBody =
-    tab === 'active' ? 'Instant orders you accept show up here.'
-      : tab === 'reserved' ? 'Advance bookings you reserve appear here until completed.'
-        : undefined
+    tab === 'active' ? 'No active deliveries right now.'
+      : tab === 'reserved' ? 'No reserved advance bookings.'
+        : 'No completed deliveries yet.'
 
   return (
     <Screen className="mx-auto max-w-lg animate-fade-in-up">
@@ -173,7 +174,7 @@ export default function DpOrders() {
       {loading ? (
         <SkeletonList count={3} lines={4} />
       ) : orders.length === 0 ? (
-        <EmptyBlock title={`No ${tab} deliveries`} body={emptyBody} />
+        <EmptyBlock title="No order" body={emptyBody} />
       ) : (
         <div className="space-y-3 pb-4">
           {orders.map(req => {
@@ -316,54 +317,59 @@ export default function DpOrders() {
                       </CTA>
                     )}
 
-                    {isAdvance && req.status === 'booking_confirmed' && (
-                      <CTA
-                        className="min-h-[44px] flex-1 text-sm"
-                        onClick={async () => {
-                          setUpdating(req.id)
-                          const now = new Date().toISOString()
-                          const { data: existingOrder } = await supabase
-                            .from('orders')
-                            .select('id')
-                            .eq('request_id', req.id)
-                            .maybeSingle()
-                          if (!existingOrder) {
-                            const deliveryCharge = Number(req.max_budget || 0)
-                            const commissionPct = 10
-                            const commissionAmount = Math.round(deliveryCharge * commissionPct / 100)
-                            await supabase.from('orders').insert({
-                              request_id: req.id,
-                              user_id: req.user_id,
-                              dp_id: profile!.id,
-                              items_summary: req.description?.split('\n')[0]?.trim() || req.request_category || 'Advance booking',
-                              item_cost: 0,
-                              delivery_charge: deliveryCharge,
-                              commission_pct: commissionPct,
-                              commission_amount: commissionAmount,
-                              dp_earnings: deliveryCharge - commissionAmount,
+                    {isAdvance && req.status === 'booking_confirmed' && (() => {
+                      const unlocked = canStartAdvanceTask(req)
+                      return (
+                        <CTA
+                          className="min-h-[44px] flex-1 text-sm"
+                          onClick={async () => {
+                            if (!canStartAdvanceTask(req)) return
+                            setUpdating(req.id)
+                            const now = new Date().toISOString()
+                            const { data: existingOrder } = await supabase
+                              .from('orders')
+                              .select('id')
+                              .eq('request_id', req.id)
+                              .maybeSingle()
+                            if (!existingOrder) {
+                              const deliveryCharge = Number(req.max_budget || 0)
+                              const commissionPct = 10
+                              const commissionAmount = Math.round(deliveryCharge * commissionPct / 100)
+                              await supabase.from('orders').insert({
+                                request_id: req.id,
+                                user_id: req.user_id,
+                                dp_id: profile!.id,
+                                items_summary: req.description?.split('\n')[0]?.trim() || req.request_category || 'Advance booking',
+                                item_cost: 0,
+                                delivery_charge: deliveryCharge,
+                                commission_pct: commissionPct,
+                                commission_amount: commissionAmount,
+                                dp_earnings: deliveryCharge - commissionAmount,
+                                status: 'confirmed',
+                              })
+                            }
+                            await supabase.from('requests').update({
                               status: 'confirmed',
+                              task_started_at: now,
+                            }).eq('id', req.id)
+                            await supabase.from('notifications').insert({
+                              user_id: req.user_id,
+                              title: 'Task Started',
+                              body: 'Your delivery partner has started the task. Live tracking is now enabled.',
+                              type: 'task_started',
+                              related_id: req.id,
                             })
-                          }
-                          await supabase.from('requests').update({
-                            status: 'confirmed',
-                            task_started_at: now,
-                          }).eq('id', req.id)
-                          await supabase.from('notifications').insert({
-                            user_id: req.user_id,
-                            title: 'Task Started',
-                            body: 'Your delivery partner has started the task. Live tracking is now enabled.',
-                            type: 'task_started',
-                            related_id: req.id,
-                          })
-                          kickPushDelivery()
-                          setUpdating(null)
-                          navigate(`/dp/navigate/${req.id}`, { replace: true })
-                        }}
-                        disabled={updating === req.id}
-                      >
-                        <Play size={14} /> Start task
-                      </CTA>
-                    )}
+                            kickPushDelivery()
+                            setUpdating(null)
+                            navigate(`/dp/navigate/${req.id}`, { replace: true })
+                          }}
+                          disabled={!unlocked || updating === req.id}
+                          style={!unlocked ? { opacity: 0.45, filter: 'grayscale(0.6)' } : undefined}
+                        >
+                          <Play size={14} /> {unlocked ? (updating === req.id ? 'Starting…' : 'Start task') : advanceTaskUnlockLabel(req)}
+                        </CTA>
+                      )
+                    })()}
 
                     {isAdvance && req.status === 'task_started' && (
                       <CTA className="min-h-[44px] flex-1 text-sm" onClick={() => navigate(`/dp/navigate/${req.id}`)}>

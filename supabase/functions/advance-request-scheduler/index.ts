@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
       .eq("order_type", "advance")
       .not("scheduled_timestamp", "is", null)
       .filter(`scheduled_timestamp.lte.${new Date(now + leadMinutes * 60 * 1000).toISOString()}`)
-      .select("id, user_id, request_category, scheduled_date, scheduled_time, recurring_type, recurring_interval_days, recurring_weekday, recurring_month_day, recurring_parent_id, recurring_count, scheduled_slot, delivery_address, delivery_lat, delivery_lng, pickup_address, pickup_lat, pickup_lng, preferred_shop, description, photo_urls, voice_note_url, max_budget, shop_name, shop_phone, shop_address, shop_lat, shop_lng, estimated_task_duration, estimated_total_charge, charge_breakdown, radius_meters");
+      .select("id, user_id, accepted_dp_id, reserved_dp_id, request_category, scheduled_date, scheduled_time, recurring_type, recurring_interval_days, recurring_weekday, recurring_month_day, recurring_parent_id, recurring_count, recurring_max_occurrences, scheduled_slot, delivery_address, delivery_lat, delivery_lng, pickup_address, pickup_lat, pickup_lng, preferred_shop, description, photo_urls, voice_note_url, max_budget, shop_name, shop_phone, shop_address, shop_lat, shop_lng, estimated_task_duration, estimated_total_charge, charge_breakdown, radius_meters");
 
     if (activateError) {
       throw new Error(`Failed to activate scheduled requests: ${activateError.message}`);
@@ -68,7 +68,14 @@ Deno.serve(async (req: Request) => {
         }
 
         // 2b. Auto-create next recurring request if applicable
-        if (req.recurring_type && req.recurring_type !== "none" && req.recurring_count < 100) {
+        const maxOcc = req.recurring_max_occurrences != null ? Number(req.recurring_max_occurrences) : 100
+        const nextCount = (req.recurring_count || 0) + 1
+        if (
+          req.recurring_type &&
+          req.recurring_type !== "none" &&
+          nextCount < maxOcc &&
+          (req.recurring_count || 0) < 100
+        ) {
           await createNextRecurringRequest(supabase, req);
         }
       }
@@ -279,6 +286,14 @@ async function createNextRecurringRequest(supabase: any, parentReq: any): Promis
     const type: string = parentReq.recurring_type;
     if (type === "none" || !type) return;
 
+    const maxOcc = parentReq.recurring_max_occurrences != null
+      ? Number(parentReq.recurring_max_occurrences)
+      : 100;
+    const nextCount = (parentReq.recurring_count || 0) + 1;
+    // nextCount is the index of the NEW request (0-based count on parent + 1).
+    // Total occurrences = first (count 0) + children. Stop when nextCount >= maxOcc.
+    if (nextCount >= maxOcc) return;
+
     const baseDate = new Date(parentReq.scheduled_timestamp || parentReq.scheduled_date);
     let nextDate = new Date(baseDate);
 
@@ -305,17 +320,18 @@ async function createNextRecurringRequest(supabase: any, parentReq: any): Promis
       return;
     }
 
-    // Don't create requests more than 30 days ahead
+    // Don't create requests more than 90 days ahead for longer series (e.g. 60 daily)
     const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + 30);
+    maxDate.setDate(maxDate.getDate() + 90);
     if (nextDate > maxDate) return;
 
     // Check if next occurrence already exists
     const nextDateStr = nextDate.toISOString().slice(0, 10);
+    const seriesRoot = parentReq.recurring_parent_id || parentReq.id;
     const { data: existing } = await supabase
       .from("requests")
       .select("id")
-      .eq("recurring_parent_id", parentReq.recurring_parent_id || parentReq.id)
+      .eq("recurring_parent_id", seriesRoot)
       .eq("scheduled_date", nextDateStr)
       .maybeSingle();
 
@@ -326,7 +342,9 @@ async function createNextRecurringRequest(supabase: any, parentReq: any): Promis
     const scheduledTimestamp = new Date(nextDate);
     scheduledTimestamp.setHours(sh || 9, sm || 0, 0, 0);
 
-    await supabase.from("requests").insert({
+    const preferredDp = parentReq.accepted_dp_id || parentReq.reserved_dp_id || null;
+
+    const { data: inserted, error: insertErr } = await supabase.from("requests").insert({
       user_id: parentReq.user_id,
       description: parentReq.description,
       photo_urls: parentReq.photo_urls,
@@ -360,9 +378,36 @@ async function createNextRecurringRequest(supabase: any, parentReq: any): Promis
       recurring_interval_days: parentReq.recurring_interval_days,
       recurring_weekday: parentReq.recurring_weekday,
       recurring_month_day: parentReq.recurring_month_day,
-      recurring_parent_id: parentReq.recurring_parent_id || parentReq.id,
-      recurring_count: (parentReq.recurring_count || 0) + 1,
+      recurring_parent_id: seriesRoot,
+      recurring_count: nextCount,
+      recurring_max_occurrences: parentReq.recurring_max_occurrences ?? null,
+      reserved_dp_id: preferredDp,
+    }).select("id").single();
+
+    if (insertErr) {
+      console.error("Recurring insert error:", insertErr.message);
+      return;
+    }
+
+    // Notify customer
+    await supabase.from("notifications").insert({
+      user_id: parentReq.user_id,
+      title: "Recurring booking created",
+      body: `Your next recurring ${parentReq.request_category || "delivery"} is scheduled for ${nextDateStr} at ${scheduledTime}.`,
+      type: "recurring_occurrence_created",
+      related_id: inserted?.id || parentReq.id,
     });
+
+    // Notify the DP who accepted / was reserved on the series
+    if (preferredDp) {
+      await supabase.from("notifications").insert({
+        user_id: preferredDp,
+        title: "Recurring task — next day",
+        body: `Your recurring ${parentReq.request_category || "delivery"} continues on ${nextDateStr} at ${scheduledTime}. Open Orders to review and start on task day.`,
+        type: "recurring_occurrence_dp",
+        related_id: inserted?.id || parentReq.id,
+      });
+    }
   } catch (err) {
     console.error("Recurring creation error:", err.message);
   }
