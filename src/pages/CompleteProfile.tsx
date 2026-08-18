@@ -80,7 +80,7 @@ export default function CompleteProfile() {
   return (
     <div className="flex min-h-[100dvh] flex-col px-5 py-10" style={{ background: pg.bg }}>
       <div className="mx-auto w-full max-w-md">
-        <Brand size="md" showTagline className="mb-4" />
+        <Brand size="md" showTagline={false} className="mb-4" />
         <h1 className="mb-2 text-[28px] font-extrabold tracking-tight">Complete Your Profile</h1>
         <p className="mb-6 text-sm" style={{ color: pg.text3 }}>Select your city and share your location to get started.</p>
         <form onSubmit={handleSubmit} className="space-y-4 rounded-[28px] p-5" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}>

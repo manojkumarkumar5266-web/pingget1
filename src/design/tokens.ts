@@ -6,13 +6,13 @@ export const pg = {
   /** Bright header chrome (User / DP / Admin) — elevated vs pure black canvas */
   header: '#121212',
   headerElevated: '#1A1A1A',
-  headerBorder: 'rgba(12, 138, 62, 0.35)',
+  headerBorder: 'rgba(196, 163, 90, 0.35)',
   bg: '#000000',
   bgElevated: '#000000',
   surface: '#000000',
   surface2: '#0A0A0A',
-  line: 'rgba(255, 255, 255, 0.12)',
-  lineStrong: 'rgba(255, 255, 255, 0.2)',
+  line: 'rgba(196, 163, 90, 0.22)',
+  lineStrong: 'rgba(12, 138, 62, 0.4)',
   /** Primary accent — forest green */
   lime: '#0C8A3E',
   limeDim: 'rgba(12, 138, 62, 0.2)',

@@ -36,7 +36,7 @@ export function PageTitle({
         {eyebrow && (
           <p
             className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em]"
-            style={{ color: pg.text3 }}
+            style={{ color: pg.gold }}
           >
             {eyebrow}
           </p>
@@ -70,7 +70,7 @@ export function Surface({
       style={{
         background: pg.surface,
         color: pg.text,
-        border: `1px solid ${accent ? 'rgba(12, 138, 62, 0.4)' : pg.line}`,
+        border: `1px solid ${accent ? 'rgba(196, 163, 90, 0.55)' : pg.line}`,
         borderRadius: pg.radius.lg,
         boxShadow: 'none',
         ...style,
@@ -96,9 +96,9 @@ export function CTA({
       boxShadow: '0 8px 22px rgba(12, 138, 62, 0.28)',
     },
     secondary: {
-      background: pg.oliveDim,
-      color: pg.lime,
-      border: `1px solid rgba(12, 138, 62, 0.28)`,
+      background: pg.goldDim,
+      color: pg.gold,
+      border: `1px solid rgba(196, 163, 90, 0.4)`,
     },
     danger: {
       background: pg.danger,
@@ -231,7 +231,7 @@ export function Dock({ children }: { children: ReactNode }) {
         className="mx-auto flex max-w-lg items-center justify-between gap-1 px-2 py-2"
         style={{
           background: 'rgba(0,0,0,0.96)',
-          border: `1px solid ${pg.lineStrong}`,
+          border: `1px solid ${pg.gold}`,
           borderRadius: 28,
           boxShadow: '0 12px 36px rgba(0,0,0,0.8)',
           backdropFilter: 'blur(20px)',

@@ -35,8 +35,8 @@ export const BRAND_YELLOW = '#C4A35A'
 export const BRAND_DARK = '#0E1410'
 export const BRAND_WHITE = '#FFFFFF'
 
-/** Modern geometric wordmark typeface */
-export const BRAND_FONT = "'Syne', 'Outfit', 'DM Sans', system-ui, sans-serif"
+/** Same typeface as greeting names */
+export const BRAND_FONT = "'Outfit', 'DM Sans', system-ui, sans-serif"
 
 /**
  * Person name in pinGGet wordmark typography.
@@ -63,13 +63,13 @@ export function BrandPersonName({
 }
 
 /**
- * pinGGet wordmark — pin gold · G green · G dark-mist · et green
- * Tagline in white: boy next door
+ * pinGGet wordmark — pin gold · G green · 2nd G gold · et green
+ * Tagline “boy next door” only when showTagline is true (welcome + sign-in).
  */
 export function BrandWordmark({
   className = '',
   size = 'lg',
-  showTagline = true,
+  showTagline = false,
   align = 'center',
 }: {
   className?: string
@@ -88,13 +88,13 @@ export function BrandWordmark({
       >
         <span style={{ color: BRAND_YELLOW }}>pin</span>
         <span style={{ color: BRAND_GREEN }}>G</span>
-        <span style={{ color: 'rgba(245,247,246,0.38)' }}>G</span>
+        <span style={{ color: BRAND_YELLOW }}>G</span>
         <span style={{ color: BRAND_GREEN }}>et</span>
       </div>
       {showTagline && (
         <div
-          className={`mt-1.5 font-semibold uppercase ${tagScale[size]}`}
-          style={{ color: BRAND_WHITE, fontFamily: "'DM Sans', system-ui, sans-serif", opacity: 0.92 }}
+          className={`mt-2 text-center font-semibold uppercase ${tagScale[size]}`}
+          style={{ color: BRAND_YELLOW, fontFamily: BRAND_FONT, letterSpacing: '0.22em', opacity: 0.95 }}
         >
           boy next door
         </div>
@@ -113,7 +113,7 @@ export default function Brand({
   showTagline,
 }: BrandProps) {
   const resolvedSize = compact ? 'xs' : size
-  const tagline = showTagline ?? !compact
+  const tagline = showTagline ?? false
   return (
     <BrandWordmark
       size={resolvedSize}

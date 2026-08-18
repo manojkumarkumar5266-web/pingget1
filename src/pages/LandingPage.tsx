@@ -46,7 +46,7 @@ export default function LandingPage() {
         }}
       >
         <div className="flex justify-center pt-2">
-          <Brand size="hero" wordmark />
+          <Brand size="hero" wordmark showTagline />
         </div>
 
         <div className="flex flex-1 flex-col items-center justify-center py-6">
