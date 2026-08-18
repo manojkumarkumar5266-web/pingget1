@@ -208,6 +208,11 @@ export default function CreateAdvanceRequest() {
   }
   useEffect(() => { fetchAddresses() }, [profile?.id])
 
+  // Step 3 (old shop/items page) is retired — bounce to review
+  useEffect(() => {
+    if (step === 3) setStep(4)
+  }, [step])
+
   const selectedAddress = addresses.find(a => a.id === selectedAddressId)
   const fullAddressText = selectedAddress
     ? [selectedAddress.house_no, selectedAddress.flat_no, selectedAddress.building_name, selectedAddress.street, selectedAddress.area, selectedAddress.city, selectedAddress.pincode].filter(Boolean).join(', ')
@@ -470,8 +475,8 @@ export default function CreateAdvanceRequest() {
     const deliveryText = homeAddr?.text || fullAddressText
     if (!deliveryText) {
       setError('Please select a delivery address on the Home page first')
-      // Take user to address step so Final Submit is not a silent no-op
-      if (step !== 3 && step !== 4) setStep(3)
+      // Stay on review — address comes from Home; do not bounce to obsolete step 3
+      if (step !== 4) setStep(4)
       return
     }
 
@@ -645,7 +650,26 @@ export default function CreateAdvanceRequest() {
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col" style={{ background: pg.bg }}>
       <TopChrome
         left={
-          <IconButton onClick={() => step === 1 ? navigate('/app') : setStep(step - 1)}>
+          <IconButton onClick={() => {
+            if (step === 1) {
+              navigate('/app')
+              return
+            }
+            // Skip obsolete shop/items step (step 3) — category sheet already collects notes/date
+            if (step === 4 && categoryDrafts.length > 0) {
+              setStep(1)
+              return
+            }
+            if (step === 4) {
+              setStep(2)
+              return
+            }
+            if (step === 3) {
+              setStep(2)
+              return
+            }
+            setStep(step - 1)
+          }}>
             {step === 1 ? <ArrowLeft size={20} /> : <ChevronLeft size={20} />}
           </IconButton>
         }
@@ -881,252 +905,10 @@ export default function CreateAdvanceRequest() {
           </div>
         )}
 
-        {/* STEP 3: Task Details + Shop + Address */}
+        {/* STEP 3 removed from flow (shop/items form was obsolete; category sheet covers notes) */}
         {step === 3 && (
-          <div className="space-y-5 animate-slide-up">
-            {/* Shop Details (Optional) */}
-            <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Shop Details <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></p>
-              <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div>
-                  <label className="label flex items-center gap-1.5" style={{ color: '#0C8A3E' }}><Store size={13} /> Shop Name</label>
-                  <input className="input" value={shopName} onChange={e => setShopName(e.target.value)} placeholder="e.g. Reliance Fresh, D-Mart" />
-                </div>
-                <div>
-                  <label className="label flex items-center gap-1.5" style={{ color: '#0C8A3E' }}><Phone size={13} /> Shop Phone</label>
-                  <input className="input" value={shopPhone} onChange={e => setShopPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="Shop contact number" maxLength={10} />
-                </div>
-                <div>
-                  <label className="label flex items-center gap-1.5" style={{ color: '#0C8A3E' }}><MapPin size={13} /> Shop Address</label>
-                  <input className="input" value={shopAddress} onChange={e => setShopAddress(e.target.value)} placeholder="Shop address / landmark" />
-                </div>
-                <button onClick={pickShopLocation}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-medium transition-all active:scale-95"
-                  style={{ background: shopLat ? 'rgba(196,214,0,0.1)' : 'rgba(255,255,255,0.04)', border: `1.5px dashed ${shopLat ? 'rgba(196,214,0,0.3)' : 'rgba(255,255,255,0.15)'}`, color: shopLat ? '#0C8A3E' : 'rgba(255,255,255,0.5)' }}>
-                  <Navigation size={15} />
-                  {shopLat ? `Location set (${shopLat.toFixed(4)}, ${shopLng?.toFixed(4)})` : 'Set shop location on map'}
-                </button>
-              </div>
-            </div>
-
-            {/* Items / Description */}
-            <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Items & Notes</p>
-              <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <textarea className="input min-h-[120px] resize-none text-sm leading-relaxed"
-                  value={description} onChange={e => setDescription(e.target.value)}
-                  placeholder="List items with quantities, brand preferences, or any specific instructions..." />
-
-                {/* Photos */}
-                <div className="mt-3">
-                  <p className="mb-2 text-xs font-semibold" style={{ color: '#0C8A3E' }}>Add Photos</p>
-                  <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
-                  {photoPreviews.length > 0 && (
-                    <div className="mb-2 flex flex-wrap gap-2">
-                      {photoPreviews.map((preview, idx) => (
-                        <div key={idx} className="relative">
-                          <img src={preview} alt={`Photo ${idx + 1}`} className="h-20 w-20 rounded-2xl object-cover" style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
-                          <button onClick={() => removePhoto(idx)}
-                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[#F5F7F6] shadow-lg">
-                            <X size={10} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <button onClick={() => photoInputRef.current?.click()}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-medium transition-all active:scale-95"
-                    style={{ background: 'rgba(196,214,0,0.08)', border: '1.5px dashed rgba(196,214,0,0.25)', color: '#0C8A3E' }}>
-                    <Camera size={16} />
-                    {photoPreviews.length > 0 ? 'Add More Photos' : 'Add Photos'}
-                  </button>
-                </div>
-
-                {/* Voice Note */}
-                <div className="mt-3">
-                  <p className="mb-2 text-xs font-semibold" style={{ color: '#0C8A3E' }}>Voice Note</p>
-                  {voiceBlob ? (
-                    <div className="flex items-center gap-3 rounded-2xl px-4 py-3.5" style={{ background: 'rgba(196,214,0,0.08)', border: '1px solid rgba(196,214,0,0.2)' }}>
-                      <button onClick={playVoice}
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-all active:scale-90"
-                        style={{ background: '#0C8A3E' }}>
-                        {playingVoice ? <Pause size={16} className="text-[#050505]" /> : <Play size={16} className="text-[#050505]" />}
-                      </button>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-1 mb-1.5">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} className="voice-wave-bar" style={{ height: `${12 + Math.random() * 16}px`, opacity: playingVoice ? 1 : 0.4 }} />
-                          ))}
-                        </div>
-                        <p className="text-xs font-semibold" style={{ color: '#0C8A3E' }}>Voice Note · {fmtDur(voiceDuration)}</p>
-                      </div>
-                      <button onClick={clearVoice} className="p-1" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : recording ? (
-                    <button onClick={stopRecording}
-                      className="flex w-full items-center justify-center gap-3 rounded-2xl py-4 text-sm font-semibold"
-                      style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <div key={i} className="voice-wave-bar" style={{ height: `${12 + Math.random() * 16}px`, background: '#ef4444' }} />
-                        ))}
-                      </div>
-                      <MicOff size={18} /> Stop · {fmtDur(voiceDuration)}
-                    </button>
-                  ) : (
-                    <button onClick={startRecording}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-medium transition-all active:scale-95"
-                      style={{ background: 'rgba(196,214,0,0.08)', border: '1.5px dashed rgba(196,214,0,0.25)', color: '#0C8A3E' }}>
-                      <Mic size={16} /> Record Voice Note
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Budget */}
-            <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Budget <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(optional)</span></p>
-              <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <label className="label flex items-center gap-1.5" style={{ color: '#0C8A3E' }}><IndianRupee size={13} /> Max Budget</label>
-                <input className="input" type="number" value={maxBudget} onChange={e => setMaxBudget(e.target.value)} placeholder="Estimated maximum budget" />
-              </div>
-            </div>
-
-            {/* Delivery Address */}
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Delivery Address</p>
-              {fullAddressText && !showAddressForm && !showAddressList ? (
-                <div>
-                  {addresses.length > 1 && (
-                    <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
-                      {addresses.map(addr => (
-                        <button key={addr.id} onClick={() => setSelectedAddressId(addr.id)}
-                          className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${selectedAddressId === addr.id ? 'text-[#050505]' : 'text-black/50'}`}
-                          style={selectedAddressId === addr.id ? { background: '#0C8A3E' } : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                          {addr.label || 'Address'}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="rounded-2xl p-4 flex items-center gap-3 transition-all active:scale-[0.98]"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
-                      <Home size={18} style={{ color: '#0C8A3E' }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Deliver To</p>
-                      <p className="text-sm font-medium text-[#F5F7F6] truncate">{shortAddressText || fullAddressText}</p>
-                    </div>
-                    <button onClick={() => setShowAddressList(true)}
-                      className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition-all active:scale-95"
-                      style={{ background: '#0C8A3E', color: '#050505' }}>
-                      <MapPin size={12} /> Select
-                    </button>
-                  </div>
-                </div>
-              ) : showAddressList && !showAddressForm ? (
-                <div className="rounded-2xl p-4 space-y-3 animate-slide-up" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-[#F5F7F6]">Your Addresses ({addresses.length}/{MAX_ADDRESSES})</h3>
-                    <button onClick={() => { setShowAddressList(false); resetAddrForm() }}
-                      className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                      <X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} />
-                    </button>
-                  </div>
-                  {addresses.length === 0 ? (
-                    <div className="py-6 text-center">
-                      <MapPin size={28} className="mx-auto mb-2 text-black/30" />
-                      <p className="text-sm font-medium text-black/55 mb-1">No address found</p>
-                      <p className="text-xs text-black/40 mb-4">Add an address so your partner knows where to deliver</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {addresses.map(addr => {
-                        const addrFull = [addr.house_no, addr.flat_no, addr.building_name, addr.landmark, addr.street, addr.area, addr.city, addr.pincode].filter(Boolean).join(', ')
-                        return (
-                          <div key={addr.id} className={`rounded-2xl p-3 transition-all ${selectedAddressId === addr.id ? 'border-2' : 'border'}`}
-                            style={selectedAddressId === addr.id ? { background: 'rgba(196,214,0,0.08)', borderColor: 'rgba(196,214,0,0.3)' } : { background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }}>
-                            <div className="flex items-start gap-3">
-                              <button onClick={() => { setSelectedAddressId(addr.id); setShowAddressList(false) }} className="flex-1 text-left min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                  <Home size={14} className="text-black/40 shrink-0" />
-                                  <p className="text-sm font-semibold text-[#F5F7F6] truncate">{addr.label || 'Address'}</p>
-                                  {selectedAddressId === addr.id && <span className="text-[10px] font-bold" style={{ color: '#0C8A3E' }}>SELECTED</span>}
-                                </div>
-                                <p className="text-xs text-black/50 truncate">{addrFull}</p>
-                              </button>
-                              <div className="flex gap-1 shrink-0">
-                                <button onClick={() => startEditAddress(addr)} className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: 'rgba(255,255,255,0.06)' }}><Edit2 size={12} className="text-black/55" /></button>
-                                <button onClick={() => deleteAddress(addr.id)} className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: 'rgba(239,68,68,0.1)' }}><Trash2 size={12} className="text-red-400" /></button>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                  {addresses.length < MAX_ADDRESSES ? (
-                    <button onClick={() => { resetAddrForm(); setShowAddressForm(true) }}
-                      className="w-full rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95"
-                      style={{ background: '#0C8A3E', color: '#050505' }}>
-                      <Plus size={16} className="inline mr-1" /> Add New Address
-                    </button>
-                  ) : (
-                    <p className="text-center text-xs text-yellow-400/80 py-2">Maximum {MAX_ADDRESSES} addresses reached.</p>
-                  )}
-                </div>
-              ) : addresses.length === 0 && !showAddressForm ? (
-                <div className="rounded-2xl p-6 text-center" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <MapPin size={28} className="mx-auto mb-2 text-black/30" />
-                  <p className="text-sm font-medium text-black/55 mb-1">No address found</p>
-                  <p className="text-xs text-black/40 mb-4">Add an address so your partner knows where to deliver</p>
-                  <button onClick={() => setShowAddressForm(true)}
-                    className="rounded-2xl px-6 py-3 text-sm font-bold transition-all active:scale-95"
-                    style={{ background: '#0C8A3E', color: '#050505' }}>
-                    <Plus size={16} className="inline mr-1" /> Add Address
-                  </button>
-                </div>
-              ) : showAddressForm ? (
-                <div className="rounded-2xl p-4 space-y-3 animate-slide-up" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-[#F5F7F6]">{editingAddressId ? 'Edit Address' : 'New Address'}</h3>
-                    <button onClick={() => { setShowAddressForm(false); resetAddrForm() }}
-                      className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                      <X size={16} style={{ color: 'rgba(255,255,255,0.5)' }} />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div><label className="label">House No.</label><input className="input" value={addrHouse} onChange={e => setAddrHouse(e.target.value)} placeholder="H.No" /></div>
-                    <div><label className="label">Flat No.</label><input className="input" value={addrFlat} onChange={e => setAddrFlat(e.target.value)} placeholder="Flat" /></div>
-                  </div>
-                  <div><label className="label">Building Name</label><input className="input" value={addrBuilding} onChange={e => setAddrBuilding(e.target.value)} placeholder="Building / Apartment" /></div>
-                  <div><label className="label">Landmark</label><input className="input" value={addrLandmark} onChange={e => setAddrLandmark(e.target.value)} placeholder="Near..." /></div>
-                  <div><label className="label">Street</label><input className="input" value={addrStreet} onChange={e => setAddrStreet(e.target.value)} placeholder="Street name" /></div>
-                  <div><label className="label">Area</label><input className="input" value={addrArea} onChange={e => setAddrArea(e.target.value)} placeholder="Area / Locality" /></div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div><label className="label">City</label><input className="input" value={addrCity} onChange={e => setAddrCity(e.target.value)} placeholder="City" /></div>
-                    <div><label className="label">PIN Code</label><input className="input" value={addrPincode} onChange={e => setAddrPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit" maxLength={6} /></div>
-                  </div>
-                  <button onClick={pickAddrLocation}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-medium transition-all active:scale-95"
-                    style={{ background: addrLat ? 'rgba(196,214,0,0.1)' : 'rgba(255,255,255,0.04)', border: `1.5px dashed ${addrLat ? 'rgba(196,214,0,0.3)' : 'rgba(255,255,255,0.15)'}`, color: addrLat ? '#0C8A3E' : 'rgba(255,255,255,0.5)' }}>
-                    <Navigation size={15} />
-                    {addrLat ? `Location set (${addrLat.toFixed(4)}, ${addrLng?.toFixed(4)})` : 'Select exact location on map'}
-                  </button>
-                  {error && <ErrorBanner message={error} />}
-                  <button onClick={saveAddress} disabled={savingAddress}
-                    className="w-full rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95"
-                    style={{ background: '#0C8A3E', color: '#050505' }}>
-                    {savingAddress ? 'Saving...' : 'Save Address'}
-                  </button>
-                </div>
-              ) : null}
-            </div>
-
-            {error && <ErrorBanner message={error} />}
+          <div className="py-8 text-center text-sm" style={{ color: pg.text3 }}>
+            Continuing to review…
           </div>
         )}
 
@@ -1290,6 +1072,11 @@ export default function CreateAdvanceRequest() {
                 if (step === 1 && !canProceedStep1) { setError('Save at least one category first'); return }
                 if (step === 2 && !canProceedStep2) { setError('Please select date and time slot'); return }
                 setError(null)
+                // Skip obsolete shop/items form (step 3) — go straight to review
+                if (step === 2) {
+                  setStep(4)
+                  return
+                }
                 setStep(step + 1)
               }}
               disabled={(step === 1 && !canProceedStep1) || (step === 2 && !canProceedStep2)}

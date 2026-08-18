@@ -11,6 +11,7 @@ import { Clock, MapPin, MessageCircle, Bike, CheckCircle2, Package, ShoppingBag,
 import { Screen, PageTitle, Surface, Chip, CTA, EmptyBlock } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { canStartAdvanceTask, advanceTaskUnlockLabel } from '../../lib/advanceTaskGate'
+import { requestMutualCancel } from '../../lib/requestMutualCancel'
 
 type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
 type RequestWithDp = DeliveryRequest & { _dp?: Profile }
@@ -427,12 +428,9 @@ export default function UserOrders() {
           onConfirm={async (reason) => {
             setUpdating(cancelTarget.id)
             if (cancelTarget.order_type === 'advance') {
-              const { data, error } = await supabase.rpc('request_mutual_cancel', {
-                p_request_id: cancelTarget.id,
-                p_reason: reason,
-              })
+              const { data, error } = await requestMutualCancel(cancelTarget.id, reason)
               if (error) console.error(error)
-              else if (data && !(data as any).success) console.error((data as any).error)
+              else if (data && !data.success) console.error(data.error)
             } else {
               const { error } = await supabase.rpc('cancel_instant_order', {
                 p_request_id: cancelTarget.id,

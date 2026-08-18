@@ -6,8 +6,6 @@ import { useAuth } from '../../context'
 import { useGps } from '../../hooks/useGps'
 import { STATUS_LABELS } from '../../lib/utils'
 import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
-import VisualTracking, { STATUS_PROGRESS } from '../../components/VisualTracking'
-import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
 import { BrandPersonName } from '../../components/Brand'
 import {
@@ -312,9 +310,11 @@ export default function DpNavigationPage() {
   if (endPhase === 'payment_accepted' || request.payment_accepted_at) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 px-6" style={{ background: pg.bg }}>
-        <img src={Images.paymentReceived} alt="Payment accepted" className="w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: 'transparent' }} />
+        <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'rgba(12,138,62,0.18)' }}>
+          <CheckCircle2 size={32} style={{ color: pg.lime }} />
+        </div>
         <p className="text-center text-base font-extrabold text-[#F5F7F6]">Payment accepted</p>
-        <p className="text-center text-sm text-black/50">Waiting for customer rating…</p>
+        <p className="text-center text-sm" style={{ color: pg.text3 }}>Waiting for customer rating…</p>
       </div>
     )
   }
@@ -336,18 +336,14 @@ export default function DpNavigationPage() {
         </div>
       </div>
 
-      {/* Match user tracking: step art first (no crop); live map below after on_the_way */}
+      {/* DP: map when live; otherwise status text only (no reached-store / stage images) */}
       <div className="relative flex-shrink-0">
         {MAP_LIVE_STATUSES.has(request.status) ? (
           <div className="space-y-2">
-            <VisualTracking
-              progress={STATUS_PROGRESS[request.status] ?? 0}
-              status={request.status}
-              pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
-              deliveryLabel={request.delivery_address?.split(',')[0] || 'Customer'}
-              hideProgress
-              compact
-            />
+            <div className="mx-3 rounded-2xl px-4 py-3 text-center" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+              <p className="text-sm font-extrabold text-[#F5F7F6]">{STATUS_LABELS[request.status] || request.status}</p>
+              <p className="mt-0.5 text-[11px]" style={{ color: pg.text3 }}>Live delivery to customer</p>
+            </div>
             <div className="relative mx-3 mb-2 h-[30vh] min-h-[200px] overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
               <FreeStreetMap
                 center={mapCenter || { lat: 17.6868, lng: 83.2185 }}
@@ -371,13 +367,11 @@ export default function DpNavigationPage() {
             </div>
           </div>
         ) : (
-          <div className="min-h-[240px]">
-            <VisualTracking
-              progress={STATUS_PROGRESS[request.status] ?? 0}
-              status={request.status}
-              pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
-              deliveryLabel={request.delivery_address?.split(',')[0] || 'Customer'}
-            />
+          <div className="mx-3 mb-2 rounded-2xl px-4 py-8 text-center" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+            <p className="text-base font-extrabold text-[#F5F7F6]">{STATUS_LABELS[request.status] || request.status}</p>
+            <p className="mt-1 text-xs" style={{ color: pg.text3 }}>
+              {request.pickup_address?.split(',')[0] || 'Store'} → {request.delivery_address?.split(',')[0] || 'Customer'}
+            </p>
           </div>
         )}
       </div>

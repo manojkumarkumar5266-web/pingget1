@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import DeliveryProofUploader from '../../components/DeliveryProofUploader'
 import { canStartAdvanceTask, advanceTaskUnlockLabel } from '../../lib/advanceTaskGate'
+import { requestMutualCancel as callMutualCancel } from '../../lib/requestMutualCancel'
 
 type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
 
@@ -100,19 +101,19 @@ export default function DpOrders() {
     checkCommission()
   }, [profile, orders])
 
-  const requestMutualCancel = async (req: DeliveryRequest) => {
+  const handleMutualCancel = async (req: DeliveryRequest) => {
     const pendingFromUser = req.cancel_requested_by === 'user'
     const msg = pendingFromUser
       ? 'Agree to cancel this advance booking with the customer?'
       : 'Request cancel? Advance bookings need both sides to agree. The customer must confirm.'
     if (!confirm(msg)) return
     setUpdating(req.id)
-    const { data, error } = await supabase.rpc('request_mutual_cancel', {
-      p_request_id: req.id,
-      p_reason: pendingFromUser ? 'DP agreed to cancel' : 'DP requested cancel',
-    })
-    if (error) alert(error.message)
-    else if (data && !(data as any).success) alert((data as any).error || 'Could not update cancel request')
+    const { data, error } = await callMutualCancel(
+      req.id,
+      pendingFromUser ? 'DP agreed to cancel' : 'DP requested cancel',
+    )
+    if (error) alert(error)
+    else if (data && !data.success) alert(data.error || 'Could not update cancel request')
     setUpdating(null)
     fetchOrders()
   }
@@ -382,7 +383,7 @@ export default function DpOrders() {
                         variant={cancelPendingFromUser ? 'danger' : 'secondary'}
                         className="min-h-[44px] w-full text-sm"
                         disabled={updating === req.id || cancelPendingFromDp}
-                        onClick={() => requestMutualCancel(req)}
+                        onClick={() => handleMutualCancel(req)}
                       >
                         <Handshake size={14} />
                         {cancelPendingFromUser ? 'Agree to cancel' : cancelPendingFromDp ? 'Cancel requested…' : 'Request cancel'}
