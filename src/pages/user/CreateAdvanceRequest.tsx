@@ -439,6 +439,30 @@ export default function CreateAdvanceRequest() {
   const canProceedStep2 = !!selectedDate && !!selectedSlot
   const canProceedStep3 = true // address from Home; details already in category drafts
 
+  /** Admin toggle — default ON when settings row missing the flag */
+  const recurringEnabled = settings?.recurring_enabled !== false
+
+  const onRecurringTypeChange = (t: RecurringType) => {
+    setRecurringType(t)
+    if (t === 'daily') setRecurringMaxOccurrences(15)
+    else if (t === 'weekly') setRecurringMaxOccurrences(4)
+    else if (t === 'monthly') setRecurringMaxOccurrences(3)
+    else if (t === 'custom') setRecurringMaxOccurrences(15)
+  }
+
+  const recurringSelectorProps = {
+    recurringType,
+    onTypeChange: onRecurringTypeChange,
+    intervalDays: recurringIntervalDays,
+    onIntervalChange: setRecurringIntervalDays,
+    weekday: recurringWeekday,
+    onWeekdayChange: setRecurringWeekday,
+    monthDay: recurringMonthDay,
+    onMonthDayChange: setRecurringMonthDay,
+    maxOccurrences: recurringMaxOccurrences,
+    onMaxOccurrencesChange: setRecurringMaxOccurrences,
+    enabled: recurringEnabled,
+  } as const
 
   const handleSubmit = async () => {
     setError(null)
@@ -705,7 +729,9 @@ export default function CreateAdvanceRequest() {
             {categoryDrafts.length > 0 && (
               <div className="rounded-2xl p-3" style={{ background: 'rgba(196,214,0,0.08)', border: '1px solid rgba(196,214,0,0.2)' }}>
                 <p className="text-xs font-bold" style={{ color: '#0C8A3E' }}>{categoryDrafts.length} categor{categoryDrafts.length === 1 ? 'y' : 'ies'} saved</p>
-                <p className="text-[11px] text-black/50 mt-0.5">Tap a category again to edit · Final Submit when ready</p>
+                <p className="text-[11px] text-black/50 mt-0.5">
+                  Tap a category to edit · After date &amp; time, choose <span style={{ color: '#0C8A3E' }}>Recurring booking</span> (daily / monthly) · then Review
+                </p>
               </div>
             )}
 
@@ -778,6 +804,10 @@ export default function CreateAdvanceRequest() {
                     )}
                   </div>
 
+                  {recurringEnabled && selectedDate && selectedSlot && (
+                    <RecurringSelector {...recurringSelectorProps} />
+                  )}
+
                   <button
                     type="button"
                     onClick={() => {
@@ -809,9 +839,9 @@ export default function CreateAdvanceRequest() {
                       setCategory(sheetCategory)
                       setSheetCategory(null)
                       setError(null)
-                      // clear media for next category
+                      // clear media for next category (keep date/slot + recurring for next edit)
                       setPhotoFiles([]); setPhotoPreviews([]); setVoiceBlob(null); setVoiceDuration(0)
-                      setDescription(''); setSelectedDate(null); setSelectedSlot(null)
+                      setDescription('')
                     }}
                     className="w-full rounded-2xl py-3.5 text-sm font-bold"
                     style={{ background: '#0C8A3E', color: '#050505' }}
@@ -845,26 +875,8 @@ export default function CreateAdvanceRequest() {
               />
             )}
 
-            {settings?.recurring_enabled && selectedDate && selectedSlot && (
-              <RecurringSelector
-                recurringType={recurringType}
-                onTypeChange={(t) => {
-                  setRecurringType(t)
-                  if (t === 'daily') setRecurringMaxOccurrences(15)
-                  else if (t === 'weekly') setRecurringMaxOccurrences(4)
-                  else if (t === 'monthly') setRecurringMaxOccurrences(3)
-                  else if (t === 'custom') setRecurringMaxOccurrences(15)
-                }}
-                intervalDays={recurringIntervalDays}
-                onIntervalChange={setRecurringIntervalDays}
-                weekday={recurringWeekday}
-                onWeekdayChange={setRecurringWeekday}
-                monthDay={recurringMonthDay}
-                onMonthDayChange={setRecurringMonthDay}
-                maxOccurrences={recurringMaxOccurrences}
-                onMaxOccurrencesChange={setRecurringMaxOccurrences}
-                enabled={settings.recurring_enabled}
-              />
+            {recurringEnabled && selectedDate && selectedSlot && (
+              <RecurringSelector {...recurringSelectorProps} />
             )}
           </div>
         )}
@@ -1186,12 +1198,28 @@ export default function CreateAdvanceRequest() {
               </div>
             </div>
 
-            {/* Recurring Summary */}
+            {/* Recurring — always editable on review (most users skip step 2) */}
+            {recurringEnabled ? (
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>
+                  Recurring booking (optional)
+                </p>
+                <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  Repeat this advance task daily, weekly, monthly, or every N days (e.g. 15 days).
+                </p>
+                <RecurringSelector {...recurringSelectorProps} />
+              </div>
+            ) : (
+              <div className="rounded-2xl p-3 text-xs" style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)' }}>
+                Recurring booking is currently turned off by admin (Advance Request Settings).
+              </div>
+            )}
+
             {recurringType !== 'none' && (
-              <div className="rounded-2xl p-4" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
+              <div className="rounded-2xl p-4" style={{ background: 'rgba(12,138,62,0.1)', border: '1px solid rgba(12,138,62,0.25)' }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <Repeat size={14} style={{ color: '#818cf8' }} />
-                  <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#818cf8' }}>Recurring Request</p>
+                  <Repeat size={14} style={{ color: '#0C8A3E' }} />
+                  <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Selected recurring plan</p>
                 </div>
                 <p className="text-sm font-semibold text-[#F5F7F6]">
                   {recurringType === 'daily' && `Daily for ${recurringMaxOccurrences} days`}
@@ -1241,7 +1269,10 @@ export default function CreateAdvanceRequest() {
                 className="w-full"
                 onClick={() => {
                   setError(null)
-                  // Always review address + charges before insert (prevents silent fail)
+                  // Restore schedule from first draft so review + recurring have context
+                  const primary = categoryDrafts[0]
+                  if (primary?.selectedDate) setSelectedDate(primary.selectedDate)
+                  if (primary?.selectedSlot) setSelectedSlot(primary.selectedSlot)
                   setStep(4)
                 }}
                 disabled={loading}
@@ -1249,7 +1280,7 @@ export default function CreateAdvanceRequest() {
                 Review &amp; Submit ({categoryDrafts.length})
               </CTA>
               <p className="text-center text-[11px]" style={{ color: pg.text4 }}>
-                Next: confirm address and schedule
+                Next: recurring options, address, and schedule
               </p>
             </div>
           ) : step < 4 ? (
