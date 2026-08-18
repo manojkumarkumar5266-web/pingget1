@@ -8,11 +8,10 @@ import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/Vi
 import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
-import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck, Pencil, ChevronRight, ChevronDown, Maximize2, Minimize2, ShieldCheck, Mic, ShoppingBag, Copy, Check } from 'lucide-react'
+import { ArrowLeft, Phone, Bike, PackageCheck, MapPin, Car, Truck, ChevronRight, ChevronDown, Maximize2, Minimize2, Mic, ShoppingBag, Copy, Star } from 'lucide-react'
 import { InteractiveStarRating } from '../../components/ui'
 import { pg } from '../../design/tokens'
 import { CTA, Surface, MobileFrame } from '../../design/primitives'
-import NeedHelpCard from '../../components/NeedHelpCard'
 import AddressPicker, { formatAddress, type SavedAddress } from '../../components/AddressPicker'
 import { openRequestChatRoom } from '../../lib/openRequestChat'
 import { BrandPersonName } from '../../components/Brand'
@@ -68,28 +67,6 @@ function trackingCopy(status: string, etaLabel: string | null) {
   }
 }
 
-function dpStatusLine(status: string): string {
-  switch (status) {
-    case 'accepted':
-    case 'confirmed':
-    case 'task_started':
-    case 'shopping':
-      return "I've reached the store and will pick up your order soon."
-    case 'purchased':
-      return 'I have picked up your order, and I am on the way.'
-    case 'on_the_way':
-      return 'I have picked up your order, and I am on the way.'
-    case 'arrived':
-      return "I'm near your location and will be at your doorstep soon."
-    case 'delivered':
-    case 'cash_received':
-    case 'completed':
-      return 'I have delivered your order. Thank you!'
-    default:
-      return STATUS_LABELS[status] || 'Updating status…'
-  }
-}
-
 export default function LiveTrackingPage() {
   const { requestId } = useParams<{ requestId: string }>()
   const { profile } = useAuth()
@@ -107,9 +84,6 @@ export default function LiveTrackingPage() {
   const [ratingFeedback, setRatingFeedback] = useState('')
   const [ratingSubmitting, setRatingSubmitting] = useState(false)
   const [changingAddress, setChangingAddress] = useState(false)
-  const [tipAmount, setTipAmount] = useState<number | 'custom' | null>(null)
-  const [customTip, setCustomTip] = useState('')
-  const [tipSaved, setTipSaved] = useState(false)
   const [instructionsOpen, setInstructionsOpen] = useState(false)
   const [deliveryNotes, setDeliveryNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
@@ -391,20 +365,6 @@ export default function LiveTrackingPage() {
     setSavingNotes(false)
   }
 
-  const saveTipIntent = async (amount: number) => {
-    setTipAmount(amount)
-    setTipSaved(true)
-    if (request?.accepted_dp_id && requestId) {
-      await supabase.from('notifications').insert({
-        user_id: request.accepted_dp_id,
-        title: 'Customer tip',
-        body: `Customer wants to tip ₹${amount}. Confirm at delivery.`,
-        type: 'order_status',
-        related_id: requestId,
-      })
-      kickPushDelivery()
-    }
-  }
 
   const shareLocation = async () => {
     const lat = profile?.gps_lat
@@ -529,10 +489,7 @@ export default function LiveTrackingPage() {
   const isPending = request.status === 'pending'
   const isCompleted = request.status === 'completed' || request.status === 'delivered' || request.status === 'cash_received'
   const isDelivered = request.status === 'delivered' || request.status === 'cash_received' || request.status === 'completed'
-  const showLiveMap = LIVE_STATUSES.has(request.status)
   const progress = STATUS_PROGRESS[request.status] ?? 0
-  const etaLabel = liveEtaLabel || STATUS_ETA[request.status] || '--'
-  const VehicleIcon = vehicleIcon(dpData?.vehicle_type)
 
   if (payPhase === 'thanks') {
     return (
@@ -620,41 +577,6 @@ export default function LiveTrackingPage() {
               </div>
               <p className="mb-2 text-xs font-bold" style={{ color: pg.text3 }}>Rate your delivery experience</p>
               <InteractiveStarRating value={ratingStars} onChange={setRatingStars} size={28} />
-              <div className="mt-4 overflow-hidden rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,#1a2744,#2a1a3a)' }}>
-                <p className="text-sm font-extrabold text-white">A little kindness can make their day</p>
-                <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>Add a tip for your delivery partner.</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[20, 30, 50].map(n => (
-                    <button key={n} type="button" onClick={() => void saveTipIntent(n)}
-                      className="rounded-xl px-4 py-2 text-sm font-bold"
-                      style={{
-                        background: tipAmount === n ? pg.lime : 'rgba(255,255,255,0.06)',
-                        color: tipAmount === n ? '#fff' : '#fff',
-                        border: `1px solid ${tipAmount === n ? pg.lime : 'rgba(255,255,255,0.15)'}`,
-                      }}>
-                      ₹{n}
-                    </button>
-                  ))}
-                  <button type="button" onClick={() => setTipAmount('custom')}
-                    className="rounded-xl px-4 py-2 text-sm font-bold"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
-                    Custom
-                  </button>
-                </div>
-                {tipAmount === 'custom' && (
-                  <div className="mt-2 flex gap-2">
-                    <input className="input flex-1" type="number" min={1} placeholder="Amount" value={customTip}
-                      onChange={e => setCustomTip(e.target.value)} />
-                    <button type="button" className="rounded-xl px-3 text-sm font-bold" style={{ background: pg.lime, color: '#fff' }}
-                      onClick={() => { const n = parseInt(customTip, 10); if (n > 0) void saveTipIntent(n) }}>
-                      Save
-                    </button>
-                  </div>
-                )}
-                {tipSaved && typeof tipAmount === 'number' && (
-                  <p className="mt-2 text-xs" style={{ color: pg.lime }}>Tip ₹{tipAmount} noted for your partner</p>
-                )}
-              </div>
             </div>
           )}
         </div>
@@ -662,25 +584,28 @@ export default function LiveTrackingPage() {
     )
   }
 
+
   const headline = trackingCopy(request.status, liveEtaLabel)
   const shortId = request.id.slice(0, 8).toUpperCase()
   const photos = Array.isArray((request as any).photo_urls) ? ((request as any).photo_urls as string[]) : []
-  const showMapBlock = showLiveMap || (!!userPos && !isPending && !isCancelled)
+  // Images until on_the_way; live map from on_the_way → arrived (till delivered)
+  const showLiveMap = LIVE_STATUSES.has(request.status)
+  const showStatusImages = !isPending && !isCancelled && !showLiveMap && !isDelivered
   const mapH = mapExpanded ? 'min(62vh, 520px)' : 'min(38vh, 320px)'
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col" style={{ background: pg.bg }}>
-      {/* Green status header */}
-      <div className="sticky top-0 z-30 px-4 pb-4 pt-12" style={{ background: pg.lime }}>
+      {/* Dark chrome header (no green bar) */}
+      <div className="sticky top-0 z-30 px-4 pb-3 pt-12" style={{ background: pg.header, borderBottom: `1px solid ${pg.line}` }}>
         <div className="flex items-start gap-3">
           <button type="button" onClick={() => navigate('/app')}
             className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            style={{ background: 'rgba(0,0,0,0.25)' }}>
+            style={{ background: 'rgba(255,255,255,0.08)' }}>
             <ArrowLeft size={18} color="#fff" />
           </button>
           <div className="min-w-0 flex-1 text-center pr-10">
-            <p className="text-xs font-semibold text-white/85">{headline.sub}</p>
-            <p className="mt-0.5 text-[22px] font-extrabold leading-tight text-white">{headline.main}</p>
+            <p className="text-xs font-semibold" style={{ color: pg.text3 }}>{headline.sub}</p>
+            <p className="mt-0.5 text-lg font-extrabold leading-tight text-white">{headline.main}</p>
           </div>
         </div>
       </div>
@@ -695,14 +620,13 @@ export default function LiveTrackingPage() {
           <div className="flex h-[28vh] flex-col items-center justify-center px-6">
             <p className="text-lg font-bold text-white">Order Cancelled</p>
           </div>
-        ) : showMapBlock ? (
+        ) : showLiveMap ? (
           <div className="relative" style={{ height: mapH }}>
             <FreeStreetMap
               center={mapCenter}
               zoom={14}
               markers={mapMarkers}
               routeLine={routeCoords.length >= 2 ? routeCoords : dpLive && userPos ? [dpLive, userPos] : null}
-              light
               instant
               hideRadius
               hideBadge
@@ -716,25 +640,32 @@ export default function LiveTrackingPage() {
             </button>
             <button type="button" onClick={() => void shareLocation()}
               className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold"
-              style={{ background: 'rgba(0,0,0,0.8)', color: pg.lime, border: `1px solid ${pg.lime}` }}>
+              style={{ background: 'rgba(0,0,0,0.85)', color: '#F5F7F6', border: '1px solid rgba(255,255,255,0.2)' }}>
               Share current location
             </button>
+            {liveEtaLabel && (
+              <div
+                className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
+                style={{ background: 'rgba(0,0,0,0.9)', color: '#F5F7F6', border: '1px solid rgba(255,255,255,0.15)' }}
+              >
+                ETA {liveEtaLabel}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="min-h-[200px]">
+        ) : showStatusImages ? (
+          <div className="min-h-[220px]">
             <VisualTracking
               progress={progress}
               status={request.status}
               dpName={dpProfile?.full_name}
               pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
               deliveryLabel={request.delivery_address?.split(',')[0] || 'You'}
-              compact
             />
           </div>
-        )}
+        ) : null}
 
         <div className="space-y-3 px-3 pt-3">
-          {/* DP card */}
+          {/* DP card — no green status bubble */}
           {dpProfile && !isCancelled && !isPending && (
             <div className="overflow-hidden rounded-2xl" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
               <div className="flex items-center gap-3 p-3.5">
@@ -750,7 +681,8 @@ export default function LiveTrackingPage() {
                     I&apos;m <BrandPersonName as="span">{dpProfile.full_name}</BrandPersonName>, your delivery partner
                   </p>
                   <p className="mt-0.5 text-[11px]" style={{ color: pg.text3 }}>
-                    {dpData?.vehicle_type || 'Bike'}
+                    {STATUS_LABELS[request.status] || request.status}
+                    {dpData?.vehicle_type ? ` · ${dpData.vehicle_type}` : ''}
                     {dpData?.rating_avg && Number(dpData.rating_avg) > 0
                       ? ` · ★ ${Number(dpData.rating_avg).toFixed(1)}`
                       : ''}
@@ -764,69 +696,7 @@ export default function LiveTrackingPage() {
                   </button>
                 )}
               </div>
-              <div className="mx-3 mb-3 rounded-xl px-3 py-2.5 text-sm font-semibold"
-                style={{ background: 'rgba(12,138,62,0.18)', color: '#7DFFA8' }}>
-                {dpStatusLine(request.status)}
-              </div>
             </div>
-          )}
-
-          {/* Tip card */}
-          {dpProfile && !isCancelled && !isPending && !isCompleted && (
-            <div className="overflow-hidden rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,#1a2744,#2a1a3a)', border: `1px solid ${pg.line}` }}>
-              <p className="text-sm font-extrabold text-white">A little kindness can make their day</p>
-              <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>Add a tip for your delivery partner.</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[20, 30, 50].map(n => (
-                  <button key={n} type="button" onClick={() => void saveTipIntent(n)}
-                    className="rounded-xl px-4 py-2 text-sm font-bold"
-                    style={{
-                      background: tipAmount === n ? pg.lime : 'rgba(0,0,0,0.35)',
-                      border: `1px solid ${tipAmount === n ? pg.lime : 'rgba(255,255,255,0.2)'}`,
-                      color: '#fff',
-                    }}>₹{n}</button>
-                ))}
-                <button type="button" onClick={() => setTipAmount('custom')}
-                  className="rounded-xl px-4 py-2 text-sm font-bold"
-                  style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}>
-                  Custom
-                </button>
-              </div>
-              {tipAmount === 'custom' && (
-                <div className="mt-2 flex gap-2">
-                  <input className="input flex-1" type="number" min={1} placeholder="Amount" value={customTip}
-                    onChange={e => setCustomTip(e.target.value)} />
-                  <button type="button" className="rounded-xl px-3 text-sm font-bold" style={{ background: pg.lime, color: '#fff' }}
-                    onClick={() => { const n = parseInt(customTip, 10); if (n > 0) void saveTipIntent(n) }}>
-                    Save
-                  </button>
-                </div>
-              )}
-              {tipSaved && typeof tipAmount === 'number' && (
-                <p className="mt-2 text-xs" style={{ color: '#7DFFA8' }}>Tip ₹{tipAmount} will be discussed at delivery</p>
-              )}
-            </div>
-          )}
-
-          {/* Safety / distance */}
-          {(request.pickup_address || request.shop_name) && (
-            <button type="button"
-              onClick={() => {
-                const lat = request.pickup_lat ?? request.shop_lat
-                const lng = request.pickup_lng ?? request.shop_lng
-                if (lat != null && lng != null) window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank')
-              }}
-              className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left"
-              style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
-              <ShieldCheck size={18} style={{ color: pg.lime }} />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-white truncate">
-                  {request.shop_name || request.pickup_address?.split(',')[0] || 'Store'}
-                </p>
-                <p className="text-[11px]" style={{ color: pg.text3 }}>Learn about delivery partner safety</p>
-              </div>
-              <ChevronRight size={16} style={{ color: pg.text3 }} />
-            </button>
           )}
 
           {/* Delivery instructions */}
@@ -874,7 +744,7 @@ export default function LiveTrackingPage() {
 
             <div className="flex items-start gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                <MapPin size={16} style={{ color: pg.lime }} />
+                <MapPin size={16} style={{ color: pg.text2 }} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-white">Delivery at Home</p>
@@ -900,35 +770,22 @@ export default function LiveTrackingPage() {
                 <p className="text-sm font-bold text-white">
                   {profile?.full_name || 'You'} · {profile?.phone || '—'}
                 </p>
-                <button type="button" onClick={async () => {
-                  if (!request?.accepted_dp_id || !request.user_id) return
-                  const roomId = await openRequestChatRoom({
-                    requestId: request.id,
-                    userId: request.user_id,
-                    dpId: request.accepted_dp_id,
-                  })
-                  if (roomId) navigate(`/app/chat/${roomId}`)
-                }} className="mt-2 inline-flex items-center gap-1 text-xs font-extrabold" style={{ color: pg.lime }}>
-                  Chat with partner <ChevronRight size={12} />
-                </button>
+                {request.accepted_dp_id && (
+                  <button type="button" onClick={async () => {
+                    if (!request?.accepted_dp_id || !request.user_id) return
+                    const roomId = await openRequestChatRoom({
+                      requestId: request.id,
+                      userId: request.user_id,
+                      dpId: request.accepted_dp_id,
+                    })
+                    if (roomId) navigate(`/app/chat/${roomId}`)
+                  }} className="mt-2 inline-flex items-center gap-1 text-xs font-extrabold" style={{ color: pg.lime }}>
+                    Chat with partner <ChevronRight size={12} />
+                  </button>
+                )}
               </div>
             </div>
           </div>
-
-          {/* Need help */}
-          <button type="button"
-            onClick={() => navigate(requestId ? `/app/support?request=${requestId}` : '/app/support')}
-            className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3.5 text-left"
-            style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
-              <MessageCircle size={16} style={{ color: pg.text2 }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-white">Need help?</p>
-              <p className="text-[11px]" style={{ color: pg.text3 }}>Chat with us about any issue related to your order</p>
-            </div>
-            <ChevronRight size={16} style={{ color: pg.text3 }} />
-          </button>
 
           {/* Order summary */}
           <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
@@ -964,10 +821,6 @@ export default function LiveTrackingPage() {
               className="mt-3 w-full text-center text-sm font-extrabold" style={{ color: pg.lime }}>
               View order summary
             </button>
-          </div>
-
-          <div className="pb-2">
-            <NeedHelpCard requestId={requestId} chatBasePath="/app/support" />
           </div>
 
           {isPending && (

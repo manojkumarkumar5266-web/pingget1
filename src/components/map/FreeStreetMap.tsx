@@ -226,7 +226,8 @@ function tileUrl(provider: TileProvider, z: number, x: number, y: number) {
 
 /**
  * GPS basemap for scanning + tracking (User + DP).
- * White canvas with Carto Voyager — visible dark-grey roads, greenery, buildings.
+ * Voyager tiles (roads, greenery, buildings) rendered dark so street lines
+ * read light grey/white while parks and blocks stay visible.
  */
 function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
   const [provider, setProvider] = useState<TileProvider>('voyager')
@@ -253,7 +254,7 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
   }
 
   return (
-    <div className="absolute inset-0 overflow-hidden" style={{ background: '#FFFFFF' }}>
+    <div className="absolute inset-0 overflow-hidden" style={{ background: '#0A0F14' }}>
       <div
         className="absolute"
         style={{
@@ -261,6 +262,7 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
           top: `${originTop}%`,
           width: '300%',
           height: '300%',
+          filter: 'invert(92%) hue-rotate(180deg) brightness(0.95) contrast(1.08) saturate(0.9)',
         }}
       >
         {range.map((dy) =>
@@ -284,7 +286,6 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
                   width: `${100 / 3}%`,
                   height: `${100 / 3}%`,
                   imageRendering: 'auto',
-                  filter: 'contrast(1.08) saturate(1.05)',
                 }}
                 loading="eager"
                 decoding="async"
@@ -295,6 +296,10 @@ function StreetTileBasemap({ center, zoom }: { center: LatLng; zoom: number }) {
           }),
         )}
       </div>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'rgba(0, 0, 0, 0.08)' }}
+      />
     </div>
   )
 }
@@ -355,7 +360,7 @@ export default function FreeStreetMap({
         width: '100%',
         height: '100%',
         minHeight: 200,
-        background: '#FFFFFF',
+        background: '#0A0F14',
         ...style,
       }}
     >
