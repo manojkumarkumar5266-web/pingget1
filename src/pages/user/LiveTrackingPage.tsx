@@ -8,7 +8,7 @@ import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/Vi
 import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
-import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck, Pencil } from 'lucide-react'
+import { ArrowLeft, Phone, MessageCircle, Star, Clock, Bike, PackageCheck, MapPin, Car, Truck, Pencil, ChevronRight, ChevronDown, Maximize2, Minimize2, ShieldCheck, Mic, ShoppingBag, Copy, Check } from 'lucide-react'
 import { InteractiveStarRating } from '../../components/ui'
 import { pg } from '../../design/tokens'
 import { CTA, Surface, MobileFrame } from '../../design/primitives'
@@ -28,6 +28,68 @@ type PayPhase = 'idle' | 'awaiting_user_payment' | 'awaiting_dp_accept' | 'payme
 
 const LIVE_STATUSES = new Set(['on_the_way', 'arrived'])
 
+function trackingCopy(status: string, etaLabel: string | null) {
+  const eta = etaLabel && etaLabel !== '--' ? etaLabel : null
+  switch (status) {
+    case 'accepted':
+    case 'confirmed':
+    case 'task_started':
+    case 'shopping':
+      return {
+        sub: 'Packing your order',
+        main: eta ? `Arriving in ${eta}` : 'Partner is at the store',
+      }
+    case 'purchased':
+    case 'on_the_way':
+      return {
+        sub: 'Order is on the way',
+        main: eta ? `Arriving in ${eta}` : 'On the way to you',
+      }
+    case 'arrived':
+      return {
+        sub: 'Be ready to collect your order',
+        main: 'Almost at your doorstep',
+      }
+    case 'delivered':
+    case 'cash_received':
+    case 'completed':
+      return {
+        sub: 'Delivered',
+        main: eta ? `Order arrived in ${eta}` : 'Order arrived',
+      }
+    case 'pending':
+    case 'searching_dp':
+      return { sub: 'Finding a partner', main: 'Waiting for acceptance' }
+    default:
+      return {
+        sub: STATUS_LABELS[status] || status,
+        main: eta ? `ETA ${eta}` : 'Live tracking',
+      }
+  }
+}
+
+function dpStatusLine(status: string): string {
+  switch (status) {
+    case 'accepted':
+    case 'confirmed':
+    case 'task_started':
+    case 'shopping':
+      return "I've reached the store and will pick up your order soon."
+    case 'purchased':
+      return 'I have picked up your order, and I am on the way.'
+    case 'on_the_way':
+      return 'I have picked up your order, and I am on the way.'
+    case 'arrived':
+      return "I'm near your location and will be at your doorstep soon."
+    case 'delivered':
+    case 'cash_received':
+    case 'completed':
+      return 'I have delivered your order. Thank you!'
+    default:
+      return STATUS_LABELS[status] || 'Updating status…'
+  }
+}
+
 export default function LiveTrackingPage() {
   const { requestId } = useParams<{ requestId: string }>()
   const { profile } = useAuth()
@@ -45,6 +107,13 @@ export default function LiveTrackingPage() {
   const [ratingFeedback, setRatingFeedback] = useState('')
   const [ratingSubmitting, setRatingSubmitting] = useState(false)
   const [changingAddress, setChangingAddress] = useState(false)
+  const [tipAmount, setTipAmount] = useState<number | 'custom' | null>(null)
+  const [customTip, setCustomTip] = useState('')
+  const [tipSaved, setTipSaved] = useState(false)
+  const [instructionsOpen, setInstructionsOpen] = useState(false)
+  const [deliveryNotes, setDeliveryNotes] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
+  const [mapExpanded, setMapExpanded] = useState(false)
   const lastEtaWrite = useRef(0)
 
   useEffect(() => {
@@ -296,6 +365,65 @@ export default function LiveTrackingPage() {
     }
   }
 
+  const saveDeliveryNotes = async () => {
+    if (!requestId || !deliveryNotes.trim()) return
+    setSavingNotes(true)
+    const note = deliveryNotes.trim()
+    const { error } = await supabase.from('requests').update({
+      special_instructions: note,
+    }).eq('id', requestId)
+    if (!error) {
+      setRequest(prev => prev ? { ...prev, special_instructions: note } as DeliveryRequest : prev)
+      if (request?.accepted_dp_id) {
+        await supabase.from('notifications').insert({
+          user_id: request.accepted_dp_id,
+          title: 'Delivery instructions',
+          body: note,
+          type: 'order_status',
+          related_id: requestId,
+        })
+        kickPushDelivery()
+      }
+      setInstructionsOpen(false)
+    } else {
+      alert(error.message || 'Could not save instructions')
+    }
+    setSavingNotes(false)
+  }
+
+  const saveTipIntent = async (amount: number) => {
+    setTipAmount(amount)
+    setTipSaved(true)
+    if (request?.accepted_dp_id && requestId) {
+      await supabase.from('notifications').insert({
+        user_id: request.accepted_dp_id,
+        title: 'Customer tip',
+        body: `Customer wants to tip ₹${amount}. Confirm at delivery.`,
+        type: 'order_status',
+        related_id: requestId,
+      })
+      kickPushDelivery()
+    }
+  }
+
+  const shareLocation = async () => {
+    const lat = profile?.gps_lat
+    const lng = profile?.gps_lng
+    if (lat == null || lng == null) {
+      alert('Location not available yet. Enable GPS and try again.')
+      return
+    }
+    const url = `https://www.google.com/maps?q=${lat},${lng}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'My location', url })
+      } else {
+        await navigator.clipboard.writeText(url)
+        alert('Location link copied')
+      }
+    } catch { /* cancelled */ }
+  }
+
   const markPaymentCompleted = async () => {
     const now = new Date().toISOString()
 
@@ -425,244 +553,422 @@ export default function LiveTrackingPage() {
     )
   }
 
+
   if (payPhase === 'rating') {
+    const first = dpProfile?.full_name?.split(' ')[0] || 'your partner'
     return (
-      <MobileFrame overlay className="items-center justify-center overflow-y-auto px-6 py-8">
-        <div className="w-full max-w-sm">
-          <Surface className="rounded-[28px] p-6 text-center">
-            <h2 className="mb-1 text-xl font-bold text-[#F5F7F6]">Rate Your Delivery</h2>
-            <p className="mb-5 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
-              How was {dpProfile?.full_name?.split(' ')[0] || 'your partner'}'s service?
-            </p>
-            <div className="mb-2">
-              <InteractiveStarRating value={ratingStars} onChange={setRatingStars} size={40} />
+      <div className="mx-auto min-h-screen w-full max-w-lg overflow-y-auto pb-10" style={{ background: pg.bg }}>
+        <div className="px-4 pt-12 pb-4">
+          <button type="button" onClick={() => navigate('/app')} className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <ArrowLeft size={18} color="#fff" />
+          </button>
+        </div>
+        <div className="space-y-3 px-4">
+          <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+            <div className="flex items-start gap-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: pg.limeDim }}>
+                <PackageCheck size={28} style={{ color: pg.lime }} />
+              </div>
+              <div>
+                <p className="text-lg font-extrabold text-white">Order arrived</p>
+                <p className="mt-1 text-sm" style={{ color: pg.text3 }}>
+                  Your delivery partner {first} reached your location
+                </p>
+              </div>
             </div>
-            <p className="mb-5 text-center text-sm font-semibold" style={{ color: ratingStars ? '#FBBF24' : 'rgba(255,255,255,0.35)' }}>
-              {ratingStars === 0
-                ? 'Tap a star to rate'
-                : ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][ratingStars]}
-            </p>
+          </div>
+
+          <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Star size={18} style={{ color: '#FBBF24' }} fill="#FBBF24" />
+                <p className="text-sm font-bold text-white">How was your order experience?</p>
+              </div>
+            </div>
+            <div className="mb-3 flex justify-center">
+              <InteractiveStarRating value={ratingStars} onChange={setRatingStars} size={36} />
+            </div>
             <textarea
               value={ratingFeedback}
               onChange={e => setRatingFeedback(e.target.value)}
               placeholder="Write feedback (optional)..."
-              rows={3}
-              className="input mb-5 w-full resize-none text-sm"
+              rows={2}
+              className="input mb-3 w-full resize-none text-sm"
             />
             <CTA type="button" onClick={submitRating} disabled={ratingStars === 0 || ratingSubmitting} className="w-full">
-              {ratingSubmitting ? 'Submitting...' : 'Confirm Rating & Feedback'}
+              {ratingSubmitting ? 'Submitting...' : 'Rate now'}
             </CTA>
-          </Surface>
+          </div>
+
+          {dpProfile && (
+            <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+              <div className="mb-3 flex items-center gap-3">
+                <div className="h-12 w-12 overflow-hidden rounded-full" style={{ background: pg.surface2 }}>
+                  {dpProfile.photo_url ? (
+                    <img src={dpProfile.photo_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center"><Bike size={20} style={{ color: pg.text3 }} /></div>
+                  )}
+                </div>
+                <p className="flex-1 text-sm font-bold text-white">
+                  I&apos;m <BrandPersonName as="span">{dpProfile.full_name}</BrandPersonName>, your delivery partner
+                </p>
+                <button type="button" onClick={() => { window.location.href = `tel:${dpProfile.phone || ''}` }}
+                  className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: pg.lime }}>
+                  <Phone size={16} color="#fff" />
+                </button>
+              </div>
+              <p className="mb-2 text-xs font-bold" style={{ color: pg.text3 }}>Rate your delivery experience</p>
+              <InteractiveStarRating value={ratingStars} onChange={setRatingStars} size={28} />
+              <div className="mt-4 overflow-hidden rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,#1a2744,#2a1a3a)' }}>
+                <p className="text-sm font-extrabold text-white">A little kindness can make their day</p>
+                <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>Add a tip for your delivery partner.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[20, 30, 50].map(n => (
+                    <button key={n} type="button" onClick={() => void saveTipIntent(n)}
+                      className="rounded-xl px-4 py-2 text-sm font-bold"
+                      style={{
+                        background: tipAmount === n ? pg.lime : 'rgba(255,255,255,0.06)',
+                        color: tipAmount === n ? '#fff' : '#fff',
+                        border: `1px solid ${tipAmount === n ? pg.lime : 'rgba(255,255,255,0.15)'}`,
+                      }}>
+                      ₹{n}
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => setTipAmount('custom')}
+                    className="rounded-xl px-4 py-2 text-sm font-bold"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }}>
+                    Custom
+                  </button>
+                </div>
+                {tipAmount === 'custom' && (
+                  <div className="mt-2 flex gap-2">
+                    <input className="input flex-1" type="number" min={1} placeholder="Amount" value={customTip}
+                      onChange={e => setCustomTip(e.target.value)} />
+                    <button type="button" className="rounded-xl px-3 text-sm font-bold" style={{ background: pg.lime, color: '#fff' }}
+                      onClick={() => { const n = parseInt(customTip, 10); if (n > 0) void saveTipIntent(n) }}>
+                      Save
+                    </button>
+                  </div>
+                )}
+                {tipSaved && typeof tipAmount === 'number' && (
+                  <p className="mt-2 text-xs" style={{ color: pg.lime }}>Tip ₹{tipAmount} noted for your partner</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-      </MobileFrame>
+      </div>
     )
   }
 
+  const headline = trackingCopy(request.status, liveEtaLabel)
+  const shortId = request.id.slice(0, 8).toUpperCase()
+  const photos = Array.isArray((request as any).photo_urls) ? ((request as any).photo_urls as string[]) : []
+  const showMapBlock = showLiveMap || (!!userPos && !isPending && !isCancelled)
+  const mapH = mapExpanded ? 'min(62vh, 520px)' : 'min(38vh, 320px)'
+
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col" style={{ background: pg.bg }}>
-      <div className="flex-shrink-0 px-4 pt-12 pb-2">
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={() => navigate('/app')} className="map-control-btn map-control-dark">
-            <ArrowLeft size={18} />
+      {/* Green status header */}
+      <div className="sticky top-0 z-30 px-4 pb-4 pt-12" style={{ background: pg.lime }}>
+        <div className="flex items-start gap-3">
+          <button type="button" onClick={() => navigate('/app')}
+            className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            style={{ background: 'rgba(0,0,0,0.25)' }}>
+            <ArrowLeft size={18} color="#fff" />
           </button>
-          <div className="flex-1 text-center pr-11">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>Live</p>
-            <p className="text-sm font-extrabold text-[#F5F7F6]">Order tracking</p>
+          <div className="min-w-0 flex-1 text-center pr-10">
+            <p className="text-xs font-semibold text-white/85">{headline.sub}</p>
+            <p className="mt-0.5 text-[22px] font-extrabold leading-tight text-white">{headline.main}</p>
           </div>
         </div>
       </div>
 
-      <div className="relative flex-shrink-0">
+      <div className="flex-1 overflow-y-auto pb-28">
         {isPending ? (
-          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-[#000000] px-6">
-            <img src={Images.userWaiting} alt="" className="mb-3 h-40 w-40 object-contain" />
-            <p className="text-lg font-bold text-[#F5F7F6]">Waiting for partner</p>
+          <div className="flex h-[36vh] min-h-[240px] flex-col items-center justify-center px-6">
+            <img src={Images.userWaiting} alt="" className="mb-3 h-36 w-36 object-contain" />
+            <p className="text-lg font-bold text-white">Waiting for partner</p>
           </div>
         ) : isCancelled ? (
-          <div className="flex h-[46vh] min-h-[300px] flex-col items-center justify-center bg-[#000000] px-6">
-            <p className="text-lg font-bold text-[#F5F7F6]">Order Cancelled</p>
-            <button type="button" onClick={() => navigate('/app')} className="btn-primary mt-4">Back Home</button>
+          <div className="flex h-[28vh] flex-col items-center justify-center px-6">
+            <p className="text-lg font-bold text-white">Order Cancelled</p>
           </div>
-        ) : showLiveMap ? (
-          <div className="space-y-2">
-            <VisualTracking
-              progress={progress}
-              status={request.status}
-              dpName={dpProfile?.full_name}
-              pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
-              deliveryLabel={request.delivery_address?.split(',')[0] || 'You'}
-              hideProgress
-              compact
+        ) : showMapBlock ? (
+          <div className="relative" style={{ height: mapH }}>
+            <FreeStreetMap
+              center={mapCenter}
+              zoom={14}
+              markers={mapMarkers}
+              routeLine={routeCoords.length >= 2 ? routeCoords : dpLive && userPos ? [dpLive, userPos] : null}
+              light
+              instant
+              hideRadius
+              hideBadge
+              radiusMeters={MAP_VIEW_RADIUS_M}
             />
-            <div className="relative mx-3 mb-2 h-[30vh] min-h-[200px] overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
-              <FreeStreetMap
-                center={mapCenter}
-                zoom={14}
-                markers={mapMarkers}
-                routeLine={routeCoords.length >= 2 ? routeCoords : dpLive && userPos ? [dpLive, userPos] : null}
-                light
-                instant
-                hideRadius
-                hideBadge
-                radiusMeters={MAP_VIEW_RADIUS_M}
-              />
-              {liveEtaLabel && (
-                <div
-                  className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                  style={{ background: 'rgba(0,0,0,0.94)', color: pg.lime, border: `1px solid rgba(12, 138, 62, 0.35)` }}
-                >
-                  ETA {liveEtaLabel}
-                </div>
-              )}
-            </div>
+            <button type="button" onClick={() => setMapExpanded(v => !v)}
+              className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl"
+              style={{ background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.15)' }}
+              aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}>
+              {mapExpanded ? <Minimize2 size={16} color="#fff" /> : <Maximize2 size={16} color="#fff" />}
+            </button>
+            <button type="button" onClick={() => void shareLocation()}
+              className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold"
+              style={{ background: 'rgba(0,0,0,0.8)', color: pg.lime, border: `1px solid ${pg.lime}` }}>
+              Share current location
+            </button>
           </div>
         ) : (
-          <div className="min-h-[240px]">
+          <div className="min-h-[200px]">
             <VisualTracking
               progress={progress}
               status={request.status}
               dpName={dpProfile?.full_name}
               pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
               deliveryLabel={request.delivery_address?.split(',')[0] || 'You'}
+              compact
             />
           </div>
         )}
-      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24" style={{ background: pg.bg }}>
-        <div className="mx-auto max-w-md">
+        <div className="space-y-3 px-3 pt-3">
+          {/* DP card */}
           {dpProfile && !isCancelled && !isPending && (
-            <>
-              <div className="mb-3 grid grid-cols-3 gap-2.5">
-                <Surface className="p-3 text-center">
-                  <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(251,191,36,0.15)' }}>
-                    <Star size={16} style={{ color: pg.lime }} fill={pg.lime} />
-                  </div>
-                  <p className="text-base font-bold text-[#F5F7F6]">
-                    {dpData?.rating_avg && Number(dpData.rating_avg) > 0 ? Number(dpData.rating_avg).toFixed(1) : '—'}
-                  </p>
-                  <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text3 }}>
-                    Rating{dpData?.rating_count ? ` (${dpData.rating_count})` : ''}
-                  </p>
-                </Surface>
-                <Surface className="p-3 text-center">
-                  <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: pg.limeDim }}>
-                    <VehicleIcon size={16} style={{ color: pg.lime }} />
-                  </div>
-                  <p className="text-base font-bold text-[#F5F7F6] capitalize">{dpData?.vehicle_type || 'Bike'}</p>
-                  <p className="text-[10px]" style={{ color: pg.text3 }}>Vehicle</p>
-                </Surface>
-                <Surface className="p-3 text-center">
-                  <div className="mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(59,130,246,0.15)' }}>
-                    <Clock size={16} style={{ color: pg.lime }} />
-                  </div>
-                  <p className="text-base font-bold text-[#F5F7F6]">{etaLabel}</p>
-                  <p className="text-[10px]" style={{ color: pg.text3 }}>ETA</p>
-                </Surface>
-              </div>
-
-              <Surface className="mb-4 p-4">
-                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>
-                  Delivery Partner
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="relative h-16 w-16 overflow-hidden rounded-2xl shrink-0" style={{ background: pg.surface2 }}>
-                    {dpProfile.photo_url ? (
-                      <img src={dpProfile.photo_url} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center" style={{ color: pg.text3 }}><Bike size={24} /></div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <BrandPersonName as="p" className="truncate text-base" style={{ color: '#F5F7F6' }}>
-                      {dpProfile.full_name}
-                    </BrandPersonName>
-                    <p className="text-xs" style={{ color: pg.text3 }}>{STATUS_LABELS[request.status] || request.status}</p>
-                  </div>
-                  {!isCompleted && (
-                    <>
-                      <button type="button" onClick={() => { window.location.href = `tel:${dpProfile.phone || ''}` }}
-                        className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0"
-                        style={{ background: pg.limeDim, border: '1px solid rgba(196,214,0,0.25)', color: pg.lime }}>
-                        <Phone size={18} />
-                      </button>
-                      <button type="button" onClick={async () => {
-                        if (!request || !request.accepted_dp_id || !request.user_id) return
-                        const roomId = await openRequestChatRoom({
-                          requestId: request.id,
-                          userId: request.user_id,
-                          dpId: request.accepted_dp_id,
-                        })
-                        if (roomId) navigate(`/app/chat/${roomId}`)
-                      }} className="flex h-11 w-11 items-center justify-center rounded-xl shrink-0"
-                        style={{ background: pg.lime, color: pg.limeText }}>
-                        <MessageCircle size={18} />
-                      </button>
-                    </>
+            <div className="overflow-hidden rounded-2xl" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+              <div className="flex items-center gap-3 p-3.5">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full" style={{ background: pg.surface2 }}>
+                  {dpProfile.photo_url ? (
+                    <img src={dpProfile.photo_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center"><Bike size={20} style={{ color: pg.text3 }} /></div>
                   )}
                 </div>
-              </Surface>
-
-              <Surface className="mb-4 p-4">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-red-400" />
-                    <p className="text-xs font-bold uppercase tracking-wider" style={{ color: pg.text3 }}>Delivery Address</p>
-                  </div>
-                  {!isCompleted && (
-                    <button
-                      type="button"
-                      onClick={() => setChangingAddress(true)}
-                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold"
-                      style={{ background: pg.limeDim, color: pg.lime }}
-                    >
-                      <Pencil size={12} /> Change
-                    </button>
-                  )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-white">
+                    I&apos;m <BrandPersonName as="span">{dpProfile.full_name}</BrandPersonName>, your delivery partner
+                  </p>
+                  <p className="mt-0.5 text-[11px]" style={{ color: pg.text3 }}>
+                    {dpData?.vehicle_type || 'Bike'}
+                    {dpData?.rating_avg && Number(dpData.rating_avg) > 0
+                      ? ` · ★ ${Number(dpData.rating_avg).toFixed(1)}`
+                      : ''}
+                  </p>
                 </div>
-                <p className="text-sm leading-relaxed" style={{ color: pg.text }}>{request.delivery_address || 'Not specified'}</p>
-              </Surface>
-
-              {changingAddress && (
-                <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                  <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto rounded-[24px]" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
-                    <div className="flex items-center justify-between px-4 pt-4">
-                      <p className="text-sm font-extrabold">Update delivery address</p>
-                      <button type="button" onClick={() => setChangingAddress(false)} className="text-xs font-bold" style={{ color: pg.text3 }}>Close</button>
-                    </div>
-                    <div className="p-4">
-                      <AddressPicker
-                        defaultOpenList
-                        onSelect={(addr) => { void applyDeliveryAddress(addr) }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-4">
-                <NeedHelpCard requestId={requestId} chatBasePath="/app/support" />
+                {!isCompleted && (
+                  <button type="button" onClick={() => { window.location.href = `tel:${dpProfile.phone || ''}` }}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: pg.lime }}>
+                    <Phone size={18} color="#fff" />
+                  </button>
+                )}
               </div>
-
-              {Array.isArray((request as any).photo_urls) && (request as any).photo_urls.length > 0 && (
-                <Surface className="mb-4 p-4">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-black/55">Order photos</p>
-                  <div className="flex flex-wrap gap-2">
-                    {((request as any).photo_urls as string[]).map((url, i) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                        <img
-                          src={url}
-                          alt={`Order photo ${i + 1}`}
-                          className="h-20 w-20 rounded-xl object-cover"
-                          style={{ border: `1px solid ${pg.line}` }}
-                        />
-                      </a>
-                    ))}
-                  </div>
-                </Surface>
-              )}
-            </>
+              <div className="mx-3 mb-3 rounded-xl px-3 py-2.5 text-sm font-semibold"
+                style={{ background: 'rgba(12,138,62,0.18)', color: '#7DFFA8' }}>
+                {dpStatusLine(request.status)}
+              </div>
+            </div>
           )}
+
+          {/* Tip card */}
+          {dpProfile && !isCancelled && !isPending && !isCompleted && (
+            <div className="overflow-hidden rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,#1a2744,#2a1a3a)', border: `1px solid ${pg.line}` }}>
+              <p className="text-sm font-extrabold text-white">A little kindness can make their day</p>
+              <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>Add a tip for your delivery partner.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {[20, 30, 50].map(n => (
+                  <button key={n} type="button" onClick={() => void saveTipIntent(n)}
+                    className="rounded-xl px-4 py-2 text-sm font-bold"
+                    style={{
+                      background: tipAmount === n ? pg.lime : 'rgba(0,0,0,0.35)',
+                      border: `1px solid ${tipAmount === n ? pg.lime : 'rgba(255,255,255,0.2)'}`,
+                      color: '#fff',
+                    }}>₹{n}</button>
+                ))}
+                <button type="button" onClick={() => setTipAmount('custom')}
+                  className="rounded-xl px-4 py-2 text-sm font-bold"
+                  style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}>
+                  Custom
+                </button>
+              </div>
+              {tipAmount === 'custom' && (
+                <div className="mt-2 flex gap-2">
+                  <input className="input flex-1" type="number" min={1} placeholder="Amount" value={customTip}
+                    onChange={e => setCustomTip(e.target.value)} />
+                  <button type="button" className="rounded-xl px-3 text-sm font-bold" style={{ background: pg.lime, color: '#fff' }}
+                    onClick={() => { const n = parseInt(customTip, 10); if (n > 0) void saveTipIntent(n) }}>
+                    Save
+                  </button>
+                </div>
+              )}
+              {tipSaved && typeof tipAmount === 'number' && (
+                <p className="mt-2 text-xs" style={{ color: '#7DFFA8' }}>Tip ₹{tipAmount} will be discussed at delivery</p>
+              )}
+            </div>
+          )}
+
+          {/* Safety / distance */}
+          {(request.pickup_address || request.shop_name) && (
+            <button type="button"
+              onClick={() => {
+                const lat = request.pickup_lat ?? request.shop_lat
+                const lng = request.pickup_lng ?? request.shop_lng
+                if (lat != null && lng != null) window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank')
+              }}
+              className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left"
+              style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+              <ShieldCheck size={18} style={{ color: pg.lime }} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-white truncate">
+                  {request.shop_name || request.pickup_address?.split(',')[0] || 'Store'}
+                </p>
+                <p className="text-[11px]" style={{ color: pg.text3 }}>Learn about delivery partner safety</p>
+              </div>
+              <ChevronRight size={16} style={{ color: pg.text3 }} />
+            </button>
+          )}
+
+          {/* Delivery instructions */}
+          {!isCompleted && !isCancelled && (
+            <div className="rounded-2xl" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+              <button type="button" onClick={() => {
+                setInstructionsOpen(v => !v)
+                if (!deliveryNotes && request.special_instructions) setDeliveryNotes(request.special_instructions)
+              }} className="flex w-full items-center gap-3 px-3.5 py-3.5 text-left">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                  <Mic size={16} style={{ color: pg.text2 }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-white">Add delivery instructions</p>
+                  <p className="text-[11px]" style={{ color: pg.text3 }}>Help your delivery partner reach you faster</p>
+                </div>
+                <ChevronDown size={16} style={{ color: pg.text3, transform: instructionsOpen ? 'rotate(180deg)' : undefined }} />
+              </button>
+              {instructionsOpen && (
+                <div className="space-y-2 px-3.5 pb-3.5">
+                  <textarea className="input w-full resize-none text-sm" rows={3} value={deliveryNotes}
+                    onChange={e => setDeliveryNotes(e.target.value)}
+                    placeholder="Gate code, landmark, floor…" />
+                  <CTA type="button" onClick={() => void saveDeliveryNotes()} disabled={savingNotes || !deliveryNotes.trim()} className="w-full">
+                    {savingNotes ? 'Saving…' : 'Save instructions'}
+                  </CTA>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Delivery details */}
+          <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+            <div className="mb-3 flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <Bike size={16} style={{ color: pg.text2 }} />
+              </div>
+              <div>
+                <p className="text-sm font-extrabold text-white">Your delivery details</p>
+                <p className="text-[11px]" style={{ color: pg.text3 }}>Details of your current order</p>
+              </div>
+            </div>
+
+            <div className="my-3 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <MapPin size={16} style={{ color: pg.lime }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-white">Delivery at Home</p>
+                <p className="mt-1 text-xs leading-relaxed" style={{ color: pg.text3 }}>
+                  {request.delivery_address || 'Not specified'}
+                </p>
+                {!isCompleted && (
+                  <button type="button" onClick={() => setChangingAddress(true)}
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-extrabold" style={{ color: pg.lime }}>
+                    Change address <ChevronRight size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="my-3 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <Phone size={16} style={{ color: pg.text2 }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-white">
+                  {profile?.full_name || 'You'} · {profile?.phone || '—'}
+                </p>
+                <button type="button" onClick={async () => {
+                  if (!request?.accepted_dp_id || !request.user_id) return
+                  const roomId = await openRequestChatRoom({
+                    requestId: request.id,
+                    userId: request.user_id,
+                    dpId: request.accepted_dp_id,
+                  })
+                  if (roomId) navigate(`/app/chat/${roomId}`)
+                }} className="mt-2 inline-flex items-center gap-1 text-xs font-extrabold" style={{ color: pg.lime }}>
+                  Chat with partner <ChevronRight size={12} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Need help */}
+          <button type="button"
+            onClick={() => navigate(requestId ? `/app/support?request=${requestId}` : '/app/support')}
+            className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3.5 text-left"
+            style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <MessageCircle size={16} style={{ color: pg.text2 }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-white">Need help?</p>
+              <p className="text-[11px]" style={{ color: pg.text3 }}>Chat with us about any issue related to your order</p>
+            </div>
+            <ChevronRight size={16} style={{ color: pg.text3 }} />
+          </button>
+
+          {/* Order summary */}
+          <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+            <div className="mb-3 flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <ShoppingBag size={16} style={{ color: pg.text2 }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-extrabold text-white">Order summary</p>
+                <p className="flex items-center gap-1.5 text-[11px]" style={{ color: pg.text3 }}>
+                  Order id - #{shortId}
+                  <button type="button" aria-label="Copy order id" onClick={() => {
+                    void navigator.clipboard.writeText(request.id)
+                  }}>
+                    <Copy size={12} />
+                  </button>
+                </p>
+              </div>
+            </div>
+            {photos.length > 0 && (
+              <div className="mb-3 flex gap-2 overflow-x-auto">
+                {photos.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                    <img src={url} alt="" className="h-16 w-16 rounded-xl object-cover" style={{ border: `1px solid ${pg.line}` }} />
+                  </a>
+                ))}
+              </div>
+            )}
+            <p className="line-clamp-3 text-xs" style={{ color: pg.text3 }}>
+              {request.description || request.request_category || 'Delivery request'}
+            </p>
+            <button type="button" onClick={() => navigate(`/app/orders`)}
+              className="mt-3 w-full text-center text-sm font-extrabold" style={{ color: pg.lime }}>
+              View order summary
+            </button>
+          </div>
+
+          <div className="pb-2">
+            <NeedHelpCard requestId={requestId} chatBasePath="/app/support" />
+          </div>
 
           {isPending && (
             <button type="button" onClick={async () => {
@@ -674,40 +980,6 @@ export default function LiveTrackingPage() {
             </button>
           )}
 
-          {isDelivered && payPhase === 'idle' && request.status !== 'completed' && (
-            <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-              <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
-                <PackageCheck size={40} className="mx-auto mb-3 text-green-400" />
-                <p className="text-lg font-extrabold text-[#F5F7F6]">Order delivered</p>
-                <p className="mt-1 mb-5 text-sm" style={{ color: pg.text3 }}>Please accept delivery to continue</p>
-                <CTA type="button" onClick={confirmDelivery} className="w-full" style={{ background: pg.success, color: '#fff', boxShadow: 'none' }}>
-                  Accept Delivery
-                </CTA>
-              </div>
-            </div>
-          )}
-
-          {(payPhase === 'awaiting_user_payment' || (request.status === 'completed' && payPhase === 'idle')) && (
-            <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-              <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
-                <p className="text-lg font-extrabold text-[#F5F7F6]">Payment completed?</p>
-                <p className="mt-1 mb-5 text-sm" style={{ color: pg.text3 }}>Confirm you have paid your delivery partner</p>
-                <CTA type="button" onClick={markPaymentCompleted} className="w-full">
-                  Payment Completed
-                </CTA>
-              </div>
-            </div>
-          )}
-
-          {payPhase === 'awaiting_dp_accept' && (
-            <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-              <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
-                <p className="font-extrabold text-[#F5F7F6]">Waiting for partner…</p>
-                <p className="mt-2 text-sm" style={{ color: pg.text3 }}>Partner will Accept Payment next — then you can rate</p>
-              </div>
-            </div>
-          )}
-
           {isCancelled && (
             <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-center">
               <p className="font-semibold text-red-400">Order Cancelled</p>
@@ -716,6 +988,57 @@ export default function LiveTrackingPage() {
           )}
         </div>
       </div>
+
+      {changingAddress && (
+        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto rounded-[24px]" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
+            <div className="flex items-center justify-between px-4 pt-4">
+              <p className="text-sm font-extrabold">Update delivery address</p>
+              <button type="button" onClick={() => setChangingAddress(false)} className="text-xs font-bold" style={{ color: pg.text3 }}>Close</button>
+            </div>
+            <div className="p-4">
+              <AddressPicker
+                defaultOpenList
+                onSelect={(addr) => { void applyDeliveryAddress(addr) }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDelivered && payPhase === 'idle' && request.status !== 'completed' && (
+        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
+            <PackageCheck size={40} className="mx-auto mb-3 text-green-400" />
+            <p className="text-lg font-extrabold text-[#F5F7F6]">Order delivered</p>
+            <p className="mt-1 mb-5 text-sm" style={{ color: pg.text3 }}>Please accept delivery to continue</p>
+            <CTA type="button" onClick={confirmDelivery} className="w-full" style={{ background: pg.success, color: '#fff', boxShadow: 'none' }}>
+              Accept Delivery
+            </CTA>
+          </div>
+        </div>
+      )}
+
+      {(payPhase === 'awaiting_user_payment' || (request.status === 'completed' && payPhase === 'idle')) && (
+        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
+            <p className="text-lg font-extrabold text-[#F5F7F6]">Payment completed?</p>
+            <p className="mt-1 mb-5 text-sm" style={{ color: pg.text3 }}>Confirm you have paid your delivery partner</p>
+            <CTA type="button" onClick={markPaymentCompleted} className="w-full">
+              Payment Completed
+            </CTA>
+          </div>
+        </div>
+      )}
+
+      {payPhase === 'awaiting_dp_accept' && (
+        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
+            <p className="font-extrabold text-[#F5F7F6]">Waiting for partner…</p>
+            <p className="mt-2 text-sm" style={{ color: pg.text3 }}>Partner will Accept Payment next — then you can rate</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

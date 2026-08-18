@@ -444,7 +444,12 @@ export default function CreateAdvanceRequest() {
     setError(null)
     const homeAddr = await getSelectedDeliveryAddress(profile!.id)
     const deliveryText = homeAddr?.text || fullAddressText
-    if (!deliveryText) { setError('Please select a delivery address on the Home page first'); return }
+    if (!deliveryText) {
+      setError('Please select a delivery address on the Home page first')
+      // Take user to address step so Final Submit is not a silent no-op
+      if (step !== 3 && step !== 4) setStep(3)
+      return
+    }
 
     const drafts = categoryDrafts.length > 0 ? categoryDrafts : null
     const primary = drafts?.[0]
@@ -452,7 +457,11 @@ export default function CreateAdvanceRequest() {
     const date = primary?.selectedDate || selectedDate
     const slot = primary?.selectedSlot || selectedSlot
     if (!cat) { setError('Please select a category'); return }
-    if (!date || !slot) { setError('Please select date and time slot'); return }
+    if (!date || !slot) {
+      setError('Please select date and time slot')
+      if (step === 1) setStep(2)
+      return
+    }
     if (!settings) { setError('Settings not loaded yet. Please wait.'); return }
 
     const fullDescription = drafts
@@ -498,10 +507,11 @@ export default function CreateAdvanceRequest() {
       if (scheduledTimestamp.getTime() < Date.now() + bufferMs) {
         setError('The selected time slot is no longer available. Please choose a future time slot.')
         setLoading(false)
+        if (step === 1) setStep(2)
         return
       }
 
-      const { data: inserted, error: insertError } = await supabase.from('requests').insert({
+      const insertPayload: Record<string, unknown> = {
         user_id: profile!.id,
         description: fullDescription,
         photo_urls: photoUrls.length > 0 ? photoUrls : null,
@@ -537,10 +547,32 @@ export default function CreateAdvanceRequest() {
         recurring_weekday: recurringType === 'weekly' ? recurringWeekday : null,
         recurring_month_day: recurringType === 'monthly' ? recurringMonthDay : null,
         recurring_count: 0,
-        recurring_max_occurrences: recurringType !== 'none' ? recurringMaxOccurrences : null,
-      }).select('id').single()
+      }
+      // Only send when recurring — avoids failing if migration not applied yet
+      if (recurringType !== 'none') {
+        insertPayload.recurring_max_occurrences = recurringMaxOccurrences
+      }
+
+      let { data: inserted, error: insertError } = await supabase
+        .from('requests')
+        .insert(insertPayload)
+        .select('id')
+        .single()
+
+      // Retry without recurring_max_occurrences if column missing on older DB
+      if (
+        insertError &&
+        recurringType !== 'none' &&
+        /recurring_max_occurrences/i.test(insertError.message || '')
+      ) {
+        delete insertPayload.recurring_max_occurrences
+        const retry = await supabase.from('requests').insert(insertPayload).select('id').single()
+        inserted = retry.data
+        insertError = retry.error
+      }
 
       if (insertError) throw insertError
+      if (!inserted?.id) throw new Error('Could not create request. Please try again.')
 
       sessionStorage.removeItem('adv_category_drafts_meta')
       await supabase.from('notifications').insert({
@@ -619,6 +651,7 @@ export default function CreateAdvanceRequest() {
         {/* STEP 1: Category Selection — images + popup sheet */}
         {step === 1 && (
           <div className="space-y-5">
+            {error && <ErrorBanner message={error} />}
             <div>
               <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>What do you need done?</p>
               <p className="mb-4 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Choose a category for your scheduled task</p>
@@ -794,6 +827,7 @@ export default function CreateAdvanceRequest() {
         {/* STEP 2: Date & Time */}
         {step === 2 && (
           <div className="space-y-5 animate-slide-up">
+            {error && <ErrorBanner message={error} />}
             <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Select Date & Time</p>
             <PremiumCalendar selectedDate={selectedDate} onSelect={setSelectedDate} maxDays={maxDays} />
 
@@ -1202,9 +1236,22 @@ export default function CreateAdvanceRequest() {
       >
         <div className="w-full max-w-lg">
           {step === 1 && categoryDrafts.length > 0 ? (
-            <CTA className="w-full" onClick={handleSubmit} disabled={loading}>
-              {loading ? 'Submitting...' : `Final Submit (${categoryDrafts.length})`}
-            </CTA>
+            <div className="space-y-2">
+              <CTA
+                className="w-full"
+                onClick={() => {
+                  setError(null)
+                  // Always review address + charges before insert (prevents silent fail)
+                  setStep(4)
+                }}
+                disabled={loading}
+              >
+                Review &amp; Submit ({categoryDrafts.length})
+              </CTA>
+              <p className="text-center text-[11px]" style={{ color: pg.text4 }}>
+                Next: confirm address and schedule
+              </p>
+            </div>
           ) : step < 4 ? (
             <CTA
               className="w-full"
