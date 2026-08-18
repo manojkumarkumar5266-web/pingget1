@@ -4,24 +4,17 @@ import { supabase, type DeliveryRequest, type Profile, type DeliveryPartner } fr
 import { kickPushDelivery } from '../../lib/notify'
 import { useAuth } from '../../context'
 import { STATUS_LABELS } from '../../lib/utils'
-import VisualTracking, { STATUS_PROGRESS, STATUS_ETA } from '../../components/VisualTracking'
+import VisualTracking, { STATUS_PROGRESS } from '../../components/VisualTracking'
 import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
-import { ArrowLeft, Phone, Bike, PackageCheck, MapPin, Car, Truck, ChevronRight, ChevronDown, Maximize2, Minimize2, Mic, ShoppingBag, Copy, Star } from 'lucide-react'
+import { ArrowLeft, Phone, Bike, PackageCheck, MapPin, ChevronRight, ChevronDown, Maximize2, Minimize2, Mic, ShoppingBag, Copy, Star } from 'lucide-react'
 import { InteractiveStarRating } from '../../components/ui'
 import { pg } from '../../design/tokens'
-import { CTA, Surface, MobileFrame } from '../../design/primitives'
+import { CTA, MobileFrame } from '../../design/primitives'
 import AddressPicker, { formatAddress, type SavedAddress } from '../../components/AddressPicker'
 import { openRequestChatRoom } from '../../lib/openRequestChat'
 import { BrandPersonName } from '../../components/Brand'
-
-function vehicleIcon(v: string | null | undefined) {
-  const s = (v || '').toLowerCase()
-  if (s === 'bicycle' || s === 'motorbike' || s === 'scooter' || s === 'auto') return Bike
-  if (s === 'car') return Car
-  return Truck
-}
 
 type PayPhase = 'idle' | 'awaiting_user_payment' | 'awaiting_dp_accept' | 'payment_accepted' | 'rating' | 'thanks'
 
