@@ -49,6 +49,7 @@ export type DeliveryPartner = {
   id: string
   user_id: string
   aadhaar_number: string | null
+  aadhaar_url?: string | null
   emergency_contact: string | null
   vehicle_type: string | null
   driving_license_url: string | null
@@ -124,6 +125,8 @@ export type DeliveryRequest = {
   recurring_month_day: number | null
   recurring_parent_id: string | null
   recurring_count: number
+  /** Max occurrences including the first (null = hard cap 100) */
+  recurring_max_occurrences: number | null
   reschedule_count: number
   reschedule_history: Array<Record<string, unknown>> | null
   cancellation_reason: string | null

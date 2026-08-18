@@ -118,6 +118,17 @@ export default function AdminAdvanceSettings() {
     <AdminShell>
       <AdminHeader title="Advance Request Settings" />
 
+      <div className="card p-4 mb-4" style={{ border: '1px solid rgba(196,214,0,0.25)' }}>
+        <p className="mb-2 font-semibold text-[#F5F7F6]">How advance booking works</p>
+        <ul className="space-y-1.5 text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
+          <li>• Customer picks date/time within <strong className="text-[#F5F7F6]">Max Advance Days</strong> and business hours.</li>
+          <li>• Nearby DPs get the request; on accept, customer pays the <strong className="text-[#F5F7F6]">Confirmation Fee</strong> (advance) before the booking is confirmed.</li>
+          <li>• Until the scheduled date &amp; time, <strong className="text-[#F5F7F6]">Start Task</strong> stays greyed out on DP and user sides.</li>
+          <li>• <strong className="text-[#F5F7F6]">Recurring booking</strong> (below) lives inside advance: daily / weekly / monthly / every-N-days for a chosen length (e.g. 15 days). The accepting DP is notified for each next occurrence; series payment is discussed &amp; paid on first acceptance.</li>
+          <li>• Reminders below fire to both user and reserved DP before task time.</li>
+        </ul>
+      </div>
+
       {error && (
         <div className="mb-4 flex items-center gap-2 rounded-2xl p-3" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
           <AlertCircle size={16} className="text-red-400" />
@@ -140,8 +151,11 @@ export default function AdminAdvanceSettings() {
       <div className="card p-4 mb-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-semibold text-[#F5F7F6]">Enable Recurring Requests</p>
-            <p className="text-sm text-black/40">Allow customers to set repeat schedules (daily/weekly/monthly)</p>
+            <p className="font-semibold text-[#F5F7F6]">Enable Recurring Bookings</p>
+            <p className="text-sm text-black/40">
+              Inside advance booking, customers can repeat a task daily (N days), weekly, monthly, or every N days.
+              Accepting DP gets a notification for each next occurrence until the selected length ends.
+            </p>
           </div>
           <Toggle value={s.recurring_enabled} onChange={v => update('recurring_enabled', v)} />
         </div>
@@ -175,6 +189,7 @@ export default function AdminAdvanceSettings() {
               <Pill key={opt} active={s.notification_lead_minutes === opt} onClick={() => update('notification_lead_minutes', opt)}>{opt} min</Pill>
             ))}
           </div>
+          <p className="mt-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>How early to flip a confirmed booking into active DP search before the slot</p>
         </div>
         <div>
           <label className="label">Slot Duration</label>

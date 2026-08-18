@@ -108,6 +108,16 @@ function buildEmail(type: string, data: any): { subject: string; html: string; t
         <p style="color:#555;font-size:14px;line-height:1.6">Your PingGet account status has been updated to: <strong>${data?.status || 'updated'}</strong>. ${data?.status === 'suspended' ? 'You will not be able to sign in until this is resolved.' : data?.status === 'banned' ? 'Your account has been permanently banned.' : 'Your account is now active again.'}</p></div></div>`,
       text: `Your account status is now: ${data?.status || 'updated'}.`,
     },
+    area_available: {
+      subject: "PingGet is now available in your area!",
+      html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#f4f7ee;border-radius:16px;overflow:hidden">
+        <div style="background:#1c2a14;padding:24px;text-align:center"><h1 style="color:#fff;margin:0;font-size:22px">We're live near you!</h1></div>
+        <div style="padding:24px"><p style="color:#333;font-size:16px">Hi there,</p>
+        <p style="color:#555;font-size:14px;line-height:1.6">${data?.message || `Good news — PingGet is now available in ${data?.area || 'your area'}!`}</p>
+        <p style="color:#555;font-size:14px;line-height:1.6">Area: <strong>${data?.area || 'your area'}</strong></p>
+        <a href="${data?.app_url || 'https://pingget.app'}" style="display:inline-block;background:#556d34;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px">Open PingGet</a></div></div>`,
+      text: data?.message || `PingGet is now available in ${data?.area || 'your area'}! Open ${data?.app_url || 'https://pingget.app'}`,
+    },
   };
   return templates[type] || null;
 }

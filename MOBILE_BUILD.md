@@ -212,14 +212,31 @@ Do not commit `.env` to source control.
 ## Google Play Store checklist
 
 - [ ] Two Play listings (or internal tracks) for `com.pingget.customer` and `com.pingget.dp`
-- [ ] Each app has its own `google-services.json`
+- [ ] Each app has its own **matching** `google-services.json` (`package_name` must equal `applicationId` — not `com.pingget.app`)
 - [ ] App signed with release keystore
 - [ ] Android App Bundle (.aab) generated per app
 - [ ] `compileSdkVersion` / `targetSdkVersion` = 35 in each `variables.gradle`
 - [ ] Icons, screenshots, privacy policy, content rating
 - [ ] MSG91 credentials set in Supabase Edge Function secrets
+- [ ] `RESEND_API_KEY` + `FROM_EMAIL` set for waitlist / transactional email
+- [ ] Apply DB migrations (including `recurring_max_occurrences`)
+- [ ] Redeploy Edge Functions: `advance-request-scheduler`, `send-email`, `dispatch-push`
 
-## Apple App Store checklist
+### Admin app
+
+Admin is **web-only** (same Vercel / `build:web` deploy). No separate Play Store listing. Use a desktop or tablet browser for approvals, waitlist bulk notify, and advance settings.
+
+### Production readiness notes (Android)
+
+| Check | Customer | DP | Admin |
+|-------|----------|----|-------|
+| Package ID | `com.pingget.customer` | `com.pingget.dp` | Web `/admin` |
+| Manifest permissions | Location, camera, mic, notifications | Same + background location | N/A |
+| FCM `google-services.json` | Must match package | Must match package | Web push optional |
+| Sound alert on new request | N/A | WebAudio 5s on home | N/A |
+| White map (scan/track) | Yes | Yes | Order maps if used |
+
+**Before Play upload:** replace any `google-services.json` that still lists `com.pingget.app` with Firebase configs for the two new package IDs.
 
 - [ ] Apple Developer account active
 - [ ] Bundle IDs registered (`com.pingget.customer`, and partner when ready)

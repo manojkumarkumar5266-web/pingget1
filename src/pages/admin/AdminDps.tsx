@@ -214,14 +214,14 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
             <Section title="Vehicle" icon={<Truck size={16} />}>
               <Row label="Vehicle Type" value={dp.vehicle_type || 'Not specified'} />
             </Section>
-            <Section title="Identity" icon={<FileText size={16} />}>
+            <Section title="Identity & documents" icon={<FileText size={16} />}>
               <Row label="Aadhaar Number" value={dp.aadhaar_number ? `****${dp.aadhaar_number.slice(-4)}` : 'Not provided'} />
-              {(dp as any).aadhaar_url ? (
+              {(dp.aadhaar_url || (dp as any).aadhaar_url) ? (
                 <div className="mt-2 space-y-2">
-                  <p className="text-xs text-gray-500">Aadhaar Document</p>
-                  <a href={(dp as any).aadhaar_url} target="_blank" rel="noopener noreferrer" className="block">
+                  <p className="text-xs text-gray-500">Aadhaar Document (attachment)</p>
+                  <a href={(dp.aadhaar_url || (dp as any).aadhaar_url)!} target="_blank" rel="noopener noreferrer" className="block">
                     <img
-                      src={(dp as any).aadhaar_url}
+                      src={(dp.aadhaar_url || (dp as any).aadhaar_url)!}
                       alt="Aadhaar"
                       className="max-h-48 w-full rounded-xl object-contain"
                       style={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)' }}
@@ -237,7 +237,7 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
               )}
               {dp.driving_license_url ? (
                 <div className="mt-2 space-y-2">
-                  <p className="text-xs text-gray-500">Driving Licence</p>
+                  <p className="text-xs text-gray-500">Driving Licence (attachment)</p>
                   <a href={dp.driving_license_url} target="_blank" rel="noopener noreferrer" className="block">
                     <img
                       src={dp.driving_license_url}
@@ -261,6 +261,8 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
             </Section>
             <Section title="Application" icon={<AlertCircle size={16} />}>
               <Row label="Applied On" value={formatTime(dp.created_at)} />
+              <Row label="Rating" value={`${dp.rating_avg?.toFixed?.(1) ?? '—'} (${dp.rating_count || 0} ratings)`} />
+              <Row label="Online now" value={dp.is_online ? 'Yes' : 'No'} />
             </Section>
           </div>
 
