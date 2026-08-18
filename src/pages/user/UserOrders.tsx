@@ -11,7 +11,6 @@ import { Clock, MapPin, MessageCircle, Bike, CheckCircle2, Package, ShoppingBag,
 import { Screen, PageTitle, Surface, Chip, CTA, EmptyBlock } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { canStartAdvanceTask, advanceTaskUnlockLabel } from '../../lib/advanceTaskGate'
-import { requestMutualCancel } from '../../lib/requestMutualCancel'
 
 type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
 type RequestWithDp = DeliveryRequest & { _dp?: Profile }
@@ -24,13 +23,16 @@ const TABS: { key: Tab; label: string }[] = [
 ]
 
 const INSTANT_ACTIVE = [
-  'pending', 'searching_dp', 'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received',
+  'pending', 'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received', 'task_started',
 ]
 
 const ADVANCE_RESERVED = [
   'pending', 'searching_dp', 'scheduled', 'rescheduled', 'dp_reserved', 'waiting_payment', 'payment_verified',
-  'booking_confirmed', 'task_started', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived',
-  'delivered', 'cash_received', 'task_completed', 'no_dp_found',
+  'booking_confirmed', 'no_dp_found',
+]
+
+const ADVANCE_LIVE = [
+  'task_started', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'cash_received',
 ]
 
 const STEPS = [
@@ -100,12 +102,13 @@ export default function UserOrders() {
   const [rescheduleTarget, setRescheduleTarget] = useState<RequestWithDp | null>(null)
   const [advanceSettings, setAdvanceSettings] = useState<AdvanceSettings | null>(null)
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true)
+  const fetchOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     let query = supabase.from('requests').select('*').eq('user_id', profile!.id)
-    if (tab === 'active' || tab === 'reserved') {
-      const statuses = tab === 'active' ? INSTANT_ACTIVE : ADVANCE_RESERVED
-      query = query.in('status', statuses)
+    if (tab === 'active') {
+      query = query.in('status', [...INSTANT_ACTIVE, ...ADVANCE_LIVE])
+    } else if (tab === 'reserved') {
+      query = query.in('status', ADVANCE_RESERVED)
     } else if (tab === 'completed') {
       query = query.eq('status', 'completed')
     } else {
@@ -114,7 +117,7 @@ export default function UserOrders() {
     const { data } = await query.order('created_at', { ascending: false })
     let requests = (data as DeliveryRequest[]) || []
     if (tab === 'active') {
-      requests = requests.filter(r => (r as any).order_type !== 'advance')
+      requests = requests.filter(r => (r as any).order_type !== 'advance' || ADVANCE_LIVE.includes(r.status))
     } else if (tab === 'reserved') {
       requests = requests.filter(r => (r as any).order_type === 'advance')
     }
@@ -134,7 +137,7 @@ export default function UserOrders() {
   }, [])
   useEffect(() => {
     const channel = supabase.channel('user-orders-rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `user_id=eq.${profile!.id}` }, fetchOrders)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', filter: `user_id=eq.${profile!.id}` }, () => fetchOrders(true))
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [profile, fetchOrders])
@@ -224,6 +227,8 @@ export default function UserOrders() {
               ? 'No active orders right now.'
               : tab === 'reserved'
                 ? 'No reserved advance bookings.'
+              : tab === 'cancelled'
+                ? 'No cancelled orders.'
                 : 'No completed orders yet.'
           }
         />
@@ -343,6 +348,12 @@ export default function UserOrders() {
                 </div>
               </div>
 
+              {(tab === 'completed' || tab === 'cancelled') && (
+                <div className="flex flex-wrap gap-2 border-t px-4 py-3" style={{ borderColor: pg.line, opacity: 0.45 }}>
+                  <div className="rounded-xl px-3 py-2 text-xs font-extrabold" style={{ background: pg.surface2, color: pg.text4 }}>Chat</div>
+                  <div className="rounded-xl px-3 py-2 text-xs font-extrabold" style={{ background: pg.surface2, color: pg.text4 }}>Track</div>
+                </div>
+              )}
               {(tab === 'active' || tab === 'reserved') && (
                 <div className="flex flex-wrap gap-2 border-t px-4 py-3" style={{ borderColor: pg.line }} onClick={e => e.stopPropagation()}>
                   {req.accepted_dp_id && (
@@ -384,13 +395,11 @@ export default function UserOrders() {
                       onClick={() => setCancelTarget(req)}
                       disabled={updating === req.id || req.cancel_requested_by === 'user'}
                     >
-                      {req.cancel_requested_by === 'dp'
-                        ? 'Agree to cancel'
-                        : req.cancel_requested_by === 'user'
-                          ? 'Waiting for partner…'
-                          : (req.reserved_dp_id || req.accepted_dp_id)
-                            ? 'Request cancel'
-                            : 'Cancel Request'}
+                      {req.cancel_requested_by === 'user'
+                        ? 'Cancelling…'
+                        : (req.reserved_dp_id || req.accepted_dp_id)
+                          ? 'Cancel booking'
+                          : 'Cancel Request'}
                     </CTA>
                   )}
                   {(req.status === 'scheduled' || req.status === 'rescheduled') && !req.accepted_dp_id && !req.reserved_dp_id && (
@@ -428,9 +437,11 @@ export default function UserOrders() {
           onConfirm={async (reason) => {
             setUpdating(cancelTarget.id)
             if (cancelTarget.order_type === 'advance') {
-              const { data, error } = await requestMutualCancel(cancelTarget.id, reason)
-              if (error) console.error(error)
-              else if (data && !data.success) console.error(data.error)
+              await supabase.from('requests').update({
+                status: 'cancelled',
+                cancellation_reason: reason,
+                cancelled_by: 'customer',
+              }).eq('id', cancelTarget.id)
             } else {
               const { error } = await supabase.rpc('cancel_instant_order', {
                 p_request_id: cancelTarget.id,

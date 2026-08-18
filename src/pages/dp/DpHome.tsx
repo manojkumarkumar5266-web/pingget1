@@ -13,8 +13,10 @@ import { Screen, Surface, CTA, Chip, SectionLabel, EmptyBlock, IconButton } from
 import { pg } from '../../design/tokens'
 import {
   Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause,
-  Star, Activity, Wallet, ChevronRight, MapPinOff, Loader2, CalendarClock, TrendingUp,
+  Star, Activity, Wallet, ChevronRight, MapPinOff, Loader2, CalendarClock, TrendingUp, Repeat,
 } from 'lucide-react'
+import IncomingRequestPopup from '../../components/IncomingRequestPopup'
+import { fetchDpCommissionBreakdown } from '../../lib/commission'
 
 type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
 
@@ -187,6 +189,9 @@ export default function DpHome() {
   const [weekOrders, setWeekOrders] = useState<Order[]>([])
   const [totalOrders, setTotalOrders] = useState(0)
   const [pendingCommission, setPendingCommission] = useState(0)
+  const [commissionDueNow, setCommissionDueNow] = useState(0)
+  const [incoming, setIncoming] = useState<RequestWithUser | null>(null)
+  const knownIdsRef = useRef<Set<string>>(new Set())
   const gps = useGps(profile?.id, true)
 
   const showToast = (msg: string) => {
@@ -235,19 +240,18 @@ export default function DpHome() {
 
   useEffect(() => {
     if (dpLoading) return
-    if (!dp?.is_online) { setLoading(false); setRequests([]); return }
-    setLoading(true)
-    const fetchRequests = async () => {
+    if (!dp?.is_online) { setLoading(false); setRequests([]); setIncoming(null); return }
+    const fetchRequests = async (silent = true) => {
+      if (!silent) setLoading(true)
       const { data, error } = await supabase.rpc('get_nearby_requests', { p_dp_user_id: profile!.id })
       if (error) { console.error('[DpHome] get_nearby_requests:', error); setLoading(false); return }
       if (!data) { setLoading(false); return }
       const ids = data.map((r: any) => r.id).filter(Boolean)
-      // Enrich advance fields — older RPC versions omit order_type/status (causes Instant badge + broken Accept)
       let metaById = new Map<string, Partial<DeliveryRequest>>()
       if (ids.length > 0) {
         const { data: metas } = await supabase
           .from('requests')
-          .select('id, status, order_type, is_scheduled, scheduled_date, scheduled_time, scheduled_slot, scheduled_timestamp, request_category')
+          .select('id, status, order_type, is_scheduled, scheduled_date, scheduled_time, scheduled_slot, scheduled_timestamp, request_category, radius_meters, recurring_type')
           .in('id', ids)
         metas?.forEach((m: any) => metaById.set(m.id, m))
       }
@@ -257,7 +261,7 @@ export default function DpHome() {
         const { data: profiles } = await supabase.from('profiles').select('*').in('id', userIds)
         profiles?.forEach((p: any) => profileMap.set(p.id, p as Profile))
       }
-      setRequests((data as DeliveryRequest[]).map(r => {
+      const next = (data as DeliveryRequest[]).map(r => {
         const meta = metaById.get(r.id) || {}
         return {
           ...r,
@@ -266,39 +270,36 @@ export default function DpHome() {
           status: (meta as any).status || r.status,
           user_profile: profileMap.get(r.user_id),
         }
-      }))
-      setLoading(false)
-    }
-    fetchRequests()
-    const channel = supabase.channel('dp-requests')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests' },
-        (payload: any) => {
-          const newStatus = payload?.new?.status
-          if (newStatus === 'pending') showToast('New delivery request nearby!')
-          else if (newStatus === 'searching_dp') showToast('New advance booking nearby!')
-          else return
-          // Sound alert up to 1 min until accept / decline / timeout
+      })
+      const primed = knownIdsRef.current.size > 0 || knownIdsRef.current.has('__primed__')
+      if (!primed) {
+        knownIdsRef.current = new Set(['__primed__', ...next.map(r => r.id)])
+      } else {
+        const fresh = next.filter(r => !knownIdsRef.current.has(r.id))
+        knownIdsRef.current = new Set(['__primed__', ...next.map(r => r.id)])
+        if (fresh.length > 0) {
+          const newest = fresh[0]
+          const kind = isAdvanceNearbyRequest(newest)
+          const rec = (newest as any).recurring_type && (newest as any).recurring_type !== 'none'
+          showToast(rec ? 'New recurring booking nearby!' : kind ? 'New advance booking nearby!' : 'New delivery request nearby!')
           try { stopAlertRef.current?.() } catch { /* ignore */ }
           stopAlertRef.current = playRequestAlert(REQUEST_ALERT_DURATION_MS)
-          fetchRequests()
-        })
+          setIncoming(newest)
+        }
+      }
+      setIncoming(cur => (cur && !next.some(r => r.id === cur.id) ? null : cur))
+      setRequests(next)
+      setLoading(false)
+    }
+    void fetchRequests(false)
+    const channel = supabase.channel('dp-requests')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'requests' },
+        () => { void fetchRequests(true) })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' },
-        (payload: any) => {
-          const prev = payload?.old?.status
-          const next = payload?.new?.status
-          if (
-            (next === 'pending' || next === 'searching_dp') &&
-            prev !== next
-          ) {
-            showToast(next === 'pending' ? 'New delivery request nearby!' : 'New advance booking nearby!')
-            try { stopAlertRef.current?.() } catch { /* ignore */ }
-            stopAlertRef.current = playRequestAlert(REQUEST_ALERT_DURATION_MS)
-          }
-          fetchRequests()
-        })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, () => fetchRequests())
+        () => { void fetchRequests(true) })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, () => { void fetchRequests(true) })
       .subscribe()
-    const pollInterval = setInterval(fetchRequests, 10000)
+    const pollInterval = setInterval(() => { void fetchRequests(true) }, 20000)
     return () => {
       try { stopAlertRef.current?.() } catch { /* ignore */ }
       supabase.removeChannel(channel)
@@ -309,13 +310,9 @@ export default function DpHome() {
   useEffect(() => {
     const checkCommission = async () => {
       if (!profile) return
-      const [ordersRes, confirmedRes] = await Promise.all([
-        supabase.from('orders').select('commission_amount').eq('dp_id', profile.id).eq('status', 'completed'),
-        supabase.from('dp_commission_receipts').select('amount').eq('dp_user_id', profile.id).eq('status', 'confirmed'),
-      ])
-      const totalOwed = (ordersRes.data || []).reduce((s: number, o: any) => s + Number(o.commission_amount || 0), 0)
-      const totalPaid = (confirmedRes.data || []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0)
-      setPendingCommission(Math.max(0, totalOwed - totalPaid))
+      const br = await fetchDpCommissionBreakdown(profile.id)
+      setPendingCommission(br.outstanding)
+      setCommissionDueNow(br.dueNow)
     }
     checkCommission()
   }, [profile, todayOrders])
@@ -329,6 +326,7 @@ export default function DpHome() {
   const declineRequest = async (req: RequestWithUser) => {
     try { stopAlertRef.current?.() } catch { /* ignore */ }
     stopAlertRef.current = null
+    setIncoming(cur => (cur?.id === req.id ? null : cur))
     setRequests(prev => prev.filter(r => r.id !== req.id))
     const { error } = await supabase.rpc('append_declined_by', { row_id: req.id, dp_id: profile!.id })
     if (error) { console.error('[DpHome] decline RPC failed:', error.message); showToast('Could not decline — check your connection.') }
@@ -514,7 +512,8 @@ export default function DpHome() {
   const filtered = requests.filter(r => {
     const dist = getDistance(r)
     if (dist === null) return true
-    return dist <= rangeMeters
+    const userRange = Number((r as any).radius_meters || 6000)
+    return dist <= rangeMeters && dist <= userRange
   })
 
   const todayEarnings = todayOrders.reduce((s, o) => s + Number(o.dp_earnings || 0), 0)
@@ -548,8 +547,12 @@ export default function DpHome() {
               <Wallet size={16} className="text-amber-300" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-extrabold leading-tight text-amber-200">Due {formatCurrency(pendingCommission)}</p>
-              <p className="text-[10px]" style={{ color: pg.text3 }}>Pay admin</p>
+              <p className="text-[11px] font-extrabold leading-tight text-amber-200">
+                {commissionDueNow > 0 ? `Due now ${formatCurrency(commissionDueNow)}` : `Due ${formatCurrency(pendingCommission)}`}
+              </p>
+              <p className="text-[10px]" style={{ color: pg.text3 }}>
+                {commissionDueNow > 0 ? 'Pay to go online' : 'Pay after 12 AM'}
+              </p>
             </div>
             <ChevronRight size={14} style={{ color: pg.text4 }} />
           </button>
@@ -729,6 +732,9 @@ export default function DpHome() {
                   {advance && req.request_category && (
                     <Chip tone="neutral">{req.request_category}</Chip>
                   )}
+                  {advance && (req as any).recurring_type && (req as any).recurring_type !== 'none' && (
+                    <Chip tone="warn"><span className="inline-flex items-center gap-1"><Repeat size={10} /> Recurring</span></Chip>
+                  )}
                   {advance && (req.status === 'searching_dp' || !req.status) && (
                     <Chip tone="lime">Reserve now</Chip>
                   )}
@@ -805,6 +811,15 @@ export default function DpHome() {
             )
           })}
         </div>
+      )}
+      {incoming && (
+        <IncomingRequestPopup
+          req={incoming}
+          distanceM={getDistance(incoming)}
+          accepting={reservingId === incoming.id}
+          onAccept={() => void acceptRequest(incoming)}
+          onDecline={() => { void declineRequest(incoming); setIncoming(null) }}
+        />
       )}
     </Screen>
   )

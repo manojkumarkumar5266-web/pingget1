@@ -2,8 +2,8 @@
 export const REQUEST_ALERT_DURATION_MS = 60_000
 
 /**
- * Play an attention alert for nearby new requests (DP home).
- * Loops for up to `durationMs` (default 60s) or until stop() is called.
+ * Modern two-tone chime (not a raw sine beep) for nearby new requests.
+ * Loops for up to `durationMs` or until stop() is called.
  */
 export function playRequestAlert(durationMs = REQUEST_ALERT_DURATION_MS): () => void {
   let stopped = false
@@ -11,7 +11,7 @@ export function playRequestAlert(durationMs = REQUEST_ALERT_DURATION_MS): () => 
   let intervalId: ReturnType<typeof setInterval> | null = null
   let timeoutId: ReturnType<typeof setTimeout> | null = null
 
-  const beep = () => {
+  const chime = () => {
     if (stopped) return
     try {
       if (!ctx) {
@@ -19,25 +19,37 @@ export function playRequestAlert(durationMs = REQUEST_ALERT_DURATION_MS): () => 
         if (!AC) return
         ctx = new AC()
       }
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.type = 'sine'
-      osc.frequency.value = 880
-      gain.gain.value = 0.18
-      osc.connect(gain)
-      gain.connect(ctx.destination)
       const now = ctx.currentTime
-      gain.gain.setValueAtTime(0.18, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35)
-      osc.start(now)
-      osc.stop(now + 0.36)
+      const master = ctx.createGain()
+      master.gain.value = 0.22
+      master.connect(ctx.destination)
+
+      const notes = [
+        { freq: 523.25, start: 0, dur: 0.18 },
+        { freq: 659.25, start: 0.12, dur: 0.22 },
+        { freq: 783.99, start: 0.26, dur: 0.38 },
+      ]
+      for (const n of notes) {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'triangle'
+        osc.frequency.value = n.freq
+        const t0 = now + n.start
+        gain.gain.setValueAtTime(0.0001, t0)
+        gain.gain.exponentialRampToValueAtTime(0.28, t0 + 0.03)
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + n.dur)
+        osc.connect(gain)
+        gain.connect(master)
+        osc.start(t0)
+        osc.stop(t0 + n.dur + 0.02)
+      }
     } catch {
       /* ignore audio failures (autoplay policy, etc.) */
     }
   }
 
-  beep()
-  intervalId = setInterval(beep, 700)
+  chime()
+  intervalId = setInterval(chime, 1600)
   timeoutId = setTimeout(() => stop(), durationMs)
 
   function stop() {

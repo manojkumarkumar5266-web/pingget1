@@ -25,6 +25,8 @@ type Props = {
   className?: string
   style?: React.CSSProperties
   interactive?: boolean
+  /** Tap the map to pick a lat/lng (address picker). */
+  onPick?: (ll: LatLng) => void
 }
 
 export const MAP_VIEW_RADIUS_M = 4_000
@@ -57,6 +59,19 @@ function haversineM(a: LatLng, b: LatLng) {
     Math.sin(dLat / 2) ** 2 +
     Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2
   return 2 * R * Math.asin(Math.sqrt(h))
+}
+
+function unproject(px: number, py: number, width: number, height: number, center: LatLng, zoom: number): LatLng {
+  const scale = TILE * Math.pow(2, zoom)
+  const worldX = ((center.lng + 180) / 360) * scale
+  const sin = Math.sin((center.lat * Math.PI) / 180)
+  const worldY = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale
+  const x = worldX + (px / width - 0.5) * width
+  const y = worldY + (py / height - 0.5) * height
+  const lng = (x / scale) * 360 - 180
+  const n = Math.PI * (1 - (2 * y) / scale)
+  const lat = (180 / Math.PI) * Math.atan(Math.sinh(n))
+  return { lat, lng }
 }
 
 function latLngToTile(lat: number, lng: number, zoom: number) {
@@ -317,6 +332,7 @@ export default function FreeStreetMap({
   radar = false,
   className = '',
   style,
+  onPick,
 }: Props) {
   const c =
     center ||
@@ -361,8 +377,14 @@ export default function FreeStreetMap({
         height: '100%',
         minHeight: 200,
         background: '#0A0F14',
+        cursor: onPick ? 'crosshair' : undefined,
         ...style,
       }}
+      onClick={onPick ? (e) => {
+        const rect = e.currentTarget.getBoundingClientRect()
+        const ll = unproject(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height, c, z)
+        onPick(ll)
+      } : undefined}
     >
       <StreetTileBasemap center={c} zoom={z} />
 

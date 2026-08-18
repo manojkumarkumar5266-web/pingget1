@@ -5,12 +5,13 @@ import { kickPushDelivery } from '../../lib/notify'
 import { useAuth } from '../../context'
 import { useGps } from '../../hooks/useGps'
 import { STATUS_LABELS } from '../../lib/utils'
+import VisualTracking, { STATUS_PROGRESS } from '../../components/VisualTracking'
 import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
 import { BrandPersonName } from '../../components/Brand'
 import {
   ArrowLeft, Navigation, MapPin, MessageCircle, Package, CheckCircle2,
-  Bike, Phone, Camera, X, Clock, User as UserIcon, Store,
+  Bike, Phone, Camera, X, Clock, User as UserIcon, Store, Maximize2, Minimize2,
 } from 'lucide-react'
 import { pg } from '../../design/tokens'
 import { CTA, Surface } from '../../design/primitives'
@@ -50,6 +51,7 @@ export default function DpNavigationPage() {
   const [routeCoords, setRouteCoords] = useState<LatLng[]>([])
   const photoInputRef = useRef<HTMLInputElement>(null)
   const lastEtaWrite = useRef(0)
+  const [mapExpanded, setMapExpanded] = useState(false)
 
   useEffect(() => {
     if (!requestId) return
@@ -292,6 +294,11 @@ export default function DpNavigationPage() {
   const isDelivered = request.status === 'delivered'
   const isCompleted = request.status === 'completed'
   const currentStep = STATUS_FLOW.find(s => s.from === request.status)
+  const progress = STATUS_PROGRESS[request.status] ?? 0
+  const showLiveMap = MAP_LIVE_STATUSES.has(request.status)
+  const mapH = mapExpanded ? 'min(62vh, 520px)' : 'min(38vh, 320px)'
+  const headlineSub = STATUS_LABELS[request.status] || request.status
+  const headlineMain = liveEtaLabel ? `ETA ${liveEtaLabel}` : 'Live tracking'
 
   if (endPhase === 'thanks_rating') {
     return (
@@ -321,63 +328,60 @@ export default function DpNavigationPage() {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col" style={{ background: pg.bg }}>
-      {/* Centered header — no side ribbon */}
-      <div className="relative flex-shrink-0 px-4 pb-2 pt-12">
-        <button
-          type="button"
-          onClick={() => navigate('/dp')}
-          className="absolute left-4 top-12 map-control-btn map-control-dark"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <div className="text-center">
-          <p className="text-base font-extrabold text-[#F5F7F6]">Order tracking</p>
-          <p className="text-xs" style={{ color: pg.text3 }}>{STATUS_LABELS[request.status] || request.status}</p>
+      <div className="sticky top-0 z-30 px-4 pb-3 pt-12" style={{ background: pg.header, borderBottom: `1px solid ${pg.line}` }}>
+        <div className="flex items-start gap-3">
+          <button type="button" onClick={() => navigate('/dp')}
+            className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            style={{ background: 'rgba(255,255,255,0.08)' }}>
+            <ArrowLeft size={18} color="#fff" />
+          </button>
+          <div className="min-w-0 flex-1 text-center pr-10">
+            <p className="text-xs font-semibold" style={{ color: pg.text3 }}>{headlineSub}</p>
+            <p className="mt-0.5 text-lg font-extrabold leading-tight text-white">{headlineMain}</p>
+          </div>
         </div>
       </div>
 
-      {/* DP: map when live; otherwise status text only (no reached-store / stage images) */}
-      <div className="relative flex-shrink-0">
-        {MAP_LIVE_STATUSES.has(request.status) ? (
-          <div className="space-y-2">
-            <div className="mx-3 rounded-2xl px-4 py-3 text-center" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
-              <p className="text-sm font-extrabold text-[#F5F7F6]">{STATUS_LABELS[request.status] || request.status}</p>
-              <p className="mt-0.5 text-[11px]" style={{ color: pg.text3 }}>Live delivery to customer</p>
-            </div>
-            <div className="relative mx-3 mb-2 h-[30vh] min-h-[200px] overflow-hidden" style={{ borderRadius: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
-              <FreeStreetMap
-                center={mapCenter || { lat: 17.6868, lng: 83.2185 }}
-                zoom={14}
-                markers={mapMarkers}
-                routeLine={routeCoords.length >= 2 ? routeCoords : dpPos && userPos ? [dpPos, userPos] : null}
-                light
-                instant
-                hideRadius
-                hideBadge
-                radiusMeters={MAP_VIEW_RADIUS_M}
-              />
-              {liveEtaLabel && (
-                <div
-                  className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                  style={{ background: 'rgba(0,0,0,0.94)', color: pg.lime, border: '1px solid rgba(12, 138, 62, 0.35)' }}
-                >
-                  ETA to customer · {liveEtaLabel}
-                </div>
-              )}
-            </div>
+      <div className="flex-1 overflow-y-auto pb-24">
+        {showLiveMap ? (
+          <div className="relative" style={{ height: mapH }}>
+            <FreeStreetMap
+              center={mapCenter || { lat: 17.6868, lng: 83.2185 }}
+              zoom={14}
+              markers={mapMarkers}
+              routeLine={routeCoords.length >= 2 ? routeCoords : dpPos && userPos ? [dpPos, userPos] : null}
+              instant
+              hideRadius
+              hideBadge
+              radiusMeters={MAP_VIEW_RADIUS_M}
+            />
+            <button type="button" onClick={() => setMapExpanded(v => !v)}
+              className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl"
+              style={{ background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.15)' }}
+              aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}>
+              {mapExpanded ? <Minimize2 size={16} color="#fff" /> : <Maximize2 size={16} color="#fff" />}
+            </button>
+            {liveEtaLabel && (
+              <div
+                className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
+                style={{ background: 'rgba(0,0,0,0.9)', color: '#F5F7F6', border: '1px solid rgba(255,255,255,0.15)' }}
+              >
+                ETA {liveEtaLabel}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="mx-3 mb-2 rounded-2xl px-4 py-8 text-center" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
-            <p className="text-base font-extrabold text-[#F5F7F6]">{STATUS_LABELS[request.status] || request.status}</p>
-            <p className="mt-1 text-xs" style={{ color: pg.text3 }}>
-              {request.pickup_address?.split(',')[0] || 'Store'} → {request.delivery_address?.split(',')[0] || 'Customer'}
-            </p>
+          <div className="min-h-[220px]">
+            <VisualTracking
+              progress={progress}
+              status={request.status}
+              pickupLabel={request.pickup_address?.split(',')[0] || 'Store'}
+              deliveryLabel={request.delivery_address?.split(',')[0] || 'Customer'}
+            />
           </div>
         )}
-      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-2 pb-24" style={{ background: pg.bg }}>
-        <div className="mx-auto max-w-md space-y-4">
+      <div className="space-y-3 px-3 pt-3 pb-8">
           {userProfile && (
             <Surface className="p-4">
               <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Customer</div>

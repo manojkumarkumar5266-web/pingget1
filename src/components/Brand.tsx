@@ -10,34 +10,36 @@ type BrandProps = {
 }
 
 const wordScale: Record<BrandSize, string> = {
-  xs: 'text-base',
-  sm: 'text-lg',
-  md: 'text-2xl',
+  xs: 'text-[1.15rem]',
+  sm: 'text-xl',
+  md: 'text-[1.85rem]',
   lg: 'text-4xl sm:text-5xl',
   xl: 'text-5xl sm:text-6xl',
-  hero: 'text-[3.25rem] sm:text-[3.75rem]',
+  hero: 'text-[3.4rem] sm:text-[3.9rem]',
 }
 
 const tagScale: Record<BrandSize, string> = {
-  xs: 'text-[8px] tracking-[0.22em]',
-  sm: 'text-[9px] tracking-[0.24em]',
-  md: 'text-[10px] tracking-[0.26em]',
-  lg: 'text-[10px] tracking-[0.28em] sm:text-[11px]',
-  xl: 'text-[11px] tracking-[0.28em] sm:text-xs',
-  hero: 'text-[11px] tracking-[0.28em] sm:text-xs',
+  xs: 'text-[7px] tracking-[0.28em]',
+  sm: 'text-[8px] tracking-[0.32em]',
+  md: 'text-[9px] tracking-[0.34em]',
+  lg: 'text-[10px] tracking-[0.36em] sm:text-[11px]',
+  xl: 'text-[11px] tracking-[0.38em] sm:text-xs',
+  hero: 'text-[11px] tracking-[0.4em] sm:text-xs',
 }
 
-/** App green — used for 1st G and et */
+/** Forest green */
 export const BRAND_GREEN = '#0C8A3E'
-/** White — used for pin and 2nd G on black UI */
+/** Dull gold / mustard */
+export const BRAND_YELLOW = '#C4A35A'
+/** Deep ink */
+export const BRAND_DARK = '#0E1410'
 export const BRAND_WHITE = '#FFFFFF'
 
-/** Official brand typeface — use for person names too (colour stays theme/default). */
-export const BRAND_FONT = "'Outfit', 'DM Sans', system-ui, sans-serif"
+/** Modern geometric wordmark typeface */
+export const BRAND_FONT = "'Syne', 'Outfit', 'DM Sans', system-ui, sans-serif"
 
 /**
- * Person name in pinGGet wordmark typography (Outfit / extrabold / tight tracking).
- * Colour is unchanged — pass `style.color` or inherit from parent.
+ * Person name in pinGGet wordmark typography.
  */
 export function BrandPersonName({
   children,
@@ -61,8 +63,8 @@ export function BrandPersonName({
 }
 
 /**
- * pinGGet wordmark — pin white · 1st G green · 2nd G white · et green
- * Shared across User, DP, and Admin.
+ * pinGGet wordmark — pin gold · G green · G dark-mist · et green
+ * Tagline in white: boy next door
  */
 export function BrandWordmark({
   className = '',
@@ -81,18 +83,18 @@ export function BrandWordmark({
       aria-label="pinGGet"
     >
       <div
-        className={`font-extrabold tracking-tight ${wordScale[size]}`}
-        style={{ fontFamily: BRAND_FONT }}
+        className={`font-extrabold ${wordScale[size]}`}
+        style={{ fontFamily: BRAND_FONT, letterSpacing: '-0.045em' }}
       >
-        <span style={{ color: BRAND_WHITE }}>pin</span>
+        <span style={{ color: BRAND_YELLOW }}>pin</span>
         <span style={{ color: BRAND_GREEN }}>G</span>
-        <span style={{ color: BRAND_WHITE }}>G</span>
+        <span style={{ color: 'rgba(245,247,246,0.38)' }}>G</span>
         <span style={{ color: BRAND_GREEN }}>et</span>
       </div>
       {showTagline && (
         <div
           className={`mt-1.5 font-semibold uppercase ${tagScale[size]}`}
-          style={{ color: BRAND_GREEN }}
+          style={{ color: BRAND_WHITE, fontFamily: "'DM Sans', system-ui, sans-serif", opacity: 0.92 }}
         >
           boy next door
         </div>
@@ -102,8 +104,7 @@ export function BrandWordmark({
 }
 
 /**
- * Official pinGGet brand — always CSS wordmark (no old PNG logos).
- * Use compact / showTagline={false} for top-left app chrome.
+ * Official pinGGet brand — always CSS wordmark.
  */
 export default function Brand({
   size = 'md',

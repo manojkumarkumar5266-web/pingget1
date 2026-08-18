@@ -81,7 +81,7 @@ export default function AdminLayout() {
     <div className="flex h-full flex-col" style={{ background: pg.surface, color: pg.ink }}>
       <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: `1px solid ${pg.headerBorder}`, background: pg.headerElevated }}>
         <div>
-          <BrandWordmark size="sm" showTagline={false} align="left" className="mb-1" />
+          <BrandWordmark size="sm" showTagline align="left" className="mb-1" />
           <p className="text-sm font-extrabold">Admin Console</p>
         </div>
         <span className="rounded-full px-2 py-0.5 text-[10px] font-extrabold" style={{ background: 'rgba(255,77,79,0.16)', color: '#FCA5A5' }}>OPS</span>

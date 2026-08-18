@@ -10,6 +10,7 @@ import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { BrandWordmark } from '../../components/Brand'
 import { Dock, DockItem, CTA } from '../../design/primitives'
 import { pg } from '../../design/tokens'
+import { fetchDpCommissionBreakdown } from '../../lib/commission'
 
 /** Completely rebuilt Partner shell */
 export default function DpLayout() {
@@ -20,7 +21,8 @@ export default function DpLayout() {
   const location = useLocation()
   const [dp, setDp] = useState<DeliveryPartner | null>(null)
   const [dpLoaded, setDpLoaded] = useState(false)
-  const [commissionOwed, setCommissionOwed] = useState(0)
+  const [commissionDueNow, setCommissionDueNow] = useState(0)
+  const [dueTomorrow, setDueTomorrow] = useState(0)
   const [submittedPending, setSubmittedPending] = useState(false)
   const [receiptRejected, setReceiptRejected] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -42,17 +44,18 @@ export default function DpLayout() {
   useEffect(() => {
     if (!dpLoaded || !profile) return
     const checkCommission = async () => {
-      const [ordersRes, confirmedRes, submittedRes, rejectedRes] = await Promise.all([
-        supabase.from('orders').select('commission_amount').eq('dp_id', profile.id).eq('status', 'completed'),
-        supabase.from('dp_commission_receipts').select('amount').eq('dp_user_id', profile.id).eq('status', 'confirmed'),
+      const br = await fetchDpCommissionBreakdown(profile.id)
+      setCommissionDueNow(br.dueNow)
+      setDueTomorrow(br.dueTomorrow)
+      const [submittedRes, rejectedRes] = await Promise.all([
         supabase.from('dp_commission_receipts').select('id').eq('dp_user_id', profile.id).eq('status', 'submitted').limit(1),
         supabase.from('dp_commission_receipts').select('id').eq('dp_user_id', profile.id).eq('status', 'rejected').order('submitted_at', { ascending: false }).limit(1),
       ])
-      const totalOwed = (ordersRes.data || []).reduce((s: number, o: any) => s + Number(o.commission_amount || 0), 0)
-      const totalPaid = (confirmedRes.data || []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0)
-      setCommissionOwed(Math.max(0, totalOwed - totalPaid))
       setSubmittedPending((submittedRes.data?.length ?? 0) > 0)
       setReceiptRejected((rejectedRes.data?.length ?? 0) > 0)
+      if (br.dueNow > 0) {
+        await supabase.from('delivery_partners').update({ is_online: false }).eq('user_id', profile.id)
+      }
     }
     checkCommission()
     const channel = supabase.channel(`dp-commission-${profile.id}`)
@@ -90,7 +93,7 @@ export default function DpLayout() {
   const go = (path: string) => startTransition(() => navigate(path))
 
   const handleToggleOnline = async () => {
-    if (!dp.is_online && commissionOwed > 0) { go('/dp/wallet'); return }
+    if (!dp.is_online && commissionDueNow > 0) { go('/dp/wallet'); return }
     const newVal = !dp.is_online
     await supabase.from('delivery_partners').update({ is_online: newVal }).eq('id', dp.id)
     setDp({ ...dp, is_online: newVal })
@@ -104,7 +107,7 @@ export default function DpLayout() {
         style={{ background: pg.header, borderBottom: `1px solid ${pg.headerBorder}`, boxShadow: '0 8px 24px rgba(12,138,62,0.12)' }}
       >
         <div className="flex items-center justify-between gap-3">
-          <BrandWordmark size="xs" showTagline={false} align="left" />
+          <BrandWordmark size="xs" showTagline align="left" />
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -112,12 +115,12 @@ export default function DpLayout() {
               className="rounded-full px-3.5 py-2 text-xs font-extrabold active:scale-95"
               style={dp.is_online
                 ? { background: pg.oliveDim, color: pg.olive, border: `1px solid rgba(143,174,62,0.4)` }
-                : commissionOwed > 0
+                : commissionDueNow > 0
                 ? { background: 'rgba(245,165,36,0.16)', color: '#FCD34D', border: '1px solid rgba(245,165,36,0.35)' }
                 : { background: pg.surface2, color: pg.text3, border: `1px solid ${pg.line}` }}
             >
               <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${dp.is_online ? 'animate-pulse' : 'bg-black/30'}`} style={dp.is_online ? { background: pg.olive } : undefined} />
-              {dp.is_online ? 'Online' : commissionOwed > 0 ? 'Pay due' : 'Go online'}
+              {dp.is_online ? 'Online' : commissionDueNow > 0 ? 'Pay due' : 'Go online'}
             </button>
             <button type="button" onClick={() => signOut()} className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.surface2, color: pg.text3 }}>
               <LogOut size={16} />
@@ -125,16 +128,18 @@ export default function DpLayout() {
           </div>
         </div>
 
-        {commissionOwed > 0 && !dp.is_online && (
+        {(commissionDueNow > 0 || dueTomorrow > 0) && !dp.is_online && (
           <div className="mt-3 flex items-start gap-2 rounded-2xl px-3 py-2.5 text-xs" style={{ background: 'rgba(245,165,36,0.12)', color: '#FCD34D', border: '1px solid rgba(245,165,36,0.25)' }}>
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             <span className="leading-relaxed">
-              {receiptRejected
-                ? `Receipt rejected. Resubmit ${formatCurrency(commissionOwed)} to go online.`
-                : submittedPending
-                ? `${formatCurrency(commissionOwed)} submitted — waiting for admin.`
-                : `Commission due ${formatCurrency(commissionOwed)}.`}
-              {!submittedPending && (
+              {commissionDueNow > 0
+                ? (receiptRejected
+                  ? `Receipt rejected. Resubmit ${formatCurrency(commissionDueNow)} before going online.`
+                  : submittedPending
+                    ? `${formatCurrency(commissionDueNow)} submitted — waiting for admin.`
+                    : `Commission due ${formatCurrency(commissionDueNow)}. Pay after 12 AM before accepting orders.`)
+                : `Today’s commission ${formatCurrency(dueTomorrow)} is due after 12 AM.`}
+              {commissionDueNow > 0 && !submittedPending && (
                 <button type="button" onClick={() => go('/dp/wallet')} className="ml-1 font-extrabold underline">
                   {receiptRejected ? 'Resubmit' : 'Pay now'}
                 </button>

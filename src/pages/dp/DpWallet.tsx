@@ -27,7 +27,7 @@ export default function DpWallet() {
   useEffect(() => {
     const fetchAll = async () => {
       const [ordersRes, receiptsRes, settingsRes] = await Promise.all([
-        supabase.from('orders').select('*').eq('dp_id', profile!.id).eq('status', 'completed').order('created_at', { ascending: false }),
+        supabase.from('orders').select('*').eq('dp_id', profile!.id).neq('status', 'cancelled').order('created_at', { ascending: false }),
         supabase.from('dp_commission_receipts').select('*').eq('dp_user_id', profile!.id).order('submitted_at', { ascending: false }),
         supabase.from('app_settings').select('value').eq('key', 'admin_upi_id').maybeSingle(),
       ])
@@ -121,7 +121,9 @@ export default function DpWallet() {
                 Commission status
               </p>
               <p className="mt-1 text-2xl font-extrabold tracking-tight">All paid up!</p>
-              <p className="mt-1.5 text-xs" style={{ color: pg.text3 }}>No outstanding commission. You can go online and accept orders.</p>
+              <p className="mt-1.5 text-xs" style={{ color: pg.text3 }}>
+                Commission from yesterday and earlier is due now (after 12 AM). Today’s commission is paid tomorrow before you go online.
+              </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'rgba(34,197,94,0.14)' }}>
               <CheckCircle size={24} className="text-green-400" />

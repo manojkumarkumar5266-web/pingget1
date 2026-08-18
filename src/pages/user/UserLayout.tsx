@@ -89,7 +89,7 @@ export default function UserLayout() {
           className="z-10 flex items-center px-4 pb-2 pt-[max(10px,env(safe-area-inset-top))]"
           style={{ background: pg.header, borderBottom: `1px solid ${pg.headerBorder}`, boxShadow: '0 8px 24px rgba(12,138,62,0.12)' }}
         >
-          <BrandWordmark size="xs" showTagline={false} align="left" />
+          <BrandWordmark size="xs" showTagline align="left" />
         </header>
       )}
 

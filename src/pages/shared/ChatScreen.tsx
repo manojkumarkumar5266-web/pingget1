@@ -10,6 +10,7 @@ import { pg } from '../../design/tokens'
 import { IconButton } from '../../design/primitives'
 import { uploadMediaFile } from '../../lib/uploadMedia'
 import { BrandPersonName } from '../../components/Brand'
+import { getCityCommissionPct, splitCommission } from '../../lib/commission'
 
 export default function ChatScreen() {
   const { roomId } = useParams()
@@ -176,7 +177,7 @@ export default function ChatScreen() {
         })
     }
     onFocus()
-    const pollInterval = setInterval(onFocus, 5000)
+    const pollInterval = setInterval(onFocus, 15000)
     return () => { clearInterval(pollInterval) }
   }, [roomId, isUser, room])
 
@@ -322,6 +323,34 @@ export default function ChatScreen() {
       setAdvancePaymentData((prev: any) => (prev ? { ...prev, status: 'verified' } : prev))
       setFullOrderData((prev: any) => (prev ? { ...prev, status: 'booking_confirmed' } : prev))
       requestStatusRef.current = 'booking_confirmed'
+
+      // Accrue admin commission like instant as soon as advance payment is accepted
+      try {
+        const amount = Number(advancePaymentData.amount || 0)
+        const city = otherUser?.city || profile?.city
+        const commissionPct = await getCityCommissionPct(city)
+        const { commissionAmount, dpEarnings } = splitCommission(amount, commissionPct)
+        const { data: existing } = await supabase.from('orders').select('id').eq('request_id', fullOrderData?.id || room.request_id).maybeSingle()
+        if (!existing) {
+          await supabase.from('orders').insert({
+            request_id: fullOrderData?.id || room.request_id,
+            user_id: room.user_id,
+            dp_id: room.dp_id,
+            items_summary: fullOrderData?.recurring_type && fullOrderData.recurring_type !== 'none'
+              ? `Recurring advance · ${fullOrderData.request_category || 'booking'}`
+              : fullOrderData?.request_category || 'Advance booking confirmation',
+            item_cost: 0,
+            delivery_charge: amount,
+            commission_pct: commissionPct,
+            commission_amount: commissionAmount,
+            dp_earnings: dpEarnings,
+            status: 'confirmed',
+          })
+        }
+      } catch (commErr) {
+        console.warn('[Chat] advance commission order failed', commErr)
+      }
+
       setShowAcceptPaymentPopup(false)
       // Leave chat → home; order remains under Reserved until task day
       navigate(isUser ? '/app' : '/dp', { replace: true })
@@ -407,9 +436,9 @@ export default function ChatScreen() {
   const acceptQuotation = async (msg: Message) => {
     if (!msg.quotation_data || !room) return
     const q = msg.quotation_data
-    const commissionPct = 10
-    const commissionAmount = Math.round(q.delivery_charge * commissionPct / 100)
-    const dpEarnings = q.delivery_charge - commissionAmount
+    const city = otherUser?.city || profile?.city
+    const commissionPct = await getCityCommissionPct(city)
+    const { commissionAmount, dpEarnings } = splitCommission(q.delivery_charge, commissionPct)
     const { data: orderData, error } = await supabase.from('orders').insert({
       request_id: room.request_id, user_id: room.user_id, dp_id: room.dp_id,
       items_summary: q.items_summary, item_cost: q.item_cost,

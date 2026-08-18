@@ -8,6 +8,7 @@ import { Camera, Mic, MicOff, X, Play, Pause, ArrowLeft } from 'lucide-react'
 import { Screen, TopChrome, Surface, CTA, IconButton } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { uploadMediaFile } from '../../lib/uploadMedia'
+import { userRadiusMeters } from '../../lib/searchRadius'
 
 const DRAFT_KEY = 'cr_notes_draft'
 
@@ -143,7 +144,7 @@ export default function CreateRequest() {
         delivery_lat: addr.lat,
         delivery_lng: addr.lng,
         order_type: 'instant',
-        radius_meters: 10000,
+        radius_meters: userRadiusMeters(),
         status: 'pending',
       }).select('id').single()
       if (err) throw err
