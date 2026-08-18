@@ -827,6 +827,7 @@ export default function CreateAdvanceRequest() {
         {/* STEP 2: Date & Time */}
         {step === 2 && (
           <div className="space-y-5 animate-slide-up">
+            {error && <ErrorBanner message={error} />}
             <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Select Date & Time</p>
             <PremiumCalendar selectedDate={selectedDate} onSelect={setSelectedDate} maxDays={maxDays} />
 
