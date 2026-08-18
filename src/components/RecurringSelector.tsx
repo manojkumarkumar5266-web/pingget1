@@ -73,11 +73,11 @@ export default function RecurringSelector({
       <div className="flex items-center gap-2 mb-2">
         <Repeat size={16} style={{ color: '#0C8A3E' }} />
         <span className="text-sm font-semibold text-[#F5F7F6]">Recurring booking</span>
-        <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>(inside advance)</span>
+        <span className="rounded-full px-2 py-0.5 text-[10px] font-extrabold" style={{ background: 'rgba(12,138,62,0.2)', color: '#0C8A3E' }}>OPTIONAL</span>
       </div>
       <p className="mb-4 text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
-        Choose how often this task repeats. The partner who accepts is notified for each occurrence.
-        Payment for the series is discussed and paid in advance when they accept.
+        Repeat this advance task — daily (e.g. 15 days), weekly, monthly, or every N days.
+        The partner who accepts is notified for each day; pay for the series on acceptance.
       </p>
 
       <div className="space-y-2">
