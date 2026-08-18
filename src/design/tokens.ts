@@ -17,6 +17,9 @@ export const pg = {
   lime: '#0C8A3E',
   limeDim: 'rgba(12, 138, 62, 0.2)',
   limeText: '#FFFFFF',
+  /** Dull gold / mustard */
+  gold: '#C4A35A',
+  goldDim: 'rgba(196, 163, 90, 0.2)',
   /** Secondary accent */
   olive: '#2EAD5A',
   oliveDim: 'rgba(46, 173, 90, 0.18)',

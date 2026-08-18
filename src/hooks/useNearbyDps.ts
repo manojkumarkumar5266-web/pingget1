@@ -74,11 +74,15 @@ export function useNearbyDps(
             vehicle_type: normalizeVehicle(d.vehicle_type),
             rating_avg: d.rating_avg || 0,
             is_online: d.is_online ?? true,
-            current_lat: d.current_lat || null,
-            current_lng: d.current_lng || null,
+            current_lat: d.current_lat || d.gps_lat || null,
+            current_lng: d.current_lng || d.gps_lng || null,
             full_name: d.full_name || 'Partner',
             photo_url: d.photo_url || null,
-          }))
+          })).filter((d: NearbyDp) => {
+            const row = (data || []).find((x: any) => x.dp_user_id === d.dp_user_id)
+            const range = Number(row?.service_range_meters || 5000)
+            return d.distance_meters <= Math.min(radiusMeters, range || radiusMeters)
+          })
           setDps(mapped)
         }
 

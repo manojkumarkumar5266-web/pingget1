@@ -55,9 +55,9 @@ export default function AdminPayments() {
       const [completedOrdersRes, receiptsRes, settingsRes] = await Promise.all([
         supabase
           .from('orders')
-          .select('id, dp_id, items_summary, delivery_charge, commission_pct, commission_amount, dp_earnings, completed_at, created_at')
-          .eq('status', 'completed')
-          .order('completed_at', { ascending: false })
+          .select('id, dp_id, items_summary, delivery_charge, commission_pct, commission_amount, dp_earnings, completed_at, created_at, status')
+          .neq('status', 'cancelled')
+          .order('created_at', { ascending: false })
           .limit(500),
         supabase.from('dp_commission_receipts').select('*').order('submitted_at', { ascending: false }).limit(300),
         supabase.from('app_settings').select('key, value'),

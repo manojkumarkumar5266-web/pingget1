@@ -47,7 +47,7 @@ export default function AdminDashboard() {
       const completedOrders = allOrders.filter((o: any) => o.status === 'completed').length
       const cancelledOrders = allOrders.filter((o: any) => o.status === 'cancelled').length
       const commissionCollected = (payments.data || []).reduce((s: number, p: any) => s + (p.amount || 0), 0)
-      const totalCommissionEarned = allOrders.filter((o: any) => o.status === 'completed').reduce((s: number, o: any) => s + (o.commission_amount || 0), 0)
+      const totalCommissionEarned = allOrders.filter((o: any) => o.status !== 'cancelled').reduce((s: number, o: any) => s + (o.commission_amount || 0), 0)
       const pendingCommission = Math.max(0, totalCommissionEarned - commissionCollected)
       const todayRevenue = allOrders.filter((o: any) => o.status === 'completed' && o.completed_at && o.completed_at >= today).reduce((s: number, o: any) => s + Number(o.delivery_charge || 0), 0)
       const monthRevenue = allOrders.filter((o: any) => o.status === 'completed' && o.completed_at && o.completed_at >= monthStart).reduce((s: number, o: any) => s + Number(o.delivery_charge || 0), 0)

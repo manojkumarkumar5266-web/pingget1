@@ -18,6 +18,7 @@ import { getSelectedDeliveryAddress } from '../../components/AddressPicker'
 import { TopChrome, IconButton, CTA, Surface, SectionLabel } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { uploadMediaFile } from '../../lib/uploadMedia'
+import { userRadiusMeters } from '../../lib/searchRadius'
 
 type SavedAddress = {
   id: string
@@ -554,7 +555,7 @@ export default function CreateAdvanceRequest() {
         delivery_lng: homeAddr?.lng ?? selectedAddress?.lng ?? null,
         max_budget: maxBudget ? parseFloat(maxBudget) : null,
         special_instructions: null,
-        radius_meters: 10000,
+        radius_meters: userRadiusMeters(),
         status: 'searching_dp',
         order_type: 'advance',
         is_scheduled: true,
@@ -828,10 +829,6 @@ export default function CreateAdvanceRequest() {
                     )}
                   </div>
 
-                  {recurringEnabled && selectedDate && selectedSlot && (
-                    <RecurringSelector {...recurringSelectorProps} />
-                  )}
-
                   <button
                     type="button"
                     onClick={() => {
@@ -897,10 +894,6 @@ export default function CreateAdvanceRequest() {
                 peakEnd={settings.peak_hours_end}
                 bufferMinutes={bufferMinutes}
               />
-            )}
-
-            {recurringEnabled && selectedDate && selectedSlot && (
-              <RecurringSelector {...recurringSelectorProps} />
             )}
           </div>
         )}

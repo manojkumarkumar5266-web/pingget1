@@ -23,7 +23,12 @@ export default function CancellationModal({
 
   if (!open) return null
 
-  const hasFee = !freeBeforeAccept || ['accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived'].includes(status)
+  const reservedAfterAccept = [
+    'dp_reserved', 'waiting_payment', 'payment_verified', 'booking_confirmed',
+    'accepted', 'confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived',
+    'task_started', 'scheduled', 'rescheduled',
+  ].includes(status)
+  const hasFee = reservedAfterAccept || (!freeBeforeAccept && status !== 'pending' && status !== 'searching_dp')
   const actualFee = hasFee ? fee : 0
 
   const handleConfirm = () => {
@@ -78,7 +83,7 @@ export default function CancellationModal({
                 <IndianRupee size={14} className="mt-0.5 shrink-0" style={{ color: actualFee > 0 ? pg.danger : pg.success }} />
                 <span style={{ color: pg.text2 }}>
                   {actualFee > 0
-                    ? `Cancellation fee of ₹${actualFee} applies after a partner has accepted.`
+                    ? `Penalty of ₹${actualFee} applies after a partner has reserved / accepted this booking.`
                     : 'No cancellation fee at this stage.'}
                 </span>
               </div>

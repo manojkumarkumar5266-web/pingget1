@@ -12,6 +12,7 @@ import AddressPicker from '../../components/AddressPicker'
 import GreetingHeader from '../../components/GreetingHeader'
 import { Screen, SectionLabel, Surface, EmptyBlock, Chip } from '../../design/primitives'
 import { pg } from '../../design/tokens'
+import { getUserSearchRadiusKm, setUserSearchRadiusKm } from '../../lib/searchRadius'
 
 const STATUS_STEPS: Record<string, number> = {
   pending: 0, searching_dp: 0, dp_reserved: 1, waiting_payment: 1, payment_verified: 1,
@@ -42,6 +43,7 @@ export default function UserHome() {
   const [recentCompleted, setRecentCompleted] = useState<DeliveryRequest[]>(cached?.recentCompleted ?? [])
   const [loading, setLoading] = useState(!cached)
   const [stats, setStats] = useState(cached?.stats ?? { total: 0, completed: 0, active: 0 })
+  const [searchKm, setSearchKm] = useState(() => getUserSearchRadiusKm())
 
   useEffect(() => {
     if (!profile?.id) return
@@ -93,6 +95,29 @@ export default function UserHome() {
       <ServiceStatusBanner cityName={profile?.city} />
 
       <GreetingHeader firstName={firstName} aside={<AddressPicker inline />} />
+
+      <Surface className="mb-5 p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Your search range</p>
+          <p className="text-sm font-extrabold" style={{ color: pg.lime }}>{searchKm} km</p>
+        </div>
+        <input
+          type="range"
+          min={1}
+          max={20}
+          step={1}
+          value={searchKm}
+          onChange={e => {
+            const km = Number(e.target.value)
+            setSearchKm(km)
+            setUserSearchRadiusKm(km)
+          }}
+          className="w-full"
+        />
+        <p className="mt-1.5 text-[11px]" style={{ color: pg.text4 }}>
+          Partners whose range also covers this distance will see your request.
+        </p>
+      </Surface>
 
       <div className="mb-7 grid grid-cols-3 gap-2.5">
         {[

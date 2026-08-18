@@ -6,7 +6,7 @@ import { useGps } from '../../hooks/useGps'
 import { formatDistance } from '../../lib/utils'
 import { X, Clock, RefreshCw, MapPinOff, Loader2, Radar, MapPin } from 'lucide-react'
 import { Images } from '../../lib/customImages'
-import FreeStreetMap, { MAP_VIEW_RADIUS_M, SCAN_BACKEND_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
+import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import { pg } from '../../design/tokens'
 import { CTA, IconButton, Surface, MobileFrame } from '../../design/primitives'
 
@@ -20,8 +20,6 @@ type DpSpot = {
 }
 
 const SCAN_INTERVAL_MS = 3500
-/** Backend always scans 10 km; map view stays ~2–5 km. */
-const BACKEND_RADIUS_M = SCAN_BACKEND_RADIUS_M
 
 /** Offset a point roughly by distance/bearing for map display when RPC omits coords */
 function offsetFromCenter(lat: number, lng: number, distM: number, angleDeg: number): { lat: number; lng: number } {
@@ -53,14 +51,13 @@ export default function ScanningPage() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [retrying, setRetrying] = useState(false)
   const [partnerFound, setPartnerFound] = useState(false)
+  const [radiusMeters, setRadiusMeters] = useState(6000)
 
   const scanRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const scanCountRef = useRef(0)
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  /** Backend scan always 10 km; map viewport stays ~2–5 km. */
-  const radiusMeters = BACKEND_RADIUS_M
   const centerLat = gps.lat ?? profile?.gps_lat ?? null
   const centerLng = gps.lng ?? profile?.gps_lng ?? null
   const center = centerLat != null && centerLng != null ? { lat: centerLat, lng: centerLng } : null
@@ -71,6 +68,15 @@ export default function ScanningPage() {
       if (elapsedRef.current) clearInterval(elapsedRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!requestId) return
+    supabase.from('requests').select('radius_meters').eq('id', requestId).maybeSingle()
+      .then(({ data }) => {
+        const m = Number(data?.radius_meters)
+        if (Number.isFinite(m) && m > 0) setRadiusMeters(m)
+      })
+  }, [requestId])
 
   const triggerRetry = () => {
     setRetrying(true)
@@ -190,7 +196,7 @@ export default function ScanningPage() {
     setPhase('scanning')
   }
 
-  const radiusLabel = formatDistance(BACKEND_RADIUS_M)
+  const radiusLabel = formatDistance(radiusMeters)
   const estimatedWaitSeconds = (() => {
     if (dpCount > 0) return 30 + Math.max(0, 60 - dpCount * 8)
     return Math.min(60 + Math.floor(scanCount / 2) * 20, 300)
