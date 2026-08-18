@@ -1,8 +1,11 @@
+/** Default: ring up to 1 minute until DP accepts/declines or timeout. */
+export const REQUEST_ALERT_DURATION_MS = 60_000
+
 /**
  * Play an attention alert for nearby new requests (DP home).
- * Loops for up to `durationMs` (default 5s) or until stop() is called.
+ * Loops for up to `durationMs` (default 60s) or until stop() is called.
  */
-export function playRequestAlert(durationMs = 5000): () => void {
+export function playRequestAlert(durationMs = REQUEST_ALERT_DURATION_MS): () => void {
   let stopped = false
   let ctx: AudioContext | null = null
   let intervalId: ReturnType<typeof setInterval> | null = null
