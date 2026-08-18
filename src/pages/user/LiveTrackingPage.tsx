@@ -12,6 +12,7 @@ import { ArrowLeft, Phone, Bike, PackageCheck, MapPin, ChevronRight, ChevronDown
 import { InteractiveStarRating } from '../../components/ui'
 import { pg } from '../../design/tokens'
 import { CTA, MobileFrame } from '../../design/primitives'
+import NeedHelpCard from '../../components/NeedHelpCard'
 import AddressPicker, { formatAddress, type SavedAddress } from '../../components/AddressPicker'
 import { openRequestChatRoom } from '../../lib/openRequestChat'
 import { BrandPersonName } from '../../components/Brand'
@@ -814,6 +815,10 @@ export default function LiveTrackingPage() {
               className="mt-3 w-full text-center text-sm font-extrabold" style={{ color: pg.lime }}>
               View order summary
             </button>
+          </div>
+
+          <div className="pb-1">
+            <NeedHelpCard requestId={requestId} chatBasePath="/app/support" />
           </div>
 
           {isPending && (

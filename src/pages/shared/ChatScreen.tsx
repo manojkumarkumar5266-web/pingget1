@@ -787,15 +787,24 @@ export default function ChatScreen() {
                           <p className="text-[10px]" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)' }}>Customer payment confirmation</p>
                         </div>
                       </div>
-                      {msg.quotation_data.screenshot_url && (
-                        <a href={msg.quotation_data.screenshot_url} target="_blank" rel="noopener noreferrer">
-                          <img src={msg.quotation_data.screenshot_url} alt="Payment Proof" className="h-32 w-full rounded-xl object-cover" />
-                        </a>
-                      )}
+                      <p className="text-xs leading-relaxed" style={{ color: isOwn ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.65)' }}>
+                        Customer confirmed the advance booking payment. Details are listed below — no partner profile card is shown here.
+                      </p>
                       <div className="space-y-1 text-xs">
                         {msg.quotation_data.upi_ref && <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>UPI Ref</span><span className="font-mono font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.upi_ref}</span></div>}
                         {msg.quotation_data.transaction_id && <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Transaction ID</span><span className="font-mono font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.transaction_id}</span></div>}
                         {msg.quotation_data.customer_remarks && <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Remarks</span><span className="font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.customer_remarks}</span></div>}
+                        {msg.quotation_data.screenshot_url && (
+                          <a
+                            href={msg.quotation_data.screenshot_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-flex items-center gap-1.5 font-bold underline-offset-2 hover:underline"
+                            style={{ color: isOwn ? '#0C8A3E' : '#60a5fa' }}
+                          >
+                            <FileText size={12} /> View payment bill (text link)
+                          </a>
+                        )}
                       </div>
                       {!isUser && advancePaymentData?.status === 'proof_uploaded' && (
                         <button
@@ -1033,15 +1042,23 @@ export default function ChatScreen() {
                 {formatCurrency(Number(advancePaymentData.amount))}
               </p>
             )}
-            {(advancePaymentData?.screenshot_url || advancePaymentData?.upi_ref) && (
+            <p className="mt-3 text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              Payment proof received as text details only — accept to confirm the booking.
+            </p>
+            {(advancePaymentData?.screenshot_url || advancePaymentData?.upi_ref || advancePaymentData?.transaction_id) && (
               <div className="mt-4 space-y-2 text-left text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                {advancePaymentData.screenshot_url && (
-                  <a href={advancePaymentData.screenshot_url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl">
-                    <img src={advancePaymentData.screenshot_url} alt="Payment bill" className="h-28 w-full object-cover" />
-                  </a>
-                )}
                 {advancePaymentData.upi_ref && <p>UPI: <span className="font-mono text-[#F5F7F6]">{advancePaymentData.upi_ref}</span></p>}
                 {advancePaymentData.transaction_id && <p>Txn: <span className="font-mono text-[#F5F7F6]">{advancePaymentData.transaction_id}</span></p>}
+                {advancePaymentData.screenshot_url && (
+                  <a
+                    href={advancePaymentData.screenshot_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 font-bold text-[#0C8A3E] underline-offset-2 hover:underline"
+                  >
+                    <FileText size={12} /> Open payment bill
+                  </a>
+                )}
               </div>
             )}
             <div className="mt-6 flex gap-2">

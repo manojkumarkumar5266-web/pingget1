@@ -4,7 +4,7 @@ import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
 import { kickPushDelivery } from '../../lib/notify'
 import { ensureAdvanceTaskDayReminders } from '../../lib/advanceTaskReminders'
-import { playRequestAlert } from '../../lib/requestAlertSound'
+import { playRequestAlert, REQUEST_ALERT_DURATION_MS } from '../../lib/requestAlertSound'
 import { useGps } from '../../hooks/useGps'
 import { ServiceStatusBanner, SkeletonList, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency, STATUS_LABELS, STATUS_COLORS } from '../../lib/utils'
@@ -277,9 +277,9 @@ export default function DpHome() {
           if (newStatus === 'pending') showToast('New delivery request nearby!')
           else if (newStatus === 'searching_dp') showToast('New advance booking nearby!')
           else return
-          // Sound alert ~5s to grab attention (stops earlier if they leave / accept)
+          // Sound alert up to 1 min until accept / decline / timeout
           try { stopAlertRef.current?.() } catch { /* ignore */ }
-          stopAlertRef.current = playRequestAlert(5000)
+          stopAlertRef.current = playRequestAlert(REQUEST_ALERT_DURATION_MS)
           fetchRequests()
         })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'requests' },
@@ -292,7 +292,7 @@ export default function DpHome() {
           ) {
             showToast(next === 'pending' ? 'New delivery request nearby!' : 'New advance booking nearby!')
             try { stopAlertRef.current?.() } catch { /* ignore */ }
-            stopAlertRef.current = playRequestAlert(5000)
+            stopAlertRef.current = playRequestAlert(REQUEST_ALERT_DURATION_MS)
           }
           fetchRequests()
         })
@@ -327,6 +327,8 @@ export default function DpHome() {
   }
 
   const declineRequest = async (req: RequestWithUser) => {
+    try { stopAlertRef.current?.() } catch { /* ignore */ }
+    stopAlertRef.current = null
     setRequests(prev => prev.filter(r => r.id !== req.id))
     const { error } = await supabase.rpc('append_declined_by', { row_id: req.id, dp_id: profile!.id })
     if (error) { console.error('[DpHome] decline RPC failed:', error.message); showToast('Could not decline — check your connection.') }
