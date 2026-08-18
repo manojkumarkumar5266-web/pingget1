@@ -135,6 +135,7 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION request_mutual_cancel(uuid, text) TO authenticated;
+NOTIFY pgrst, 'reload schema';
 
 -- 3) Instant cancel (customer only)
 CREATE OR REPLACE FUNCTION cancel_instant_order(

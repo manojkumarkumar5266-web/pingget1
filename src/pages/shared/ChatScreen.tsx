@@ -687,7 +687,15 @@ export default function ChatScreen() {
                         <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Booking ID</span><span className="font-mono font-semibold truncate text-right" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{(msg.quotation_data.booking_id || '').slice(0, 8)}...</span></div>
                         <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Date</span><span className="font-semibold truncate text-right" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_date || 'N/A'}</span></div>
                         <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Scheduled Time</span><span className="font-semibold truncate text-right" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.scheduled_time || 'N/A'}</span></div>
-                        <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Amount</span><span className="font-bold" style={{ color: '#0C8A3E' }}>{formatCurrency(msg.quotation_data.amount)}</span></div>
+                        <div className="flex items-center justify-between gap-2 rounded-xl px-2.5 py-2" style={{ background: isOwn ? 'rgba(0,0,0,0.12)' : 'rgba(12,138,62,0.18)' }}>
+                          <span className="shrink-0 text-xs font-semibold" style={{ color: isOwn ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.65)' }}>Amount</span>
+                          <span
+                            className="text-base font-extrabold tabular-nums"
+                            style={{ color: isOwn ? '#0B0B0B' : '#C4D600' }}
+                          >
+                            {formatCurrency(msg.quotation_data.amount)}
+                          </span>
+                        </div>
                         {msg.quotation_data.payment_deadline && (
                           <div className="flex justify-between gap-2"><span className="shrink-0" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>Deadline</span><span className="font-semibold truncate text-right" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.payment_deadline}</span></div>
                         )}
