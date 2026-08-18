@@ -788,7 +788,7 @@ export default function ChatScreen() {
                         </div>
                       </div>
                       <p className="text-xs leading-relaxed" style={{ color: isOwn ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.65)' }}>
-                        Customer confirmed the advance booking payment. Details are listed below — no partner profile card is shown here.
+                        Customer confirmed the advance booking payment. Details are listed below.
                       </p>
                       <div className="space-y-1 text-xs">
                         {msg.quotation_data.upi_ref && <div className="flex justify-between"><span style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)' }}>UPI Ref</span><span className="font-mono font-semibold" style={{ color: isOwn ? '#0B0B0B' : '#fff' }}>{msg.quotation_data.upi_ref}</span></div>}
@@ -802,7 +802,7 @@ export default function ChatScreen() {
                             className="mt-1 inline-flex items-center gap-1.5 font-bold underline-offset-2 hover:underline"
                             style={{ color: isOwn ? '#0C8A3E' : '#60a5fa' }}
                           >
-                            <FileText size={12} /> View payment bill (text link)
+                            <FileText size={12} /> View payment bill
                           </a>
                         )}
                       </div>
@@ -1043,7 +1043,7 @@ export default function ChatScreen() {
               </p>
             )}
             <p className="mt-3 text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Payment proof received as text details only — accept to confirm the booking.
+              Review the payment details below, then accept to confirm this booking.
             </p>
             {(advancePaymentData?.screenshot_url || advancePaymentData?.upi_ref || advancePaymentData?.transaction_id) && (
               <div className="mt-4 space-y-2 text-left text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
