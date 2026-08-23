@@ -84,3 +84,59 @@ export function splitCommission(deliveryCharge: number, commissionPct: number) {
     dpEarnings: Math.max(0, charge - commissionAmount),
   }
 }
+
+/**
+ * Ensure an order row has admin commission after a job finishes.
+ * Instant jobs that skip quotation otherwise show ₹0 in the DP wallet.
+ */
+export async function accrueCommissionForRequest(requestId: string, cityName?: string | null) {
+  const now = new Date().toISOString()
+  const { data: existing } = await supabase.from('orders').select('*').eq('request_id', requestId).maybeSingle()
+  if (existing && Number(existing.commission_amount || 0) > 0) {
+    await supabase.from('orders').update({ status: 'completed', completed_at: existing.completed_at || now }).eq('id', existing.id)
+    return
+  }
+
+  const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
+  if (!req) return
+
+  const charge = Math.max(
+    0,
+    Number(existing?.delivery_charge || 0) ||
+      Number((req as any).estimated_total_charge || 0) ||
+      Number((req as any).max_budget || 0),
+  )
+  if (charge <= 0) return
+
+  let city = cityName || null
+  if (!city && req.user_id) {
+    const { data: user } = await supabase.from('profiles').select('city').eq('id', req.user_id).maybeSingle()
+    city = user?.city || null
+  }
+  const pct = await getCityCommissionPct(city)
+  const split = splitCommission(charge, pct)
+  const payload = {
+    commission_pct: pct,
+    commission_amount: split.commissionAmount,
+    dp_earnings: split.dpEarnings,
+    delivery_charge: charge,
+    status: 'completed',
+    completed_at: now,
+  }
+
+  if (existing) {
+    await supabase.from('orders').update(payload).eq('id', existing.id)
+    return
+  }
+
+  const dpId = (req as any).accepted_dp_id || (req as any).reserved_dp_id
+  if (!dpId || !req.user_id) return
+  await supabase.from('orders').insert({
+    request_id: requestId,
+    user_id: req.user_id,
+    dp_id: dpId,
+    items_summary: (req as any).description?.split('\n')[0]?.trim() || (req as any).request_category || 'Delivery',
+    item_cost: 0,
+    ...payload,
+  })
+}

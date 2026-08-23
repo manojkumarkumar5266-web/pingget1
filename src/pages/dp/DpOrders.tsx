@@ -12,7 +12,7 @@ import {
   Play, CalendarClock, CreditCard, ChevronRight,
 } from 'lucide-react'
 import DeliveryProofUploader from '../../components/DeliveryProofUploader'
-import { canStartAdvanceTask, advanceTaskUnlockLabel } from '../../lib/advanceTaskGate'
+import { canStartAdvanceTask, advanceTaskUnlockLabel, isAdvanceLockedUntilTaskDay } from '../../lib/advanceTaskGate'
 import { fetchDpCommissionBreakdown, getCityCommissionPct } from '../../lib/commission'
 import { isOrderFinished } from '../../lib/orderComplete'
 
@@ -105,6 +105,7 @@ export default function DpOrders() {
   }, [profile, orders])
 
   const goToChat = async (req: DeliveryRequest) => {
+    if (isAdvanceLockedUntilTaskDay(req)) return
     const { data: rooms } = await supabase
       .from('chat_rooms').select('id').eq('request_id', req.id)
       .order('created_at', { ascending: true }).limit(1)
@@ -227,7 +228,7 @@ export default function DpOrders() {
                     style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: '#93C5FD' }}
                   >
                     <CreditCard size={12} />
-                    Payment proof uploaded — open chat to Verify
+                    Payment proof uploaded — Accept payment in chat
                   </div>
                 )}
 
@@ -286,6 +287,13 @@ export default function DpOrders() {
                         style={{ background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text4 }}
                       >
                         <Lock size={13} /> Chat closed
+                      </div>
+                    ) : isAdvanceLockedUntilTaskDay(req) ? (
+                      <div
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 text-xs font-extrabold"
+                        style={{ background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text4 }}
+                      >
+                        <Lock size={13} /> Chat opens on task day
                       </div>
                     ) : (
                       <CTA

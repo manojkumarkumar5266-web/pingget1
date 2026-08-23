@@ -10,7 +10,7 @@ import RescheduleModal from '../../components/RescheduleModal'
 import { Clock, MapPin, MessageCircle, Bike, CheckCircle2, Package, ShoppingBag, Truck, ChevronRight, CalendarClock, CalendarPlus, CreditCard } from 'lucide-react'
 import { Screen, PageTitle, Surface, Chip, CTA, EmptyBlock } from '../../design/primitives'
 import { pg } from '../../design/tokens'
-import { canStartAdvanceTask, advanceTaskUnlockLabel } from '../../lib/advanceTaskGate'
+import { canStartAdvanceTask, advanceTaskUnlockLabel, isAdvanceLockedUntilTaskDay } from '../../lib/advanceTaskGate'
 import { isOrderFinished } from '../../lib/orderComplete'
 
 type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
@@ -170,6 +170,7 @@ export default function UserOrders() {
   }
 
   const openChat = async (req: RequestWithDp) => {
+    if (isAdvanceLockedUntilTaskDay(req)) return
     const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
     if (data) navigate(`/app/chat/${data.id}`)
   }
@@ -280,7 +281,7 @@ export default function UserOrders() {
                 {req.status === 'dp_reserved' && (
                   <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.limeDim, border: '1px solid rgba(196,214,0,0.25)' }}>
                     <CheckCircle2 size={14} style={{ color: pg.lime }} />
-                    <p className="text-xs font-bold" style={{ color: pg.lime }}>Delivery partner reserved! Waiting for payment confirmation.</p>
+                    <p className="text-xs font-bold" style={{ color: pg.lime }}>Delivery partner reserved. Discuss the task and quotation in chat.</p>
                   </div>
                 )}
                 {req.status === 'waiting_payment' && (
@@ -359,7 +360,7 @@ export default function UserOrders() {
               )}
               {(tab === 'active' || tab === 'reserved') && (
                 <div className="flex flex-wrap gap-2 border-t px-4 py-3" style={{ borderColor: pg.line }} onClick={e => e.stopPropagation()}>
-                  {req.accepted_dp_id && (
+                  {req.accepted_dp_id && !isAdvanceLockedUntilTaskDay(req) && (
                     <CTA
                       variant="secondary"
                       className="min-h-0 rounded-xl px-3 py-2 text-xs"

@@ -17,6 +17,7 @@ import AddressPicker, { formatAddress, type SavedAddress } from '../../component
 import { openRequestChatRoom } from '../../lib/openRequestChat'
 import { BrandPersonName } from '../../components/Brand'
 import { markRequestCompleted } from '../../lib/orderComplete'
+import { isAdvanceLockedUntilTaskDay } from '../../lib/advanceTaskGate'
 
 type PayPhase = 'idle' | 'awaiting_user_payment' | 'awaiting_dp_accept' | 'payment_accepted' | 'rating' | 'thanks'
 
@@ -90,6 +91,10 @@ export default function LiveTrackingPage() {
     const fetchData = async () => {
       const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
       if (!req) { setLoading(false); return }
+      if (isAdvanceLockedUntilTaskDay(req as DeliveryRequest)) {
+        navigate('/app', { replace: true })
+        return
+      }
       setRequest(req as DeliveryRequest)
       if (req.payment_accepted_at) {
         setPayPhase('rating')

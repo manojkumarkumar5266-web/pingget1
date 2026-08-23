@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
-import { Home, ClipboardList, Wallet, User, LogOut, AlertTriangle, Bell } from 'lucide-react'
+import { Home, ClipboardList, Wallet, User, LogOut, AlertTriangle } from 'lucide-react'
 import { useEffect, useState, startTransition } from 'react'
 import { supabase, DeliveryPartner } from '../../lib/supabase'
 import { FullScreenLoader } from '../../components/ui'
@@ -27,7 +27,6 @@ export default function DpLayout() {
   const [dueTomorrow, setDueTomorrow] = useState(0)
   const [submittedPending, setSubmittedPending] = useState(false)
   const [receiptRejected, setReceiptRejected] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     const fetchDp = async () => {
@@ -78,23 +77,6 @@ export default function DpLayout() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [dpLoaded, profile])
-
-  useEffect(() => {
-    if (!profile) return
-    const fetchUnread = async () => {
-      const { count } = await supabase.from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', profile.id).eq('is_read', false).is('deleted_at', null)
-      setUnreadCount(count || 0)
-    }
-    fetchUnread()
-    const channel = supabase.channel(`dp-unread-${profile.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [profile])
 
   if (!dpLoaded) return <FullScreenLoader />
   if (!dp) return <Blocked title="Setup incomplete" body="Your partner profile is being prepared. Contact admin." onSignOut={signOut} />
@@ -173,7 +155,6 @@ export default function DpLayout() {
         <Dock>
           <DockItem label="Requests" icon={<Home size={20} />} active={isActive('/dp')} onClick={() => go('/dp')} />
           <DockItem label="Orders" icon={<ClipboardList size={20} />} active={isActive('/dp/orders')} onClick={() => go('/dp/orders')} />
-          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/dp/notifications')} badge={unreadCount} onClick={() => { setUnreadCount(0); go('/dp/notifications') }} />
           <DockItem label="Wallet" icon={<Wallet size={20} />} active={isActive('/dp/wallet')} onClick={() => go('/dp/wallet')} />
           <DockItem label="You" icon={<User size={20} />} active={isActive('/dp/profile')} onClick={() => go('/dp/profile')} />
         </Dock>

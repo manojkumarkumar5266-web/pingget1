@@ -10,7 +10,6 @@ const FullOrderDetails = lazy(() => import('../shared/FullOrderDetails'))
 const DpWallet = lazy(() => import('./DpWallet'))
 const DpProfile = lazy(() => import('./DpProfile'))
 const DpNavigationPage = lazy(() => import('./DpNavigationPage'))
-const DpNotifications = lazy(() => import('./DpNotifications'))
 const OfferDetailPage = lazy(() => import('../shared/OfferDetailPage'))
 const SupportChatScreen = lazy(() => import('../shared/SupportChatScreen'))
 
@@ -30,7 +29,7 @@ export default function DpApp() {
         <Route path="orders" element={<Lazy><DpOrders /></Lazy>} />
         <Route path="wallet" element={<Lazy><DpWallet /></Lazy>} />
         <Route path="profile" element={<Lazy><DpProfile /></Lazy>} />
-        <Route path="notifications" element={<Lazy><DpNotifications /></Lazy>} />
+        <Route path="notifications" element={<Navigate to="/dp" replace />} />
         <Route path="offers/:offerId" element={<Lazy><OfferDetailPage basePath="/dp" /></Lazy>} />
       </Route>
       <Route path="/dp/chat/:roomId" element={<Lazy><ChatScreen /></Lazy>} />

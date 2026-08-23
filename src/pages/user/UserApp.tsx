@@ -12,7 +12,6 @@ const UserOrders = lazy(() => import('./UserOrders'))
 const ChatScreen = lazy(() => import('../shared/ChatScreen'))
 const FullOrderDetails = lazy(() => import('../shared/FullOrderDetails'))
 const UserProfile = lazy(() => import('./UserProfile'))
-const UserNotifications = lazy(() => import('./UserNotifications'))
 const OfferDetailPage = lazy(() => import('../shared/OfferDetailPage'))
 const SupportChatScreen = lazy(() => import('../shared/SupportChatScreen'))
 
@@ -30,7 +29,7 @@ export default function UserApp() {
         <Route path="/scanning/:requestId" element={<Lazy><ScanningPage /></Lazy>} />
         <Route path="/track/:requestId" element={<Lazy><LiveTrackingPage /></Lazy>} />
         <Route path="/orders" element={<Lazy><UserOrders /></Lazy>} />
-        <Route path="/notifications" element={<Lazy><UserNotifications /></Lazy>} />
+        <Route path="/notifications" element={<Navigate to="/app" replace />} />
         <Route path="/offers/:offerId" element={<Lazy><OfferDetailPage basePath="/app" /></Lazy>} />
         <Route path="/profile" element={<Lazy><UserProfile /></Lazy>} />
       </Route>

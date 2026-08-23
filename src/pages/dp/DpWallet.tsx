@@ -119,11 +119,11 @@ export default function DpWallet() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: '#86EFAC' }}>
-                Commission status
+                Total commission
               </p>
-              <p className="mt-1 text-2xl font-extrabold tracking-tight">All paid up!</p>
+              <p className="mt-1 text-2xl font-extrabold tracking-tight">{formatCurrency(totalCommission)}</p>
               <p className="mt-1.5 text-xs" style={{ color: pg.text3 }}>
-                Commission from yesterday and earlier is due now (after 12 AM). Today’s commission is paid tomorrow before you go online.
+                {totalCommission > 0 ? 'All paid up to admin.' : 'Commission appears here after a delivery is completed.'}
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'rgba(34,197,94,0.14)' }}>
@@ -149,7 +149,7 @@ export default function DpWallet() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'rgba(255,77,79,0.12)' }}>
               <IndianRupee size={16} className="text-red-400" />
             </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>Commission</span>
+            <span className="text-[10px] font-extrabold uppercase tracking-wide" style={{ color: pg.text4 }}>Total commission</span>
           </div>
           <p className="text-xl font-extrabold">{formatCurrency(totalCommission)}</p>
           <p className="mt-0.5 text-xs" style={{ color: pg.text4 }}>{formatCurrency(totalConfirmed)} confirmed paid</p>
