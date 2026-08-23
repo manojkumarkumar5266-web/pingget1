@@ -33,7 +33,7 @@ export default function LandingPage() {
         <img src={Images.landingBackground} alt="" className="h-full w-full object-cover opacity-30" draggable={false} />
         <div
           className="absolute inset-0"
-          style={{ background: `linear-gradient(180deg, rgba(5,5,5,0.2) 0%, ${pg.bg} 72%)` }}
+          style={{ background: `linear-gradient(180deg, rgba(11,74,42,0.15) 0%, ${pg.bg} 72%)` }}
         />
       </div>
 

@@ -10,7 +10,7 @@ import { Images } from '../../lib/customImages'
 import FeatureCarousel from '../../components/FeatureCarousel'
 import AddressPicker from '../../components/AddressPicker'
 import GreetingHeader from '../../components/GreetingHeader'
-import { Screen, SectionLabel, Surface, EmptyBlock, Chip } from '../../design/primitives'
+import { Screen, SectionLabel, Surface, EmptyBlock, Chip, RangeSlider } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { getUserSearchRadiusKm, setUserSearchRadiusKm } from '../../lib/searchRadius'
 
@@ -96,28 +96,16 @@ export default function UserHome() {
 
       <GreetingHeader firstName={firstName} aside={<AddressPicker inline />} />
 
-      <Surface className="mb-5 p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>Your search range</p>
-          <p className="text-sm font-extrabold" style={{ color: pg.lime }}>{searchKm} km</p>
-        </div>
-        <input
-          type="range"
-          min={1}
-          max={20}
-          step={1}
-          value={searchKm}
-          onChange={e => {
-            const km = Number(e.target.value)
-            setSearchKm(km)
-            setUserSearchRadiusKm(km)
-          }}
-          className="w-full"
-        />
-        <p className="mt-1.5 text-[11px]" style={{ color: pg.text4 }}>
-          Partners whose range also covers this distance will see your request.
-        </p>
-      </Surface>
+      <RangeSlider
+        label="Search range"
+        hint="How far we look for partners when you book."
+        valueKm={searchKm}
+        onChange={km => {
+          setSearchKm(km)
+          setUserSearchRadiusKm(km)
+        }}
+        presets={[2, 4, 6, 10, 15, 20]}
+      />
 
       <div className="mb-7 grid grid-cols-3 gap-2.5">
         {[

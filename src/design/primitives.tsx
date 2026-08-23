@@ -1,7 +1,7 @@
 import { ReactNode, ButtonHTMLAttributes, HTMLAttributes } from 'react'
 import { pg } from './tokens'
 
-/** Full-height black screen canvas */
+/** Full-height forest-green screen canvas */
 export function Screen({
   children,
   className = '',
@@ -91,14 +91,14 @@ export function CTA({
 }) {
   const styles: Record<string, React.CSSProperties> = {
     primary: {
-      background: pg.lime,
+      background: pg.gold,
       color: pg.limeText,
-      boxShadow: '0 8px 22px rgba(12, 138, 62, 0.28)',
+      boxShadow: '0 10px 24px rgba(22, 18, 12, 0.22)',
     },
     secondary: {
       background: pg.goldDim,
       color: pg.gold,
-      border: `1px solid rgba(196, 163, 90, 0.4)`,
+      border: `1px solid ${pg.lineStrong}`,
     },
     danger: {
       background: pg.danger,
@@ -130,7 +130,7 @@ export function Chip({
 }) {
   const map: Record<string, { bg: string; color: string }> = {
     neutral: { bg: pg.surface2, color: pg.text2 },
-    lime: { bg: pg.limeDim, color: pg.lime },
+    lime: { bg: pg.gold, color: pg.limeText },
     info: { bg: 'rgba(26, 127, 191, 0.12)', color: pg.info },
     danger: { bg: 'rgba(226, 59, 59, 0.12)', color: pg.danger },
     success: { bg: pg.limeDim, color: pg.success },
@@ -230,10 +230,10 @@ export function Dock({ children }: { children: ReactNode }) {
       <div
         className="mx-auto flex max-w-lg items-center justify-between gap-1 px-2 py-2"
         style={{
-          background: 'rgba(0,0,0,0.96)',
+          background: 'rgba(10, 66, 38, 0.96)',
           border: `1px solid ${pg.gold}`,
           borderRadius: 28,
-          boxShadow: '0 12px 36px rgba(0,0,0,0.8)',
+          boxShadow: '0 12px 36px rgba(8, 32, 20, 0.45)',
           backdropFilter: 'blur(20px)',
         }}
       >
@@ -265,9 +265,9 @@ export function DockItem({
         onClick={onClick}
         className="-mt-7 flex h-16 w-16 items-center justify-center rounded-full transition active:scale-95"
         style={{
-          background: pg.lime,
+          background: pg.gold,
           color: pg.limeText,
-          boxShadow: '0 12px 28px rgba(12, 138, 62, 0.35)',
+          boxShadow: '0 12px 28px rgba(22, 18, 12, 0.28)',
         }}
         aria-label={label}
       >
@@ -280,12 +280,12 @@ export function DockItem({
       type="button"
       onClick={onClick}
       className="relative flex min-w-[56px] flex-col items-center gap-0.5 rounded-2xl px-3 py-1.5"
-      style={{ background: active ? pg.limeDim : 'transparent' }}
+      style={{ background: active ? pg.gold : 'transparent' }}
     >
-      <span style={{ color: active ? pg.lime : pg.text3 }}>{icon}</span>
+      <span style={{ color: active ? pg.limeText : pg.text3 }}>{icon}</span>
       <span
         className="text-[10px] font-bold"
-        style={{ color: active ? pg.lime : pg.text4 }}
+        style={{ color: active ? pg.limeText : pg.text4 }}
       >
         {label}
       </span>
@@ -335,7 +335,7 @@ export function TopChrome({
     <div
       className="sticky top-0 z-20 mb-4 flex items-center gap-3 px-4 py-3"
       style={{
-        background: 'rgba(7,8,11,0.92)',
+        background: 'rgba(12, 85, 49, 0.94)',
         borderBottom: `1px solid ${pg.line}`,
         backdropFilter: 'blur(16px)',
       }}
@@ -374,5 +374,86 @@ export function MobileFrame({
     <div className="fixed inset-0 z-50 flex justify-center" style={{ background: pg.bg }}>
       {inner}
     </div>
+  )
+}
+
+export function RangeSlider({
+  label,
+  valueLabel,
+  hint,
+  valueKm,
+  onChange,
+  onCommit,
+  presets,
+}: {
+  label: string
+  valueLabel?: string
+  hint?: string
+  valueKm: number
+  onChange: (km: number) => void
+  onCommit?: (km: number) => void
+  presets?: number[]
+}) {
+  const pct = ((valueKm - 1) / 19) * 100
+  const commit = (km: number) => {
+    onChange(km)
+    onCommit?.(km)
+  }
+  return (
+    <Surface className="mb-5 p-4">
+      <div className="mb-3 flex items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.gold }}>
+            {label}
+          </p>
+          {hint && (
+            <p className="mt-1 max-w-[16rem] text-[11px] leading-snug" style={{ color: pg.text3 }}>
+              {hint}
+            </p>
+          )}
+        </div>
+        <div className="shrink-0 rounded-2xl px-3 py-1.5" style={{ background: pg.gold }}>
+          <p className="text-xl font-extrabold leading-none" style={{ color: pg.limeText }}>
+            {valueLabel || `${valueKm} km`}
+          </p>
+        </div>
+      </div>
+      <input
+        type="range"
+        min={1}
+        max={20}
+        step={1}
+        value={valueKm}
+        onChange={e => onChange(Number(e.target.value))}
+        onMouseUp={(e: any) => onCommit?.(Number(e.target.value))}
+        onTouchEnd={(e: any) => onCommit?.(Number(e.target.value))}
+        className="pg-range w-full"
+        style={{
+          background: `linear-gradient(to right, ${pg.gold} 0%, ${pg.gold} ${pct}%, ${pg.surface2} ${pct}%, ${pg.surface2} 100%)`,
+        }}
+        aria-label={label}
+      />
+      <div className="mt-1.5 flex justify-between text-[10px] font-bold" style={{ color: pg.text4 }}>
+        <span>1 km</span>
+        <span>20 km</span>
+      </div>
+      {presets && presets.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {presets.map(km => (
+            <button
+              key={km}
+              type="button"
+              onClick={() => commit(km)}
+              className="rounded-full px-3 py-1.5 text-xs font-extrabold transition active:scale-95"
+              style={valueKm === km
+                ? { background: pg.gold, color: pg.limeText }
+                : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text3 }}
+            >
+              {km} km
+            </button>
+          ))}
+        </div>
+      )}
+    </Surface>
   )
 }

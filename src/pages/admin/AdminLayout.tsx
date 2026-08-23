@@ -97,11 +97,11 @@ export default function AdminLayout() {
               onClick={() => navigate(item.path)}
               className="flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left"
               style={active
-                ? { background: pg.limeDim, border: `1px solid rgba(196,214,0,0.28)` }
+                ? { background: pg.gold, color: pg.limeText }
                 : { border: '1px solid transparent' }}
             >
-              <Icon size={18} style={{ color: active ? pg.lime : pg.text3 }} />
-              <span className="flex-1 text-sm font-bold" style={{ color: active ? pg.lime : pg.text2 }}>{item.label}</span>
+              <Icon size={18} style={{ color: active ? pg.limeText : pg.text3 }} />
+              <span className="flex-1 text-sm font-bold" style={{ color: active ? pg.limeText : pg.text2 }}>{item.label}</span>
               {item.badge > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#F5F7F6]">
                   {item.badge > 99 ? '99+' : item.badge}
@@ -113,7 +113,7 @@ export default function AdminLayout() {
       </nav>
       <div className="p-4" style={{ borderTop: `1px solid ${pg.line}` }}>
         <div className="mb-3 flex items-center gap-2.5 rounded-2xl px-3 py-2.5" style={{ background: pg.surface2, color: pg.ink }}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-extrabold" style={{ background: pg.limeDim, color: pg.lime }}>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-extrabold" style={{ background: pg.gold, color: pg.limeText }}>
             {profile?.full_name?.charAt(0).toUpperCase() || 'A'}
           </div>
           <div className="min-w-0 flex-1">

@@ -63,7 +63,7 @@ export function BrandPersonName({
 }
 
 /**
- * pinGGet wordmark — pin gold · G green · 2nd G gold · et green
+ * pinGGet wordmark — pin gold · G cream · 2nd G gold · et cream (readable on forest green)
  * Tagline “boy next door” only when showTagline is true (welcome + sign-in).
  */
 export function BrandWordmark({
@@ -87,9 +87,9 @@ export function BrandWordmark({
         style={{ fontFamily: BRAND_FONT, letterSpacing: '-0.045em' }}
       >
         <span style={{ color: BRAND_YELLOW }}>pin</span>
-        <span style={{ color: BRAND_GREEN }}>G</span>
+        <span style={{ color: BRAND_WHITE }}>G</span>
         <span style={{ color: BRAND_YELLOW }}>G</span>
-        <span style={{ color: BRAND_GREEN }}>et</span>
+        <span style={{ color: BRAND_WHITE }}>et</span>
       </div>
       {showTagline && (
         <div
