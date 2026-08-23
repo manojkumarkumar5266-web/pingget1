@@ -37,11 +37,14 @@ export async function acceptDpPayment(requestId: string): Promise<string | null>
     .from('requests')
     .update({
       payment_accepted_at: now,
-      status: 'cash_received',
+      status: 'completed',
     })
     .eq('id', requestId)
 
-  if (!updErr) return null
+  if (!updErr) {
+    await supabase.from('orders').update({ status: 'completed', completed_at: now }).eq('request_id', requestId)
+    return null
+  }
 
   // Last resort: payment_accepted_at only (status column may be sticky)
   const { error: colErr } = await supabase
@@ -49,7 +52,10 @@ export async function acceptDpPayment(requestId: string): Promise<string | null>
     .update({ payment_accepted_at: now })
     .eq('id', requestId)
 
-  if (!colErr) return null
+  if (!colErr) {
+    await supabase.from('orders').update({ status: 'completed', completed_at: now }).eq('request_id', requestId)
+    return null
+  }
 
   return (
     rpcMessage ||

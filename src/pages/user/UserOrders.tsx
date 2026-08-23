@@ -11,6 +11,7 @@ import { Clock, MapPin, MessageCircle, Bike, CheckCircle2, Package, ShoppingBag,
 import { Screen, PageTitle, Surface, Chip, CTA, EmptyBlock } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { canStartAdvanceTask, advanceTaskUnlockLabel } from '../../lib/advanceTaskGate'
+import { isOrderFinished } from '../../lib/orderComplete'
 
 type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
 type RequestWithDp = DeliveryRequest & { _dp?: Profile }
@@ -110,16 +111,18 @@ export default function UserOrders() {
     } else if (tab === 'reserved') {
       query = query.in('status', ADVANCE_RESERVED)
     } else if (tab === 'completed') {
-      query = query.eq('status', 'completed')
+      query = query.or('status.eq.completed,status.eq.task_completed,payment_accepted_at.not.is.null')
     } else {
       query = query.in('status', ['cancelled', 'expired'])
     }
     const { data } = await query.order('created_at', { ascending: false })
     let requests = (data as DeliveryRequest[]) || []
     if (tab === 'active') {
-      requests = requests.filter(r => (r as any).order_type !== 'advance' || ADVANCE_LIVE.includes(r.status))
+      requests = requests.filter(r => !isOrderFinished(r) && ((r as any).order_type !== 'advance' || ADVANCE_LIVE.includes(r.status)))
     } else if (tab === 'reserved') {
-      requests = requests.filter(r => (r as any).order_type === 'advance')
+      requests = requests.filter(r => (r as any).order_type === 'advance' && !isOrderFinished(r))
+    } else if (tab === 'completed') {
+      requests = requests.filter(r => isOrderFinished(r) && r.status !== 'cancelled' && r.status !== 'expired')
     }
     const dpIds = [...new Set(requests.map(r => r.accepted_dp_id).filter(Boolean))] as string[]
     let dpMap = new Map<string, Profile>()

@@ -541,10 +541,10 @@ export default function ChatScreen() {
           </BrandPersonName>
           {otherTyping ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-medium" style={{ color: '#0C8A3E' }}>typing</span>
+              <span className="text-xs font-medium" style={{ color: pg.gold }}>typing</span>
               <div className="flex gap-0.5 items-center">
                 {[0, 150, 300].map(delay => (
-                  <span key={delay} className="h-1 w-1 rounded-full animate-bounce" style={{ background: '#0C8A3E', animationDelay: `${delay}ms` }} />
+                  <span key={delay} className="h-1 w-1 rounded-full animate-bounce" style={{ background: pg.gold, animationDelay: `${delay}ms` }} />
                 ))}
               </div>
             </div>
@@ -647,8 +647,8 @@ export default function ChatScreen() {
                   {msg.message_type === 'quotation' && msg.quotation_data && (
                     <div className="min-w-[240px] space-y-3">
                       <div className="flex items-center justify-center gap-2 pb-2 border-b" style={{ borderColor: isOwn ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.1)' }}>
-                        <FileText size={15} style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }} />
-                        <p className="text-sm font-bold tracking-wide" style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }}>Quotation</p>
+                        <FileText size={15} style={{ color: isOwn ? '#0B0B0B' : pg.gold }} />
+                        <p className="text-sm font-bold tracking-wide" style={{ color: isOwn ? '#0B0B0B' : pg.gold }}>Quotation</p>
                       </div>
                       {msg.quotation_data.photo_url && (
                         <div className="flex flex-wrap gap-1.5">
@@ -663,7 +663,7 @@ export default function ChatScreen() {
                         {String(msg.quotation_data.items_summary || '').split('\n').map((line: string, i: number) =>
                           line.trim() ? (
                             <li key={i} className="flex items-start gap-2 text-sm" style={{ color: isOwn ? '#0B0B0B' : 'rgba(255,255,255,0.85)' }}>
-                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: isOwn ? '#0B0B0B' : '#0C8A3E' }} />
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: isOwn ? '#0B0B0B' : pg.gold }} />
                               {line.trim()}
                             </li>
                           ) : null
@@ -689,7 +689,7 @@ export default function ChatScreen() {
                           </button>
                         </div>
                       )}
-                      {order && <p className="text-center text-sm font-bold" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : '#0C8A3E' }}>✓ Accepted</p>}
+                      {order && <p className="text-center text-sm font-bold" style={{ color: isOwn ? 'rgba(0,0,0,0.7)' : pg.gold }}>✓ Accepted</p>}
                     </div>
                   )}
 
@@ -705,10 +705,10 @@ export default function ChatScreen() {
                       style={{ background: isOwn ? 'rgba(0,0,0,0.08)' : 'rgba(12, 138, 62,0.06)', border: `1px solid ${isOwn ? 'rgba(0,0,0,0.15)' : 'rgba(12, 138, 62,0.2)'}` }}>
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: 'rgba(12, 138, 62,0.2)' }}>
-                          <CreditCard size={16} style={{ color: '#0C8A3E' }} />
+                          <CreditCard size={16} style={{ color: pg.gold }} />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-bold leading-snug" style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }}>Advance Booking Confirmation</p>
+                          <p className="text-sm font-bold leading-snug" style={{ color: isOwn ? '#0B0B0B' : pg.gold }}>Advance Booking Confirmation</p>
                           <p className="text-[10px]" style={{ color: isOwn ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)' }}>Payment Request</p>
                         </div>
                       </div>
@@ -741,7 +741,7 @@ export default function ChatScreen() {
                       {isUser && (payStatus === 'waiting' || payStatus === 'rejected') && msg.advance_payment_id && (
                         <button onClick={() => { setShowPaymentProof(msg.advance_payment_id); setAdvancePaymentData(msg.quotation_data) }}
                           className="w-full rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
-                          style={{ background: '#0C8A3E', color: '#0B0B0B' }}>
+          style={{ background: pg.gold, color: pg.limeText }}>
                           <Upload size={12} className="inline mr-1" /> Upload Payment Proof
                         </button>
                       )}
@@ -755,7 +755,7 @@ export default function ChatScreen() {
                           </button>
                           <button onClick={() => setShowAcceptPaymentPopup(true)}
                             className="flex-1 rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
-                            style={{ background: '#0C8A3E', color: '#0B0B0B' }}>
+            style={{ background: pg.gold, color: pg.limeText }}>
                             <ShieldCheck size={12} className="inline mr-1" /> Accept Payment
                           </button>
                         </div>
@@ -837,7 +837,7 @@ export default function ChatScreen() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="mt-1 inline-flex items-center gap-1.5 font-bold underline-offset-2 hover:underline"
-                            style={{ color: isOwn ? '#0C8A3E' : '#60a5fa' }}
+                            style={{ color: isOwn ? pg.gold : '#60a5fa' }}
                           >
                             <FileText size={12} /> View payment bill
                           </a>
@@ -848,7 +848,7 @@ export default function ChatScreen() {
                           type="button"
                           onClick={() => setShowAcceptPaymentPopup(true)}
                           className="w-full rounded-xl py-2.5 text-xs font-bold transition-all active:scale-95"
-                          style={{ background: '#0C8A3E', color: '#0B0B0B' }}
+                          style={{ background: pg.gold, color: pg.limeText }}
                         >
                           <ShieldCheck size={12} className="inline mr-1" /> Accept Payment
                         </button>
@@ -877,7 +877,7 @@ export default function ChatScreen() {
               <div style={{ width: 28 }}><Avatar url={otherUser?.photo_url} name={otherUser?.full_name || 'User'} size={28} /></div>
               <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm px-4 py-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 {[0, 150, 300].map(delay => (
-                  <span key={delay} className="h-2 w-2 rounded-full animate-bounce" style={{ background: '#0C8A3E', animationDelay: `${delay}ms` }} />
+                  <span key={delay} className="h-2 w-2 rounded-full animate-bounce" style={{ background: pg.gold, animationDelay: `${delay}ms` }} />
                 ))}
               </div>
             </div>
@@ -898,8 +898,8 @@ export default function ChatScreen() {
       )}
       {isCompleted && hasRated && (
         <div className="shrink-0 flex items-center justify-center gap-2 px-4 py-3" style={{ background: pg.bg, borderTop: `1px solid ${pg.line}` }}>
-          <CheckCircle size={15} style={{ color: '#0C8A3E' }} />
-          <p className="text-sm font-medium" style={{ color: '#0C8A3E' }}>Order completed & rated</p>
+          <CheckCircle size={15} style={{ color: pg.gold }} />
+          <p className="text-sm font-medium" style={{ color: pg.gold }}>Order completed & rated</p>
         </div>
       )}
 
@@ -1064,18 +1064,18 @@ export default function ChatScreen() {
         <div className="fixed inset-0 z-[160] flex items-center justify-center px-5 animate-fade-in" style={{ background: pg.scrim }}>
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center"
-            style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)' }}
+            style={{ background: pg.surface, border: `1px solid ${pg.line}` }}
             onClick={e => e.stopPropagation()}
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full" style={{ background: 'rgba(12,138,62,0.18)' }}>
-              <IndianRupee size={26} style={{ color: '#0C8A3E' }} />
+              <IndianRupee size={26} style={{ color: pg.gold }} />
             </div>
             <h3 className="text-lg font-bold text-[#F5F7F6]">Accept Payment</h3>
             <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
               Customer uploaded the booking payment bill. Accept to reserve this advance booking until task day.
             </p>
             {advancePaymentData?.amount != null && (
-              <p className="mt-4 text-2xl font-extrabold" style={{ color: '#0C8A3E' }}>
+              <p className="mt-4 text-2xl font-extrabold" style={{ color: pg.gold }}>
                 {formatCurrency(Number(advancePaymentData.amount))}
               </p>
             )}
@@ -1091,7 +1091,8 @@ export default function ChatScreen() {
                     href={advancePaymentData.screenshot_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 font-bold text-[#0C8A3E] underline-offset-2 hover:underline"
+                    className="inline-flex items-center gap-1.5 font-bold underline-offset-2 hover:underline"
+                    style={{ color: pg.gold }}
                   >
                     <FileText size={12} /> Open payment bill
                   </a>
@@ -1112,7 +1113,7 @@ export default function ChatScreen() {
                 disabled={acceptingAdvancePayment}
                 onClick={() => void acceptAdvanceConfirmationPayment()}
                 className="flex-1 rounded-xl py-3 text-sm font-extrabold transition active:scale-95 disabled:opacity-60"
-                style={{ background: '#0C8A3E', color: '#0B0B0B' }}
+                style={{ background: pg.gold, color: pg.limeText }}
               >
                 {acceptingAdvancePayment ? 'Accepting…' : 'Accept Payment'}
               </button>
@@ -1155,8 +1156,8 @@ function VoiceMessagePlayer({ url, isOwn }: { url: string; isOwn: boolean }) {
       <button onClick={toggle} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all active:scale-90"
         style={{ background: isOwn ? 'rgba(0,0,0,0.2)' : 'rgba(12, 138, 62,0.2)' }}>
         {playing
-          ? <Pause size={14} style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }} />
-          : <Play size={14} style={{ color: isOwn ? '#0B0B0B' : '#0C8A3E' }} />}
+          ? <Pause size={14} style={{ color: isOwn ? '#0B0B0B' : pg.gold }} />
+          : <Play size={14} style={{ color: isOwn ? '#0B0B0B' : pg.gold }} />}
       </button>
       <div className="flex flex-1 items-center gap-0.5 h-8">
         {Array.from({ length: 16 }).map((_, i) => (
@@ -1184,7 +1185,7 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
   const handleSubmit = async () => { if (!file) return; setUploading(true); await onSubmit(file); setUploading(false) }
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 animate-fade-in" style={{ background: pg.scrim }} onClick={onClose}>
-      <div className="w-full max-w-md rounded-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-3xl p-6 animate-slide-in-bottom" style={{ background: pg.surface, border: `1px solid ${pg.line}` }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
         <h3 className="mb-1 text-lg font-bold text-[#F5F7F6]">Pickup Proof</h3>
         <p className="mb-4 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Photo of items as pickup confirmation.</p>
@@ -1206,7 +1207,7 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
           <button onClick={handleSubmit} disabled={!file || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-xl py-3"
-            style={{ background: '#0C8A3E', color: '#0B0B0B' }}>
+                            style={{ background: pg.gold, color: pg.limeText }}>
             {uploading ? 'Sending...' : 'Send Proof'}
           </button>
         </div>
@@ -1258,29 +1259,29 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
   }
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center animate-fade-in" style={{ background: pg.scrim }} onClick={onClose}>
-      <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom" style={{ background: pg.surface, border: '1px solid rgba(255,255,255,0.08)', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
         <div className="px-5 pt-4 pb-2">
           <div className="bottom-sheet-handle" />
           <h3 className="text-lg font-bold text-[#F5F7F6] mb-4">Send Quotation</h3>
         </div>
         <div className="overflow-y-auto px-5 pb-8 space-y-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
           <div>
-            <label className="label" style={{ color: '#0C8A3E' }}>Items Summary</label>
+            <label className="label" style={{ color: pg.gold }}>Items Summary</label>
             <p className="mb-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Edit the customer's request — each item on its own line.</p>
             <textarea className="input min-h-24 resize-none" value={items} onChange={e => setItems(e.target.value)} placeholder="2kg Rice&#10;1L Milk" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label flex items-center gap-1" style={{ color: '#0C8A3E' }}><IndianRupee size={12} /> Item Cost</label>
+              <label className="label flex items-center gap-1" style={{ color: pg.gold }}><IndianRupee size={12} /> Item Cost</label>
               <input type="number" className="input" value={itemCost} onChange={e => setItemCost(e.target.value)} placeholder="0" />
             </div>
             <div>
-              <label className="label flex items-center gap-1" style={{ color: '#0C8A3E' }}><IndianRupee size={12} /> Delivery Fee</label>
+              <label className="label flex items-center gap-1" style={{ color: pg.gold }}><IndianRupee size={12} /> Delivery Fee</label>
               <input type="number" className="input" value={deliveryCharge} onChange={e => setDeliveryCharge(e.target.value)} placeholder="0" />
             </div>
           </div>
           <div>
-            <label className="label" style={{ color: '#0C8A3E' }}>Proof Photos <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(up to {MAX_PROOF_PHOTOS})</span></label>
+            <label className="label" style={{ color: pg.gold }}>Proof Photos <span style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'none', letterSpacing: 0 }}>(up to {MAX_PROOF_PHOTOS})</span></label>
             <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotoSelect} />
             {photoPreviews.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
@@ -1296,7 +1297,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
             )}
             {photoFiles.length < MAX_PROOF_PHOTOS && (
               <button onClick={() => photoInputRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm transition-all active:scale-95"
-                style={{ background: 'rgba(12, 138, 62,0.08)', border: '1.5px dashed rgba(12, 138, 62,0.25)', color: '#0C8A3E' }}>
+                style={{ background: 'rgba(12, 138, 62,0.08)', border: '1.5px dashed rgba(12, 138, 62,0.25)', color: pg.gold }}>
                 <Camera size={15} /> {photoFiles.length > 0 ? 'Add More Photos' : 'Upload Proof Photos'}
               </button>
             )}
@@ -1305,7 +1306,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleSend} disabled={!items || !deliveryCharge || uploading} className="flex-1 btn font-bold disabled:opacity-40 rounded-xl py-3 transition-all active:scale-95"
-              style={{ background: 'linear-gradient(135deg, #C4D600, #C4D600)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(12, 138, 62,0.35)' }}>
+              style={{ background: pg.gold, color: pg.limeText, boxShadow: '0 8px 24px rgba(196,163,90,0.35)' }}>
               {uploading ? 'Uploading...' : 'Send'}
             </button>
           </div>
@@ -1321,7 +1322,7 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
   const labels = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent']
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center animate-fade-in" style={{ background: pg.scrim }} onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-t-3xl p-6 animate-slide-in-bottom" style={{ background: pg.surface, border: `1px solid ${pg.line}` }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
         <h3 className="text-lg font-bold text-[#F5F7F6] text-center">Rate {targetName}</h3>
         <p className="mt-1 mb-6 text-sm text-center" style={{ color: 'rgba(255,255,255,0.4)' }}>How was your experience?</p>
@@ -1331,7 +1332,7 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
         <div className="flex gap-2">
           <button onClick={onClose} className="btn-secondary flex-1">Skip</button>
           <button onClick={() => onSubmit(stars, review)} className="flex-1 btn font-bold rounded-xl py-3"
-            style={{ background: '#0C8A3E', color: '#0B0B0B' }}>Submit</button>
+                            style={{ background: pg.gold, color: pg.limeText }}>Submit</button>
         </div>
       </div>
     </div>
@@ -1415,7 +1416,7 @@ function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-black/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
           <div className="flex items-center gap-2">
-            <CreditCard size={20} style={{ color: '#0C8A3E' }} />
+            <CreditCard size={20} style={{ color: pg.gold }} />
             <h3 className="text-lg font-bold text-[#F5F7F6]">Request Advance Payment</h3>
           </div>
           <p className="text-sm" style={{ color: 'rgba(245,247,246,0.65)' }}>Send a premium payment card to the customer inside this chat. The customer will upload their payment proof here.</p>
@@ -1641,11 +1642,11 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
           className="flex w-full items-center justify-between gap-2 py-1.5"
         >
           <div className="flex items-center gap-2">
-            <ClipboardList size={15} style={{ color: '#0C8A3E' }} />
+            <ClipboardList size={15} style={{ color: pg.gold }} />
             <span className="text-sm font-bold text-[#F5F7F6]">Advance Task Summary</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(12, 138, 62,0.15)', color: '#0C8A3E', border: '1px solid rgba(12, 138, 62,0.25)' }}>
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(12, 138, 62,0.15)', color: pg.gold, border: '1px solid rgba(12, 138, 62,0.25)' }}>
               {statusLabel}
             </span>
             {expanded ? <ChevronUp size={16} style={{ color: 'rgba(255,255,255,0.4)' }} /> : <ChevronDown size={16} style={{ color: 'rgba(255,255,255,0.4)' }} />}
@@ -1654,14 +1655,14 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
 
         {expanded && (
           <div className="pb-3 pt-1 animate-fade-in">
-            {category && <Row icon={<Tag size={12} style={{ color: '#0C8A3E' }} />} label="Category" value={category} />}
-            {scheduledDate && <Row icon={<CalendarClock size={12} style={{ color: '#0C8A3E' }} />} label="Scheduled Date" value={scheduledDate} />}
-            {scheduledTime && <Row icon={<Clock size={12} style={{ color: '#0C8A3E' }} />} label="Scheduled Time" value={scheduledTime} />}
-            {pickup && <Row icon={<MapPin size={12} style={{ color: '#0C8A3E' }} />} label="Pickup Address" value={pickup} />}
-            {delivery && <Row icon={<Navigation size={12} style={{ color: '#0C8A3E' }} />} label="Delivery Address" value={delivery} />}
-            {hasDescription && <Row icon={<FileText size={12} style={{ color: '#0C8A3E' }} />} label="Task Description" value={request.description} />}
-            {hasBudget && <Row icon={<IndianRupee size={12} style={{ color: '#0C8A3E' }} />} label="Budget" value={formatCurrency(Number(request.max_budget))} />}
-            {hasInstructions && <Row icon={<ShieldCheck size={12} style={{ color: '#0C8A3E' }} />} label="Special Instructions" value={request.special_instructions} />}
+            {category && <Row icon={<Tag size={12} style={{ color: pg.gold }} />} label="Category" value={category} />}
+            {scheduledDate && <Row icon={<CalendarClock size={12} style={{ color: pg.gold }} />} label="Scheduled Date" value={scheduledDate} />}
+            {scheduledTime && <Row icon={<Clock size={12} style={{ color: pg.gold }} />} label="Scheduled Time" value={scheduledTime} />}
+            {pickup && <Row icon={<MapPin size={12} style={{ color: pg.gold }} />} label="Pickup Address" value={pickup} />}
+            {delivery && <Row icon={<Navigation size={12} style={{ color: pg.gold }} />} label="Delivery Address" value={delivery} />}
+            {hasDescription && <Row icon={<FileText size={12} style={{ color: pg.gold }} />} label="Task Description" value={request.description} />}
+            {hasBudget && <Row icon={<IndianRupee size={12} style={{ color: pg.gold }} />} label="Budget" value={formatCurrency(Number(request.max_budget))} />}
+            {hasInstructions && <Row icon={<ShieldCheck size={12} style={{ color: pg.gold }} />} label="Special Instructions" value={request.special_instructions} />}
 
             {photos.length > 0 && (
               <div className="mt-2">
@@ -1678,15 +1679,15 @@ function AdvanceTaskSummary({ request, statusLabel }: { request: any; statusLabe
 
             {hasVoice && (
               <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: 'rgba(12, 138, 62,0.06)' }}>
-                <Volume2 size={14} style={{ color: '#0C8A3E' }} />
+                <Volume2 size={14} style={{ color: pg.gold }} />
                 <span className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>Voice note attached</span>
-                <a href={request.voice_note_url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs font-semibold" style={{ color: '#0C8A3E' }}>Play</a>
+                <a href={request.voice_note_url} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs font-semibold" style={{ color: pg.gold }}>Play</a>
               </div>
             )}
 
             <div className="mt-3 flex items-center gap-1.5 rounded-xl px-3 py-2" style={{ background: 'rgba(12, 138, 62,0.06)' }}>
-              <CheckCircle size={12} style={{ color: '#0C8A3E' }} />
-              <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Current Status: <span className="font-bold" style={{ color: '#0C8A3E' }}>{statusLabel}</span></p>
+              <CheckCircle size={12} style={{ color: pg.gold }} />
+              <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Current Status: <span className="font-bold" style={{ color: pg.gold }}>{statusLabel}</span></p>
             </div>
           </div>
         )}
