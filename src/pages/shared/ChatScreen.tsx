@@ -529,7 +529,7 @@ export default function ChatScreen() {
       {/* Header — TopChrome feel */}
       <header
         className="sticky top-0 z-20 flex shrink-0 items-center gap-3 px-4 py-3"
-        style={{ background: 'rgba(5,5,5,0.92)', borderBottom: `1px solid ${pg.line}`, backdropFilter: 'blur(16px)' }}
+        style={{ background: pg.header, borderBottom: `1px solid ${pg.headerBorder}` }}
       >
         <IconButton onClick={() => navigate(isUser ? '/app' : '/dp')} className="shrink-0 !h-11 !w-11">
           <ArrowLeft size={18} />
@@ -1012,7 +1012,7 @@ export default function ChatScreen() {
 
       {/* Image lightbox */}
       {lightboxImage && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#000000]/90 animate-fade-in" onClick={() => setLightboxImage(null)}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center animate-fade-in" style={{ background: pg.scrim }} onClick={() => setLightboxImage(null)}>
           <button className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/5" onClick={() => setLightboxImage(null)}>
             <X size={20} className="text-[#F5F7F6]" />
           </button>
@@ -1061,7 +1061,7 @@ export default function ChatScreen() {
 
       {/* Advance: Accept Payment popup (DP confirms payment bill) */}
       {showAcceptPaymentPopup && !isUser && advancePaymentData?.status === 'proof_uploaded' && (
-        <div className="fixed inset-0 z-[160] flex items-center justify-center bg-[#000000]/65 px-5 animate-fade-in">
+        <div className="fixed inset-0 z-[160] flex items-center justify-center px-5 animate-fade-in" style={{ background: pg.scrim }}>
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center"
             style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)' }}
@@ -1183,7 +1183,7 @@ function PickupPhotoModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
   }
   const handleSubmit = async () => { if (!file) return; setUploading(true); await onSubmit(file); setUploading(false) }
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 p-4 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 animate-fade-in" style={{ background: pg.scrim }} onClick={onClose}>
       <div className="w-full max-w-md rounded-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
         <h3 className="mb-1 text-lg font-bold text-[#F5F7F6]">Pickup Proof</h3>
@@ -1257,7 +1257,7 @@ function QuotationModal({ onClose, onSend, initialItems, roomId, senderId }: { o
     }
   }
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center animate-fade-in" style={{ background: pg.scrim }} onClick={onClose}>
       <div className="w-full max-w-md overflow-hidden rounded-t-3xl animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
         <div className="px-5 pt-4 pb-2">
           <div className="bottom-sheet-handle" />
@@ -1320,7 +1320,7 @@ function RatingModal({ onClose, onSubmit, targetName }: { onClose: () => void; o
   const [review, setReview] = useState('')
   const labels = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent']
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60 animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center animate-fade-in" style={{ background: pg.scrim }} onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl p-6 animate-slide-in-bottom" style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
         <div className="bottom-sheet-handle" />
         <h3 className="text-lg font-bold text-[#F5F7F6] text-center">Rate {targetName}</h3>
@@ -1410,7 +1410,7 @@ function AdvancePaymentModal({ onClose, roomId, request, dpId, onSent }: {
   }
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-end justify-center backdrop-blur-sm animate-fade-in" style={{ background: pg.scrim }} onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-black/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
@@ -1531,7 +1531,7 @@ function PaymentProofModal({ onClose, roomId, advancePaymentId, customerId, requ
   }
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-end justify-center backdrop-blur-sm animate-fade-in" style={{ background: pg.scrim }} onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full" style={{ background: 'rgba(255,255,255,0.25)' }} /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">
@@ -1584,7 +1584,7 @@ function RejectPaymentModal({ onClose, advancePaymentId, dpId, onReject }: {
   const [reason, setReason] = useState('')
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-end justify-center bg-[#000000]/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-end justify-center backdrop-blur-sm animate-fade-in" style={{ background: pg.scrim }} onClick={onClose}>
       <div className="w-full max-w-md rounded-t-3xl glass bottom-sheet" onClick={e => e.stopPropagation()}>
         <div className="flex justify-center pt-3 pb-1"><div className="h-1.5 w-12 rounded-full bg-black/20" /></div>
         <div className="px-5 pb-8 pt-4 space-y-4">

@@ -32,6 +32,8 @@ export const pg = {
   success: '#8FD9A4',
   info: '#8EC8F0',
   warning: '#E8C36A',
+  /** Dim green overlay for centered popups (never black chrome) */
+  scrim: 'rgba(11, 74, 42, 0.86)',
   radius: {
     sm: 12,
     md: 16,

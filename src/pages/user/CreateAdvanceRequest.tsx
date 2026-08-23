@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, type AdvanceSettings } from '../../lib/supabase'
-import { kickPushDelivery } from '../../lib/notify'
-import { ErrorBanner } from '../../components/ui'
+import { kickPushDelivery, notifyNearbyOnlineDps } from '../../lib/notify'
+import { ErrorBanner, FullScreenLoader } from '../../components/ui'
 import PremiumCalendar from '../../components/PremiumCalendar'
 import PremiumTimeSlotSelector from '../../components/PremiumTimeSlotSelector'
 import RecurringSelector, { type RecurringType } from '../../components/RecurringSelector'
@@ -615,16 +615,21 @@ export default function CreateAdvanceRequest() {
       })
       kickPushDelivery()
 
+      void notifyNearbyOnlineDps({
+        requestId: inserted.id,
+        lat: (insertPayload.delivery_lat ?? insertPayload.pickup_lat ?? loc?.gps_lat ?? null) as number | null,
+        lng: (insertPayload.delivery_lng ?? insertPayload.pickup_lng ?? loc?.gps_lng ?? null) as number | null,
+        radiusMeters: userRadiusMeters(),
+        title: 'New advance booking nearby',
+        body: 'A customer scheduled an advance task near you. Open the app to reserve.',
+      })
+
       navigate(`/app/scanning/${inserted.id}`)
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
   }
 
   if (settingsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen" style={{ background: '#050505' }}>
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-black/10" style={{ borderTopColor: '#0C8A3E' }} />
-      </div>
-    )
+    return <FullScreenLoader />
   }
 
   if (settings && !settings.enabled) {
@@ -763,7 +768,7 @@ export default function CreateAdvanceRequest() {
 
             {/* Category detail half-sheet */}
             {sheetCategory && (
-              <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60" onClick={() => setSheetCategory(null)}>
+              <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: pg.scrim }} onClick={() => setSheetCategory(null)}>
                 <div className="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-t-3xl p-5 space-y-4" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}
                   onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-between">

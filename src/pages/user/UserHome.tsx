@@ -104,7 +104,6 @@ export default function UserHome() {
           setSearchKm(km)
           setUserSearchRadiusKm(km)
         }}
-        presets={[2, 4, 6, 10, 15, 20]}
       />
 
       <div className="mb-7 grid grid-cols-3 gap-2.5">

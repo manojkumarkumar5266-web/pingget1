@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context'
 import { supabase, Order, DpCommissionReceipt } from '../../lib/supabase'
 import { SkeletonList } from '../../components/ui'
@@ -264,8 +265,12 @@ function SubmitReceiptModal({
     setSubmitting(false)
   }
 
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#000000]/65 p-4" onClick={onClose}>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+      style={{ background: pg.scrim }}
+      onClick={onClose}
+    >
       <div className="w-full max-w-md" onClick={e => e.stopPropagation()}>
       <Surface
         className="max-h-[85vh] overflow-y-auto p-6"
@@ -322,7 +327,8 @@ function SubmitReceiptModal({
                 <button
                   type="button"
                   onClick={() => { setScreenshot(null); setScreenshotPreview(null) }}
-                  className="absolute right-2 top-2 rounded-full bg-[#000000]/70 p-1.5 text-[#F5F7F6]"
+                  className="absolute right-2 top-2 rounded-full p-1.5"
+                  style={{ background: pg.gold, color: pg.limeText }}
                 >
                   <X size={14} />
                 </button>
@@ -348,6 +354,7 @@ function SubmitReceiptModal({
         </div>
       </Surface>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
