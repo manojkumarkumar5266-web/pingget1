@@ -63,7 +63,7 @@ function VoicePlayer({ url }: { url: string }) {
   )
 }
 
-function EarningsHero({ today, week, deliveries, totalCommission }: { today: number; week: number; deliveries: number; totalCommission: number }) {
+function EarningsHero({ today, week, deliveries, totalCommission, unpaid }: { today: number; week: number; deliveries: number; totalCommission: number; unpaid: number }) {
   return (
     <Surface accent className="relative overflow-hidden p-5">
       <div
@@ -99,6 +99,9 @@ function EarningsHero({ today, week, deliveries, totalCommission }: { today: num
           <div className="rounded-2xl px-3 py-2.5" style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}>
             <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>Commission</p>
             <p className="mt-0.5 text-sm font-extrabold">₹{totalCommission.toLocaleString()}</p>
+            <p className="mt-0.5 text-[10px]" style={{ color: unpaid > 0 ? '#FCD34D' : pg.text4 }}>
+              {unpaid > 0 ? `Unpaid ₹${unpaid.toLocaleString()}` : 'No unpaid'}
+            </p>
           </div>
         </div>
       </div>
@@ -305,6 +308,22 @@ export default function DpHome() {
       setTotalCommission(br.totalAccrued)
     }
     checkCommission()
+    if (!profile) return
+    const channel = supabase.channel(`dp-home-orders-${profile.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+        filter: `dp_id=eq.${profile.id}`,
+      }, () => { void checkCommission() })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'dp_commission_receipts',
+        filter: `dp_user_id=eq.${profile.id}`,
+      }, () => { void checkCommission() })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [profile, todayOrders])
 
   const changeRange = async (km: number) => {
@@ -414,7 +433,7 @@ export default function DpHome() {
         {greetingHeader}
 
         <div className="mb-5">
-          <EarningsHero today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} totalCommission={totalCommission} />
+          <EarningsHero today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} totalCommission={totalCommission} unpaid={pendingCommission} />
         </div>
 
         <div className="mb-6">
@@ -457,7 +476,7 @@ export default function DpHome() {
       )}
 
       <div className="mb-5">
-        <EarningsHero today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} totalCommission={totalCommission} />
+        <EarningsHero today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} totalCommission={totalCommission} unpaid={pendingCommission} />
       </div>
 
       <div className="mb-5">
