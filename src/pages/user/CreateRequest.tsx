@@ -112,6 +112,9 @@ export default function CreateRequest() {
     if (!addr?.text) {
       setError('Please select a delivery address on the Home page first'); return
     }
+    const { data: loc } = await supabase.from('profiles').select('gps_lat, gps_lng').eq('id', profile.id).maybeSingle()
+    const deliveryLat = addr.lat ?? loc?.gps_lat ?? profile.gps_lat ?? null
+    const deliveryLng = addr.lng ?? loc?.gps_lng ?? profile.gps_lng ?? null
     setLoading(true)
     try {
       if (recording) stopRecording()
@@ -141,8 +144,8 @@ export default function CreateRequest() {
         photo_urls: photoUrls.length > 0 ? photoUrls : null,
         voice_note_url: voiceUrl,
         delivery_address: addr.text,
-        delivery_lat: addr.lat,
-        delivery_lng: addr.lng,
+        delivery_lat: deliveryLat,
+        delivery_lng: deliveryLng,
         order_type: 'instant',
         radius_meters: userRadiusMeters(),
         status: 'pending',

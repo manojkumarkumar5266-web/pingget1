@@ -541,6 +541,7 @@ export default function CreateAdvanceRequest() {
         return
       }
 
+      const { data: loc } = await supabase.from('profiles').select('gps_lat, gps_lng').eq('id', profile!.id).maybeSingle()
       const insertPayload: Record<string, unknown> = {
         user_id: profile!.id,
         description: fullDescription,
@@ -551,8 +552,8 @@ export default function CreateAdvanceRequest() {
         pickup_lat: shopLat,
         pickup_lng: shopLng,
         delivery_address: deliveryText,
-        delivery_lat: homeAddr?.lat ?? selectedAddress?.lat ?? null,
-        delivery_lng: homeAddr?.lng ?? selectedAddress?.lng ?? null,
+        delivery_lat: homeAddr?.lat ?? selectedAddress?.lat ?? loc?.gps_lat ?? profile?.gps_lat ?? null,
+        delivery_lng: homeAddr?.lng ?? selectedAddress?.lng ?? loc?.gps_lng ?? profile?.gps_lng ?? null,
         max_budget: maxBudget ? parseFloat(maxBudget) : null,
         special_instructions: null,
         radius_meters: userRadiusMeters(),
