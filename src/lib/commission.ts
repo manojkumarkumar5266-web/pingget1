@@ -30,9 +30,7 @@ function accruedAt(o: CommissionOrderRow): number {
 }
 
 function commissionCountsTowardWallet(o: CommissionOrderRow): boolean {
-  if (o.status === 'cancelled') return false
-  const s = o.status || ''
-  return s === 'completed' || s === 'delivered' || s === 'cash_received' || !!o.completed_at
+  return o.status !== 'cancelled'
 }
 
 export function summarizeCommission(

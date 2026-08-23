@@ -9,7 +9,7 @@ import { Screen, PageTitle, Surface, CTA, Chip, SectionLabel, EmptyBlock, IconBu
 import { pg } from '../../design/tokens'
 import {
   Wallet as WalletIcon, TrendingUp, AlertCircle, IndianRupee,
-  Receipt, Copy, CheckCircle, Clock, XCircle, Camera, X,
+  Copy, Clock, Camera, X,
 } from 'lucide-react'
 
 export default function DpWallet() {
@@ -25,42 +25,59 @@ export default function DpWallet() {
 
   const totalEarnings = orders.reduce((s, o) => s + Number(o.dp_earnings || 0), 0)
   const hasPendingReceipt = receipts.some(r => r.status === 'submitted')
-  const settled = totalAccrued > 0 && outstanding <= 0 && totalPaid > 0
 
   useEffect(() => {
+    if (!profile?.id) return
+    const dpId = profile.id
     const fetchAll = async () => {
-      const [ordersRes, receiptsRes, settingsRes, breakdown] = await Promise.all([
-        supabase.from('orders').select('*').eq('dp_id', profile!.id).neq('status', 'cancelled').order('created_at', { ascending: false }),
-        supabase.from('dp_commission_receipts').select('*').eq('dp_user_id', profile!.id).order('submitted_at', { ascending: false }),
-        supabase.from('app_settings').select('value').eq('key', 'admin_upi_id').maybeSingle(),
-        fetchDpCommissionBreakdown(profile!.id),
-      ])
-      setOrders((ordersRes.data as Order[]) || [])
-      setReceipts((receiptsRes.data as DpCommissionReceipt[]) || [])
-      setAdminUpi(settingsRes.data?.value || 'Contact admin')
-      setTotalAccrued(breakdown.totalAccrued)
-      setTotalPaid(breakdown.totalPaid)
-      setOutstanding(breakdown.outstanding)
-      setLoading(false)
+      try {
+        const [ordersRes, receiptsRes, settingsRes, breakdown] = await Promise.all([
+          supabase.from('orders').select('*').eq('dp_id', dpId).neq('status', 'cancelled').order('created_at', { ascending: false }),
+          supabase.from('dp_commission_receipts').select('*').eq('dp_user_id', dpId).order('submitted_at', { ascending: false }),
+          supabase.from('app_settings').select('value').eq('key', 'admin_upi_id').maybeSingle(),
+          fetchDpCommissionBreakdown(dpId),
+        ])
+        const ordersList = (ordersRes.data as Order[]) || []
+        const receiptsList = (receiptsRes.data as DpCommissionReceipt[]) || []
+        setOrders(ordersList)
+        setReceipts(receiptsList)
+        setAdminUpi(settingsRes.data?.value || 'Contact admin')
+
+        const localAccrued = ordersList
+          .filter(o => o.status !== 'cancelled')
+          .reduce((s, o) => s + Number(o.commission_amount || 0), 0)
+        const localPaid = receiptsList
+          .filter(r => r.status === 'confirmed')
+          .reduce((s, r) => s + Number(r.amount || 0), 0)
+        const accrued = Math.max(Number(breakdown.totalAccrued || 0), localAccrued)
+        const paid = Math.max(Number(breakdown.totalPaid || 0), localPaid)
+        setTotalAccrued(accrued)
+        setTotalPaid(paid)
+        setOutstanding(Math.max(0, Math.round((accrued - paid) * 100) / 100))
+      } catch (err) {
+        console.error('[DpWallet] load failed', err)
+      } finally {
+        setLoading(false)
+      }
     }
     fetchAll()
 
-    const channel = supabase.channel(`dp-wallet-${profile!.id}`)
+    const channel = supabase.channel(`dp-wallet-${dpId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'dp_commission_receipts',
-        filter: `dp_user_id=eq.${profile!.id}`,
+        filter: `dp_user_id=eq.${dpId}`,
       }, () => fetchAll())
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'orders',
-        filter: `dp_id=eq.${profile!.id}`,
+        filter: `dp_id=eq.${dpId}`,
       }, () => fetchAll())
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [profile])
+  }, [profile?.id])
 
   const submitReceipt = async (amount: number, upiRef: string, screenshotFile: File) => {
     let screenshotUrl: string | null = null
@@ -89,66 +106,44 @@ export default function DpWallet() {
     <Screen className="mx-auto max-w-lg animate-fade-in-up">
       <PageTitle eyebrow="Partner" title="Wallet" />
 
-      {outstanding > 0 ? (
-        <Surface accent className="mb-5 overflow-hidden p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: '#FCD34D' }}>
-                Unpaid commission (pay admin)
-              </p>
-              <p className="mt-1 text-[34px] font-extrabold leading-none tracking-tight">{formatCurrency(outstanding)}</p>
-              <p className="mt-2 text-xs" style={{ color: pg.text3 }}>
-                Total {formatCurrency(totalAccrued)} · Admin confirmed {formatCurrency(totalPaid)}
-              </p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'rgba(245,165,36,0.16)' }}>
-              <AlertCircle size={24} className="text-amber-300" />
-            </div>
+      <Surface accent className="mb-5 overflow-hidden p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: '#FCD34D' }}>
+              Pay due commission to admin
+            </p>
+            <p className="mt-1 text-[34px] font-extrabold leading-none tracking-tight">{formatCurrency(outstanding)}</p>
+            <p className="mt-2 text-xs" style={{ color: pg.text3 }}>
+              Total commission {formatCurrency(totalAccrued)} · Admin confirmed {formatCurrency(totalPaid)}
+            </p>
           </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: 'rgba(245,165,36,0.16)' }}>
+            <AlertCircle size={24} className="text-amber-300" />
+          </div>
+        </div>
+        <div
+          className="mt-4 flex items-center justify-between gap-2 rounded-2xl px-3.5 py-2.5 text-xs"
+          style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}
+        >
+          <span style={{ color: pg.text3 }}>
+            Pay via UPI: <span className="font-extrabold text-[#F5F7F6]">{adminUpi}</span>
+          </span>
+          <button type="button" onClick={() => navigator.clipboard.writeText(adminUpi)} className="font-extrabold" style={{ color: pg.lime }}>
+            Copy
+          </button>
+        </div>
+        {hasPendingReceipt && (
           <div
-            className="mt-4 flex items-center justify-between gap-2 rounded-2xl px-3.5 py-2.5 text-xs"
-            style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-extrabold"
+            style={{ background: 'rgba(245,165,36,0.14)', color: '#FCD34D', border: '1px solid rgba(245,165,36,0.25)' }}
           >
-            <span style={{ color: pg.text3 }}>
-              Pay via UPI: <span className="font-extrabold text-[#F5F7F6]">{adminUpi}</span>
-            </span>
-            <button type="button" onClick={() => navigator.clipboard.writeText(adminUpi)} className="font-extrabold" style={{ color: pg.lime }}>
-              Copy
-            </button>
+            <Clock size={15} /> Receipt submitted — waiting for admin
           </div>
-          {hasPendingReceipt ? (
-            <div
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-extrabold"
-              style={{ background: 'rgba(245,165,36,0.14)', color: '#FCD34D', border: '1px solid rgba(245,165,36,0.25)' }}
-            >
-              <Clock size={15} /> Receipt submitted — waiting for admin
-            </div>
-          ) : (
-            <CTA className="mt-3 w-full" onClick={() => setShowPay(true)}>
-              Submit UPI payment receipt
-            </CTA>
-          )}
-        </Surface>
-      ) : (
-        <Surface className="mb-5 p-5" style={{ borderColor: settled ? 'rgba(34,197,94,0.28)' : pg.line }}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: settled ? '#86EFAC' : pg.gold }}>
-                {settled ? 'Admin confirmed your UPI' : 'Commission to admin'}
-              </p>
-              <p className="mt-1 text-2xl font-extrabold tracking-tight">{formatCurrency(totalAccrued)}</p>
-              <p className="mt-1.5 text-xs" style={{ color: pg.text3 }}>
-                {settled
-                  ? `Paid ${formatCurrency(totalPaid)} — admin confirmed your receipt.`
-                  : 'After each completed order, unpaid commission appears here. It is not paid until you send UPI and admin confirms.'}
-              </p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ background: settled ? 'rgba(34,197,94,0.14)' : pg.limeDim }}>
-              {settled ? <CheckCircle size={24} className="text-green-400" /> : <IndianRupee size={24} style={{ color: pg.gold }} />}
-            </div>
-          </div>
-        </Surface>
-      )}
+        )}
+        <CTA className="mt-3 w-full" onClick={() => setShowPay(true)}>
+          Pay due commission
+        </CTA>
+      </Surface>
 
       <div className="mb-5 grid grid-cols-2 gap-3">
         <Surface className="p-4">
@@ -284,7 +279,7 @@ function SubmitReceiptModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[400] flex items-center justify-center p-4"
       style={{ background: pg.scrim }}
       onClick={onClose}
     >
@@ -293,9 +288,9 @@ function SubmitReceiptModal({
         className="max-h-[85vh] overflow-y-auto p-6"
         style={{ borderRadius: pg.radius.xl }}
       >
-        <h3 className="text-lg font-extrabold tracking-tight">Submit commission payment</h3>
+        <h3 className="text-lg font-extrabold tracking-tight">Pay due commission</h3>
         <p className="mb-5 mt-1 text-xs" style={{ color: pg.text3 }}>
-          Pay admin via UPI first, then enter your transaction reference and upload screenshot
+          Pay this amount to admin UPI, then enter your payment reference and upload the screenshot.
         </p>
 
         <Surface className="mb-4 p-3.5" style={{ background: pg.bgElevated }}>
@@ -310,8 +305,8 @@ function SubmitReceiptModal({
 
         <div className="space-y-3">
           <div>
-            <label className="mb-1.5 flex items-center gap-1 text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.text3 }}>
-              <IndianRupee size={13} /> Amount
+            <label className="mb-1.5 flex items-center gap-1 text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.gold }}>
+              <IndianRupee size={13} /> Amount due
             </label>
             <input
               type="number"
@@ -322,15 +317,15 @@ function SubmitReceiptModal({
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.text3 }}>
-              UPI transaction reference *
+            <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.gold }}>
+              Payment reference *
             </label>
             <input
               className="w-full rounded-2xl px-4 py-3 text-sm font-medium outline-none"
               style={{ background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text }}
               value={upiRef}
               onChange={e => setUpiRef(e.target.value)}
-              placeholder="e.g. 407123456789"
+              placeholder="UPI / bank transaction ID"
             />
           </div>
           <div>
