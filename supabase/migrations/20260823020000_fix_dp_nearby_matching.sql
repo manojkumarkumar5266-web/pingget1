@@ -1,10 +1,5 @@
--- Fix DPs not seeing nearby requests.
--- Apply in Supabase SQL Editor (production).
-
--- Live partner GPS lives on delivery_partners.current_lat, not only profiles.gps_*.
--- Manual addresses often have NULL lat/lng — still match by customer GPS or same city.
--- Do not hide requests when declined_by is NULL.
--- Do not force-offline inside this read RPC (layout already gates commission).
+-- FIX: "column reference user_id is ambiguous" on DP Home.
+-- Run this entire file in the Supabase SQL Editor, then hard-refresh the partner app.
 
 CREATE OR REPLACE FUNCTION public.geo_distance_m(
   lat1 double precision,
@@ -35,13 +30,10 @@ AS $fn$
   END
 $fn$;
 
-GRANT EXECUTE ON FUNCTION public.geo_distance_m(double precision, double precision, double precision, double precision) TO authenticated;
+DROP FUNCTION IF EXISTS public.get_nearby_requests(uuid);
 
-DROP FUNCTION IF EXISTS get_nearby_requests(uuid);
-
-CREATE OR REPLACE FUNCTION get_nearby_requests(
-  p_dp_user_id uuid
-)
+-- LANGUAGE sql (not plpgsql) so RETURNS TABLE user_id does not clash with requests.user_id.
+CREATE FUNCTION public.get_nearby_requests(p_dp_user_id uuid)
 RETURNS TABLE (
   id uuid,
   user_id uuid,
@@ -74,45 +66,50 @@ RETURNS TABLE (
   radius_meters integer,
   recurring_type text
 )
-LANGUAGE plpgsql
+LANGUAGE sql
+STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $function$
-DECLARE
-  v_dp_lat double precision;
-  v_dp_lng double precision;
-  v_service_range integer;
-  v_dp_city text;
-BEGIN
+  WITH partner AS (
+    SELECT
+      COALESCE(dp.current_lat, p.gps_lat) AS lat,
+      COALESCE(dp.current_lng, p.gps_lng) AS lng,
+      COALESCE(dp.service_range_meters, 5000) AS service_range,
+      p.city AS city
+    FROM delivery_partners AS dp
+    INNER JOIN profiles AS p ON p.id = dp.user_id
+    WHERE dp.user_id = p_dp_user_id
+      AND dp.is_online = true
+      AND dp.status = 'approved'
+    LIMIT 1
+  )
   SELECT
-    COALESCE(dp.current_lat, p.gps_lat),
-    COALESCE(dp.current_lng, p.gps_lng),
-    COALESCE(dp.service_range_meters, 5000),
-    p.city
-  INTO v_dp_lat, v_dp_lng, v_service_range, v_dp_city
-  FROM delivery_partners dp
-  JOIN profiles p ON p.id = dp.user_id
-  WHERE dp.user_id = p_dp_user_id
-    AND dp.is_online = true
-    AND dp.status = 'approved';
-
-  IF NOT FOUND THEN
-    RETURN;
-  END IF;
-
-  RETURN QUERY
-  SELECT
-    r.id, r.user_id, r.description, r.photo_urls, r.voice_note_url,
-    r.preferred_shop, r.pickup_address, r.pickup_lat, r.pickup_lng,
-    r.delivery_address, r.delivery_lat, r.delivery_lng, r.expected_time,
-    r.max_budget, r.special_instructions, r.created_at,
-    up.full_name, up.gps_lat, up.gps_lng,
+    r.id,
+    r.user_id,
+    r.description,
+    r.photo_urls,
+    r.voice_note_url,
+    r.preferred_shop,
+    r.pickup_address,
+    r.pickup_lat,
+    r.pickup_lng,
+    r.delivery_address,
+    r.delivery_lat,
+    r.delivery_lng,
+    r.expected_time,
+    r.max_budget,
+    r.special_instructions,
+    r.created_at,
+    up.full_name,
+    up.gps_lat,
+    up.gps_lng,
     public.geo_distance_m(
-      v_dp_lat,
-      v_dp_lng,
+      partner.lat,
+      partner.lng,
       COALESCE(r.delivery_lat, r.pickup_lat, up.gps_lat),
       COALESCE(r.delivery_lng, r.pickup_lng, up.gps_lng)
-    ) AS dist,
+    ) AS distance_meters,
     r.status::text,
     COALESCE(r.order_type, 'instant')::text,
     COALESCE(r.is_scheduled, false),
@@ -123,43 +120,43 @@ BEGIN
     r.request_category,
     COALESCE(r.radius_meters, 6000),
     COALESCE(r.recurring_type, 'none')::text
-  FROM requests r
-  JOIN profiles up ON up.id = r.user_id
+  FROM requests AS r
+  INNER JOIN profiles AS up ON up.id = r.user_id
+  INNER JOIN partner ON true
   WHERE (r.status = 'pending' OR r.status = 'searching_dp')
     AND NOT (COALESCE(r.declined_by, '{}'::uuid[]) @> ARRAY[p_dp_user_id])
-    AND r.user_id != p_dp_user_id
+    AND r.user_id <> p_dp_user_id
     AND (
       (
-        v_dp_lat IS NOT NULL
-        AND v_dp_lng IS NOT NULL
+        partner.lat IS NOT NULL
+        AND partner.lng IS NOT NULL
         AND COALESCE(r.delivery_lat, r.pickup_lat, up.gps_lat) IS NOT NULL
         AND COALESCE(r.delivery_lng, r.pickup_lng, up.gps_lng) IS NOT NULL
         AND public.geo_distance_m(
-          v_dp_lat,
-          v_dp_lng,
+          partner.lat,
+          partner.lng,
           COALESCE(r.delivery_lat, r.pickup_lat, up.gps_lat),
           COALESCE(r.delivery_lng, r.pickup_lng, up.gps_lng)
-        ) <= LEAST(COALESCE(v_service_range, 5000), COALESCE(r.radius_meters, 6000))
+        ) <= COALESCE(partner.service_range, 5000)
       )
       OR (
         (
-          v_dp_lat IS NULL
+          partner.lat IS NULL
           OR COALESCE(r.delivery_lat, r.pickup_lat, up.gps_lat) IS NULL
         )
-        AND NULLIF(lower(trim(COALESCE(up.city, ''))), '') IS NOT NULL
-        AND lower(trim(up.city)) = lower(trim(COALESCE(v_dp_city, '')))
+        AND NULLIF(lower(btrim(COALESCE(up.city, ''))), '') IS NOT NULL
+        AND lower(btrim(up.city)) = lower(btrim(COALESCE(partner.city, '')))
       )
     )
   ORDER BY r.created_at DESC;
-END;
 $function$;
 
-GRANT EXECUTE ON FUNCTION get_nearby_requests(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_nearby_requests(uuid) TO authenticated;
 
 DROP FUNCTION IF EXISTS public.scan_nearby_dps(double precision, double precision, integer);
 DROP FUNCTION IF EXISTS public.scan_nearby_dps(double precision, double precision, integer, uuid);
 
-CREATE OR REPLACE FUNCTION public.scan_nearby_dps(
+CREATE FUNCTION public.scan_nearby_dps(
   p_user_lat double precision,
   p_user_lng double precision,
   p_radius_meters integer,
@@ -174,12 +171,11 @@ RETURNS TABLE (
   service_range_meters integer,
   vehicle_type text
 )
-LANGUAGE plpgsql
+LANGUAGE sql
+STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $function$
-BEGIN
-  RETURN QUERY
   SELECT
     dp.user_id,
     p.full_name,
@@ -190,11 +186,11 @@ BEGIN
       p_user_lng,
       COALESCE(dp.current_lat, p.gps_lat),
       COALESCE(dp.current_lng, p.gps_lng)
-    ) AS dist,
+    ),
     dp.service_range_meters,
     dp.vehicle_type
-  FROM delivery_partners dp
-  JOIN profiles p ON p.id = dp.user_id
+  FROM delivery_partners AS dp
+  INNER JOIN profiles AS p ON p.id = dp.user_id
   WHERE dp.is_online = true
     AND dp.status = 'approved'
     AND COALESCE(dp.current_lat, p.gps_lat) IS NOT NULL
@@ -204,16 +200,22 @@ BEGIN
       p_user_lng,
       COALESCE(dp.current_lat, p.gps_lat),
       COALESCE(dp.current_lng, p.gps_lng)
-    ) <= LEAST(COALESCE(p_radius_meters, 6000), COALESCE(dp.service_range_meters, 5000))
+    ) <= COALESCE(p_radius_meters, 6000)
+    AND public.geo_distance_m(
+      p_user_lat,
+      p_user_lng,
+      COALESCE(dp.current_lat, p.gps_lat),
+      COALESCE(dp.current_lng, p.gps_lng)
+    ) <= COALESCE(dp.service_range_meters, 5000)
     AND (
       p_request_id IS NULL
       OR NOT EXISTS (
-        SELECT 1 FROM requests r
-        WHERE r.id = p_request_id
-        AND COALESCE(r.declined_by, '{}'::uuid[]) @> ARRAY[dp.user_id]
+        SELECT 1
+        FROM requests AS req
+        WHERE req.id = p_request_id
+          AND COALESCE(req.declined_by, '{}'::uuid[]) @> ARRAY[dp.user_id]
       )
     );
-END;
 $function$;
 
 GRANT EXECUTE ON FUNCTION public.scan_nearby_dps(double precision, double precision, integer) TO authenticated;
@@ -229,22 +231,19 @@ RETURNS TABLE (
   dp_count bigint,
   avg_distance_meters double precision
 )
-LANGUAGE plpgsql
+LANGUAGE sql
+STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $function$
-BEGIN
-  RETURN QUERY
   SELECT
     COUNT(*)::bigint,
     COALESCE(AVG(s.distance_meters), 0)::double precision
-  FROM scan_nearby_dps(p_user_lat, p_user_lng, p_radius_meters, p_request_id) s;
-END;
+  FROM public.scan_nearby_dps(p_user_lat, p_user_lng, p_radius_meters, p_request_id) AS s;
 $function$;
 
 GRANT EXECUTE ON FUNCTION public.scan_nearby_dps_stats(double precision, double precision, integer, uuid) TO authenticated;
 
--- Keep partner live coords in sync with profile GPS.
 CREATE OR REPLACE FUNCTION public.update_location(
   p_lat double precision,
   p_lng double precision
@@ -254,19 +253,20 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $function$
+#variable_conflict use_column
 BEGIN
   UPDATE profiles
   SET gps_lat = p_lat,
       gps_lng = p_lng,
       gps_updated_at = now(),
       updated_at = now()
-  WHERE id = auth.uid();
+  WHERE profiles.id = auth.uid();
 
   UPDATE delivery_partners
   SET current_lat = p_lat,
       current_lng = p_lng,
       last_location_at = now()
-  WHERE user_id = auth.uid();
+  WHERE delivery_partners.user_id = auth.uid();
 END;
 $function$;
 

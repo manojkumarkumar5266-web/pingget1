@@ -256,7 +256,12 @@ export default function DpHome() {
       const { data, error } = await supabase.rpc('get_nearby_requests', { p_dp_user_id: profile!.id })
       if (error) {
         console.error('[DpHome] get_nearby_requests:', error)
-        setFetchError(error.message || 'Could not load nearby requests')
+        const raw = error.message || 'Could not load nearby requests'
+        setFetchError(
+          /ambiguous/i.test(raw)
+            ? 'Database matching function is out of date. Run supabase/APPLY_NOW_FIX_DP_NEARBY.sql in the Supabase SQL Editor, then refresh.'
+            : raw
+        )
         setLoading(false)
         return
       }
