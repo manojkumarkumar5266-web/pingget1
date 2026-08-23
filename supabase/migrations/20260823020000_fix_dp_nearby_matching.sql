@@ -1,5 +1,6 @@
--- FIX: "column reference user_id is ambiguous" on DP Home.
--- Run this entire file in the Supabase SQL Editor, then hard-refresh the partner app.
+-- Production-safe: replace get_nearby_requests only.
+-- Does NOT drop, alter, grant, or recreate scan_nearby_dps.
+-- Idempotent. Run the entire file in the Supabase SQL Editor.
 
 CREATE OR REPLACE FUNCTION public.geo_distance_m(
   lat1 double precision,
@@ -10,6 +11,7 @@ CREATE OR REPLACE FUNCTION public.geo_distance_m(
 RETURNS double precision
 LANGUAGE sql
 IMMUTABLE
+PARALLEL SAFE
 AS $fn$
   SELECT CASE
     WHEN lat1 IS NULL OR lng1 IS NULL OR lat2 IS NULL OR lng2 IS NULL THEN NULL
@@ -30,9 +32,9 @@ AS $fn$
   END
 $fn$;
 
+-- Drop by argument list only. Return type may differ across environments.
 DROP FUNCTION IF EXISTS public.get_nearby_requests(uuid);
 
--- LANGUAGE sql (not plpgsql) so RETURNS TABLE user_id does not clash with requests.user_id.
 CREATE FUNCTION public.get_nearby_requests(p_dp_user_id uuid)
 RETURNS TABLE (
   id uuid,
@@ -109,7 +111,7 @@ AS $function$
       partner.lng,
       COALESCE(r.delivery_lat, r.pickup_lat, up.gps_lat),
       COALESCE(r.delivery_lng, r.pickup_lng, up.gps_lng)
-    ) AS distance_meters,
+    ),
     r.status::text,
     COALESCE(r.order_type, 'instant')::text,
     COALESCE(r.is_scheduled, false),
@@ -152,122 +154,3 @@ AS $function$
 $function$;
 
 GRANT EXECUTE ON FUNCTION public.get_nearby_requests(uuid) TO authenticated;
-
-DROP FUNCTION IF EXISTS public.scan_nearby_dps(double precision, double precision, integer);
-DROP FUNCTION IF EXISTS public.scan_nearby_dps(double precision, double precision, integer, uuid);
-
-CREATE FUNCTION public.scan_nearby_dps(
-  p_user_lat double precision,
-  p_user_lng double precision,
-  p_radius_meters integer,
-  p_request_id uuid DEFAULT NULL
-)
-RETURNS TABLE (
-  dp_user_id uuid,
-  full_name text,
-  gps_lat double precision,
-  gps_lng double precision,
-  distance_meters double precision,
-  service_range_meters integer,
-  vehicle_type text
-)
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-  SELECT
-    dp.user_id,
-    p.full_name,
-    COALESCE(dp.current_lat, p.gps_lat),
-    COALESCE(dp.current_lng, p.gps_lng),
-    public.geo_distance_m(
-      p_user_lat,
-      p_user_lng,
-      COALESCE(dp.current_lat, p.gps_lat),
-      COALESCE(dp.current_lng, p.gps_lng)
-    ),
-    dp.service_range_meters,
-    dp.vehicle_type
-  FROM delivery_partners AS dp
-  INNER JOIN profiles AS p ON p.id = dp.user_id
-  WHERE dp.is_online = true
-    AND dp.status = 'approved'
-    AND COALESCE(dp.current_lat, p.gps_lat) IS NOT NULL
-    AND COALESCE(dp.current_lng, p.gps_lng) IS NOT NULL
-    AND public.geo_distance_m(
-      p_user_lat,
-      p_user_lng,
-      COALESCE(dp.current_lat, p.gps_lat),
-      COALESCE(dp.current_lng, p.gps_lng)
-    ) <= COALESCE(p_radius_meters, 6000)
-    AND public.geo_distance_m(
-      p_user_lat,
-      p_user_lng,
-      COALESCE(dp.current_lat, p.gps_lat),
-      COALESCE(dp.current_lng, p.gps_lng)
-    ) <= COALESCE(dp.service_range_meters, 5000)
-    AND (
-      p_request_id IS NULL
-      OR NOT EXISTS (
-        SELECT 1
-        FROM requests AS req
-        WHERE req.id = p_request_id
-          AND COALESCE(req.declined_by, '{}'::uuid[]) @> ARRAY[dp.user_id]
-      )
-    );
-$function$;
-
-GRANT EXECUTE ON FUNCTION public.scan_nearby_dps(double precision, double precision, integer) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.scan_nearby_dps(double precision, double precision, integer, uuid) TO authenticated;
-
-CREATE OR REPLACE FUNCTION public.scan_nearby_dps_stats(
-  p_user_lat double precision,
-  p_user_lng double precision,
-  p_radius_meters integer,
-  p_request_id uuid DEFAULT NULL
-)
-RETURNS TABLE (
-  dp_count bigint,
-  avg_distance_meters double precision
-)
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-  SELECT
-    COUNT(*)::bigint,
-    COALESCE(AVG(s.distance_meters), 0)::double precision
-  FROM public.scan_nearby_dps(p_user_lat, p_user_lng, p_radius_meters, p_request_id) AS s;
-$function$;
-
-GRANT EXECUTE ON FUNCTION public.scan_nearby_dps_stats(double precision, double precision, integer, uuid) TO authenticated;
-
-CREATE OR REPLACE FUNCTION public.update_location(
-  p_lat double precision,
-  p_lng double precision
-)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-#variable_conflict use_column
-BEGIN
-  UPDATE profiles
-  SET gps_lat = p_lat,
-      gps_lng = p_lng,
-      gps_updated_at = now(),
-      updated_at = now()
-  WHERE profiles.id = auth.uid();
-
-  UPDATE delivery_partners
-  SET current_lat = p_lat,
-      current_lng = p_lng,
-      last_location_at = now()
-  WHERE delivery_partners.user_id = auth.uid();
-END;
-$function$;
-
-GRANT EXECUTE ON FUNCTION public.update_location(double precision, double precision) TO authenticated;
