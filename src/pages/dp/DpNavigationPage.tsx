@@ -358,14 +358,14 @@ export default function DpNavigationPage() {
             />
             <button type="button" onClick={() => setMapExpanded(v => !v)}
               className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl"
-              style={{ background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.15)' }}
+              style={{ background: pg.header, border: `1px solid ${pg.headerBorder}` }}
               aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}>
-              {mapExpanded ? <Minimize2 size={16} color="#fff" /> : <Maximize2 size={16} color="#fff" />}
+              {mapExpanded ? <Minimize2 size={16} color={pg.text} /> : <Maximize2 size={16} color={pg.text} />}
             </button>
             {liveEtaLabel && (
               <div
                 className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                style={{ background: 'rgba(0,0,0,0.9)', color: '#F5F7F6', border: '1px solid rgba(255,255,255,0.15)' }}
+                style={{ background: pg.header, color: pg.text, border: `1px solid ${pg.headerBorder}` }}
               >
                 ETA {liveEtaLabel}
               </div>
@@ -539,7 +539,7 @@ export default function DpNavigationPage() {
                       return
                     }
                     const now = new Date().toISOString()
-                    setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now, status: 'cash_received' as any }) : prev)
+                    setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now, status: 'completed' as any }) : prev)
                     await supabase.from('notifications').insert({
                       user_id: request.user_id,
                       title: 'Payment Accepted',

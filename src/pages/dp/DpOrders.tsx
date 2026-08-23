@@ -14,6 +14,7 @@ import {
 import DeliveryProofUploader from '../../components/DeliveryProofUploader'
 import { canStartAdvanceTask, advanceTaskUnlockLabel } from '../../lib/advanceTaskGate'
 import { fetchDpCommissionBreakdown, getCityCommissionPct } from '../../lib/commission'
+import { isOrderFinished } from '../../lib/orderComplete'
 
 type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
 
@@ -58,7 +59,7 @@ export default function DpOrders() {
     } else if (tab === 'reserved') {
       query = query.in('status', ADVANCE_RESERVED)
     } else if (tab === 'completed') {
-      query = query.eq('status', 'completed')
+      query = query.in('status', ['completed', 'task_completed', 'cash_received', 'delivered'])
     } else {
       query = query.in('status', ['cancelled', 'expired'])
     }
@@ -66,9 +67,11 @@ export default function DpOrders() {
     const { data } = await query.order('created_at', { ascending: false })
     let rows = (data as DeliveryRequest[]) || []
     if (tab === 'active') {
-      rows = rows.filter(r => r.order_type !== 'advance' || ADVANCE_LIVE.includes(r.status))
+      rows = rows.filter(r => !isOrderFinished(r) && (r.order_type !== 'advance' || ADVANCE_LIVE.includes(r.status)))
     } else if (tab === 'reserved') {
-      rows = rows.filter(r => r.order_type === 'advance')
+      rows = rows.filter(r => r.order_type === 'advance' && !isOrderFinished(r))
+    } else if (tab === 'completed') {
+      rows = rows.filter(r => isOrderFinished(r) && r.status !== 'cancelled' && r.status !== 'expired')
     }
     setOrders(rows)
     setLoading(false)
@@ -166,7 +169,7 @@ export default function DpOrders() {
             const completedLocked = req.status === 'completed'
             const canNavigate = !completedLocked && ['confirmed', 'shopping', 'purchased', 'on_the_way', 'arrived', 'delivered', 'task_started'].includes(req.status)
             const canUploadProof = ['arrived', 'delivered', 'cash_received'].includes(req.status)
-            const awaitingUser = req.status === 'delivered' || req.status === 'cash_received'
+            const awaitingUser = (req.status === 'delivered' || req.status === 'cash_received') && !isOrderFinished(req)
             const isAdvance = req.order_type === 'advance'
 
             return (

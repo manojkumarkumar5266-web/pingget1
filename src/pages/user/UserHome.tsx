@@ -13,6 +13,7 @@ import GreetingHeader from '../../components/GreetingHeader'
 import { Screen, SectionLabel, Surface, EmptyBlock, Chip, RangeSlider } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { getUserSearchRadiusKm, setUserSearchRadiusKm } from '../../lib/searchRadius'
+import { isOrderFinished } from '../../lib/orderComplete'
 
 const STATUS_STEPS: Record<string, number> = {
   pending: 0, searching_dp: 0, dp_reserved: 1, waiting_payment: 1, payment_verified: 1,
@@ -58,19 +59,25 @@ export default function UserHome() {
           .eq('status','completed').order('created_at', { ascending: false }).limit(3),
       ])
       if (cancelled) return
-      const nextActive = (activeRes.data as DeliveryRequest[]) || []
-      const nextCompleted = (completedRes.data as DeliveryRequest[]) || []
+      const nextActive = ((activeRes.data as DeliveryRequest[]) || []).filter(r => !isOrderFinished(r))
+      const finishedExtra = ((activeRes.data as DeliveryRequest[]) || []).filter(r => isOrderFinished(r))
+      const nextCompleted = [
+        ...finishedExtra,
+        ...((completedRes.data as DeliveryRequest[]) || []),
+      ].filter((r, i, arr) => arr.findIndex(x => x.id === r.id) === i).slice(0, 3)
       setActiveOrders(nextActive)
       setRecentCompleted(nextCompleted)
       void ensureAdvanceTaskDayReminders(profile.id, 'user')
-      const [total, completedCount, activeCount] = await Promise.all([
+      const [total, completedCount] = await Promise.all([
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
         supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('status','completed'),
-        supabase.from('requests').select('id', { count: 'exact', head: true }).eq('user_id', profile.id)
-          .in('status',['pending','accepted','confirmed','shopping','purchased','on_the_way','arrived','delivered','cash_received','scheduled','dp_reserved','waiting_payment','searching_dp','payment_verified','booking_confirmed','task_started']),
       ])
       if (cancelled) return
-      const nextStats = { total: total.count || 0, completed: completedCount.count || 0, active: activeCount.count || 0 }
+      const nextStats = {
+        total: total.count || 0,
+        completed: (completedCount.count || 0) + finishedExtra.filter(r => r.status !== 'completed').length,
+        active: nextActive.length,
+      }
       setStats(nextStats)
       homeCache = {
         userId: profile.id,
