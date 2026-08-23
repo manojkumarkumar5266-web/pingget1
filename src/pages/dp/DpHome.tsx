@@ -9,10 +9,10 @@ import { useGps } from '../../hooks/useGps'
 import { ServiceStatusBanner, SkeletonList, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency, STATUS_LABELS, STATUS_COLORS } from '../../lib/utils'
 import GreetingHeader from '../../components/GreetingHeader'
-import { Screen, Surface, CTA, Chip, SectionLabel, EmptyBlock, IconButton } from '../../design/primitives'
+import { Screen, Surface, CTA, Chip, SectionLabel, EmptyBlock, IconButton, RangeSlider } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import {
-  Package, Clock, MapPin, Check, X, WifiOff, Sliders, Bell, Play, Pause,
+  Package, Clock, MapPin, Check, X, WifiOff, Bell, Play, Pause,
   Star, Activity, Wallet, ChevronRight, MapPinOff, Loader2, CalendarClock, TrendingUp, Repeat,
 } from 'lucide-react'
 import IncomingRequestPopup from '../../components/IncomingRequestPopup'
@@ -538,7 +538,6 @@ export default function DpHome() {
   const rating = dp?.rating_avg || 0
   const ratingCount = dp?.rating_count || 0
   const dpFirstName = profile?.full_name?.split(' ')[0] || 'Partner'
-  const rangePct = ((rangeKm - 1) / 19) * 100
 
   if (dpLoading) {
     return (
@@ -641,51 +640,17 @@ export default function DpHome() {
         />
       </div>
 
-      <Surface className="mb-6 p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sliders size={15} style={{ color: pg.text3 }} />
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.14em]" style={{ color: pg.text3 }}>
-              Service range
-            </span>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-extrabold" style={{ color: pg.lime }}>{rangeKm}</span>
-            <span className="text-sm font-medium" style={{ color: pg.text4 }}>km</span>
-            {savingRange && <span className="ml-1 text-[10px] animate-pulse" style={{ color: pg.text4 }}>saving…</span>}
-          </div>
-        </div>
-        <input
-          type="range"
-          min={1}
-          max={20}
-          step={1}
-          value={rangeKm}
-          onChange={e => setRangeKm(Number(e.target.value))}
-          onMouseUp={(e: any) => changeRange(Number(e.target.value))}
-          onTouchEnd={(e: any) => changeRange(Number(e.target.value))}
-          className="dp-range-slider mb-3 w-full"
-          style={{
-            background: `linear-gradient(to right, ${pg.lime} 0%, ${pg.lime} ${rangePct}%, rgba(255,255,255,0.1) ${rangePct}%, rgba(255,255,255,0.1) 100%)`,
-          }}
+      <div className="mb-6">
+        <RangeSlider
+          label="Service range"
+          hint="How far you will travel to accept requests."
+          valueKm={rangeKm}
+          onChange={setRangeKm}
+          onCommit={changeRange}
+          presets={[1, 2, 5, 10, 15, 20]}
         />
-        <div className="flex flex-wrap gap-1.5">
-          {[1, 2, 5, 10, 15, 20].map(km => (
-            <button
-              key={km}
-              type="button"
-              onClick={() => { setRangeKm(km); changeRange(km) }}
-              className="rounded-full px-3 py-1.5 text-xs font-extrabold transition active:scale-95"
-              style={rangeKm === km
-                ? { background: pg.lime, color: pg.limeText }
-                : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text3 }}
-            >
-              {km} km
-            </button>
-          ))}
-        </div>
         {gps.loading && !gps.lat && (
-          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-blue-400">
+          <div className="mt-2.5 flex items-center gap-1.5 px-1 text-xs" style={{ color: pg.olive }}>
             <Loader2 size={11} className="shrink-0 animate-spin" />
             <span>Getting your location…</span>
           </div>
@@ -701,7 +666,7 @@ export default function DpHome() {
             </button>
           </div>
         )}
-      </Surface>
+      </div>
 
       {fetchError && (
         <div

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { X, Search, Plus, Minus, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { pg } from '../design/tokens'
 
 export type SelectedItem = {
   name: string
@@ -94,7 +95,7 @@ export default function CategorySelectionModal({ category, categoryId, onClose, 
   const totalAmount = Object.values(selected).reduce((s, i) => s + i.quantity * i.price, 0)
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#000000]">
+    <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: pg.bg }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-2">

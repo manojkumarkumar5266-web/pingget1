@@ -1,41 +1,37 @@
 /**
- * pinGGet brand tokens — full pure-black UI (User / DP / Admin).
- * Cards, chrome, and image wells are black; green CTAs for actions.
+ * pinGGet tokens — forest-green canvas, dull-gold actions (User / DP / Admin).
+ * Primary buttons/tabs: gold with near-black type. Body type: cream on green.
  */
 export const pg = {
-  /** Bright header chrome (User / DP / Admin) — elevated vs pure black canvas */
-  header: '#121212',
-  headerElevated: '#1A1A1A',
-  headerBorder: 'rgba(196, 163, 90, 0.35)',
-  bg: '#000000',
-  bgElevated: '#000000',
-  surface: '#000000',
-  surface2: '#0A0A0A',
-  line: 'rgba(196, 163, 90, 0.22)',
-  lineStrong: 'rgba(12, 138, 62, 0.4)',
-  /** Primary accent — forest green */
-  lime: '#0C8A3E',
-  limeDim: 'rgba(12, 138, 62, 0.2)',
-  limeText: '#FFFFFF',
-  /** Dull gold / mustard */
+  header: '#0C5531',
+  headerElevated: '#0E5F38',
+  headerBorder: 'rgba(196, 163, 90, 0.42)',
+  bg: '#0B4A2A',
+  bgElevated: '#0C5230',
+  surface: '#0E5C36',
+  surface2: '#0A4226',
+  line: 'rgba(196, 163, 90, 0.38)',
+  lineStrong: 'rgba(196, 163, 90, 0.62)',
+  /** Action gold (used by existing lime CTA/tab call sites) */
+  lime: '#C4A35A',
+  limeDim: 'rgba(196, 163, 90, 0.24)',
+  limeText: '#16120C',
   gold: '#C4A35A',
-  goldDim: 'rgba(196, 163, 90, 0.2)',
-  /** Secondary accent */
-  olive: '#2EAD5A',
-  oliveDim: 'rgba(46, 173, 90, 0.18)',
-  oliveText: '#FFFFFF',
-  text: '#F5F7F6',
-  text2: 'rgba(245, 247, 246, 0.72)',
-  text3: 'rgba(245, 247, 246, 0.48)',
-  text4: 'rgba(245, 247, 246, 0.32)',
-  /** Alias for card text (same as canvas — everything is black) */
-  ink: '#F5F7F6',
-  ink2: 'rgba(245, 247, 246, 0.72)',
-  ink3: 'rgba(245, 247, 246, 0.48)',
+  goldDim: 'rgba(196, 163, 90, 0.24)',
+  olive: '#8FD9A4',
+  oliveDim: 'rgba(143, 217, 164, 0.18)',
+  oliveText: '#0B4A2A',
+  text: '#FBF6E8',
+  text2: 'rgba(251, 246, 232, 0.78)',
+  text3: 'rgba(251, 246, 232, 0.55)',
+  text4: 'rgba(251, 246, 232, 0.38)',
+  ink: '#FBF6E8',
+  ink2: 'rgba(251, 246, 232, 0.78)',
+  ink3: 'rgba(251, 246, 232, 0.55)',
   danger: '#E23B3B',
-  success: '#0C8A3E',
-  info: '#4DA3E0',
-  warning: '#E89B0C',
+  success: '#8FD9A4',
+  info: '#8EC8F0',
+  warning: '#E8C36A',
   radius: {
     sm: 12,
     md: 16,
