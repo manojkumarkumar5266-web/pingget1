@@ -129,7 +129,7 @@ export default function AdminDps() {
                   <p className="text-sm" style={{ color: pg.text3 }}>{dp.profile?.phone}</p>
                   <p className="text-xs" style={{ color: pg.text4 }}>{dp.vehicle_type || 'Vehicle not set'} • {formatTime(dp.created_at)}</p>
                   {dp.status === 'approved' && (
-                    <p className="text-xs text-black/40">
+                    <p className="text-xs text-[#C4A35A]">
                       Rating: {dp.rating_count > 0 ? `${dp.rating_avg} ★ (${dp.rating_count} reviews)` : 'No ratings yet'}
                     </p>
                   )}
@@ -184,8 +184,8 @@ function DpDetailDrawer({ dp, onClose, onApprove, onReject }: {
 
           {/* Profile Photo */}
           {dp.profile?.photo_url && (
-            <div className="mb-4 rounded-2xl border border-black/10 p-4 dark:border-gray-800">
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-black/55"><FileText size={16} /> Profile Photo</div>
+            <div className="mb-4 rounded-2xl border border-[#C4A35A]/45 p-4 dark:border-gray-800">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#EDE4C8]"><FileText size={16} /> Profile Photo</div>
               <a href={dp.profile.photo_url} target="_blank" rel="noopener noreferrer">
                 <img src={dp.profile.photo_url} alt="Profile" className="h-32 w-32 rounded-xl object-cover" />
               </a>

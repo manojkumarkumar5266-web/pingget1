@@ -233,8 +233,8 @@ export default function AdminPayments() {
       {/* Admin UPI setting */}
       <div className="mb-5 card p-4">
         <div className="flex items-center gap-2 mb-2">
-          <Settings size={15} className="text-black/40" />
-          <p className="text-sm font-semibold text-black/75">Your UPI ID (shown to DPs for commission payment)</p>
+          <Settings size={15} className="text-[#C4A35A]" />
+          <p className="text-sm font-semibold text-[#FBF6E8]">Your UPI ID (shown to DPs for commission payment)</p>
         </div>
         <div className="flex gap-2">
           <input className="input flex-1" value={adminUpi} onChange={e => setAdminUpi(e.target.value)} placeholder="yourname@upi" />
@@ -250,7 +250,7 @@ export default function AdminPayments() {
             <span className="text-xs font-semibold">Admin Commission</span>
           </div>
           <p className="text-xl font-bold text-[#F5F7F6]">{formatCurrency(confirmedCommissionTotal)}</p>
-          <p className="text-xs text-black/40">Confirmed receipts only</p>
+          <p className="text-xs text-[#C4A35A]">Confirmed receipts only</p>
         </div>
         <div className="card p-4">
           <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400 mb-1">
@@ -298,36 +298,36 @@ export default function AdminPayments() {
       {tab === 'orders' && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-black/50">Per-order commission breakdown</p>
+            <p className="text-sm text-white/85">Per-order commission breakdown</p>
             <button onClick={exportOrderCommissions} className="btn-secondary flex items-center gap-1.5 text-sm"><Download size={15} /> Export</button>
           </div>
           {orderCommissions.length === 0 ? (
             <EmptyState icon={<CreditCard size={48} />} title="No completed orders yet" />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-black/10">
+            <div className="overflow-x-auto rounded-2xl border border-[#C4A35A]/45">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-black/10 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-                    <th className="px-4 py-3 text-left font-semibold text-black/55">DP</th>
-                    <th className="px-4 py-3 text-left font-semibold text-black/55">Order</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">Charge</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">Admin Commission</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">DP Earned</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">Date</th>
+                  <tr className="border-b border-[#C4A35A]/45 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                    <th className="px-4 py-3 text-left font-semibold text-[#EDE4C8]">DP</th>
+                    <th className="px-4 py-3 text-left font-semibold text-[#EDE4C8]">Order</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">Charge</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">Admin Commission</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">DP Earned</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {orderCommissions.map(o => (
                     <tr key={o.id} className="glass">
                       <td className="px-4 py-3 font-medium text-[#F5F7F6]">{o.dp_name}</td>
-                      <td className="px-4 py-3 text-black/50 max-w-[120px] truncate">{o.items_summary || 'Delivery'}</td>
-                      <td className="px-4 py-3 text-right text-black/75">{formatCurrency(o.delivery_charge)}</td>
+                      <td className="px-4 py-3 text-white/85 max-w-[120px] truncate">{o.items_summary || 'Delivery'}</td>
+                      <td className="px-4 py-3 text-right text-[#FBF6E8]">{formatCurrency(o.delivery_charge)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-success-600 dark:text-success-400">
                         {formatCurrency(o.commission_amount)}
-                        <span className="ml-1 text-xs text-black/40">({o.commission_pct}%)</span>
+                        <span className="ml-1 text-xs text-[#C4A35A]">({o.commission_pct}%)</span>
                       </td>
                       <td className="px-4 py-3 text-right text-primary-600 dark:text-primary-400">{formatCurrency(o.dp_earnings)}</td>
-                      <td className="px-4 py-3 text-right text-xs text-black/40">{formatTime(o.completed_at || o.created_at)}</td>
+                      <td className="px-4 py-3 text-right text-xs text-[#C4A35A]">{formatTime(o.completed_at || o.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -341,21 +341,21 @@ export default function AdminPayments() {
       {tab === 'dp' && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-black/50">Amount each DP earned from users</p>
+            <p className="text-sm text-white/85">Amount each DP earned from users</p>
             <button onClick={exportDpEarnings} className="btn-secondary flex items-center gap-1.5 text-sm"><Download size={15} /> Export</button>
           </div>
           {dpEarnings.length === 0 ? (
             <EmptyState icon={<CreditCard size={48} />} title="No DP earnings yet" />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-black/10">
+            <div className="overflow-x-auto rounded-2xl border border-[#C4A35A]/45">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-black/10 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-                    <th className="px-4 py-3 text-left font-semibold text-black/55">Delivery Partner</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">Orders</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">Total from Users</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">DP Kept</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">Commission Owed</th>
+                  <tr className="border-b border-[#C4A35A]/45 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                    <th className="px-4 py-3 text-left font-semibold text-[#EDE4C8]">Delivery Partner</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">Orders</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">Total from Users</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">DP Kept</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">Commission Owed</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -363,10 +363,10 @@ export default function AdminPayments() {
                     <tr key={d.dp_id} className="glass">
                       <td className="px-4 py-3">
                         <p className="font-medium text-[#F5F7F6]">{d.dp_name}</p>
-                        {d.dp_phone && <p className="text-xs text-black/40">{d.dp_phone}</p>}
+                        {d.dp_phone && <p className="text-xs text-[#C4A35A]">{d.dp_phone}</p>}
                       </td>
-                      <td className="px-4 py-3 text-right text-black/75">{d.orders}</td>
-                      <td className="px-4 py-3 text-right text-black/75">{formatCurrency(d.total_charge)}</td>
+                      <td className="px-4 py-3 text-right text-[#FBF6E8]">{d.orders}</td>
+                      <td className="px-4 py-3 text-right text-[#FBF6E8]">{formatCurrency(d.total_charge)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-primary-600 dark:text-primary-400">{formatCurrency(d.total_earned)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-warning-600 dark:text-warning-400">{formatCurrency(d.commission_owed)}</td>
                     </tr>
@@ -382,7 +382,7 @@ export default function AdminPayments() {
       {tab === 'pending' && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-black/50">Commission owed but not yet confirmed as received</p>
+            <p className="text-sm text-white/85">Commission owed but not yet confirmed as received</p>
             {dpPending.length > 0 && (
               <button onClick={exportPendingCommission} className="btn-secondary flex items-center gap-1.5 text-sm"><Download size={15} /> Export</button>
             )}
@@ -390,15 +390,15 @@ export default function AdminPayments() {
           {dpPending.length === 0 ? (
             <EmptyState icon={<CheckCircle size={48} />} title="All commissions cleared" description="No outstanding commission from any delivery partner." />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-black/10">
+            <div className="overflow-x-auto rounded-2xl border border-[#C4A35A]/45">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-black/10 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-                    <th className="px-4 py-3 text-left font-semibold text-black/55">Delivery Partner</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">Orders</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">Total Commission</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">Confirmed Paid</th>
-                    <th className="px-4 py-3 text-right font-semibold text-black/55">Outstanding</th>
+                  <tr className="border-b border-[#C4A35A]/45 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                    <th className="px-4 py-3 text-left font-semibold text-[#EDE4C8]">Delivery Partner</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">Orders</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">Total Commission</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">Confirmed Paid</th>
+                    <th className="px-4 py-3 text-right font-semibold text-[#EDE4C8]">Outstanding</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -406,10 +406,10 @@ export default function AdminPayments() {
                     <tr key={d.dp_id} className="glass">
                       <td className="px-4 py-3">
                         <p className="font-medium text-[#F5F7F6]">{d.dp_name}</p>
-                        {d.dp_phone && <p className="text-xs text-black/40">{d.dp_phone}</p>}
+                        {d.dp_phone && <p className="text-xs text-[#C4A35A]">{d.dp_phone}</p>}
                       </td>
-                      <td className="px-4 py-3 text-right text-black/75">{d.orders}</td>
-                      <td className="px-4 py-3 text-right text-black/75">{formatCurrency(d.total_commission)}</td>
+                      <td className="px-4 py-3 text-right text-[#FBF6E8]">{d.orders}</td>
+                      <td className="px-4 py-3 text-right text-[#FBF6E8]">{formatCurrency(d.total_commission)}</td>
                       <td className="px-4 py-3 text-right text-success-600 dark:text-success-400">{formatCurrency(d.confirmed_paid)}</td>
                       <td className="px-4 py-3 text-right">
                         <span className="inline-flex items-center gap-1 rounded-lg bg-error-50 px-2 py-1 text-sm font-bold text-error-700 dark:bg-error-900/30 dark:text-error-300">
@@ -428,7 +428,7 @@ export default function AdminPayments() {
       {/* Commission Receipts */}
       {tab === 'receipts' && (
         <div>
-          <p className="mb-3 text-sm text-black/50">
+          <p className="mb-3 text-sm text-white/85">
             DPs submit UPI payment receipts here. Confirm once you have received the payment.
           </p>
           {receipts.length === 0 ? (
@@ -451,8 +451,8 @@ export default function AdminPayments() {
                         </span>
                       </div>
                       <p className="text-lg font-bold text-[#F5F7F6] mt-0.5">{formatCurrency(r.amount)}</p>
-                      <p className="text-xs text-black/40">UPI Ref: <span className="font-mono">{r.upi_ref}</span></p>
-                      <p className="text-xs text-black/40">{formatTime(r.submitted_at)}</p>
+                      <p className="text-xs text-[#C4A35A]">UPI Ref: <span className="font-mono">{r.upi_ref}</span></p>
+                      <p className="text-xs text-[#C4A35A]">{formatTime(r.submitted_at)}</p>
                       {r.reject_reason && <p className="text-xs text-error-600 mt-1">Reason: {r.reject_reason}</p>}
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
@@ -462,7 +462,7 @@ export default function AdminPayments() {
                             <img
                               src={r.screenshot_url}
                               alt="Payment screenshot"
-                              className="w-24 h-24 rounded-xl object-cover border border-black/10 cursor-pointer hover:opacity-90 transition-opacity"
+                              className="w-24 h-24 rounded-xl object-cover border border-[#C4A35A]/45 cursor-pointer hover:opacity-90 transition-opacity"
                             />
                           </a>
                           <a href={r.screenshot_url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 dark:text-primary-400 underline">
