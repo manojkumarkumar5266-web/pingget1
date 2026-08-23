@@ -9,7 +9,7 @@ import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../componen
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
 import { ArrowLeft, Phone, Bike, PackageCheck, MapPin, ChevronRight, ChevronDown, Maximize2, Minimize2, Mic, ShoppingBag, Copy, Star } from 'lucide-react'
-import { InteractiveStarRating } from '../../components/ui'
+import { InteractiveStarRating, FullScreenLoader } from '../../components/ui'
 import { pg } from '../../design/tokens'
 import { CTA, MobileFrame } from '../../design/primitives'
 import NeedHelpCard from '../../components/NeedHelpCard'
@@ -462,18 +462,12 @@ export default function LiveTrackingPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#000000]">
-        <div className="text-black/40">Loading tracking...</div>
-      </div>
-    )
-  }
+  if (loading) return <FullScreenLoader />
 
   if (!request) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#000000]">
-        <p className="text-black/50">Order not found</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4" style={{ background: pg.bg }}>
+        <p style={{ color: pg.text3 }}>Order not found</p>
         <button type="button" onClick={() => navigate('/app')} className="btn-primary">Back Home</button>
       </div>
     )
@@ -841,7 +835,7 @@ export default function LiveTrackingPage() {
       </div>
 
       {changingAddress && (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: pg.scrim }}>
           <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto rounded-[24px]" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
             <div className="flex items-center justify-between px-4 pt-4">
               <p className="text-sm font-extrabold">Update delivery address</p>
@@ -858,7 +852,7 @@ export default function LiveTrackingPage() {
       )}
 
       {isDelivered && payPhase === 'idle' && request.status !== 'completed' && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: pg.scrim }}>
           <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
             <PackageCheck size={40} className="mx-auto mb-3 text-green-400" />
             <p className="text-lg font-extrabold text-[#F5F7F6]">Order delivered</p>
@@ -871,7 +865,7 @@ export default function LiveTrackingPage() {
       )}
 
       {(payPhase === 'awaiting_user_payment' || (request.status === 'completed' && payPhase === 'idle')) && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: pg.scrim }}>
           <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
             <p className="text-lg font-extrabold text-[#F5F7F6]">Payment completed?</p>
             <p className="mt-1 mb-5 text-sm" style={{ color: pg.text3 }}>Confirm you have paid your delivery partner</p>
@@ -883,7 +877,7 @@ export default function LiveTrackingPage() {
       )}
 
       {payPhase === 'awaiting_dp_accept' && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: pg.scrim }}>
           <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
             <p className="font-extrabold text-[#F5F7F6]">Waiting for partner…</p>
             <p className="mt-2 text-sm" style={{ color: pg.text3 }}>Partner will Accept Payment next — then you can rate</p>

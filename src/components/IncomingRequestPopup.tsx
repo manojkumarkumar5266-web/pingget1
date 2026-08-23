@@ -1,4 +1,5 @@
 import { CalendarClock, Check, MapPin, Repeat, X, Loader2, Bell } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { formatDistance, formatTime } from '../lib/utils'
 import { CTA, IconButton, Surface } from '../design/primitives'
 import { pg } from '../design/tokens'
@@ -38,10 +39,13 @@ export default function IncomingRequestPopup({
     || req.scheduled_date
   const title = advance ? (recurring ? 'Recurring booking' : 'Advance booking') : 'Instant request'
 
-  return (
-    <div className="fixed inset-0 z-[240] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+      style={{ background: pg.scrim }}
+    >
       <div
-        className="w-full max-w-md animate-slide-up overflow-hidden rounded-t-[28px] sm:rounded-[28px]"
+        className="w-full max-w-md overflow-hidden rounded-[28px]"
         style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}
       >
         <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: `1px solid ${pg.line}` }}>
@@ -120,6 +124,7 @@ export default function IncomingRequestPopup({
           </p>
         </Surface>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

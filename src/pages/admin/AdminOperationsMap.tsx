@@ -107,7 +107,7 @@ export default function AdminOperationsMap() {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: pg.bg }}>
-      <div className="px-4 pt-12 pb-3" style={{ borderBottom: `1px solid ${pg.line}`, background: 'rgba(5,5,5,0.92)', backdropFilter: 'blur(16px)' }}>
+      <div className="px-4 pt-12 pb-3" style={{ borderBottom: `1px solid ${pg.line}`, background: pg.header }}>
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/admin')} className="flex h-11 w-11 items-center justify-center rounded-2xl active:scale-90 transition-transform" style={{ background: pg.surface2, color: pg.ink, border: `1px solid ${pg.line}` }}>
             <ArrowLeft size={18} style={{ color: pg.text2 }} />

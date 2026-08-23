@@ -384,7 +384,6 @@ export function RangeSlider({
   valueKm,
   onChange,
   onCommit,
-  presets,
 }: {
   label: string
   valueLabel?: string
@@ -392,13 +391,8 @@ export function RangeSlider({
   valueKm: number
   onChange: (km: number) => void
   onCommit?: (km: number) => void
-  presets?: number[]
 }) {
   const pct = ((valueKm - 1) / 19) * 100
-  const commit = (km: number) => {
-    onChange(km)
-    onCommit?.(km)
-  }
   return (
     <Surface className="mb-5 p-4">
       <div className="mb-3 flex items-end justify-between gap-3">
@@ -437,23 +431,6 @@ export function RangeSlider({
         <span>1 km</span>
         <span>20 km</span>
       </div>
-      {presets && presets.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {presets.map(km => (
-            <button
-              key={km}
-              type="button"
-              onClick={() => commit(km)}
-              className="rounded-full px-3 py-1.5 text-xs font-extrabold transition active:scale-95"
-              style={valueKm === km
-                ? { background: pg.gold, color: pg.limeText }
-                : { background: pg.surface2, border: `1px solid ${pg.line}`, color: pg.text3 }}
-            >
-              {km} km
-            </button>
-          ))}
-        </div>
-      )}
     </Surface>
   )
 }

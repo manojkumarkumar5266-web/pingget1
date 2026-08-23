@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { pg } from '../../design/tokens'
 import { CTA, Surface } from '../../design/primitives'
+import { FullScreenLoader } from '../../components/ui'
 import { uploadMediaFile } from '../../lib/uploadMedia'
 import NeedHelpCard from '../../components/NeedHelpCard'
 import { openRequestChatRoom } from '../../lib/openRequestChat'
@@ -223,10 +224,10 @@ export default function DpNavigationPage() {
     return dpPos || userPos
   }, [dpPos, userPos])
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#000000] text-black/40">Loading...</div>
+  if (loading) return <FullScreenLoader />
   if (!request) return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#000000]">
-      <p className="text-black/50">Order not found</p>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4" style={{ background: pg.bg }}>
+      <p style={{ color: pg.text3 }}>Order not found</p>
       <button type="button" onClick={() => navigate('/dp')} className="btn-primary">Back</button>
     </div>
   )
@@ -524,7 +525,7 @@ export default function DpNavigationPage() {
           )}
 
           {(!!request.payment_completed_at || request.status === 'cash_received') && !request.payment_accepted_at && (
-            <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+            <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: pg.scrim }}>
               <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
                 <p className="mb-1 text-lg font-extrabold" style={{ color: pg.lime }}>Payment completed</p>
                 <p className="mb-5 text-sm" style={{ color: pg.text3 }}>Customer marked payment complete. Accept to continue.</p>

@@ -2,9 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, DeliveryRequest, Profile, DeliveryPartner, Order } from '../../lib/supabase'
-import { kickPushDelivery } from '../../lib/notify'
 import { ensureAdvanceTaskDayReminders } from '../../lib/advanceTaskReminders'
-import { playRequestAlert, REQUEST_ALERT_DURATION_MS } from '../../lib/requestAlertSound'
 import { useGps } from '../../hooks/useGps'
 import { ServiceStatusBanner, SkeletonList, CountUp } from '../../components/ui'
 import { formatTime, formatDistance, haversineDistance, formatCurrency, STATUS_LABELS, STATUS_COLORS } from '../../lib/utils'
@@ -15,19 +13,10 @@ import {
   Package, Clock, MapPin, Check, X, WifiOff, Bell, Play, Pause,
   Star, Activity, Wallet, ChevronRight, MapPinOff, Loader2, CalendarClock, TrendingUp, Repeat,
 } from 'lucide-react'
-import IncomingRequestPopup from '../../components/IncomingRequestPopup'
 import { fetchDpCommissionBreakdown } from '../../lib/commission'
+import { acceptNearbyRequest, declineNearbyRequest, isAdvanceNearbyRequest } from '../../lib/dpNearbyRespond'
 
 type RequestWithUser = DeliveryRequest & { user_profile?: Profile }
-
-/** Advance bookings may miss order_type from older get_nearby_requests RPCs — detect robustly. */
-function isAdvanceNearbyRequest(req: Pick<DeliveryRequest, 'order_type' | 'status' | 'is_scheduled'> & { description?: string | null }) {
-  if (req.order_type === 'advance') return true
-  if (req.is_scheduled) return true
-  if (req.status === 'searching_dp') return true
-  if ((req.description || '').toLowerCase().includes('scheduled:')) return true
-  return false
-}
 
 function VoicePlayer({ url }: { url: string }) {
   const [playing, setPlaying] = useState(false)
@@ -178,20 +167,16 @@ export default function DpHome() {
   const [loading, setLoading] = useState(true)
   const [dp, setDp] = useState<DeliveryPartner | null>(null)
   const [dpLoading, setDpLoading] = useState(true)
-  const [savingRange, setSavingRange] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [reservingId, setReservingId] = useState<string | null>(null)
   const [rangeKm, setRangeKm] = useState(5)
   const rangeInitialised = useRef(false)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const stopAlertRef = useRef<(() => void) | null>(null)
   const [todayOrders, setTodayOrders] = useState<Order[]>([])
   const [weekOrders, setWeekOrders] = useState<Order[]>([])
   const [totalOrders, setTotalOrders] = useState(0)
   const [pendingCommission, setPendingCommission] = useState(0)
   const [commissionDueNow, setCommissionDueNow] = useState(0)
-  const [incoming, setIncoming] = useState<RequestWithUser | null>(null)
-  const knownIdsRef = useRef<Set<string>>(new Set())
   const [rangeTick, setRangeTick] = useState(0)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const gps = useGps(profile?.id, true)
@@ -243,12 +228,8 @@ export default function DpHome() {
   useEffect(() => {
     if (dpLoading) return
     if (!dp?.is_online) {
-      try { stopAlertRef.current?.() } catch { /* ignore */ }
-      stopAlertRef.current = null
-      knownIdsRef.current = new Set()
       setLoading(false)
       setRequests([])
-      setIncoming(null)
       return
     }
     const fetchRequests = async (silent = true) => {
@@ -292,21 +273,6 @@ export default function DpHome() {
           user_profile: profileMap.get(r.user_id),
         }
       })
-      const firstOnlineFetch = knownIdsRef.current.size === 0
-      const fresh = firstOnlineFetch
-        ? next
-        : next.filter(r => !knownIdsRef.current.has(r.id))
-      knownIdsRef.current = new Set(next.map(r => r.id))
-      if (fresh.length > 0) {
-        const newest = fresh[0]
-        const kind = isAdvanceNearbyRequest(newest)
-        const rec = (newest as any).recurring_type && (newest as any).recurring_type !== 'none'
-        showToast(rec ? 'New recurring booking nearby!' : kind ? 'New advance booking nearby!' : 'New delivery request nearby!')
-        try { stopAlertRef.current?.() } catch { /* ignore */ }
-        stopAlertRef.current = playRequestAlert(REQUEST_ALERT_DURATION_MS)
-        setIncoming(newest)
-      }
-      setIncoming(cur => (cur && !next.some(r => r.id === cur.id) ? null : cur))
       setRequests(next)
       setLoading(false)
     }
@@ -320,7 +286,6 @@ export default function DpHome() {
       .subscribe()
     const pollInterval = setInterval(() => { void fetchRequests(true) }, 5000)
     return () => {
-      try { stopAlertRef.current?.() } catch { /* ignore */ }
       supabase.removeChannel(channel)
       clearInterval(pollInterval)
     }
@@ -337,80 +302,37 @@ export default function DpHome() {
   }, [profile, todayOrders])
 
   const changeRange = async (km: number) => {
-    setRangeKm(km); setSavingRange(true)
+    setRangeKm(km)
     await supabase.from('delivery_partners').update({ service_range_meters: km * 1000 }).eq('user_id', profile!.id)
-    setSavingRange(false)
     setRangeTick(t => t + 1)
   }
 
   const declineRequest = async (req: RequestWithUser) => {
-    try { stopAlertRef.current?.() } catch { /* ignore */ }
-    stopAlertRef.current = null
-    setIncoming(cur => (cur?.id === req.id ? null : cur))
     setRequests(prev => prev.filter(r => r.id !== req.id))
-    const { error } = await supabase.rpc('append_declined_by', { row_id: req.id, dp_id: profile!.id })
+    const { error } = await declineNearbyRequest(profile!.id, req)
     if (error) { console.error('[DpHome] decline RPC failed:', error.message); showToast('Could not decline — check your connection.') }
   }
 
   const acceptRequest = async (req: RequestWithUser) => {
     if (reservingId) return
-    try { stopAlertRef.current?.() } catch { /* ignore */ }
-    stopAlertRef.current = null
     if (!profile?.id) {
       showToast('Not signed in')
       return
     }
     setReservingId(req.id)
     try {
-      const advance = isAdvanceNearbyRequest(req)
-
-      // Prefer edge function for advance (bypasses message_type CHECK via service role)
-      if (advance) {
-        const { data: fnData, error: fnErr } = await supabase.functions.invoke('accept-advance', {
-          body: { request_id: req.id },
-        })
-        const payload = (fnData || {}) as any
-        if (!fnErr && payload.success && payload.chat_room_id) {
-          navigate(`/dp/chat/${payload.chat_room_id}`, { replace: true })
-          return
-        }
-        // Fall through to RPC if function not deployed yet
-        console.warn('[DpHome] accept-advance function failed, trying RPC:', fnErr || payload)
-      }
-
-      const rpcName = advance ? 'reserve_dp_for_advance' : 'accept_request'
-      const { data, error } = await supabase.rpc(rpcName, {
-        p_request_id: req.id,
-        p_dp_user_id: profile.id,
-      })
-      const row = Array.isArray(data) ? data[0] : data
-
-      if (!error && row?.success) {
-        const roomId = row.chat_room_id
-          || (await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()).data?.id
-        if (roomId) {
-          navigate(`/dp/chat/${roomId}`, { replace: true })
+      const result = await acceptNearbyRequest(profile.id, req)
+      if (result.success) {
+        if (result.chatRoomId) {
+          navigate(`/dp/chat/${result.chatRoomId}`, { replace: true })
           return
         }
         showToast('Accepted. Opening orders…')
         navigate('/dp/orders', { replace: true })
         return
       }
-
-      if (advance) {
-        const fallbackRoomId = await reserveAdvanceClientSide(req)
-        if (fallbackRoomId) {
-          navigate(`/dp/chat/${fallbackRoomId}`, { replace: true })
-          return
-        }
-      }
-
-      const detail = row?.error_msg || error?.message || 'Failed to accept request'
-      console.error('[DpHome] accept failed:', error || row)
-      showToast(detail)
-      window.alert(
-        `Accept failed: ${detail}\n\nIf this mentions messages_message_type_check, run supabase/APPLY_NOW_FIX_ACCEPT_AND_PHOTO.sql in Supabase SQL Editor.`,
-      )
+      showToast(result.error || 'Failed to accept request')
+      window.alert(result.error || 'Failed to accept request')
     } catch (e: any) {
       console.error('[DpHome] acceptRequest exception:', e)
       showToast(e?.message || 'Could not accept request')
@@ -418,104 +340,6 @@ export default function DpHome() {
     } finally {
       setReservingId(null)
     }
-  }
-
-  /** Manual reserve when reserve_dp_for_advance RPC fails. */
-  const reserveAdvanceClientSide = async (req: RequestWithUser): Promise<string | null> => {
-    if (!profile?.id) return null
-    const { data: fresh } = await supabase
-      .from('requests')
-      .select('id, status, user_id, order_type')
-      .eq('id', req.id)
-      .maybeSingle()
-    if (!fresh || !['searching_dp', 'no_dp_found'].includes(fresh.status)) return null
-
-    const deadline = new Date(Date.now() + 30 * 60 * 1000).toISOString()
-    const { error: updErr } = await supabase.from('requests').update({
-      status: 'dp_reserved',
-      reserved_dp_id: profile.id,
-      reserved_at: new Date().toISOString(),
-      accepted_dp_id: profile.id,
-      payment_deadline: deadline,
-    }).eq('id', req.id).in('status', ['searching_dp', 'no_dp_found'])
-    if (updErr) {
-      console.error('[DpHome] client reserve update failed:', updErr)
-      return null
-    }
-
-    let roomId: string | null = null
-    const { data: existingRoom } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
-    if (existingRoom?.id) roomId = existingRoom.id
-    else {
-      const { data: created, error: roomErr } = await supabase
-        .from('chat_rooms')
-        .insert({ request_id: req.id, user_id: fresh.user_id, dp_id: profile.id })
-        .select('id')
-        .single()
-      if (roomErr || !created) {
-        console.error('[DpHome] client chat create failed:', roomErr)
-        return null
-      }
-      roomId = created.id
-    }
-
-    let fee = 50
-    const { data: settings } = await supabase.from('advance_settings').select('confirmation_fee').limit(1).maybeSingle()
-    if (settings?.confirmation_fee != null) fee = Number(settings.confirmation_fee)
-
-    const { data: ap } = await supabase.from('advance_payments').insert({
-      request_id: req.id,
-      chat_room_id: roomId,
-      dp_id: profile.id,
-      customer_id: fresh.user_id,
-      amount: fee,
-      payment_deadline: deadline,
-      status: 'waiting',
-    }).select('id').maybeSingle()
-
-    if (ap?.id) {
-      await supabase.from('requests').update({ advance_payment_id: ap.id }).eq('id', req.id)
-      const { error: apMsgErr } = await supabase.from('messages').insert({
-        chat_room_id: roomId,
-        sender_id: profile.id,
-        message_type: 'advance_payment',
-        advance_payment_id: ap.id,
-        quotation_data: {
-          amount: fee,
-          deadline,
-          booking_id: req.id,
-          scheduled_date: (req as any).scheduled_date,
-          scheduled_time: (req as any).scheduled_slot || (req as any).scheduled_time,
-          purpose: 'Advance Booking Confirmation',
-          status: 'waiting',
-        },
-      })
-      if (apMsgErr) {
-        await supabase.from('messages').insert({
-          chat_room_id: roomId,
-          sender_id: profile.id,
-          message_type: 'text',
-          content: `Advance confirmation payment requested: ₹${fee}. Please pay and upload proof in chat.`,
-        })
-      }
-    }
-
-    await supabase.from('messages').insert({
-      chat_room_id: roomId,
-      sender_id: profile.id,
-      message_type: 'text',
-      content: 'Hi! I have reserved your advance booking. Please complete the confirmation payment.',
-    })
-    await supabase.from('notifications').insert({
-      user_id: fresh.user_id,
-      title: 'Delivery Partner Reserved!',
-      body: 'A delivery partner reserved your advance booking. Open chat to confirm payment.',
-      type: 'dp_reserved',
-      related_id: req.id,
-    })
-    kickPushDelivery()
-
-    return roomId
   }
 
   const getDistance = (req: DeliveryRequest): number | null => {
@@ -647,7 +471,6 @@ export default function DpHome() {
           valueKm={rangeKm}
           onChange={setRangeKm}
           onCommit={changeRange}
-          presets={[1, 2, 5, 10, 15, 20]}
         />
         {gps.loading && !gps.lat && (
           <div className="mt-2.5 flex items-center gap-1.5 px-1 text-xs" style={{ color: pg.olive }}>
@@ -801,15 +624,6 @@ export default function DpHome() {
             )
           })}
         </div>
-      )}
-      {incoming && (
-        <IncomingRequestPopup
-          req={incoming}
-          distanceM={getDistance(incoming)}
-          accepting={reservingId === incoming.id}
-          onAccept={() => void acceptRequest(incoming)}
-          onDecline={() => { void declineRequest(incoming); setIncoming(null) }}
-        />
       )}
     </Screen>
   )

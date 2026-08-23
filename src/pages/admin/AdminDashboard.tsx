@@ -4,6 +4,7 @@ import { formatCurrency, formatTime } from '../../lib/utils'
 import { Users, Bike, Package, IndianRupee, TrendingUp, Clock, CheckCircle, XCircle, Activity, Download, Bell, UserPlus, Bike as BikeIcon, CreditCard, X, Star, Zap, AlertCircle, CalendarClock, Repeat, BarChart3 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { CountUp, SkeletonList } from '../../components/ui'
+import { pg } from '../../design/tokens'
 
 type Stats = {
   totalUsers: number; totalDps: number; pendingDps: number; approvedDps: number; onlineDps: number;
@@ -128,7 +129,7 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div className="p-4 md:p-8" style={{ background: '#050505', minHeight: '100%' }}>
+    <div className="p-4 md:p-8" style={{ background: pg.bg, minHeight: '100%' }}>
       <div className="mb-7 flex items-center justify-between animate-fade-in-up">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: '#0C8A3E' }}>Operations</p>

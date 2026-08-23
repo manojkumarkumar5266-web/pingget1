@@ -7,7 +7,7 @@ import { pg } from '../design/tokens'
 export function Spinner({ size = 24 }: { size?: number }) {
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      <div className="absolute inset-0 rounded-full border-2 border-black/10" />
+      <div className="absolute inset-0 rounded-full border-2" style={{ borderColor: 'rgba(196,163,90,0.22)' }} />
       <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: pg.lime }} />
     </div>
   )

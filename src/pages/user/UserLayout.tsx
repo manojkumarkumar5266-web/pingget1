@@ -121,7 +121,7 @@ export default function UserLayout() {
           className="fixed inset-0 z-40 flex items-center justify-center px-4"
           onClick={() => setShowBookingMenu(false)}
         >
-          <div className="absolute inset-0 bg-[#000000]/70" />
+          <div className="absolute inset-0" style={{ background: pg.scrim }} />
           <div
             className="relative z-10 w-full max-w-[400px] animate-slide-in-bottom rounded-[28px] p-4"
             style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.lineStrong}` }}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { pushNotificationService, PushNotificationPayload, resolveNotificationRoute } from '@/services/pushNotificationService'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context'
+import { DP_NEARBY_REFRESH_EVENT } from './useDpIncomingAlerts'
 
 export interface UsePushNotificationsResult {
   unreadCount: number
@@ -112,8 +113,9 @@ export function usePushNotifications(): UsePushNotificationsResult {
     if (!profile) return
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail as PushNotificationPayload
-      // The layout components already show toasts for request_accepted;
-      // this dispatches a generic event for other notification types
+      if (profile.role === 'dp' && (detail.notificationType === 'new_nearby_request' || detail.notificationType === 'NEW_NEARBY_REQUEST')) {
+        window.dispatchEvent(new CustomEvent(DP_NEARBY_REFRESH_EVENT))
+      }
       window.dispatchEvent(new CustomEvent('in-app-notification', { detail }))
     }
     foregroundHandlerRef.current = handler
