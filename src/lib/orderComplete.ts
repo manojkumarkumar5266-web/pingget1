@@ -1,3 +1,4 @@
+import { accrueCommissionForRequest } from './commission'
 import { supabase } from './supabase'
 
 /** True after the delivery + pay + DP-accept (and/or rating) flow is finished. */
@@ -17,4 +18,5 @@ export async function markRequestCompleted(requestId: string) {
     await supabase.from('requests').update({ status: 'completed' } as any).eq('id', requestId)
   }
   await supabase.from('orders').update({ status: 'completed', completed_at: now }).eq('request_id', requestId)
+  await accrueCommissionForRequest(requestId)
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, type AdvanceSettings } from '../../lib/supabase'
 import { Settings, Save, Check, AlertCircle } from 'lucide-react'
 import { AdminShell, AdminHeader } from './adminChrome'
+import { pg } from '../../design/tokens'
 
 const DEFAULT_SETTINGS: Omit<AdvanceSettings, 'id' | 'created_at' | 'updated_at'> = {
   enabled: true,
@@ -45,7 +46,7 @@ const DEFAULT_SETTINGS: Omit<AdvanceSettings, 'id' | 'created_at' | 'updated_at'
   search_radius_increment_meters: 2000,
   max_search_radius_meters: 20000,
   // V3 fields
-  confirmation_fee: 0,
+  confirmation_fee: 20,
   reservation_search_radius_meters: 10000,
   payment_deadline_minutes: 120,
   dp_cancel_research: true,
@@ -303,7 +304,7 @@ export default function AdminAdvanceSettings() {
       {/* V3 Reservation Settings */}
       <SectionTitle title="Reservation & Payment (V3)" />
       <div className="card p-4 mb-4 space-y-4">
-        <NumberField label="Confirmation Fee (advance payment)" value={s.confirmation_fee} onChange={v => update('confirmation_fee', v)} min={0} />
+        <NumberField label="Advance booking charge (₹)" value={s.confirmation_fee} onChange={v => update('confirmation_fee', v)} min={0} />
         <NumberField label="Reservation Search Radius (meters)" value={s.reservation_search_radius_meters} onChange={v => update('reservation_search_radius_meters', v)} min={1000} />
         <NumberField label="Payment Deadline (minutes)" value={s.payment_deadline_minutes} onChange={v => update('payment_deadline_minutes', v)} min={5} />
         <div className="flex items-center justify-between">
@@ -337,7 +338,7 @@ export default function AdminAdvanceSettings() {
       <div className="sticky bottom-0 z-10 pb-4">
         <button onClick={handleSave} disabled={saving}
           className="w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold transition-all active:scale-[0.97] disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg, #C4D600, #C4D600)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(196,214,0,0.35)' }}>
+          style={{ background: pg.gold, color: pg.limeText, boxShadow: '0 8px 24px rgba(196,163,90,0.35)' }}>
           {saving ? (
             <span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0B0B0B]/30" style={{ borderTopColor: '#0B0B0B' }} />Saving...</span>
           ) : saved ? (

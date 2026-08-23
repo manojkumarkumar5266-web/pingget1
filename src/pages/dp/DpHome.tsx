@@ -63,7 +63,7 @@ function VoicePlayer({ url }: { url: string }) {
   )
 }
 
-function EarningsHero({ today, week, deliveries }: { today: number; week: number; deliveries: number }) {
+function EarningsHero({ today, week, deliveries, totalCommission }: { today: number; week: number; deliveries: number; totalCommission: number }) {
   return (
     <Surface accent className="relative overflow-hidden p-5">
       <div
@@ -82,12 +82,12 @@ function EarningsHero({ today, week, deliveries }: { today: number; week: number
           </div>
           <div
             className="flex h-12 w-12 items-center justify-center rounded-2xl"
-            style={{ background: pg.limeDim, border: `1px solid rgba(196,214,0,0.25)` }}
+            style={{ background: pg.limeDim, border: `1px solid rgba(196,163,90,0.25)` }}
           >
             <TrendingUp size={22} style={{ color: pg.lime }} />
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2.5">
+        <div className="mt-4 grid grid-cols-3 gap-2">
           <div className="rounded-2xl px-3 py-2.5" style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}>
             <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>This week</p>
             <p className="mt-0.5 text-sm font-extrabold">₹{week.toLocaleString()}</p>
@@ -95,6 +95,10 @@ function EarningsHero({ today, week, deliveries }: { today: number; week: number
           <div className="rounded-2xl px-3 py-2.5" style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}>
             <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>Deliveries</p>
             <p className="mt-0.5 text-sm font-extrabold">{deliveries} today</p>
+          </div>
+          <div className="rounded-2xl px-3 py-2.5" style={{ background: pg.bgElevated, border: `1px solid ${pg.line}` }}>
+            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: pg.text4 }}>Commission</p>
+            <p className="mt-0.5 text-sm font-extrabold">₹{totalCommission.toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -177,6 +181,7 @@ export default function DpHome() {
   const [totalOrders, setTotalOrders] = useState(0)
   const [pendingCommission, setPendingCommission] = useState(0)
   const [commissionDueNow, setCommissionDueNow] = useState(0)
+  const [totalCommission, setTotalCommission] = useState(0)
   const [rangeTick, setRangeTick] = useState(0)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const gps = useGps(profile?.id, true)
@@ -297,6 +302,7 @@ export default function DpHome() {
       const br = await fetchDpCommissionBreakdown(profile.id)
       setPendingCommission(br.outstanding)
       setCommissionDueNow(br.dueNow)
+      setTotalCommission(br.totalAccrued)
     }
     checkCommission()
   }, [profile, todayOrders])
@@ -408,7 +414,7 @@ export default function DpHome() {
         {greetingHeader}
 
         <div className="mb-5">
-          <EarningsHero today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} />
+          <EarningsHero today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} totalCommission={totalCommission} />
         </div>
 
         <div className="mb-6">
@@ -451,7 +457,7 @@ export default function DpHome() {
       )}
 
       <div className="mb-5">
-        <EarningsHero today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} />
+        <EarningsHero today={todayEarnings} week={weekEarnings} deliveries={todayDeliveries} totalCommission={totalCommission} />
       </div>
 
       <div className="mb-5">

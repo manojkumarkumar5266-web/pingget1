@@ -65,8 +65,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { data: settings } = await admin.from("advance_settings").select("*").limit(1).maybeSingle();
-    const fee = Number(settings?.confirmation_fee ?? 50);
-    const deadlineMinutes = Number(settings?.payment_deadline_minutes ?? 30);
+    const deadlineMinutes = Number(settings?.payment_deadline_minutes ?? 120);
     const deadline = new Date(Date.now() + deadlineMinutes * 60_000).toISOString();
 
     const { error: updErr } = await admin.from("requests").update({
@@ -93,21 +92,6 @@ Deno.serve(async (req: Request) => {
       roomId = created.id;
     }
 
-    const { data: ap, error: apErr } = await admin.from("advance_payments").insert({
-      request_id: requestId,
-      chat_room_id: roomId,
-      dp_id: dpId,
-      customer_id: reqRow.user_id,
-      amount: fee,
-      payment_deadline: deadline,
-      status: "waiting",
-    }).select("id").maybeSingle();
-    if (apErr) return json({ success: false, error_msg: apErr.message }, 500);
-
-    if (ap?.id) {
-      await admin.from("requests").update({ advance_payment_id: ap.id }).eq("id", requestId);
-    }
-
     const { data: dpProfile } = await admin.from("profiles").select("full_name").eq("id", dpId).maybeSingle();
     const { data: userProfile } = await admin.from("profiles").select("full_name").eq("id", reqRow.user_id).maybeSingle();
 
@@ -128,40 +112,13 @@ Deno.serve(async (req: Request) => {
       chat_room_id: roomId,
       sender_id: dpId,
       message_type: "text",
-      content: `Hi ${userProfile?.full_name || "there"}! I reserved your advance booking. Please pay ₹${fee} confirmation amount and upload proof in chat.`,
+      content: `Hi ${userProfile?.full_name || "there"}! I reserved your advance booking. Let’s discuss the task, then I’ll send a quotation.`,
     });
-
-    // Try typed payment card; ignore if CHECK still blocks advance_payment
-    if (ap?.id) {
-      const { error: typedErr } = await admin.from("messages").insert({
-        chat_room_id: roomId,
-        sender_id: dpId,
-        message_type: "advance_payment",
-        advance_payment_id: ap.id,
-        quotation_data: {
-          amount: fee,
-          deadline,
-          booking_id: requestId,
-          scheduled_date: reqRow.scheduled_date,
-          scheduled_time: reqRow.scheduled_slot || reqRow.scheduled_time,
-          purpose: "Advance Booking Confirmation",
-          status: "waiting",
-        },
-      });
-      if (typedErr) {
-        await admin.from("messages").insert({
-          chat_room_id: roomId,
-          sender_id: dpId,
-          message_type: "text",
-          content: `Advance confirmation payment requested: ₹${fee}. Please pay and upload proof.`,
-        });
-      }
-    }
 
     await admin.from("notifications").insert({
       user_id: reqRow.user_id,
       title: "Delivery Partner Reserved!",
-      body: `${dpProfile?.full_name || "A delivery partner"} reserved your advance booking. Pay confirmation amount in chat.`,
+      body: `${dpProfile?.full_name || "A delivery partner"} reserved your advance booking. Open chat to discuss the quotation.`,
       type: "dp_reserved",
       related_id: requestId,
     });
@@ -169,7 +126,7 @@ Deno.serve(async (req: Request) => {
     return json({
       success: true,
       chat_room_id: roomId,
-      advance_payment_id: ap?.id || null,
+      advance_payment_id: null,
     });
   } catch (e: any) {
     return json({ success: false, error_msg: e?.message || "Server error" }, 500);

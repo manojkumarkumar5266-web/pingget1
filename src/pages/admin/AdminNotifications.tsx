@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import { kickPushDelivery } from '../../lib/notify'
+import { notifyUser } from '../../lib/notify'
 import { useSnackbar } from '../../components/ui'
 import { formatTime } from '../../lib/utils'
 import { Send, Users, Bike, UserCheck, Megaphone, Clock, CheckCircle, XCircle, Loader2, Image, X, Search, CalendarClock, Bell } from 'lucide-react'
@@ -156,39 +156,37 @@ export default function AdminNotifications() {
           const { data: profiles } = await supabase.from('profiles').select('id, role').in('id', targetUsers)
           for (const p of profiles || []) {
             const base = p.role === 'dp' ? '/dp' : '/app'
-            const { data: created } = await supabase.from('notifications').insert({
-              user_id: p.id,
+            const created = await notifyUser({
+              userId: p.id,
               title: title.trim(),
               body: body.trim(),
               type: 'admin_announcement',
-              notification_type: 'admin_offer',
-              image_url: imageUrl || null,
-              related_id: broadcast?.id || null,
+              notificationType: 'admin_offer',
+              relatedId: broadcast?.id || null,
+              imageUrl: imageUrl || null,
               route: `${base}/offers/pending`,
-            }).select('id').single()
-            kickPushDelivery()
-            if (created?.id) {
+            })
+            if (created.data?.id) {
               await supabase.from('notifications').update({
-                route: `${base}/offers/${created.id}`,
-                entity_id: created.id,
-              }).eq('id', created.id)
+                route: `${base}/offers/${created.data.id}`,
+                entity_id: created.data.id,
+              }).eq('id', created.data.id)
             }
           }
-          // Best-effort push for each (requires dispatch-push + FCM secrets)
           supabase.functions.invoke('dispatch-push', { body: { processOutbox: true, limit: 200 } }).catch(() => {})
-          show(`Sent to Alerts for ${targetUsers.length} recipient(s) — push via FCM when configured`, 'success')
+          show(`Push sent to ${targetUsers.length} recipient(s)`, 'success')
         }
       } else if (data && data.success === false) {
         show(data.error || 'Notify failed', 'error')
         setSending(false)
         return
       } else if (data?.scheduled) {
-        show(`Scheduled for ${new Date(data.scheduledFor).toLocaleString()} — Alerts + push + email`, 'success')
+        show(`Scheduled for ${new Date(data.scheduledFor).toLocaleString()} — push + email`, 'success')
       } else {
         const pushNote = data?.fcmConfigured === false
           ? ' (set FCM_SERVER_KEY or FCM_SERVICE_ACCOUNT_JSON on edge for mobile push)'
           : ` · push ${data?.pushSent ?? 0}`
-        show(`Sent to ${data?.recipientCount ?? 'audience'} — Alerts + email${pushNote}`, 'success')
+        show(`Push sent to ${data?.recipientCount ?? 'audience'}${pushNote}`, 'success')
       }
 
       setTitle('')
@@ -222,10 +220,9 @@ export default function AdminNotifications() {
           <div className="text-sm text-black/65 leading-relaxed">
             <p className="font-semibold text-[#F5F7F6] mb-1">Where does Notify go?</p>
             <p>
-              Messages land in the <span className="text-[#F5F7F6]">Alerts</span> tab for customers and partners.
-              Mobile <span className="text-[#F5F7F6]">push</span> is sent via FCM for every notification (set
-              <span className="text-[#F5F7F6]"> FCM_SERVER_KEY</span> or <span className="text-[#F5F7F6]">FCM_SERVICE_ACCOUNT_JSON</span> on edge functions).
-              Email goes through <span className="text-[#F5F7F6]">Resend</span> when the profile has an email.
+              Offers and announcements go out as <span className="text-[#F5F7F6]">push notifications</span> to customers
+              and delivery partners (and email when a profile has an address). Set
+              <span className="text-[#F5F7F6]"> FCM_SERVER_KEY</span> or <span className="text-[#F5F7F6]">FCM_SERVICE_ACCOUNT_JSON</span> on edge functions.
               Tapping an offer opens the full details page with image.
             </p>
           </div>
@@ -313,7 +310,7 @@ export default function AdminNotifications() {
             Notify time *
           </label>
           <p className="mb-3 text-xs text-black/50">
-            Pick when recipients should get Alerts + push + email. Leave as now to send immediately.
+            Pick when recipients should get a push (and email). Leave as now to send immediately.
           </p>
           <div className="mb-3 flex flex-wrap gap-2">
             <button

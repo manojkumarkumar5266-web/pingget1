@@ -88,6 +88,16 @@ export function usePushNotifications(): UsePushNotificationsResult {
 
       // Quotation confirmed → tracking
       if (type === 'order_confirmed' && entityId) {
+        const { data: req } = await supabase.from('requests').select('order_type, status, is_scheduled').eq('id', entityId).maybeSingle()
+        if (req && (req.order_type === 'advance' || req.is_scheduled)) {
+          const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', entityId).maybeSingle()
+          if (room?.id && !['booking_confirmed', 'payment_verified'].includes(req.status || '')) {
+            navigate(profile.role === 'dp' ? `/dp/chat/${room.id}` : `/app/chat/${room.id}`)
+            return
+          }
+          navigate(profile.role === 'dp' ? '/dp/orders' : '/app/orders')
+          return
+        }
         navigate(profile.role === 'dp' ? `/dp/navigate/${entityId}` : `/app/track/${entityId}`)
         return
       }

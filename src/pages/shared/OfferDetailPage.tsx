@@ -50,7 +50,7 @@ export default function OfferDetailPage({ basePath }: { basePath: '/app' | '/dp'
       >
         <button
           type="button"
-          onClick={() => navigate(`${basePath}/notifications`)}
+          onClick={() => navigate(basePath)}
           className="flex h-10 w-10 items-center justify-center rounded-2xl"
           style={{ background: pg.surface2, color: pg.text2 }}
         >
@@ -69,7 +69,7 @@ export default function OfferDetailPage({ basePath }: { basePath: '/app' | '/dp'
           <div className="rounded-[22px] p-5" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}>
             <p className="font-extrabold">Offer unavailable</p>
             <p className="mt-1 text-sm" style={{ color: pg.text3 }}>{error || 'This notification may have been deleted.'}</p>
-            <CTA className="mt-4" onClick={() => navigate(`${basePath}/notifications`)}>Back to Alerts</CTA>
+            <CTA className="mt-4" onClick={() => navigate(basePath)}>Back home</CTA>
           </div>
         ) : (
           <article>

@@ -95,57 +95,16 @@ async function reserveAdvanceClientSide(profileId: string, req: NearbyRequest): 
     roomId = created.id
   }
 
-  let fee = 50
-  const { data: settings } = await supabase.from('advance_settings').select('confirmation_fee').limit(1).maybeSingle()
-  if (settings?.confirmation_fee != null) fee = Number(settings.confirmation_fee)
-
-  const { data: ap } = await supabase.from('advance_payments').insert({
-    request_id: req.id,
-    chat_room_id: roomId,
-    dp_id: profileId,
-    customer_id: fresh.user_id,
-    amount: fee,
-    payment_deadline: deadline,
-    status: 'waiting',
-  }).select('id').maybeSingle()
-
-  if (ap?.id) {
-    await supabase.from('requests').update({ advance_payment_id: ap.id }).eq('id', req.id)
-    const { error: apMsgErr } = await supabase.from('messages').insert({
-      chat_room_id: roomId,
-      sender_id: profileId,
-      message_type: 'advance_payment',
-      advance_payment_id: ap.id,
-      quotation_data: {
-        amount: fee,
-        deadline,
-        booking_id: req.id,
-        scheduled_date: req.scheduled_date,
-        scheduled_time: req.scheduled_slot || req.scheduled_time,
-        purpose: 'Advance Booking Confirmation',
-        status: 'waiting',
-      },
-    })
-    if (apMsgErr) {
-      await supabase.from('messages').insert({
-        chat_room_id: roomId,
-        sender_id: profileId,
-        message_type: 'text',
-        content: `Advance confirmation payment requested: ₹${fee}. Please pay and upload proof in chat.`,
-      })
-    }
-  }
-
   await supabase.from('messages').insert({
     chat_room_id: roomId,
     sender_id: profileId,
     message_type: 'text',
-    content: 'Hi! I have reserved your advance booking. Please complete the confirmation payment.',
+    content: 'Hi! I reserved your advance booking. Let’s discuss the task, then I’ll send a quotation with the task charge.',
   })
   await supabase.from('notifications').insert({
     user_id: fresh.user_id,
     title: 'Delivery Partner Reserved!',
-    body: 'A delivery partner reserved your advance booking. Open chat to confirm payment.',
+    body: 'A delivery partner reserved your advance booking. Open chat to discuss and accept a quotation.',
     type: 'dp_reserved',
     related_id: req.id,
   })

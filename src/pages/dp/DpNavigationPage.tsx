@@ -20,6 +20,7 @@ import { uploadMediaFile } from '../../lib/uploadMedia'
 import NeedHelpCard from '../../components/NeedHelpCard'
 import { openRequestChatRoom } from '../../lib/openRequestChat'
 import { acceptDpPayment } from '../../lib/acceptDpPayment'
+import { isAdvanceLockedUntilTaskDay } from '../../lib/advanceTaskGate'
 
 const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string; notifBody: string; icon: any }[] = [
   { from: 'accepted', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
@@ -59,6 +60,10 @@ export default function DpNavigationPage() {
     const fetchData = async () => {
       const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
       if (!req) { setLoading(false); return }
+      if (isAdvanceLockedUntilTaskDay(req as DeliveryRequest)) {
+        navigate('/dp', { replace: true })
+        return
+      }
       setRequest(req as DeliveryRequest)
       if (req.user_id) {
         const { data: userProf } = await supabase.from('profiles').select('*').eq('id', req.user_id).maybeSingle()
