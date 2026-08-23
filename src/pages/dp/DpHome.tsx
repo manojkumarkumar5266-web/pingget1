@@ -192,6 +192,8 @@ export default function DpHome() {
   const [commissionDueNow, setCommissionDueNow] = useState(0)
   const [incoming, setIncoming] = useState<RequestWithUser | null>(null)
   const knownIdsRef = useRef<Set<string>>(new Set())
+  const [rangeTick, setRangeTick] = useState(0)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const gps = useGps(profile?.id, true)
 
   const showToast = (msg: string) => {
@@ -252,7 +254,13 @@ export default function DpHome() {
     const fetchRequests = async (silent = true) => {
       if (!silent) setLoading(true)
       const { data, error } = await supabase.rpc('get_nearby_requests', { p_dp_user_id: profile!.id })
-      if (error) { console.error('[DpHome] get_nearby_requests:', error); setLoading(false); return }
+      if (error) {
+        console.error('[DpHome] get_nearby_requests:', error)
+        setFetchError(error.message || 'Could not load nearby requests')
+        setLoading(false)
+        return
+      }
+      setFetchError(null)
       if (!data) { setLoading(false); return }
       const ids = data.map((r: any) => r.id).filter(Boolean)
       let metaById = new Map<string, Partial<DeliveryRequest>>()
@@ -305,13 +313,13 @@ export default function DpHome() {
         () => { void fetchRequests(true) })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'requests' }, () => { void fetchRequests(true) })
       .subscribe()
-    const pollInterval = setInterval(() => { void fetchRequests(true) }, 20000)
+    const pollInterval = setInterval(() => { void fetchRequests(true) }, 5000)
     return () => {
       try { stopAlertRef.current?.() } catch { /* ignore */ }
       supabase.removeChannel(channel)
       clearInterval(pollInterval)
     }
-  }, [dp?.is_online, dpLoading, profile])
+  }, [dp?.is_online, dpLoading, profile, rangeTick])
 
   useEffect(() => {
     const checkCommission = async () => {
@@ -327,6 +335,7 @@ export default function DpHome() {
     setRangeKm(km); setSavingRange(true)
     await supabase.from('delivery_partners').update({ service_range_meters: km * 1000 }).eq('user_id', profile!.id)
     setSavingRange(false)
+    setRangeTick(t => t + 1)
   }
 
   const declineRequest = async (req: RequestWithUser) => {
@@ -505,22 +514,18 @@ export default function DpHome() {
   }
 
   const getDistance = (req: DeliveryRequest): number | null => {
+    const rpcDist = Number((req as RequestWithUser).distance_meters)
+    if (Number.isFinite(rpcDist) && rpcDist >= 0) return rpcDist
     const lat = gps.lat ?? profile?.gps_lat
     const lng = gps.lng ?? profile?.gps_lng
     const r = req as RequestWithUser
-    const userLat = r.user_profile?.gps_lat ?? req.pickup_lat ?? req.delivery_lat
-    const userLng = r.user_profile?.gps_lng ?? req.pickup_lng ?? req.delivery_lng
+    const userLat = req.delivery_lat ?? req.pickup_lat ?? r.user_profile?.gps_lat
+    const userLng = req.delivery_lng ?? req.pickup_lng ?? r.user_profile?.gps_lng
     if (!lat || !lng || !userLat || !userLng) return null
     return haversineDistance(lat, lng, userLat, userLng)
   }
 
-  const rangeMeters = rangeKm * 1000
-  const filtered = requests.filter(r => {
-    const dist = getDistance(r)
-    if (dist === null) return true
-    const userRange = Number((r as any).radius_meters || 6000)
-    return dist <= rangeMeters && dist <= userRange
-  })
+  const filtered = requests
 
   const todayEarnings = todayOrders.reduce((s, o) => s + Number(o.dp_earnings || 0), 0)
   const weekEarnings = weekOrders.reduce((s, o) => s + Number(o.dp_earnings || 0), 0)
@@ -692,6 +697,15 @@ export default function DpHome() {
           </div>
         )}
       </Surface>
+
+      {fetchError && (
+        <div
+          className="mb-4 rounded-2xl px-4 py-3 text-sm font-bold text-red-300"
+          style={{ background: 'rgba(255,77,79,0.1)', border: '1px solid rgba(255,77,79,0.22)' }}
+        >
+          Could not load requests: {fetchError}
+        </div>
+      )}
 
       <SectionLabel
         title="Nearby requests"

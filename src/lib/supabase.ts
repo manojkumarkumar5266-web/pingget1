@@ -90,6 +90,7 @@ export type DeliveryRequest = {
   delivery_address: string
   delivery_lat: number | null
   delivery_lng: number | null
+  distance_meters?: number | null
   expected_time: string | null
   max_budget: number | null
   special_instructions: string | null
