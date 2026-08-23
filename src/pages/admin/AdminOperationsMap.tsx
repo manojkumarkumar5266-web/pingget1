@@ -126,23 +126,23 @@ export default function AdminOperationsMap() {
         <div className="mt-3 grid grid-cols-5 gap-2">
           <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
             <p className="text-lg font-bold text-[#F5F7F6]">{stats.online}</p>
-            <p className="text-[9px] text-black/40">Online DPs</p>
+            <p className="text-[9px] text-[#C4A35A]">Online DPs</p>
           </div>
           <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
             <p className="text-lg font-bold text-yellow-400">{stats.pending}</p>
-            <p className="text-[9px] text-black/40">Pending</p>
+            <p className="text-[9px] text-[#C4A35A]">Pending</p>
           </div>
           <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
             <p className="text-lg font-bold text-blue-400">{stats.active}</p>
-            <p className="text-[9px] text-black/40">Active</p>
+            <p className="text-[9px] text-[#C4A35A]">Active</p>
           </div>
           <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
             <p className="text-lg font-bold text-green-400">{stats.completed}</p>
-            <p className="text-[9px] text-black/40">Done</p>
+            <p className="text-[9px] text-[#C4A35A]">Done</p>
           </div>
           <div className="rounded-xl p-2 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
             <p className="text-lg font-bold text-red-400">{stats.cancelled}</p>
-            <p className="text-[9px] text-black/40">Cancelled</p>
+            <p className="text-[9px] text-[#C4A35A]">Cancelled</p>
           </div>
         </div>
       </div>
@@ -151,21 +151,21 @@ export default function AdminOperationsMap() {
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {/* Online DPs list */}
         <div className="mb-4">
-          <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-black/40">Online Delivery Partners ({onlineDps.length})</h3>
+          <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-[#C4A35A]">Online Delivery Partners ({onlineDps.length})</h3>
           {onlineDps.length === 0 ? (
-            <p className="py-4 text-center text-sm text-black/30">No delivery partners online</p>
+            <p className="py-4 text-center text-sm text-white/70">No delivery partners online</p>
           ) : (
             <div className="space-y-2">
               {onlineDps.map(dp => (
                 <div key={dp.user_id} onClick={() => setSelectedDp(dp)}
                   className="flex items-center gap-3 rounded-xl p-3 transition-all active:scale-[0.98] cursor-pointer"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-black/5">
-                    {dp.photo_url ? <img src={dp.photo_url} alt={dp.full_name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><Bike size={18} className="text-black/40" /></div>}
+                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-white/10">
+                    {dp.photo_url ? <img src={dp.photo_url} alt={dp.full_name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><Bike size={18} className="text-[#C4A35A]" /></div>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-[#F5F7F6] truncate">{dp.full_name}</p>
-                    <div className="flex items-center gap-2 text-xs text-black/40">
+                    <div className="flex items-center gap-2 text-xs text-[#C4A35A]">
                       <span className="flex items-center gap-0.5"><Star size={10} className="text-yellow-400" />{dp.rating_avg?.toFixed(1) || '0.0'}</span>
                       <span>·</span>
                       <span>{vehicleLabel(normalizeVehicle(dp.vehicle_type))}</span>
@@ -174,7 +174,7 @@ export default function AdminOperationsMap() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-[10px] text-black/40">Live</span>
+                    <span className="text-[10px] text-[#C4A35A]">Live</span>
                   </div>
                 </div>
               ))}
@@ -184,9 +184,9 @@ export default function AdminOperationsMap() {
 
         {/* Active requests list */}
         <div>
-          <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-black/40">Active Requests ({requests.length})</h3>
+          <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-[#C4A35A]">Active Requests ({requests.length})</h3>
           {requests.length === 0 ? (
-            <p className="py-4 text-center text-sm text-black/30">No active requests</p>
+            <p className="py-4 text-center text-sm text-white/70">No active requests</p>
           ) : (
             <div className="space-y-2">
               {requests.slice(0, 30).map(req => (
@@ -196,12 +196,12 @@ export default function AdminOperationsMap() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-[#F5F7F6]">{STATUS_LABELS[req.status] || req.status}</p>
-                    <p className="text-xs text-black/40 truncate flex items-center gap-1">
+                    <p className="text-xs text-[#C4A35A] truncate flex items-center gap-1">
                       <MapPin size={10} className="shrink-0" />
                       {req.delivery_address?.substring(0, 50) || 'No address'}
                     </p>
                   </div>
-                  <span className="text-[10px] text-black/30 shrink-0">
+                  <span className="text-[10px] text-white/70 shrink-0">
                     {new Date(req.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -219,12 +219,12 @@ export default function AdminOperationsMap() {
             <div className="rounded-2xl p-5" style={{ background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(20px)' }}>
               <div className="bottom-sheet-handle" />
               <div className="flex items-start gap-3">
-                <div className="h-14 w-14 overflow-hidden rounded-2xl bg-black/5">
-                  {selectedDp.photo_url ? <img src={selectedDp.photo_url} alt={selectedDp.full_name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-black/40"><Bike size={24} /></div>}
+                <div className="h-14 w-14 overflow-hidden rounded-2xl bg-white/10">
+                  {selectedDp.photo_url ? <img src={selectedDp.photo_url} alt={selectedDp.full_name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-[#C4A35A]"><Bike size={24} /></div>}
                 </div>
                 <div className="flex-1">
                   <p className="font-bold text-[#F5F7F6]">{selectedDp.full_name}</p>
-                  <div className="flex items-center gap-2 text-xs text-black/50">
+                  <div className="flex items-center gap-2 text-xs text-white/85">
                     <span className="flex items-center gap-0.5"><Star size={12} className="text-yellow-400" />{selectedDp.rating_avg?.toFixed(1) || '0.0'}</span>
                     <span>·</span>
                     <span>{vehicleLabel(normalizeVehicle(selectedDp.vehicle_type))}</span>
@@ -236,25 +236,25 @@ export default function AdminOperationsMap() {
                     </div>
                   )}
                 </div>
-                <button onClick={() => setSelectedDp(null)} className="text-black/40 hover:text-black/75"><XCircle size={18} /></button>
+                <button onClick={() => setSelectedDp(null)} className="text-[#C4A35A] hover:text-white"><XCircle size={18} /></button>
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-black/10 pt-3">
+              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[#C4A35A]/45 pt-3">
                 <div className="text-center">
                   <p className="text-xs font-bold text-[#F5F7F6]">{formatSpeed(selectedDp.speed_kmh || 0)}</p>
-                  <p className="text-[9px] text-black/40">Speed</p>
+                  <p className="text-[9px] text-[#C4A35A]">Speed</p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs font-bold text-[#F5F7F6] flex items-center justify-center gap-0.5">
                     <Battery size={12} className="text-green-400" />
                     {formatBattery(selectedDp.battery_level)}
                   </p>
-                  <p className="text-[9px] text-black/40">Battery</p>
+                  <p className="text-[9px] text-[#C4A35A]">Battery</p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs font-bold text-[#F5F7F6]">
                     {selectedDp.last_location_at ? new Date(selectedDp.last_location_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '--'}
                   </p>
-                  <p className="text-[9px] text-black/40">Last Update</p>
+                  <p className="text-[9px] text-[#C4A35A]">Last Update</p>
                 </div>
               </div>
             </div>

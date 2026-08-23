@@ -82,7 +82,7 @@ export default function AdminLayout() {
       <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: `1px solid ${pg.headerBorder}`, background: pg.headerElevated }}>
         <div>
           <BrandWordmark size="sm" showTagline={false} align="left" className="mb-1" />
-          <p className="text-sm font-extrabold">Admin Console</p>
+          <p className="text-sm font-extrabold" style={{ color: pg.gold }}>Admin Console</p>
         </div>
         <span className="rounded-full px-2 py-0.5 text-[10px] font-extrabold" style={{ background: 'rgba(255,77,79,0.16)', color: '#FCA5A5' }}>OPS</span>
       </div>
@@ -100,8 +100,8 @@ export default function AdminLayout() {
                 ? { background: pg.gold, color: pg.limeText }
                 : { border: '1px solid transparent' }}
             >
-              <Icon size={18} style={{ color: active ? pg.limeText : pg.text3 }} />
-              <span className="flex-1 text-sm font-bold" style={{ color: active ? pg.limeText : pg.text2 }}>{item.label}</span>
+              <Icon size={18} style={{ color: active ? pg.limeText : '#FFFFFF' }} />
+              <span className="flex-1 text-sm font-bold" style={{ color: active ? pg.limeText : '#FFFFFF' }}>{item.label}</span>
               {item.badge > 0 && (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#F5F7F6]">
                   {item.badge > 99 ? '99+' : item.badge}
@@ -118,7 +118,7 @@ export default function AdminLayout() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-extrabold">{profile?.full_name || 'Admin'}</p>
-            <p className="text-[11px]" style={{ color: pg.text4 }}>Administrator</p>
+            <p className="text-[11px]" style={{ color: pg.gold }}>Administrator</p>
           </div>
         </div>
         <button

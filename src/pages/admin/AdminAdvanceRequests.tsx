@@ -5,6 +5,7 @@ import { StatusBadge, EmptyState, SkeletonCard } from '../../components/ui'
 import RescheduleModal from '../../components/RescheduleModal'
 import { CalendarClock, Search, X, MapPin, Tag, Clock, IndianRupee, User, Bike, Package, ChevronRight, CalendarPlus, Repeat } from 'lucide-react'
 import { AdminShell, AdminHeader } from './adminChrome'
+import { pg } from '../../design/tokens'
 
 type FilterType = 'all' | 'today' | 'tomorrow' | 'next7days' | 'pending' | 'assigned' | 'accepted' | 'completed' | 'cancelled' | 'expired' | 'rescheduled'
 
@@ -101,7 +102,7 @@ export default function AdminAdvanceRequests() {
       <AdminHeader title="Advance Requests" />
 
       <div className="mb-4 relative">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
+        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C4A35A]" />
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search by category, description, address, or ID..."
           className="input pl-10" />
@@ -112,8 +113,8 @@ export default function AdminAdvanceRequests() {
           <button key={f.key} onClick={() => setFilter(f.key)}
             className="whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition-all"
             style={filter === f.key
-              ? { background: '#0C8A3E', color: '#0B0B0B' }
-              : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>
+              ? { background: pg.gold, color: pg.limeText }
+              : { background: pg.bg, color: '#FFFFFF', border: `1px solid ${pg.lineStrong}` }}>
             {f.label}
           </button>
         ))}
@@ -130,7 +131,7 @@ export default function AdminAdvanceRequests() {
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: '#0C8A3E' }}>
+                    <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: 'pg.gold' }}>
                       {r.request_category || 'Advance'}
                     </span>
                     {r.is_scheduled && (
@@ -142,17 +143,17 @@ export default function AdminAdvanceRequests() {
                   <p className="font-semibold text-[#F5F7F6] truncate">
                     {r.description?.split('\n')[0]?.trim() || 'Scheduled Task'}
                   </p>
-                  <p className="mt-0.5 text-xs text-black/40">ID: {r.id.slice(0, 12)}...</p>
+                  <p className="mt-0.5 text-xs text-[#C4A35A]">ID: {r.id.slice(0, 12)}...</p>
                 </div>
                 <StatusBadge status={r.status} />
               </div>
               {r.estimated_total_charge != null && (
                 <div className="mt-2 text-xs">
-                  <span className="text-black/40">Est. Charge: </span>
-                  <span className="font-semibold" style={{ color: '#0C8A3E' }}>{formatCurrency(r.estimated_total_charge)}</span>
+                  <span className="text-[#C4A35A]">Est. Charge: </span>
+                  <span className="font-semibold" style={{ color: 'pg.gold' }}>{formatCurrency(r.estimated_total_charge)}</span>
                 </div>
               )}
-              <p className="mt-2 text-xs text-black/40">{formatTime(r.created_at)}</p>
+              <p className="mt-2 text-xs text-[#C4A35A]">{formatTime(r.created_at)}</p>
             </div>
           ))}
         </div>
@@ -247,29 +248,29 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
         <div className="px-5 pb-10 pt-4 space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-black/40">Request ID</p>
-              <p className="font-mono text-sm text-black/75">{request.id}</p>
+              <p className="text-xs text-[#C4A35A]">Request ID</p>
+              <p className="font-mono text-sm text-[#FBF6E8]">{request.id}</p>
             </div>
             <StatusBadge status={request.status} />
           </div>
 
           {/* Category + Schedule */}
-          <div className="rounded-2xl border border-black/10 p-4 space-y-3">
+          <div className="rounded-2xl border border-[#C4A35A]/45 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <Tag size={14} style={{ color: '#0C8A3E' }} />
+              <Tag size={14} style={{ color: 'pg.gold' }} />
               <span className="text-sm font-semibold text-[#F5F7F6]">{request.request_category || 'Advance Request'}</span>
             </div>
             {request.scheduled_date && (
               <div className="flex items-center gap-2 text-sm">
-                <CalendarClock size={14} style={{ color: '#0C8A3E' }} />
-                <span className="text-black/55">Scheduled: </span>
+                <CalendarClock size={14} style={{ color: 'pg.gold' }} />
+                <span className="text-[#EDE4C8]">Scheduled: </span>
                 <span className="font-medium text-[#F5F7F6]">{request.scheduled_date} at {request.scheduled_slot || request.scheduled_time}</span>
               </div>
             )}
             {request.estimated_task_duration && (
               <div className="flex items-center gap-2 text-sm">
-                <Clock size={14} style={{ color: '#0C8A3E' }} />
-                <span className="text-black/55">Est. Duration: </span>
+                <Clock size={14} style={{ color: 'pg.gold' }} />
+                <span className="text-[#EDE4C8]">Est. Duration: </span>
                 <span className="font-medium text-[#F5F7F6]">
                   {request.estimated_task_duration < 60 ? `${request.estimated_task_duration} min` : `${request.estimated_task_duration / 60} hr`}
                 </span>
@@ -280,8 +281,8 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
           {/* Description */}
           {request.description && (
             <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-black/40">Description</p>
-              <div className="rounded-2xl border border-black/10 p-3 text-sm text-black/75 whitespace-pre-wrap">
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[#C4A35A]">Description</p>
+              <div className="rounded-2xl border border-[#C4A35A]/45 p-3 text-sm text-[#FBF6E8] whitespace-pre-wrap">
                 {request.description}
               </div>
             </div>
@@ -289,53 +290,53 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
 
           {/* Shop Details */}
           {(request.shop_name || request.shop_address || request.shop_phone) && (
-            <div className="rounded-2xl border border-black/10 p-4 space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-black/40 flex items-center gap-1.5">
+            <div className="rounded-2xl border border-[#C4A35A]/45 p-4 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#C4A35A] flex items-center gap-1.5">
                 <Package size={12} /> Shop Details
               </p>
-              {request.shop_name && <p className="text-sm text-black/75">Name: {request.shop_name}</p>}
-              {request.shop_phone && <p className="text-sm text-black/75">Phone: {request.shop_phone}</p>}
-              {request.shop_address && <p className="text-sm text-black/75">Address: {request.shop_address}</p>}
+              {request.shop_name && <p className="text-sm text-[#FBF6E8]">Name: {request.shop_name}</p>}
+              {request.shop_phone && <p className="text-sm text-[#FBF6E8]">Phone: {request.shop_phone}</p>}
+              {request.shop_address && <p className="text-sm text-[#FBF6E8]">Address: {request.shop_address}</p>}
             </div>
           )}
 
           {/* Addresses */}
-          <div className="rounded-2xl border border-black/10 p-4 space-y-2">
+          <div className="rounded-2xl border border-[#C4A35A]/45 p-4 space-y-2">
             {request.preferred_shop && (
               <div className="flex items-start gap-2 text-sm">
                 <Package size={14} className="mt-0.5 shrink-0 text-accent-500" />
-                <span className="text-black/55">Shop: <span className="font-medium text-[#F5F7F6]">{request.preferred_shop}</span></span>
+                <span className="text-[#EDE4C8]">Shop: <span className="font-medium text-[#F5F7F6]">{request.preferred_shop}</span></span>
               </div>
             )}
             {request.pickup_address && (
               <div className="flex items-start gap-2 text-sm">
                 <MapPin size={14} className="mt-0.5 shrink-0 text-warning-500" />
-                <span className="text-black/55">Pickup: <span className="font-medium text-[#F5F7F6]">{request.pickup_address}</span></span>
+                <span className="text-[#EDE4C8]">Pickup: <span className="font-medium text-[#F5F7F6]">{request.pickup_address}</span></span>
               </div>
             )}
             <div className="flex items-start gap-2 text-sm">
               <MapPin size={14} className="mt-0.5 shrink-0 text-error-500" />
-              <span className="text-black/55">Deliver to: <span className="font-medium text-[#F5F7F6]">{request.delivery_address}</span></span>
+              <span className="text-[#EDE4C8]">Deliver to: <span className="font-medium text-[#F5F7F6]">{request.delivery_address}</span></span>
             </div>
           </div>
 
           {/* Charge Breakdown */}
           {request.charge_breakdown && (
-            <div className="rounded-2xl border border-black/10 p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-black/40">Estimated Charges</p>
+            <div className="rounded-2xl border border-[#C4A35A]/45 p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#C4A35A]">Estimated Charges</p>
               <div className="space-y-1.5 text-sm">
                 {Object.entries(request.charge_breakdown as Record<string, number>).map(([key, val]) => (
                   val !== 0 && (
                     <div key={key} className="flex justify-between">
-                      <span className="text-black/50">{key}</span>
+                      <span className="text-white/85">{key}</span>
                       <span className="font-semibold text-[#F5F7F6]">{formatCurrency(val)}</span>
                     </div>
                   )
                 ))}
                 {request.estimated_total_charge != null && (
-                  <div className="flex justify-between border-t border-black/10 pt-2 mt-2">
+                  <div className="flex justify-between border-t border-[#C4A35A]/45 pt-2 mt-2">
                     <span className="font-bold text-[#F5F7F6]">Total</span>
-                    <span className="font-bold" style={{ color: '#0C8A3E' }}>{formatCurrency(request.estimated_total_charge)}</span>
+                    <span className="font-bold" style={{ color: 'pg.gold' }}>{formatCurrency(request.estimated_total_charge)}</span>
                   </div>
                 )}
               </div>
@@ -345,11 +346,11 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
           {/* Photos */}
           {request.photo_urls && request.photo_urls.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/40">Photos</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#C4A35A]">Photos</p>
               <div className="flex flex-wrap gap-2">
                 {(request.photo_urls as string[]).map((url, i) => (
                   <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-24 rounded-xl object-cover border border-black/10" />
+                    <img src={url} alt={`Photo ${i + 1}`} className="h-24 w-24 rounded-xl object-cover border border-[#C4A35A]/45" />
                   </a>
                 ))}
               </div>
@@ -359,19 +360,19 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
           {/* People */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
-              <div className="flex items-center gap-1.5 mb-2 text-xs text-black/40"><User size={12} /> Customer</div>
+              <div className="flex items-center gap-1.5 mb-2 text-xs text-[#C4A35A]"><User size={12} /> Customer</div>
               <p className="text-sm font-semibold text-[#F5F7F6]">{userProfile?.full_name || '...'}</p>
               <p className="text-xs text-gray-500">{userProfile?.phone || ''}</p>
             </div>
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
-              <div className="flex items-center gap-1.5 mb-2 text-xs text-black/40"><Bike size={12} /> Delivery Partner</div>
+              <div className="flex items-center gap-1.5 mb-2 text-xs text-[#C4A35A]"><Bike size={12} /> Delivery Partner</div>
               {dpProfile ? (
                 <>
                   <p className="text-sm font-semibold text-[#F5F7F6]">{dpProfile?.full_name || '...'}</p>
                   <p className="text-xs text-gray-500">{dpProfile?.phone || ''}</p>
                 </>
               ) : (
-                <p className="text-sm text-black/40">Not assigned</p>
+                <p className="text-sm text-[#C4A35A]">Not assigned</p>
               )}
             </div>
           </div>
@@ -406,16 +407,16 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
           {/* Reschedule History */}
           {request.reschedule_history && request.reschedule_history.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/40 flex items-center gap-1.5">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#C4A35A] flex items-center gap-1.5">
                 <Repeat size={12} /> Reschedule History ({request.reschedule_history.length})
               </p>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto rounded-2xl border border-black/10 p-3 dark:border-gray-800">
+              <div className="space-y-1.5 max-h-48 overflow-y-auto rounded-2xl border border-[#C4A35A]/45 p-3 dark:border-gray-800">
                 {(request.reschedule_history as any[]).map((h, i) => (
                   <div key={i} className="text-xs flex items-start gap-1.5">
                     <span className="font-semibold shrink-0" style={{ color: h.actor === 'admin' ? '#fbbf24' : '#818cf8' }}>
                       {h.actor}:
                     </span>
-                    <span className="text-black/65 flex-1">
+                    <span className="text-[#FBF6E8] flex-1">
                       {h.old_date} {h.old_slot} → {h.new_date} {h.new_slot}
                       {h.reason && ` (${h.reason})`}
                     </span>
@@ -425,7 +426,7 @@ function DetailDrawer({ request, onClose, onReschedule, settings }: { request: a
             </div>
           )}
 
-          <p className="text-center text-xs text-black/40">Created {formatTime(request.created_at)}</p>
+          <p className="text-center text-xs text-[#C4A35A]">Created {formatTime(request.created_at)}</p>
         </div>
       </div>
     </div>

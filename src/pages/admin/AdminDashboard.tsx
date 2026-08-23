@@ -119,10 +119,10 @@ export default function AdminDashboard() {
 
   const kpiCards = [
     { label: 'Total Users',     value: stats.totalUsers,       icon: Users,        bg: 'rgba(59,130,246,0.15)',   color: '#60a5fa' },
-    { label: 'Total Partners',  value: stats.totalDps,         icon: Bike,         bg: 'rgba(196,214,0,0.15)',    color: '#0C8A3E' },
+    { label: 'Total Partners',  value: stats.totalDps,         icon: Bike,         bg: 'rgba(196,163,90,0.22)',    color: '#C4A35A' },
     { label: "Today Requests",  value: stats.todayRequests,    icon: Package,      bg: 'rgba(245,158,11,0.15)',   color: '#fbbf24' },
     { label: "Today Delivered", value: stats.todayDeliveries,  icon: CheckCircle,  bg: 'rgba(16,185,129,0.15)',   color: '#34d399' },
-    { label: 'Live Orders',     value: stats.liveOrders,       icon: Activity,     bg: 'rgba(196,214,0,0.15)',    color: '#0C8A3E' },
+    { label: 'Live Orders',     value: stats.liveOrders,       icon: Activity,     bg: 'rgba(196,163,90,0.22)',    color: '#C4A35A' },
     { label: 'Completed',       value: stats.completedOrders,  icon: TrendingUp,   bg: 'rgba(16,185,129,0.15)',   color: '#34d399' },
     { label: 'Cancelled',       value: stats.cancelledOrders,  icon: XCircle,      bg: 'rgba(239,68,68,0.15)',    color: '#f87171' },
     { label: 'Online DPs',      value: stats.onlineDps,        icon: Bike,         bg: 'rgba(16,185,129,0.15)',   color: '#34d399' },
@@ -132,10 +132,10 @@ export default function AdminDashboard() {
     <div className="p-4 md:p-8" style={{ background: pg.bg, minHeight: '100%' }}>
       <div className="mb-7 flex items-center justify-between animate-fade-in-up">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: '#0C8A3E' }}>Operations</p>
-          <h1 className="text-[28px] font-extrabold tracking-tight text-[#F5F7F6]">Dashboard</h1>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em]" style={{ color: pg.gold }}>Operations</p>
+          <h1 className="text-[28px] font-extrabold tracking-tight text-white">Dashboard</h1>
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>Live overview</span>
+            <span className="text-sm text-white/90">Live overview</span>
             <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold"
               style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.25)' }}>
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" /> LIVE
@@ -145,7 +145,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2">
           <button onClick={openNotifPanel}
             className="relative flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-sm font-semibold transition-all active:scale-95"
-            style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)' }}>
+            style={{ background: pg.gold, color: pg.limeText }}>
             <Bell size={16} /> Alerts
             {unreadCount > 0 && (
               <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#F5F7F6] animate-pulse">
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
           </button>
           <button onClick={exportReport}
             className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-sm font-semibold transition-all active:scale-95"
-            style={{ background: 'rgba(196,214,0,0.15)', border: '1px solid rgba(196,214,0,0.25)', color: '#0C8A3E' }}>
+            style={{ background: pg.gold, color: pg.limeText }}>
             <Download size={16} /> Export
           </button>
         </div>
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
                 <Icon size={18} style={{ color: s.color }} />
               </div>
               <p className="text-2xl font-bold text-[#F5F7F6]"><CountUp value={s.value} /></p>
-              <p className="mt-0.5 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</p>
+              <p className="mt-0.5 text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.gold }}>{s.label}</p>
             </div>
           )
         })}
@@ -199,8 +199,8 @@ export default function AdminDashboard() {
         <div className="relative overflow-hidden rounded-3xl p-5 animate-slide-up"
           style={{ background: 'linear-gradient(135deg,rgba(196,214,0,0.15),rgba(196,214,0,0.07))', border: '1px solid rgba(196,214,0,0.2)', animationDelay: '360ms' }}>
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={16} style={{ color: '#0C8A3E' }} />
-            <p className="text-xs font-semibold" style={{ color: '#0C8A3E' }}>Month Revenue</p>
+            <TrendingUp size={16} style={{ color: pg.gold }} />
+            <p className="text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.gold }}>Month Revenue</p>
           </div>
           <p className="text-3xl font-bold text-[#F5F7F6]"><CountUp value={stats.monthRevenue} prefix="₹" /></p>
         </div>
@@ -238,7 +238,7 @@ export default function AdminDashboard() {
             <h3 className="text-sm font-bold text-[#F5F7F6]">Top Delivery Partners</h3>
           </div>
           {topDps.length === 0 ? (
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>No data yet.</p>
+            <p className="text-sm text-white/80">No data yet.</p>
           ) : (
             <div className="space-y-2">
               {topDps.map((dp, i) => (
@@ -246,12 +246,12 @@ export default function AdminDashboard() {
                   style={{ background: i === 0 ? 'rgba(196,214,0,0.08)' : 'rgba(255,255,255,0.03)' }}>
                   <div className="flex items-center gap-2.5">
                     <span className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
-                      style={i === 0 ? { background: '#0C8A3E', color: '#0B0B0B' } : { background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>
+                      style={i === 0 ? { background: pg.gold, color: pg.limeText } : { background: pg.surface2, color: '#FFFFFF' }}>
                       {i + 1}
                     </span>
                     <span className="text-sm font-medium text-[#F5F7F6]">{dp.name}</span>
                   </div>
-                  <span className="text-sm font-bold" style={{ color: '#0C8A3E' }}>{dp.deliveries} <span className="text-xs font-normal" style={{ color: 'rgba(255,255,255,0.4)' }}>orders</span></span>
+                  <span className="text-sm font-bold" style={{ color: pg.gold }}>{dp.deliveries} <span className="text-xs font-normal text-white/80">orders</span></span>
                 </div>
               ))}
             </div>
@@ -260,18 +260,18 @@ export default function AdminDashboard() {
 
         <div className="card p-5 animate-slide-up" style={{ animationDelay: '520ms' }}>
           <div className="mb-4 flex items-center gap-2">
-            <Zap size={15} style={{ color: '#0C8A3E' }} />
+            <Zap size={15} style={{ color: pg.gold }} />
             <h3 className="text-sm font-bold text-[#F5F7F6]">Recent Orders</h3>
           </div>
           {recentOrders.length === 0 ? (
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>No completed orders yet.</p>
+            <p className="text-sm text-white/80">No completed orders yet.</p>
           ) : (
             <div className="space-y-2">
               {recentOrders.map((o) => (
                 <div key={o.id} className="flex items-center justify-between rounded-2xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,0.03)' }}>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-[#F5F7F6] truncate">{o.items_summary || 'Delivery'}</p>
-                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{formatTime(o.created_at)}</p>
+                    <p className="text-xs text-white/80">{formatTime(o.created_at)}</p>
                   </div>
                   <span className="text-sm font-bold text-green-400">{formatCurrency(o.delivery_charge)}</span>
                 </div>
@@ -285,17 +285,17 @@ export default function AdminDashboard() {
       {showNotifPanel && (
         <div className="fixed inset-0 z-50 animate-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }} onClick={() => setShowNotifPanel(false)}>
           <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto animate-slide-in-right"
-            style={{ background: '#181818', borderLeft: '1px solid rgba(255,255,255,0.08)', boxShadow: '-8px 0 40px rgba(0,0,0,0.5)' }}
+            style={{ background: pg.bg, borderLeft: `1px solid ${pg.lineStrong}`, boxShadow: '-8px 0 40px rgba(11,74,42,0.5)' }}
             onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4"
-              style={{ background: 'rgba(18,18,18,0.95)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              style={{ background: pg.headerElevated, backdropFilter: 'blur(16px)', borderBottom: `1px solid ${pg.headerBorder}` }}>
               <div className="flex items-center gap-2">
-                <Bell size={18} style={{ color: '#0C8A3E' }} />
+                <Bell size={18} style={{ color: pg.gold }} />
                 <h2 className="text-base font-bold text-[#F5F7F6]">Notifications</h2>
                 {unreadCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-[#F5F7F6]">{unreadCount}</span>}
               </div>
               <div className="flex items-center gap-2">
-                {unreadCount > 0 && <button onClick={markAllRead} className="text-xs font-semibold" style={{ color: '#0C8A3E' }}>Mark all read</button>}
+                {unreadCount > 0 && <button onClick={markAllRead} className="text-xs font-extrabold" style={{ color: pg.limeText, background: pg.gold, borderRadius: 999, padding: '4px 10px' }}>Mark all read</button>}
                 <button onClick={() => setShowNotifPanel(false)} className="btn-icon h-8 w-8 rounded-xl"><X size={15} style={{ color: 'rgba(255,255,255,0.5)' }} /></button>
               </div>
             </div>
@@ -303,7 +303,7 @@ export default function AdminDashboard() {
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
                   <Bell size={36} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>No notifications yet</p>
+                  <p className="text-sm text-white/85">No notifications yet</p>
                 </div>
               ) : notifications.map(n => {
                 const Icon = NOTIF_ICONS[n.type] || Bell
@@ -314,12 +314,12 @@ export default function AdminDashboard() {
                       : { background: 'rgba(196,214,0,0.07)', border: '1px solid rgba(196,214,0,0.18)' }}>
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
                       style={n.is_read ? { background: 'rgba(255,255,255,0.06)' } : { background: 'rgba(196,214,0,0.15)' }}>
-                      <Icon size={16} style={{ color: n.is_read ? 'rgba(255,255,255,0.35)' : '#0C8A3E' }} />
+                      <Icon size={16} style={{ color: n.is_read ? 'rgba(255,255,255,0.7)' : pg.gold }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold" style={{ color: n.is_read ? 'rgba(255,255,255,0.55)' : '#fff' }}>{n.title}</p>
-                      {n.body && <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{n.body}</p>}
-                      <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.28)' }}>{formatTime(n.created_at)}</p>
+                      {n.body && <p className="text-xs mt-0.5 text-white/85">{n.body}</p>}
+                      <p className="text-[10px] mt-1 text-white/70">{formatTime(n.created_at)}</p>
                     </div>
                     {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500" />}
                   </div>
@@ -383,18 +383,18 @@ function AdvanceAnalytics() {
   if (loadingAdv || !advanceStats) return null
 
   const cards = [
-    { label: "Today's Scheduled", value: advanceStats.todayCount, icon: CalendarClock, color: '#0C8A3E' },
+    { label: "Today's Scheduled", value: advanceStats.todayCount, icon: CalendarClock, color: pg.gold },
     { label: 'Tomorrow', value: advanceStats.tomorrowCount, icon: CalendarClock, color: '#818cf8' },
     { label: 'Next 7 Days', value: advanceStats.next7Count, icon: CalendarClock, color: '#60a5fa' },
     { label: 'Waiting', value: advanceStats.waiting, icon: Clock, color: '#fbbf24' },
     { label: 'Accepted', value: advanceStats.accepted, icon: CheckCircle, color: '#34d399' },
-    { label: 'Completed', value: advanceStats.completed, icon: CheckCircle, color: '#0C8A3E' },
+    { label: 'Completed', value: advanceStats.completed, icon: CheckCircle, color: pg.gold },
     { label: 'Expired', value: advanceStats.expired, icon: XCircle, color: '#6b7280' },
     { label: 'Recurring', value: advanceStats.recurring, icon: Repeat, color: '#c084fc' },
   ]
 
   const revenueCards = [
-    { label: 'Advance Revenue', value: advanceStats.revenue, icon: IndianRupee, color: '#0C8A3E' },
+    { label: 'Advance Revenue', value: advanceStats.revenue, icon: IndianRupee, color: pg.gold },
     { label: 'Booking Revenue', value: advanceStats.bookingRevenue, icon: TrendingUp, color: '#60a5fa' },
     { label: 'Cancellation Revenue', value: advanceStats.cancellationRevenue, icon: XCircle, color: '#f87171' },
   ]
@@ -402,7 +402,7 @@ function AdvanceAnalytics() {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-4">
-        <BarChart3 size={20} style={{ color: '#0C8A3E' }} />
+        <BarChart3 size={20} style={{ color: pg.gold }} />
         <h2 className="text-lg font-bold text-[#F5F7F6]">Advance Request Analytics</h2>
       </div>
 
@@ -418,7 +418,7 @@ function AdvanceAnalytics() {
                 </div>
                 <span className="text-2xl font-bold text-[#F5F7F6]">{c.value}</span>
               </div>
-              <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>{c.label}</p>
+              <p className="text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.gold }}>{c.label}</p>
             </div>
           )
         })}
@@ -435,7 +435,7 @@ function AdvanceAnalytics() {
                   <Icon size={18} style={{ color: c.color }} />
                 </div>
                 <div>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{c.label}</p>
+                  <p className="text-xs font-extrabold uppercase tracking-wide" style={{ color: pg.gold }}>{c.label}</p>
                   <p className="text-lg font-bold" style={{ color: c.color }}>₹{c.value.toFixed(2)}</p>
                 </div>
               </div>
@@ -446,7 +446,7 @@ function AdvanceAnalytics() {
 
       {/* Simple Bar Chart */}
       <div className="card p-5">
-        <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#0C8A3E' }}>Status Distribution</p>
+        <p className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: pg.gold }}>Status Distribution</p>
         <div className="space-y-3">
           {[
             { label: 'Waiting', count: advanceStats.waiting, color: '#fbbf24' },
@@ -459,7 +459,7 @@ function AdvanceAnalytics() {
             const pct = (bar.count / max) * 100
             return (
               <div key={i} className="flex items-center gap-3">
-                <span className="w-24 text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.6)' }}>{bar.label}</span>
+                <span className="w-24 text-xs font-semibold text-white">{bar.label}</span>
                 <div className="flex-1 h-6 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
                   <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: bar.color }} />
                 </div>
