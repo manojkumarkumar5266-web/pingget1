@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
-import { Home, ClipboardList, Bell, User, Plus, X, MessageCircle, Zap, CalendarClock } from 'lucide-react'
+import { Home, ClipboardList, User, Plus, X, MessageCircle, Zap, CalendarClock, Bell } from 'lucide-react'
 import { useEffect, useState, useRef, startTransition } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useGps } from '../../hooks/useGps'
@@ -57,7 +57,6 @@ export default function UserLayout() {
           const notif = payload.new as any
           if (notif.type === 'request_accepted' && notif.related_id) {
             showToast({ requestId: notif.related_id, body: notif.body || 'A delivery partner accepted your request.' })
-            // Accept → chat (quotation). Scanning page also opens chat on its own.
             const path = window.location.pathname
             if (path.includes('/app/chat/') || path.includes('/app/scanning/')) return
             const { data: room } = await supabase
@@ -123,7 +122,7 @@ export default function UserLayout() {
           className="fixed inset-0 z-40 flex items-center justify-center px-4"
           onClick={() => setShowBookingMenu(false)}
         >
-          <div className="absolute inset-0 bg-[#000000]/70" />
+          <div className="absolute inset-0" style={{ background: pg.scrim }} />
           <div
             className="relative z-10 w-full max-w-[400px] animate-slide-in-bottom rounded-[28px] p-4"
             style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.lineStrong}` }}

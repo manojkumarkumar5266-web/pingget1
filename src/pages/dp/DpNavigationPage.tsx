@@ -15,10 +15,12 @@ import {
 } from 'lucide-react'
 import { pg } from '../../design/tokens'
 import { CTA, Surface } from '../../design/primitives'
+import { FullScreenLoader } from '../../components/ui'
 import { uploadMediaFile } from '../../lib/uploadMedia'
 import NeedHelpCard from '../../components/NeedHelpCard'
 import { openRequestChatRoom } from '../../lib/openRequestChat'
 import { acceptDpPayment } from '../../lib/acceptDpPayment'
+import { isAdvanceLockedUntilTaskDay } from '../../lib/advanceTaskGate'
 
 const STATUS_FLOW: { from: string; to: string; label: string; notifTitle: string; notifBody: string; icon: any }[] = [
   { from: 'accepted', to: 'shopping', label: 'Reached Store', notifTitle: 'Reached Store', notifBody: 'Your delivery partner reached the store.', icon: Store },
@@ -58,6 +60,10 @@ export default function DpNavigationPage() {
     const fetchData = async () => {
       const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
       if (!req) { setLoading(false); return }
+      if (isAdvanceLockedUntilTaskDay(req as DeliveryRequest)) {
+        navigate('/dp', { replace: true })
+        return
+      }
       setRequest(req as DeliveryRequest)
       if (req.user_id) {
         const { data: userProf } = await supabase.from('profiles').select('*').eq('id', req.user_id).maybeSingle()
@@ -223,10 +229,10 @@ export default function DpNavigationPage() {
     return dpPos || userPos
   }, [dpPos, userPos])
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#000000] text-black/40">Loading...</div>
+  if (loading) return <FullScreenLoader />
   if (!request) return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#000000]">
-      <p className="text-black/50">Order not found</p>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4" style={{ background: pg.bg }}>
+      <p style={{ color: pg.text3 }}>Order not found</p>
       <button type="button" onClick={() => navigate('/dp')} className="btn-primary">Back</button>
     </div>
   )
@@ -357,14 +363,14 @@ export default function DpNavigationPage() {
             />
             <button type="button" onClick={() => setMapExpanded(v => !v)}
               className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl"
-              style={{ background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.15)' }}
+              style={{ background: pg.header, border: `1px solid ${pg.headerBorder}` }}
               aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}>
-              {mapExpanded ? <Minimize2 size={16} color="#fff" /> : <Maximize2 size={16} color="#fff" />}
+              {mapExpanded ? <Minimize2 size={16} color={pg.text} /> : <Maximize2 size={16} color={pg.text} />}
             </button>
             {liveEtaLabel && (
               <div
                 className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                style={{ background: 'rgba(0,0,0,0.9)', color: '#F5F7F6', border: '1px solid rgba(255,255,255,0.15)' }}
+                style={{ background: pg.header, color: pg.text, border: `1px solid ${pg.headerBorder}` }}
               >
                 ETA {liveEtaLabel}
               </div>
@@ -524,7 +530,7 @@ export default function DpNavigationPage() {
           )}
 
           {(!!request.payment_completed_at || request.status === 'cash_received') && !request.payment_accepted_at && (
-            <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+            <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: pg.scrim }}>
               <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
                 <p className="mb-1 text-lg font-extrabold" style={{ color: pg.lime }}>Payment completed</p>
                 <p className="mb-5 text-sm" style={{ color: pg.text3 }}>Customer marked payment complete. Accept to continue.</p>
@@ -538,7 +544,7 @@ export default function DpNavigationPage() {
                       return
                     }
                     const now = new Date().toISOString()
-                    setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now, status: 'cash_received' as any }) : prev)
+                    setRequest(prev => prev ? ({ ...prev, payment_accepted_at: now, status: 'completed' as any }) : prev)
                     await supabase.from('notifications').insert({
                       user_id: request.user_id,
                       title: 'Payment Accepted',

@@ -7,7 +7,7 @@ import { pg } from '../design/tokens'
 export function Spinner({ size = 24 }: { size?: number }) {
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      <div className="absolute inset-0 rounded-full border-2 border-black/10" />
+      <div className="absolute inset-0 rounded-full border-2" style={{ borderColor: 'rgba(196,163,90,0.22)' }} />
       <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: pg.lime }} />
     </div>
   )
@@ -17,7 +17,7 @@ export function FullScreenLoader() {
   return (
     <div className="flex h-[100dvh] items-center justify-center" style={{ background: pg.bg }}>
       <div className="relative flex h-16 w-16 items-center justify-center">
-        <div className="absolute h-16 w-16 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: pg.lime, borderRightColor: 'rgba(12, 138, 62,0.25)' }} />
+        <div className="absolute h-16 w-16 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: pg.gold, borderRightColor: 'rgba(196,163,90,0.25)' }} />
         <Spinner size={28} />
       </div>
     </div>
@@ -58,7 +58,7 @@ export function EmptyState({
         </div>
       ) : null}
 
-      <p className="text-base font-bold text-black/75">{title}</p>
+      <p className="text-base font-bold" style={{ color: pg.text }}>{title}</p>
 
       {description && (
         <p

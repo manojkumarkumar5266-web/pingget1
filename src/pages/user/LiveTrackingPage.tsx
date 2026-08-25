@@ -9,13 +9,15 @@ import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../componen
 import { Images } from '../../lib/customImages'
 import { fetchRoute, formatETA, type LatLng } from '../../lib/mapUtils'
 import { ArrowLeft, Phone, Bike, PackageCheck, MapPin, ChevronRight, ChevronDown, Maximize2, Minimize2, Mic, ShoppingBag, Copy, Star } from 'lucide-react'
-import { InteractiveStarRating } from '../../components/ui'
+import { InteractiveStarRating, FullScreenLoader } from '../../components/ui'
 import { pg } from '../../design/tokens'
 import { CTA, MobileFrame } from '../../design/primitives'
 import NeedHelpCard from '../../components/NeedHelpCard'
 import AddressPicker, { formatAddress, type SavedAddress } from '../../components/AddressPicker'
 import { openRequestChatRoom } from '../../lib/openRequestChat'
 import { BrandPersonName } from '../../components/Brand'
+import { markRequestCompleted } from '../../lib/orderComplete'
+import { isAdvanceLockedUntilTaskDay } from '../../lib/advanceTaskGate'
 
 type PayPhase = 'idle' | 'awaiting_user_payment' | 'awaiting_dp_accept' | 'payment_accepted' | 'rating' | 'thanks'
 
@@ -89,6 +91,10 @@ export default function LiveTrackingPage() {
     const fetchData = async () => {
       const { data: req } = await supabase.from('requests').select('*').eq('id', requestId).maybeSingle()
       if (!req) { setLoading(false); return }
+      if (isAdvanceLockedUntilTaskDay(req as DeliveryRequest)) {
+        navigate('/app', { replace: true })
+        return
+      }
       setRequest(req as DeliveryRequest)
       if (req.payment_accepted_at) {
         setPayPhase('rating')
@@ -388,33 +394,34 @@ export default function LiveTrackingPage() {
 
     if (!rpcErr && rpcData && (rpcData as any).ok !== false) {
       const completedAt = (rpcData as any).payment_completed_at || now
-      const nextStatus = (rpcData as any).status || 'cash_received'
+      const nextStatus = (rpcData as any).status || request?.status || 'completed'
       setRequest(prev => (prev ? {
         ...prev,
         payment_completed_at: completedAt,
-        status: nextStatus,
+        status: nextStatus === 'completed' ? 'completed' : (prev.status === 'completed' ? 'completed' : nextStatus),
       } : prev))
     } else {
-      // Fallback 1: direct column update
+      // Fallback 1: timestamps only — do not demote completed → cash_received
       let { error } = await supabase.from('requests').update({
         payment_completed_at: now,
-        status: 'cash_received',
       }).eq('id', requestId)
 
       if (error) {
-        // Fallback 2: status-only (column may be missing on older DBs)
         const fb = await supabase.from('requests').update({
-          status: 'cash_received',
+          payment_completed_at: now,
+          status: request?.status === 'completed' ? 'completed' : 'cash_received',
         }).eq('id', requestId)
         if (fb.error) {
           console.error('[LiveTracking] payment confirm failed:', rpcErr || error, fb.error)
           alert('Could not confirm payment. Please try again.')
           return
         }
-        setRequest(prev => (prev ? { ...prev, status: 'cash_received', payment_completed_at: now } : prev))
-      } else {
-        setRequest(prev => (prev ? { ...prev, payment_completed_at: now, status: 'cash_received' } : prev))
       }
+      setRequest(prev => (prev ? {
+        ...prev,
+        payment_completed_at: now,
+        status: prev.status === 'completed' ? 'completed' : prev.status,
+      } : prev))
     }
 
     if (request?.accepted_dp_id) {
@@ -454,6 +461,8 @@ export default function LiveTrackingPage() {
         })
         kickPushDelivery()
       }
+      await markRequestCompleted(requestId!)
+      setRequest(prev => (prev ? { ...prev, status: 'completed' } : prev))
     } catch { /* ignore */ }
     finally {
       setRatingSubmitting(false)
@@ -462,18 +471,12 @@ export default function LiveTrackingPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#000000]">
-        <div className="text-black/40">Loading tracking...</div>
-      </div>
-    )
-  }
+  if (loading) return <FullScreenLoader />
 
   if (!request) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#000000]">
-        <p className="text-black/50">Order not found</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4" style={{ background: pg.bg }}>
+        <p style={{ color: pg.text3 }}>Order not found</p>
         <button type="button" onClick={() => navigate('/app')} className="btn-primary">Back Home</button>
       </div>
     )
@@ -489,7 +492,7 @@ export default function LiveTrackingPage() {
     return (
       <MobileFrame overlay className="items-center justify-center overflow-hidden px-6">
         <img src={Images.thankYouRating} alt="Thank you for rating" className="mb-4 w-full max-w-sm object-contain" draggable={false} style={{ background: 'transparent' }} />
-        <p className="text-sm text-black/50">Returning home...</p>
+        <p className="text-sm" style={{ color: pg.text3 }}>Returning home...</p>
       </MobileFrame>
     )
   }
@@ -499,7 +502,7 @@ export default function LiveTrackingPage() {
       <MobileFrame overlay className="items-center justify-center overflow-hidden px-6">
         <img src={Images.paymentReceived} alt="Payment accepted" className="mb-4 w-full max-w-sm object-contain rounded-3xl" draggable={false} style={{ background: 'transparent' }} />
         <p className="text-base font-extrabold text-[#F5F7F6]">Payment accepted</p>
-        <p className="mt-1 text-sm text-black/50">Opening rating…</p>
+        <p className="mt-1 text-sm" style={{ color: pg.text3 }}>Opening rating…</p>
       </MobileFrame>
     )
   }
@@ -515,7 +518,7 @@ export default function LiveTrackingPage() {
           </button>
         </div>
         <div className="space-y-3 px-4">
-          <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+          <div className="rounded-2xl p-4" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
             <div className="flex items-start gap-3">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: pg.limeDim }}>
                 <PackageCheck size={28} style={{ color: pg.lime }} />
@@ -529,7 +532,7 @@ export default function LiveTrackingPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+          <div className="rounded-2xl p-4" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Star size={18} style={{ color: '#FBBF24' }} fill="#FBBF24" />
@@ -552,7 +555,7 @@ export default function LiveTrackingPage() {
           </div>
 
           {dpProfile && (
-            <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+            <div className="rounded-2xl p-4" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
               <div className="mb-3 flex items-center gap-3">
                 <div className="h-12 w-12 overflow-hidden rounded-full" style={{ background: pg.surface2 }}>
                   {dpProfile.photo_url ? (
@@ -566,7 +569,7 @@ export default function LiveTrackingPage() {
                 </p>
                 <button type="button" onClick={() => { window.location.href = `tel:${dpProfile.phone || ''}` }}
                   className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: pg.lime }}>
-                  <Phone size={16} color="#fff" />
+                  <Phone size={16} style={{ color: pg.limeText }} />
                 </button>
               </div>
               <p className="mb-2 text-xs font-bold" style={{ color: pg.text3 }}>Rate your delivery experience</p>
@@ -628,19 +631,19 @@ export default function LiveTrackingPage() {
             />
             <button type="button" onClick={() => setMapExpanded(v => !v)}
               className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-xl"
-              style={{ background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.15)' }}
+              style={{ background: pg.header, border: `1px solid ${pg.headerBorder}` }}
               aria-label={mapExpanded ? 'Collapse map' : 'Expand map'}>
-              {mapExpanded ? <Minimize2 size={16} color="#fff" /> : <Maximize2 size={16} color="#fff" />}
+              {mapExpanded ? <Minimize2 size={16} color={pg.text} /> : <Maximize2 size={16} color={pg.text} />}
             </button>
             <button type="button" onClick={() => void shareLocation()}
               className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-extrabold"
-              style={{ background: 'rgba(0,0,0,0.85)', color: '#F5F7F6', border: '1px solid rgba(255,255,255,0.2)' }}>
+              style={{ background: pg.header, color: pg.text, border: `1px solid ${pg.headerBorder}` }}>
               Share current location
             </button>
             {liveEtaLabel && (
               <div
                 className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-4 py-1.5 text-xs font-extrabold"
-                style={{ background: 'rgba(0,0,0,0.9)', color: '#F5F7F6', border: '1px solid rgba(255,255,255,0.15)' }}
+                style={{ background: pg.header, color: pg.text, border: `1px solid ${pg.headerBorder}` }}
               >
                 ETA {liveEtaLabel}
               </div>
@@ -661,7 +664,7 @@ export default function LiveTrackingPage() {
         <div className="space-y-3 px-3 pt-3">
           {/* DP card — no green status bubble */}
           {dpProfile && !isCancelled && !isPending && (
-            <div className="overflow-hidden rounded-2xl" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+            <div className="overflow-hidden rounded-2xl" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
               <div className="flex items-center gap-3 p-3.5">
                 <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full" style={{ background: pg.surface2 }}>
                   {dpProfile.photo_url ? (
@@ -686,7 +689,7 @@ export default function LiveTrackingPage() {
                   <button type="button" onClick={() => { window.location.href = `tel:${dpProfile.phone || ''}` }}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
                     style={{ background: pg.lime }}>
-                    <Phone size={18} color="#fff" />
+                    <Phone size={18} style={{ color: pg.limeText }} />
                   </button>
                 )}
               </div>
@@ -695,7 +698,7 @@ export default function LiveTrackingPage() {
 
           {/* Delivery instructions */}
           {!isCompleted && !isCancelled && (
-            <div className="rounded-2xl" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+            <div className="rounded-2xl" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
               <button type="button" onClick={() => {
                 setInstructionsOpen(v => !v)
                 if (!deliveryNotes && request.special_instructions) setDeliveryNotes(request.special_instructions)
@@ -723,7 +726,7 @@ export default function LiveTrackingPage() {
           )}
 
           {/* Delivery details */}
-          <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+          <div className="rounded-2xl p-4" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
             <div className="mb-3 flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <Bike size={16} style={{ color: pg.text2 }} />
@@ -782,7 +785,7 @@ export default function LiveTrackingPage() {
           </div>
 
           {/* Order summary */}
-          <div className="rounded-2xl p-4" style={{ background: '#141414', border: `1px solid ${pg.line}` }}>
+          <div className="rounded-2xl p-4" style={{ background: pg.surface, border: `1px solid ${pg.line}` }}>
             <div className="mb-3 flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <ShoppingBag size={16} style={{ color: pg.text2 }} />
@@ -841,7 +844,7 @@ export default function LiveTrackingPage() {
       </div>
 
       {changingAddress && (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[220] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: pg.scrim }}>
           <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto rounded-[24px]" style={{ background: pg.surface, border: `1px solid ${pg.lineStrong}` }}>
             <div className="flex items-center justify-between px-4 pt-4">
               <p className="text-sm font-extrabold">Update delivery address</p>
@@ -858,12 +861,12 @@ export default function LiveTrackingPage() {
       )}
 
       {isDelivered && payPhase === 'idle' && request.status !== 'completed' && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: pg.scrim }}>
           <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
             <PackageCheck size={40} className="mx-auto mb-3 text-green-400" />
             <p className="text-lg font-extrabold text-[#F5F7F6]">Order delivered</p>
             <p className="mt-1 mb-5 text-sm" style={{ color: pg.text3 }}>Please accept delivery to continue</p>
-            <CTA type="button" onClick={confirmDelivery} className="w-full" style={{ background: pg.success, color: '#fff', boxShadow: 'none' }}>
+            <CTA type="button" onClick={confirmDelivery} className="w-full">
               Accept Delivery
             </CTA>
           </div>
@@ -871,7 +874,7 @@ export default function LiveTrackingPage() {
       )}
 
       {(payPhase === 'awaiting_user_payment' || (request.status === 'completed' && payPhase === 'idle')) && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: pg.scrim }}>
           <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
             <p className="text-lg font-extrabold text-[#F5F7F6]">Payment completed?</p>
             <p className="mt-1 mb-5 text-sm" style={{ color: pg.text3 }}>Confirm you have paid your delivery partner</p>
@@ -883,7 +886,7 @@ export default function LiveTrackingPage() {
       )}
 
       {payPhase === 'awaiting_dp_accept' && (
-        <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[210] flex items-center justify-center p-4 backdrop-blur-sm" style={{ background: pg.scrim }}>
           <div className="w-full max-w-sm rounded-[28px] p-6 text-center" style={{ background: pg.headerElevated, border: `1px solid ${pg.headerBorder}` }}>
             <p className="font-extrabold text-[#F5F7F6]">Waiting for partner…</p>
             <p className="mt-2 text-sm" style={{ color: pg.text3 }}>Partner will Accept Payment next — then you can rate</p>

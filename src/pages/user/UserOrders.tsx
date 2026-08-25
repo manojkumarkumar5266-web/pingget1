@@ -10,7 +10,8 @@ import RescheduleModal from '../../components/RescheduleModal'
 import { Clock, MapPin, MessageCircle, Bike, CheckCircle2, Package, ShoppingBag, Truck, ChevronRight, CalendarClock, CalendarPlus, CreditCard } from 'lucide-react'
 import { Screen, PageTitle, Surface, Chip, CTA, EmptyBlock } from '../../design/primitives'
 import { pg } from '../../design/tokens'
-import { canStartAdvanceTask, advanceTaskUnlockLabel } from '../../lib/advanceTaskGate'
+import { canStartAdvanceTask, advanceTaskUnlockLabel, isAdvanceLockedUntilTaskDay } from '../../lib/advanceTaskGate'
+import { isOrderFinished } from '../../lib/orderComplete'
 
 type Tab = 'active' | 'reserved' | 'completed' | 'cancelled'
 type RequestWithDp = DeliveryRequest & { _dp?: Profile }
@@ -110,16 +111,18 @@ export default function UserOrders() {
     } else if (tab === 'reserved') {
       query = query.in('status', ADVANCE_RESERVED)
     } else if (tab === 'completed') {
-      query = query.eq('status', 'completed')
+      query = query.or('status.eq.completed,status.eq.task_completed,payment_accepted_at.not.is.null')
     } else {
       query = query.in('status', ['cancelled', 'expired'])
     }
     const { data } = await query.order('created_at', { ascending: false })
     let requests = (data as DeliveryRequest[]) || []
     if (tab === 'active') {
-      requests = requests.filter(r => (r as any).order_type !== 'advance' || ADVANCE_LIVE.includes(r.status))
+      requests = requests.filter(r => !isOrderFinished(r) && ((r as any).order_type !== 'advance' || ADVANCE_LIVE.includes(r.status)))
     } else if (tab === 'reserved') {
-      requests = requests.filter(r => (r as any).order_type === 'advance')
+      requests = requests.filter(r => (r as any).order_type === 'advance' && !isOrderFinished(r))
+    } else if (tab === 'completed') {
+      requests = requests.filter(r => isOrderFinished(r) && r.status !== 'cancelled' && r.status !== 'expired')
     }
     const dpIds = [...new Set(requests.map(r => r.accepted_dp_id).filter(Boolean))] as string[]
     let dpMap = new Map<string, Profile>()
@@ -167,6 +170,7 @@ export default function UserOrders() {
   }
 
   const openChat = async (req: RequestWithDp) => {
+    if (isAdvanceLockedUntilTaskDay(req)) return
     const { data } = await supabase.from('chat_rooms').select('id').eq('request_id', req.id).maybeSingle()
     if (data) navigate(`/app/chat/${data.id}`)
   }
@@ -277,7 +281,7 @@ export default function UserOrders() {
                 {req.status === 'dp_reserved' && (
                   <div className="my-2 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: pg.limeDim, border: '1px solid rgba(196,214,0,0.25)' }}>
                     <CheckCircle2 size={14} style={{ color: pg.lime }} />
-                    <p className="text-xs font-bold" style={{ color: pg.lime }}>Delivery partner reserved! Waiting for payment confirmation.</p>
+                    <p className="text-xs font-bold" style={{ color: pg.lime }}>Delivery partner reserved. Discuss the task and quotation in chat.</p>
                   </div>
                 )}
                 {req.status === 'waiting_payment' && (
@@ -356,7 +360,7 @@ export default function UserOrders() {
               )}
               {(tab === 'active' || tab === 'reserved') && (
                 <div className="flex flex-wrap gap-2 border-t px-4 py-3" style={{ borderColor: pg.line }} onClick={e => e.stopPropagation()}>
-                  {req.accepted_dp_id && (
+                  {req.accepted_dp_id && !isAdvanceLockedUntilTaskDay(req) && (
                     <CTA
                       variant="secondary"
                       className="min-h-0 rounded-xl px-3 py-2 text-xs"

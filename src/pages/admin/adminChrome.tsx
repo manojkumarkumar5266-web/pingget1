@@ -22,10 +22,10 @@ export function AdminHeader({
   return (
     <div className="mb-6 flex items-end justify-between gap-3 animate-fade-in-up">
       <div className="min-w-0">
-        <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.lime }}>
+        <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.18em]" style={{ color: pg.gold }}>
           {eyebrow}
         </p>
-        <h1 className="truncate text-[28px] font-extrabold tracking-tight text-[#F5F7F6]">{title}</h1>
+        <h1 className="truncate text-[28px] font-extrabold tracking-tight text-white">{title}</h1>
       </div>
       {action}
     </div>
@@ -51,8 +51,8 @@ export function FilterPills<T extends string>({
           className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold capitalize transition-all active:scale-95"
           style={
             value === f
-              ? { background: pg.lime, color: pg.limeText }
-              : { background: pg.surface2, color: pg.text3, border: `1px solid ${pg.line}` }
+              ? { background: pg.gold, color: pg.limeText }
+              : { background: pg.surface2, color: '#FFFFFF', border: `1px solid ${pg.lineStrong}` }
           }
         >
           {f}
@@ -73,7 +73,7 @@ export function AdminSearch({
 }) {
   return (
     <div className="relative">
-      <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: pg.text4 }} />
+      <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: pg.gold }} />
       <input
         type="text"
         value={value}
@@ -137,7 +137,7 @@ export function ActionBtn({
   disabled?: boolean
 }) {
   const map = {
-    lime: { bg: pg.limeDim, border: 'rgba(196,214,0,0.28)', color: pg.lime },
+    lime: { bg: pg.gold, border: pg.gold, color: pg.limeText },
     success: { bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.25)', color: '#86EFAC' },
     warn: { bg: 'rgba(245,165,36,0.12)', border: 'rgba(245,165,36,0.25)', color: '#FCD34D' },
     danger: { bg: 'rgba(255,77,79,0.12)', border: 'rgba(255,77,79,0.25)', color: '#FCA5A5' },

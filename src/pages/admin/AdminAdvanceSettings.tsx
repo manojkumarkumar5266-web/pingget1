@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, type AdvanceSettings } from '../../lib/supabase'
 import { Settings, Save, Check, AlertCircle } from 'lucide-react'
 import { AdminShell, AdminHeader } from './adminChrome'
+import { pg } from '../../design/tokens'
 
 const DEFAULT_SETTINGS: Omit<AdvanceSettings, 'id' | 'created_at' | 'updated_at'> = {
   enabled: true,
@@ -45,7 +46,7 @@ const DEFAULT_SETTINGS: Omit<AdvanceSettings, 'id' | 'created_at' | 'updated_at'
   search_radius_increment_meters: 2000,
   max_search_radius_meters: 20000,
   // V3 fields
-  confirmation_fee: 0,
+  confirmation_fee: 20,
   reservation_search_radius_meters: 10000,
   payment_deadline_minutes: 120,
   dp_cancel_research: true,
@@ -118,13 +119,15 @@ export default function AdminAdvanceSettings() {
     <AdminShell>
       <AdminHeader title="Advance Request Settings" />
 
-      <div className="card p-4 mb-4" style={{ border: '1px solid rgba(196,214,0,0.25)' }}>
-        <p className="mb-2 font-semibold text-[#F5F7F6]">How advance booking works</p>
-        <ul className="space-y-1.5 text-sm" style={{ color: 'rgba(255,255,255,0.55)' }}>
-          <li>• Customer picks date/time within <strong className="text-[#F5F7F6]">Max Advance Days</strong> and business hours.</li>
-          <li>• Nearby DPs get the request; on accept, customer pays the <strong className="text-[#F5F7F6]">Confirmation Fee</strong> (advance) before the booking is confirmed.</li>
-          <li>• Until the scheduled date &amp; time, <strong className="text-[#F5F7F6]">Start Task</strong> stays greyed out on DP and user sides.</li>
-          <li>• <strong className="text-[#F5F7F6]">Recurring booking</strong> (below) lives inside advance: daily / weekly / monthly / every-N-days for a chosen length (e.g. 15 days). The accepting DP is notified for each next occurrence; series payment is discussed &amp; paid on first acceptance.</li>
+      <div className="card mb-4 overflow-hidden p-0" style={{ border: `1.5px solid ${pg.gold}` }}>
+        <div className="px-4 py-2.5" style={{ background: pg.gold }}>
+          <p className="font-extrabold" style={{ color: pg.limeText }}>How advance booking works</p>
+        </div>
+        <ul className="space-y-1.5 p-4 text-sm text-white">
+          <li>• Customer picks date/time within <strong style={{ color: pg.gold }}>Max Advance Days</strong> and business hours.</li>
+          <li>• Nearby DPs get the request; on accept, customer pays the <strong style={{ color: pg.gold }}>Confirmation Fee</strong> (advance) before the booking is confirmed.</li>
+          <li>• Until the scheduled date &amp; time, <strong style={{ color: pg.gold }}>Start Task</strong> stays greyed out on DP and user sides.</li>
+          <li>• <strong style={{ color: pg.gold }}>Recurring booking</strong> (below) lives inside advance: daily / weekly / monthly / every-N-days for a chosen length (e.g. 15 days). The accepting DP is notified for each next occurrence; series payment is discussed &amp; paid on first acceptance.</li>
           <li>• Reminders below fire to both user and reserved DP before task time.</li>
         </ul>
       </div>
@@ -141,7 +144,7 @@ export default function AdminAdvanceSettings() {
         <div className="flex items-center justify-between">
           <div>
             <p className="font-semibold text-[#F5F7F6]">Enable Advance Requests</p>
-            <p className="text-sm text-black/40">Allow customers to schedule tasks in advance</p>
+            <p className="text-sm text-white/85">Allow customers to schedule tasks in advance</p>
           </div>
           <Toggle value={s.enabled} onChange={v => update('enabled', v)} />
         </div>
@@ -152,7 +155,7 @@ export default function AdminAdvanceSettings() {
         <div className="flex items-center justify-between">
           <div>
             <p className="font-semibold text-[#F5F7F6]">Enable Recurring Bookings</p>
-            <p className="text-sm text-black/40">
+            <p className="text-sm text-white/85">
               Inside advance booking, customers can repeat a task daily (N days), weekly, monthly, or every N days.
               Accepting DP gets a notification for each next occurrence until the selected length ends.
             </p>
@@ -171,7 +174,7 @@ export default function AdminAdvanceSettings() {
               <Pill key={opt} active={s.max_advance_days === opt} onClick={() => update('max_advance_days', opt)}>{opt} {opt === 1 ? 'day' : 'days'}</Pill>
             ))}
           </div>
-          <p className="mt-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>How many days ahead a customer can schedule (includes today)</p>
+          <p className="mt-1.5 text-xs text-white/80">How many days ahead a customer can schedule (includes today)</p>
         </div>
         <div>
           <label className="label">Minimum Advance Buffer Time</label>
@@ -180,7 +183,7 @@ export default function AdminAdvanceSettings() {
               <Pill key={opt} active={s.min_advance_buffer_minutes === opt} onClick={() => update('min_advance_buffer_minutes', opt)}>{opt} min</Pill>
             ))}
           </div>
-          <p className="mt-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Minimum time from now before a today-slot becomes available</p>
+          <p className="mt-1.5 text-xs text-white/80">Minimum time from now before a today-slot becomes available</p>
         </div>
         <div>
           <label className="label">Notification Lead Time</label>
@@ -189,7 +192,7 @@ export default function AdminAdvanceSettings() {
               <Pill key={opt} active={s.notification_lead_minutes === opt} onClick={() => update('notification_lead_minutes', opt)}>{opt} min</Pill>
             ))}
           </div>
-          <p className="mt-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>How early to flip a confirmed booking into active DP search before the slot</p>
+          <p className="mt-1.5 text-xs text-white/80">How early to flip a confirmed booking into active DP search before the slot</p>
         </div>
         <div>
           <label className="label">Slot Duration</label>
@@ -269,7 +272,7 @@ export default function AdminAdvanceSettings() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold text-[#F5F7F6]">Admin Override Cancellation</p>
-            <p className="text-sm text-black/40">Allow admins to cancel any request without fees</p>
+            <p className="text-sm text-white/85">Allow admins to cancel any request without fees</p>
           </div>
           <Toggle value={s.admin_override_cancellation} onChange={v => update('admin_override_cancellation', v)} />
         </div>
@@ -303,13 +306,13 @@ export default function AdminAdvanceSettings() {
       {/* V3 Reservation Settings */}
       <SectionTitle title="Reservation & Payment (V3)" />
       <div className="card p-4 mb-4 space-y-4">
-        <NumberField label="Confirmation Fee (advance payment)" value={s.confirmation_fee} onChange={v => update('confirmation_fee', v)} min={0} />
+        <NumberField label="Advance booking charge (₹)" value={s.confirmation_fee} onChange={v => update('confirmation_fee', v)} min={0} />
         <NumberField label="Reservation Search Radius (meters)" value={s.reservation_search_radius_meters} onChange={v => update('reservation_search_radius_meters', v)} min={1000} />
         <NumberField label="Payment Deadline (minutes)" value={s.payment_deadline_minutes} onChange={v => update('payment_deadline_minutes', v)} min={5} />
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold text-[#F5F7F6]">Auto Re-search on DP Cancel</p>
-            <p className="text-sm text-black/40">Automatically search for a new DP if the reserved DP cancels</p>
+            <p className="text-sm text-white/85">Automatically search for a new DP if the reserved DP cancels</p>
           </div>
           <Toggle value={s.dp_cancel_research} onChange={v => update('dp_cancel_research', v)} />
         </div>
@@ -321,7 +324,7 @@ export default function AdminAdvanceSettings() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold text-[#F5F7F6]">Expand Search Radius</p>
-            <p className="text-sm text-black/40">Gradually expand search if no DP accepts</p>
+            <p className="text-sm text-white/85">Gradually expand search if no DP accepts</p>
           </div>
           <Toggle value={s.expand_search_radius} onChange={v => update('expand_search_radius', v)} />
         </div>
@@ -337,7 +340,7 @@ export default function AdminAdvanceSettings() {
       <div className="sticky bottom-0 z-10 pb-4">
         <button onClick={handleSave} disabled={saving}
           className="w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-base font-bold transition-all active:scale-[0.97] disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg, #C4D600, #C4D600)', color: '#0B0B0B', boxShadow: '0 8px 24px rgba(196,214,0,0.35)' }}>
+          style={{ background: pg.gold, color: pg.limeText, boxShadow: '0 8px 24px rgba(196,163,90,0.35)' }}>
           {saving ? (
             <span className="flex items-center gap-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-[#0B0B0B]/30" style={{ borderTopColor: '#0B0B0B' }} />Saving...</span>
           ) : saved ? (
@@ -352,7 +355,11 @@ export default function AdminAdvanceSettings() {
 }
 
 function SectionTitle({ title }: { title: string }) {
-  return <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>{title}</p>
+  return (
+    <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.16em]" style={{ color: pg.gold }}>
+      {title}
+    </p>
+  )
 }
 
 function NumberField({ label, value, onChange, min = 0, max }: { label: string; value: number; onChange: (v: number) => void; min?: number; max?: number }) {
@@ -368,8 +375,8 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
   return (
     <button onClick={() => onChange(!value)}
       className="relative h-7 w-12 rounded-full transition-all"
-      style={{ background: value ? '#0C8A3E' : 'rgba(255,255,255,0.15)' }}>
-      <div className="absolute top-1 h-5 w-5 rounded-full bg-black transition-all" style={{ left: value ? 24 : 4 }} />
+      style={{ background: value ? pg.gold : 'rgba(11, 74, 42, 0.9)', border: `1.5px solid ${pg.gold}` }}>
+      <div className="absolute top-1 h-5 w-5 rounded-full transition-all" style={{ left: value ? 24 : 4, background: value ? pg.limeText : '#FFFFFF' }} />
     </button>
   )
 }
@@ -378,7 +385,9 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
   return (
     <button onClick={onClick}
       className="rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-95"
-      style={active ? { background: '#0C8A3E', color: '#0B0B0B' } : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }}>
+      style={active
+        ? { background: pg.gold, color: pg.limeText }
+        : { background: pg.bg, color: '#FFFFFF', border: `1px solid ${pg.lineStrong}` }}>
       {children}
     </button>
   )

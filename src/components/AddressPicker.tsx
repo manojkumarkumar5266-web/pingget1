@@ -349,7 +349,8 @@ export default function AddressPicker({
   const popup = inline && (showList || showForm)
     ? createPortal(
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 backdrop-blur-sm"
+          style={{ background: pg.scrim }}
           onClick={() => { setShowList(false); setShowForm(false); resetForm() }}
         >
           <div className="w-full max-w-lg max-h-[85dvh] overflow-y-auto rounded-[24px]" onClick={e => e.stopPropagation()}>

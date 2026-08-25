@@ -250,7 +250,7 @@ function UserActionDrawer({
                 {[1,2].map(i => <div key={i} className="h-10 animate-pulse rounded-xl glass" />)}
               </div>
             ) : orders.length === 0 ? (
-              <p className="text-sm text-black/40 italic">No requests yet.</p>
+              <p className="text-sm text-[#C4A35A] italic">No requests yet.</p>
             ) : (
               <div className="space-y-1.5">
                 {orders.map(o => (
@@ -258,7 +258,7 @@ function UserActionDrawer({
                     <p className="text-sm font-medium text-[#F5F7F6] truncate max-w-[60%]">{(o as any).description?.split('\n')[0]?.trim() || 'Request'}</p>
                     <div className="flex items-center gap-2 shrink-0">
                       <StatusPill status={o.status} />
-                      <span className="text-[10px] text-black/40">{formatTime(o.created_at)}</span>
+                      <span className="text-[10px] text-[#C4A35A]">{formatTime(o.created_at)}</span>
                     </div>
                   </div>
                 ))}
@@ -301,7 +301,7 @@ function UserActionDrawer({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-2">
-      <span className="text-sm text-black/50 shrink-0">{label}</span>
+      <span className="text-sm text-white/85 shrink-0">{label}</span>
       <span className="text-sm font-medium text-[#F5F7F6] text-right">{value}</span>
     </div>
   )

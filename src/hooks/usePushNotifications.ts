@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { pushNotificationService, PushNotificationPayload, resolveNotificationRoute } from '@/services/pushNotificationService'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context'
+import { DP_NEARBY_REFRESH_EVENT } from './useDpIncomingAlerts'
 
 export interface UsePushNotificationsResult {
   unreadCount: number
@@ -87,6 +88,16 @@ export function usePushNotifications(): UsePushNotificationsResult {
 
       // Quotation confirmed → tracking
       if (type === 'order_confirmed' && entityId) {
+        const { data: req } = await supabase.from('requests').select('order_type, status, is_scheduled').eq('id', entityId).maybeSingle()
+        if (req && (req.order_type === 'advance' || req.is_scheduled)) {
+          const { data: room } = await supabase.from('chat_rooms').select('id').eq('request_id', entityId).maybeSingle()
+          if (room?.id && !['booking_confirmed', 'payment_verified'].includes(req.status || '')) {
+            navigate(profile.role === 'dp' ? `/dp/chat/${room.id}` : `/app/chat/${room.id}`)
+            return
+          }
+          navigate(profile.role === 'dp' ? '/dp/orders' : '/app/orders')
+          return
+        }
         navigate(profile.role === 'dp' ? `/dp/navigate/${entityId}` : `/app/track/${entityId}`)
         return
       }
@@ -112,8 +123,9 @@ export function usePushNotifications(): UsePushNotificationsResult {
     if (!profile) return
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail as PushNotificationPayload
-      // The layout components already show toasts for request_accepted;
-      // this dispatches a generic event for other notification types
+      if (profile.role === 'dp' && (detail.notificationType === 'new_nearby_request' || detail.notificationType === 'NEW_NEARBY_REQUEST')) {
+        window.dispatchEvent(new CustomEvent(DP_NEARBY_REFRESH_EVENT))
+      }
       window.dispatchEvent(new CustomEvent('in-app-notification', { detail }))
     }
     foregroundHandlerRef.current = handler

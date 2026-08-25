@@ -8,17 +8,17 @@ import { formatCurrency } from '../../lib/utils'
 import { useGps } from '../../hooks/useGps'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
 import { BrandWordmark } from '../../components/Brand'
-import { unlockRequestAlertSound } from '../../lib/requestAlertSound'
+import { unlockRequestAlertSound, playRequestAlert } from '../../lib/requestAlertSound'
+import { useDpIncomingAlerts } from '../../hooks/useDpIncomingAlerts'
 import { Dock, DockItem, CTA } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { fetchDpCommissionBreakdown } from '../../lib/commission'
 import { adminAlertOrFilter, isIncomingRequestAlert } from '../../lib/adminAlerts'
-import { playRequestAlert } from '../../lib/requestAlertSound'
 
 /** Completely rebuilt Partner shell */
 export default function DpLayout() {
   const { profile, signOut } = useAuth()
-  useGps(profile?.id, !!profile)
+  const gps = useGps(profile?.id, !!profile)
   usePushNotifications()
   const navigate = useNavigate()
   const location = useLocation()
@@ -43,6 +43,13 @@ export default function DpLayout() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [profile])
+
+  const incomingAlerts = useDpIncomingAlerts(
+    dpLoaded && dp && !['pending', 'rejected', 'suspended', 'deleted'].includes(dp.status) ? dp : null,
+    profile?.id,
+    { lat: gps.lat, lng: gps.lng },
+    { lat: profile?.gps_lat, lng: profile?.gps_lng },
+  )
 
   useEffect(() => {
     const armAudio = () => { void unlockRequestAlertSound() }
@@ -135,7 +142,7 @@ export default function DpLayout() {
                 ? { background: 'rgba(245,165,36,0.16)', color: '#FCD34D', border: '1px solid rgba(245,165,36,0.35)' }
                 : { background: pg.surface2, color: pg.text3, border: `1px solid ${pg.line}` }}
             >
-              <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${dp.is_online ? 'animate-pulse' : 'bg-black/30'}`} style={dp.is_online ? { background: pg.olive } : undefined} />
+              <span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${dp.is_online ? 'animate-pulse' : ''}`} style={{ background: dp.is_online ? pg.olive : 'rgba(196,163,90,0.45)' }} />
               {dp.is_online ? 'Online' : commissionDueNow > 0 ? 'Pay due' : 'Go online'}
             </button>
             <button type="button" onClick={() => signOut()} className="flex h-10 w-10 items-center justify-center rounded-2xl" style={{ background: pg.surface2, color: pg.text3 }}>
@@ -178,6 +185,7 @@ export default function DpLayout() {
           <DockItem label="You" icon={<User size={20} />} active={isActive('/dp/profile')} onClick={() => go('/dp/profile')} />
         </Dock>
       )}
+      {incomingAlerts.popup}
       </div>
     </div>
   )

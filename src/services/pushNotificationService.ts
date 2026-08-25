@@ -107,7 +107,7 @@ export function resolveNotificationRoute(
     case 'admin_offer':
       return id
         ? (role === 'dp' ? `/dp/offers/${id}` : `/app/offers/${id}`)
-        : (role === 'dp' ? `/dp/notifications` : `/app/notifications`)
+        : (role === 'dp' ? `/dp` : `/app`)
     // DP routes
     case NOTIFICATION_TYPES.NEW_NEARBY_REQUEST:
     case NOTIFICATION_TYPES.REQUEST_ASSIGNED:

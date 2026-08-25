@@ -20,6 +20,21 @@ export function getAdvanceTaskStartMs(req: {
   return Number.isFinite(t) ? t : null
 }
 
+export function isAdvanceBooking(req: { order_type?: string | null; is_scheduled?: boolean | null }) {
+  return req.order_type === 'advance' || !!req.is_scheduled
+}
+
+/** Paid advance booking waiting at home — chat and tracking stay closed until DP starts the task. */
+export function isAdvanceLockedUntilTaskDay(req: {
+  order_type?: string | null
+  is_scheduled?: boolean | null
+  status?: string | null
+}): boolean {
+  if (!isAdvanceBooking(req)) return false
+  const s = req.status || ''
+  return s === 'booking_confirmed' || s === 'payment_verified'
+}
+
 /** True when now is on/after the scheduled slot start (task day window opened). */
 export function canStartAdvanceTask(req: {
   scheduled_timestamp?: string | null
@@ -28,7 +43,7 @@ export function canStartAdvanceTask(req: {
   scheduled_time?: string | null
   status?: string
 }): boolean {
-  if (req.status && req.status !== 'booking_confirmed') return false
+  if (req.status && req.status !== 'booking_confirmed' && req.status !== 'payment_verified') return false
   const startMs = getAdvanceTaskStartMs(req)
   if (startMs == null) return false
   return Date.now() >= startMs

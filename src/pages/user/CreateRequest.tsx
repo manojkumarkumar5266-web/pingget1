@@ -9,7 +9,7 @@ import { Screen, TopChrome, Surface, CTA, IconButton } from '../../design/primit
 import { pg } from '../../design/tokens'
 import { uploadMediaFile } from '../../lib/uploadMedia'
 import { userRadiusMeters } from '../../lib/searchRadius'
-import { notifyNearbyDpsForRequest } from '../../lib/notifyNearbyDps'
+import { notifyNearbyOnlineDps } from '../../lib/notify'
 
 const DRAFT_KEY = 'cr_notes_draft'
 
@@ -152,8 +152,9 @@ export default function CreateRequest() {
         status: 'pending',
       }).select('id').single()
       if (err) throw err
-      if (inserted?.id && deliveryLat != null && deliveryLng != null) {
-        void notifyNearbyDpsForRequest({
+      sessionStorage.removeItem(DRAFT_KEY)
+      if (inserted?.id) {
+        void notifyNearbyOnlineDps({
           requestId: inserted.id,
           lat: deliveryLat,
           lng: deliveryLng,
@@ -161,7 +162,6 @@ export default function CreateRequest() {
           body: (description.trim() || 'Instant request').slice(0, 120),
         })
       }
-      sessionStorage.removeItem(DRAFT_KEY)
       navigate(`/app/scanning/${inserted.id}`)
     } catch (e: any) {
       setError(e.message)

@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context'
 import { supabase, type AdvanceSettings } from '../../lib/supabase'
-import { kickPushDelivery } from '../../lib/notify'
-import { ErrorBanner } from '../../components/ui'
+import { kickPushDelivery, notifyNearbyOnlineDps } from '../../lib/notify'
+import { ErrorBanner, FullScreenLoader } from '../../components/ui'
 import PremiumCalendar from '../../components/PremiumCalendar'
 import PremiumTimeSlotSelector from '../../components/PremiumTimeSlotSelector'
 import RecurringSelector, { type RecurringType } from '../../components/RecurringSelector'
@@ -19,7 +19,6 @@ import { TopChrome, IconButton, CTA, Surface, SectionLabel } from '../../design/
 import { pg } from '../../design/tokens'
 import { uploadMediaFile } from '../../lib/uploadMedia'
 import { userRadiusMeters } from '../../lib/searchRadius'
-import { notifyNearbyDpsForRequest } from '../../lib/notifyNearbyDps'
 
 type SavedAddress = {
   id: string
@@ -606,16 +605,6 @@ export default function CreateAdvanceRequest() {
       if (insertError) throw insertError
       if (!inserted?.id) throw new Error('Could not create request. Please try again.')
 
-      const dLat = Number(insertPayload.delivery_lat)
-      const dLng = Number(insertPayload.delivery_lng)
-      void notifyNearbyDpsForRequest({
-        requestId: inserted.id,
-        lat: dLat,
-        lng: dLng,
-        radiusMeters: Number(insertPayload.radius_meters) || userRadiusMeters(),
-        body: (String(insertPayload.description || 'Advance request')).slice(0, 120),
-      })
-
       sessionStorage.removeItem('adv_category_drafts_meta')
       await supabase.from('notifications').insert({
         user_id: profile!.id,
@@ -626,16 +615,21 @@ export default function CreateAdvanceRequest() {
       })
       kickPushDelivery()
 
+      void notifyNearbyOnlineDps({
+        requestId: inserted.id,
+        lat: (insertPayload.delivery_lat ?? insertPayload.pickup_lat ?? loc?.gps_lat ?? null) as number | null,
+        lng: (insertPayload.delivery_lng ?? insertPayload.pickup_lng ?? loc?.gps_lng ?? null) as number | null,
+        radiusMeters: userRadiusMeters(),
+        title: 'New advance booking nearby',
+        body: 'A customer scheduled an advance task near you. Open the app to reserve.',
+      })
+
       navigate(`/app/scanning/${inserted.id}`)
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
   }
 
   if (settingsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen" style={{ background: '#050505' }}>
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-black/10" style={{ borderTopColor: '#0C8A3E' }} />
-      </div>
-    )
+    return <FullScreenLoader />
   }
 
   if (settings && !settings.enabled) {
@@ -714,7 +708,7 @@ export default function CreateAdvanceRequest() {
           <div className="space-y-5">
             {error && <ErrorBanner message={error} />}
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>What do you need done?</p>
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: pg.gold }}>What do you need done?</p>
               <p className="mb-4 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>Choose a category for your scheduled task</p>
               <div className="grid grid-cols-3 gap-2">
                 {REQUEST_CATEGORIES.map(cat => {
@@ -765,16 +759,16 @@ export default function CreateAdvanceRequest() {
 
             {categoryDrafts.length > 0 && (
               <div className="rounded-2xl p-3" style={{ background: 'rgba(196,214,0,0.08)', border: '1px solid rgba(196,214,0,0.2)' }}>
-                <p className="text-xs font-bold" style={{ color: '#0C8A3E' }}>{categoryDrafts.length} categor{categoryDrafts.length === 1 ? 'y' : 'ies'} saved</p>
+                <p className="text-xs font-bold" style={{ color: pg.gold }}>{categoryDrafts.length} categor{categoryDrafts.length === 1 ? 'y' : 'ies'} saved</p>
                 <p className="text-[11px] text-black/50 mt-0.5">
-                  Tap a category to edit · After date &amp; time, choose <span style={{ color: '#0C8A3E' }}>Recurring booking</span> (daily / monthly) · then Review
+                  Tap a category to edit · After date &amp; time, choose <span style={{ color: pg.gold }}>Recurring booking</span> (daily / monthly) · then Review
                 </p>
               </div>
             )}
 
             {/* Category detail half-sheet */}
             {sheetCategory && (
-              <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#000000]/60" onClick={() => setSheetCategory(null)}>
+              <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: pg.scrim }} onClick={() => setSheetCategory(null)}>
                 <div className="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-t-3xl p-5 space-y-4" style={{ background: pg.surface, color: pg.ink, border: `1px solid ${pg.line}` }}
                   onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-between">
@@ -789,16 +783,16 @@ export default function CreateAdvanceRequest() {
 
                   <div className="rounded-2xl p-3 relative" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <div className="mb-2 flex items-center justify-between">
-                      <p className="text-xs font-bold" style={{ color: '#0C8A3E' }}>Notes</p>
+                      <p className="text-xs font-bold" style={{ color: pg.gold }}>Notes</p>
                       <div className="flex gap-2">
                         <input ref={photoInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosSelect} />
-                        <button type="button" onClick={() => photoInputRef.current?.click()} className="rounded-lg px-2 py-1 text-[11px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: '#0C8A3E' }}>
+                        <button type="button" onClick={() => photoInputRef.current?.click()} className="rounded-lg px-2 py-1 text-[11px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: pg.gold }}>
                           <Camera size={12} className="inline mr-1" />Photo
                         </button>
                         {recording ? (
                           <button type="button" onClick={stopRecording} className="rounded-lg px-2 py-1 text-[11px] font-bold text-red-400">Stop</button>
                         ) : (
-                          <button type="button" onClick={startRecording} className="rounded-lg px-2 py-1 text-[11px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: '#0C8A3E' }}>
+                          <button type="button" onClick={startRecording} className="rounded-lg px-2 py-1 text-[11px] font-bold" style={{ background: 'rgba(196,214,0,0.15)', color: pg.gold }}>
                             <Mic size={12} className="inline mr-1" />Voice
                           </button>
                         )}
@@ -815,14 +809,14 @@ export default function CreateAdvanceRequest() {
                       </div>
                     )}
                     {voiceBlob && (
-                      <div className="mb-2 text-xs" style={{ color: '#0C8A3E' }}>Voice note attached · {Math.floor(voiceDuration / 60)}:{String(voiceDuration % 60).padStart(2, '0')}</div>
+                      <div className="mb-2 text-xs" style={{ color: pg.gold }}>Voice note attached · {Math.floor(voiceDuration / 60)}:{String(voiceDuration % 60).padStart(2, '0')}</div>
                     )}
                     <textarea className="input min-h-[100px] resize-none text-sm" value={description} onChange={e => setDescription(e.target.value)}
                       placeholder="Describe this task…" />
                   </div>
 
                   <div>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Select date & time</p>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: pg.gold }}>Select date & time</p>
                     <PremiumCalendar selectedDate={selectedDate} onSelect={setSelectedDate} maxDays={maxDays} />
                     {selectedDate && settings && (
                       <div className="mt-3">
@@ -877,7 +871,7 @@ export default function CreateAdvanceRequest() {
                       setDescription('')
                     }}
                     className="w-full rounded-2xl py-3.5 text-sm font-bold"
-                    style={{ background: '#0C8A3E', color: '#050505' }}
+                    style={{ background: pg.gold, color: pg.limeText }}
                   >
                     Save & choose another
                   </button>
@@ -891,7 +885,7 @@ export default function CreateAdvanceRequest() {
         {step === 2 && (
           <div className="space-y-5 animate-slide-up">
             {error && <ErrorBanner message={error} />}
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Select Date & Time</p>
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: pg.gold }}>Select Date & Time</p>
             <PremiumCalendar selectedDate={selectedDate} onSelect={setSelectedDate} maxDays={maxDays} />
 
             {selectedDate && settings && (
@@ -922,11 +916,11 @@ export default function CreateAdvanceRequest() {
           <div className="space-y-5 animate-slide-up">
             {/* Summary Timeline */}
             <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <p className="mb-4 text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Request Summary</p>
+              <p className="mb-4 text-xs font-bold uppercase tracking-widest" style={{ color: pg.gold }}>Request Summary</p>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
-                    <Tag size={14} style={{ color: '#0C8A3E' }} />
+                    <Tag size={14} style={{ color: pg.gold }} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Category</p>
@@ -935,7 +929,7 @@ export default function CreateAdvanceRequest() {
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
-                    <Calendar size={14} style={{ color: '#0C8A3E' }} />
+                    <Calendar size={14} style={{ color: pg.gold }} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Date</p>
@@ -946,7 +940,7 @@ export default function CreateAdvanceRequest() {
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
-                    <Clock size={14} style={{ color: '#0C8A3E' }} />
+                    <Clock size={14} style={{ color: pg.gold }} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Time Slot</p>
@@ -955,7 +949,7 @@ export default function CreateAdvanceRequest() {
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
-                    <Home size={14} style={{ color: '#0C8A3E' }} />
+                    <Home size={14} style={{ color: pg.gold }} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Delivery Address</p>
@@ -965,7 +959,7 @@ export default function CreateAdvanceRequest() {
                 {shopName && (
                   <div className="flex items-start gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
-                      <Store size={14} style={{ color: '#0C8A3E' }} />
+                      <Store size={14} style={{ color: pg.gold }} />
                     </div>
                     <div className="flex-1">
                       <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Shop</p>
@@ -975,7 +969,7 @@ export default function CreateAdvanceRequest() {
                 )}
                 <div className="flex items-start gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ background: 'rgba(196,214,0,0.12)' }}>
-                    <Clock size={14} style={{ color: '#0C8A3E' }} />
+                    <Clock size={14} style={{ color: pg.gold }} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Estimated Duration</p>
@@ -988,7 +982,7 @@ export default function CreateAdvanceRequest() {
             {/* Recurring — always editable on review (most users skip step 2) */}
             {recurringEnabled ? (
               <div className="space-y-2">
-                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: pg.gold }}>
                   Recurring booking (optional)
                 </p>
                 <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -1005,8 +999,8 @@ export default function CreateAdvanceRequest() {
             {recurringType !== 'none' && (
               <div className="rounded-2xl p-4" style={{ background: 'rgba(12,138,62,0.1)', border: '1px solid rgba(12,138,62,0.25)' }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <Repeat size={14} style={{ color: '#0C8A3E' }} />
-                  <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Selected recurring plan</p>
+                  <Repeat size={14} style={{ color: pg.gold }} />
+                  <p className="text-xs font-bold uppercase tracking-widest" style={{ color: pg.gold }}>Selected recurring plan</p>
                 </div>
                 <p className="text-sm font-semibold text-[#F5F7F6]">
                   {recurringType === 'daily' && `Daily for ${recurringMaxOccurrences} days`}
@@ -1020,7 +1014,7 @@ export default function CreateAdvanceRequest() {
               </div>
             )}
             <div className="rounded-2xl p-4" style={{ background: 'rgba(196,214,0,0.06)', border: '1px solid rgba(196,214,0,0.2)' }}>
-              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: '#0C8A3E' }}>Estimated Charges</p>
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: pg.gold }}>Estimated Charges</p>
               <div className="space-y-2">
                 {Object.entries(charges.breakdown).map(([key, val]) => (
                   val !== 0 && (
@@ -1032,7 +1026,7 @@ export default function CreateAdvanceRequest() {
                 ))}
                 <div className="flex justify-between pt-2 mt-2" style={{ borderTop: '1px solid rgba(196,214,0,0.2)' }}>
                   <span className="text-sm font-bold text-[#F5F7F6]">Estimated Total</span>
-                  <span className="text-lg font-bold" style={{ color: '#0C8A3E' }}>₹{charges.total.toFixed(2)}</span>
+                  <span className="text-lg font-bold" style={{ color: pg.gold }}>₹{charges.total.toFixed(2)}</span>
                 </div>
               </div>
               <p className="mt-3 text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
