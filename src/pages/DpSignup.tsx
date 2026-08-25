@@ -7,6 +7,7 @@ import { uploadDpSignupDocuments } from '../lib/uploadDpSignupDocs'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 import { pg } from '../design/tokens'
+import { passwordResetRedirect } from '../lib/appUrls'
 import { CTA, IconButton, Surface } from '../design/primitives'
 import { ArrowLeft, ArrowRight, Camera, Upload, Mail, MapPin, User, Phone, Truck, FileText, Shield, CircleCheck as CheckCircle, Circle as XCircle, Lock, Eye, EyeOff, KeyRound } from 'lucide-react'
 
@@ -277,9 +278,10 @@ export default function DpSignup() {
       return
     }
 
+    const resetTo = passwordResetRedirect('dp')
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       resetEmail.trim(),
-      { redirectTo: window.location.origin + '/reset-password' }
+      { redirectTo: resetTo }
     )
     if (resetError) {
       // Fallback: try via Resend edge function
@@ -288,7 +290,7 @@ export default function DpSignup() {
           body: {
             to: resetEmail.trim(),
             type: 'password_reset',
-            data: { name: '', reset_url: `${window.location.origin}/reset-password` },
+            data: { name: '', reset_url: resetTo },
           },
         })
       } catch { /* fallback also failed */ }

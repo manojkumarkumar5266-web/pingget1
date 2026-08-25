@@ -10,6 +10,7 @@ import { BrandWordmark } from '../../components/Brand'
 import ServiceAreaNotice from '../../components/ServiceAreaNotice'
 import { Dock, DockItem } from '../../design/primitives'
 import { pg } from '../../design/tokens'
+import { adminAlertOrFilter } from '../../lib/adminAlerts'
 
 type AcceptedToast = { requestId: string; body: string }
 
@@ -45,6 +46,7 @@ export default function UserLayout() {
       const { count } = await supabase.from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', profile.id).eq('is_read', false).is('deleted_at', null)
+        .or(adminAlertOrFilter())
       setUnreadCount(count || 0)
     }
     fetchUnread()

@@ -19,6 +19,7 @@ import { TopChrome, IconButton, CTA, Surface, SectionLabel } from '../../design/
 import { pg } from '../../design/tokens'
 import { uploadMediaFile } from '../../lib/uploadMedia'
 import { userRadiusMeters } from '../../lib/searchRadius'
+import { notifyNearbyDpsForRequest } from '../../lib/notifyNearbyDps'
 
 type SavedAddress = {
   id: string
@@ -604,6 +605,16 @@ export default function CreateAdvanceRequest() {
 
       if (insertError) throw insertError
       if (!inserted?.id) throw new Error('Could not create request. Please try again.')
+
+      const dLat = Number(insertPayload.delivery_lat)
+      const dLng = Number(insertPayload.delivery_lng)
+      void notifyNearbyDpsForRequest({
+        requestId: inserted.id,
+        lat: dLat,
+        lng: dLng,
+        radiusMeters: Number(insertPayload.radius_meters) || userRadiusMeters(),
+        body: (String(insertPayload.description || 'Advance request')).slice(0, 120),
+      })
 
       sessionStorage.removeItem('adv_category_drafts_meta')
       await supabase.from('notifications').insert({

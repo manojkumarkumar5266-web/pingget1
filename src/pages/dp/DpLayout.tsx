@@ -12,6 +12,8 @@ import { unlockRequestAlertSound } from '../../lib/requestAlertSound'
 import { Dock, DockItem, CTA } from '../../design/primitives'
 import { pg } from '../../design/tokens'
 import { fetchDpCommissionBreakdown } from '../../lib/commission'
+import { adminAlertOrFilter, isIncomingRequestAlert } from '../../lib/adminAlerts'
+import { playRequestAlert } from '../../lib/requestAlertSound'
 
 /** Completely rebuilt Partner shell */
 export default function DpLayout() {
@@ -65,10 +67,11 @@ export default function DpLayout() {
       }
     }
     checkCommission()
+    const tick = setInterval(checkCommission, 60_000)
     const channel = supabase.channel(`dp-commission-${profile.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dp_commission_receipts', filter: `dp_user_id=eq.${profile.id}` }, () => checkCommission())
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    return () => { supabase.removeChannel(channel); clearInterval(tick) }
   }, [dpLoaded, profile])
 
   useEffect(() => {
@@ -77,11 +80,16 @@ export default function DpLayout() {
       const { count } = await supabase.from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', profile.id).eq('is_read', false).is('deleted_at', null)
+        .or(adminAlertOrFilter())
       setUnreadCount(count || 0)
     }
     fetchUnread()
     const channel = supabase.channel(`dp-unread-${profile.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, (payload) => {
+        const row = payload.new as { type?: string; notification_type?: string }
+        if (isIncomingRequestAlert(row.notification_type || row.type)) playRequestAlert()
+        fetchUnread()
+      })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
       .subscribe()

@@ -3,10 +3,13 @@ import { FirebaseMessaging } from '@capacitor-firebase/messaging'
 import { LocalNotifications } from '@capacitor/local-notifications'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
 import { supabase } from '@/lib/supabase'
+import { isIncomingRequestAlert } from '@/lib/adminAlerts'
+import { playRequestAlert } from '@/lib/requestAlertSound'
 
 // ── Notification channel IDs ──
 export const NOTIFICATION_CHANNELS = {
   ORDERS: 'orders',
+  INCOMING_REQUESTS: 'incoming_requests',
   CHAT: 'chat',
   PAYMENTS: 'payments',
   ANNOUNCEMENTS: 'announcements',
@@ -179,6 +182,9 @@ class PushNotificationService {
 
       // Request notification permission (Android 13+)
       await this.requestPermission()
+      try {
+        await LocalNotifications.requestPermissions()
+      } catch {}
 
       // Register listeners for token refresh and incoming notifications
       this.subscribeListeners()
@@ -214,6 +220,16 @@ class PushNotificationService {
     if (!Capacitor.isNativePlatform()) return
     if (Capacitor.getPlatform() !== 'android') return
     try {
+      await LocalNotifications.createChannel({
+        id: NOTIFICATION_CHANNELS.INCOMING_REQUESTS,
+        name: 'Incoming requests',
+        description: 'New nearby delivery requests — plays sound even in background',
+        importance: 5, // MAX
+        visibility: 1,
+        vibration: true,
+        sound: 'default',
+        lights: true,
+      })
       await LocalNotifications.createChannel({
         id: NOTIFICATION_CHANNELS.ORDERS,
         name: 'Orders',
@@ -277,7 +293,7 @@ class PushNotificationService {
       NOTIFICATION_TYPES.PAYMENT_FAILURE,
       NOTIFICATION_TYPES.WEEKLY_EARNINGS_SUMMARY,
     ]
-    const announcementTypes = [NOTIFICATION_TYPES.ADMIN_ANNOUNCEMENT]
+    const announcementTypes = [NOTIFICATION_TYPES.ADMIN_ANNOUNCEMENT, 'admin_offer']
     const systemTypes = [
       NOTIFICATION_TYPES.ACCOUNT_APPROVED,
       NOTIFICATION_TYPES.ACCOUNT_REJECTED,
@@ -285,6 +301,7 @@ class PushNotificationService {
       NOTIFICATION_TYPES.SYSTEM_ERROR,
       NOTIFICATION_TYPES.DAILY_SUMMARY,
     ]
+    if (isIncomingRequestAlert(notificationType)) return NOTIFICATION_CHANNELS.INCOMING_REQUESTS
     if (chatTypes.includes(notificationType as any)) return NOTIFICATION_CHANNELS.CHAT
     if (paymentTypes.includes(notificationType as any)) return NOTIFICATION_CHANNELS.PAYMENTS
     if (announcementTypes.includes(notificationType as any)) return NOTIFICATION_CHANNELS.ANNOUNCEMENTS
@@ -406,14 +423,15 @@ class PushNotificationService {
     try {
       const payload = this.extractPayload(notification)
       const channelId = this.getChannelForType(payload.notificationType)
+      const incoming = isIncomingRequestAlert(payload.notificationType)
 
-      // Vibrate
+      if (incoming) playRequestAlert()
+
       try {
-        await Haptics.impact({ style: ImpactStyle.Medium })
+        await Haptics.impact({ style: ImpactStyle.Heavy })
       } catch {}
 
-      // Show local notification
-      const notifId = Date.now()
+      const notifId = Date.now() % 2147483647
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -421,6 +439,7 @@ class PushNotificationService {
             title: payload.title,
             body: payload.body,
             channelId,
+            sound: 'default',
             smallIcon: 'ic_notification',
             largeIcon: payload.image || undefined,
             ongoing: false,

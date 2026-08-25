@@ -15,6 +15,15 @@ export type PushPayload = {
   notificationId?: string | null
 }
 
+function androidChannelId(type?: string | null): string {
+  const t = (type || "").toLowerCase()
+  if (t === "admin_announcement" || t === "admin_offer") return "announcements"
+  if (t === "new_nearby_request" || t === "order_received" || t === "order_placed" || t === "new_request_nearby") {
+    return "incoming_requests"
+  }
+  return "orders"
+}
+
 function dataFields(p: PushPayload): Record<string, string> {
   const d: Record<string, string> = {
     title: p.title,
@@ -51,10 +60,18 @@ async function sendLegacy(token: string, p: PushPayload, serverKey: string) {
         title: p.title,
         body: p.body,
         sound: "default",
+        android_channel_id: androidChannelId(p.notificationType),
         image: p.imageUrl || undefined,
       },
       data: dataFields(p),
-      android: { priority: "high" },
+      android: {
+        priority: "high",
+        notification: {
+          channel_id: androidChannelId(p.notificationType),
+          sound: "default",
+          default_sound: true,
+        },
+      },
     }),
   })
   const text = await res.text()
@@ -148,10 +165,10 @@ async function sendV1(token: string, p: PushPayload, serviceJson: string) {
           android: {
             priority: "HIGH",
             notification: {
-              channel_id: p.notificationType === "admin_announcement" || p.notificationType === "admin_offer"
-                ? "announcements"
-                : "orders",
+              channel_id: androidChannelId(p.notificationType),
               sound: "default",
+              default_sound: true,
+              notification_priority: "PRIORITY_MAX",
               image: p.imageUrl || undefined,
             },
           },
