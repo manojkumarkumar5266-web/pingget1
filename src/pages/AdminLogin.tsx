@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 import { pg } from '../design/tokens'
+import { passwordResetRedirect } from '../lib/appUrls'
 import { CTA } from '../design/primitives'
 import { Mail, Lock, Eye, EyeOff, ShieldCheck, KeyRound, CircleCheck as CheckCircle } from 'lucide-react'
 
@@ -51,7 +52,7 @@ export default function AdminLogin() {
     setLoading(true)
     try {
       await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-        redirectTo: window.location.origin + '/reset-password',
+        redirectTo: passwordResetRedirect('admin'),
       })
     } catch { /* best effort */ }
     setLoading(false)

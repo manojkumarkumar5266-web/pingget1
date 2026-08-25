@@ -216,6 +216,16 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Take DPs offline when yesterday's (and earlier) commission is unpaid
+    let overdueOffline = 0
+    try {
+      const { data: offCount, error: offErr } = await supabase.rpc("offline_overdue_commission_dps")
+      if (offErr) console.error("offline overdue commission:", offErr.message)
+      else overdueOffline = Number(offCount || 0)
+    } catch (offCatch: any) {
+      console.error("offline overdue commission:", offCatch?.message)
+    }
+
     // Process due admin scheduled broadcasts → User/DP Alerts (+ Resend + FCM)
     let broadcastsSent = 0;
     let pushProcessed = 0;
@@ -258,6 +268,7 @@ Deno.serve(async (req: Request) => {
         activated: activated?.length || 0,
         broadcastsSent,
         pushProcessed,
+        overdueOffline,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

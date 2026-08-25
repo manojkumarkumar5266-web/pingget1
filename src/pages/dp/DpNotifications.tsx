@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { SkeletonList } from '../../components/ui'
 import { Screen, PageTitle, Surface, EmptyBlock, IconButton } from '../../design/primitives'
 import { pg } from '../../design/tokens'
+import { adminAlertOrFilter, isAdminAlert } from '../../lib/adminAlerts'
 import { Bike, CheckCircle2, AlertCircle, Info, Package, Trash2, MessageCircle, Shield, IndianRupee } from 'lucide-react'
 
 type Notification = {
@@ -60,8 +61,9 @@ export default function DpNotifications() {
   const fetchNotifs = useCallback(async () => {
     const { data } = await supabase.from('notifications').select('*')
       .eq('user_id', profile!.id).is('deleted_at', null)
+      .or(adminAlertOrFilter())
       .order('created_at', { ascending: false }).limit(100)
-    setNotifs((data as Notification[]) || [])
+    setNotifs(((data as Notification[]) || []).filter(isAdminAlert))
     setLoading(false)
   }, [profile])
 
@@ -71,6 +73,7 @@ export default function DpNotifications() {
     void (async () => {
       await supabase.from('notifications').update({ is_read: true })
         .eq('user_id', profile!.id).eq('is_read', false).is('deleted_at', null)
+        .or(adminAlertOrFilter())
       setNotifs(prev => prev.map(n => ({ ...n, is_read: true })))
     })()
     const channel = supabase.channel('dp-notifs-page')
@@ -90,6 +93,7 @@ export default function DpNotifications() {
   const markAllRead = async () => {
     await supabase.from('notifications').update({ is_read: true })
       .eq('user_id', profile!.id).eq('is_read', false).is('deleted_at', null)
+      .or(adminAlertOrFilter())
     setNotifs(prev => prev.map(n => ({ ...n, is_read: true })))
   }
 
@@ -169,7 +173,7 @@ export default function DpNotifications() {
       ) : filtered.length === 0 ? (
         <EmptyBlock
           title="No alerts"
-          body={filter === 'unread' ? "You're all caught up!" : 'Alerts will appear here.'}
+          body={filter === 'unread' ? "You're all caught up!" : 'Offers and admin announcements appear here.'}
         />
       ) : (
         <div className="space-y-6 pb-4">

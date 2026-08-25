@@ -7,6 +7,7 @@ import { uploadDpSignupDocuments } from '../lib/uploadDpSignupDocs'
 import { ErrorBanner } from '../components/ui'
 import AuthLayout from '../components/AuthLayout'
 import { pg } from '../design/tokens'
+import { passwordResetRedirect } from '../lib/appUrls'
 import { CTA } from '../design/primitives'
 import {
   User, Phone, MapPin, Mail, Lock, Eye, EyeOff,
@@ -454,9 +455,7 @@ export default function AuthScreen({ fixedRole }: AuthScreenProps) {
     if (!resetEmail.trim()) { setError('Please enter your email address'); return }
     setLoading(true)
     try {
-      const resetRedirect = window.location.pathname.startsWith('/dp')
-        ? `${window.location.origin}/dp/reset-password`
-        : `${window.location.origin}/reset-password`
+      const resetRedirect = passwordResetRedirect(role === 'dp' ? 'dp' : 'user')
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), { redirectTo: resetRedirect })
       if (resetError) {
         setError(resetError.message)

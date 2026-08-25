@@ -6,6 +6,7 @@ import { SkeletonList } from '../../components/ui'
 import { BellOff, Bike, CheckCircle2, AlertCircle, Info, Package, Trash2, MessageCircle } from 'lucide-react'
 import { Screen, PageTitle, Surface, Chip, EmptyBlock, IconButton, SectionLabel, CTA } from '../../design/primitives'
 import { pg } from '../../design/tokens'
+import { adminAlertOrFilter, isAdminAlert } from '../../lib/adminAlerts'
 
 type Notification = {
   id: string; title: string; body: string; type: string; is_read: boolean; created_at: string
@@ -62,8 +63,9 @@ export default function UserNotifications() {
   const fetchNotifs = useCallback(async () => {
     const { data } = await supabase.from('notifications').select('*')
       .eq('user_id', profile!.id).is('deleted_at', null)
+      .or(adminAlertOrFilter())
       .order('created_at', { ascending: false }).limit(100)
-    setNotifs((data as Notification[]) || [])
+    setNotifs(((data as Notification[]) || []).filter(isAdminAlert))
     setLoading(false)
   }, [profile])
 
@@ -73,6 +75,7 @@ export default function UserNotifications() {
     void (async () => {
       await supabase.from('notifications').update({ is_read: true })
         .eq('user_id', profile!.id).eq('is_read', false).is('deleted_at', null)
+        .or(adminAlertOrFilter())
       setNotifs(prev => prev.map(n => ({ ...n, is_read: true })))
     })()
     const channel = supabase.channel('user-notifs-page')
@@ -92,6 +95,7 @@ export default function UserNotifications() {
   const markAllRead = async () => {
     await supabase.from('notifications').update({ is_read: true })
       .eq('user_id', profile!.id).eq('is_read', false).is('deleted_at', null)
+      .or(adminAlertOrFilter())
     setNotifs(prev => prev.map(n => ({ ...n, is_read: true })))
   }
 
@@ -150,7 +154,7 @@ export default function UserNotifications() {
     <Screen className="mx-auto max-w-lg animate-fade-in-up">
       <PageTitle
         eyebrow="Updates"
-        title="Notifications"
+        title="Alerts"
         action={
           unreadCount > 0 ? (
             <CTA variant="secondary" className="min-h-0 rounded-xl px-3 py-2 text-xs" onClick={markAllRead}>
@@ -189,7 +193,7 @@ export default function UserNotifications() {
       ) : filtered.length === 0 ? (
         <EmptyBlock
           title="No notifications"
-          body={filter === 'unread' ? "You're all caught up!" : 'Notifications will appear here.'}
+          body={filter === 'unread' ? "You're all caught up!" : 'Offers and admin announcements appear here.'}
         />
       ) : (
         <div className="space-y-6 pb-4">

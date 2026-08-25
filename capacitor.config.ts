@@ -22,10 +22,12 @@ const config: CapacitorConfig = {
       resize: 'body',
       resizeOnFullScreen: true,
     },
-    SplashScreen: {
-      launchShowDuration: 2000,
-      backgroundColor: '#0B0B0B',
-      showSpinner: false,
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_notification',
+      sound: 'default',
     },
   },
   android: {

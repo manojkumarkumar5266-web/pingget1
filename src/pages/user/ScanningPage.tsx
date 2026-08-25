@@ -8,6 +8,7 @@ import { X, Clock, RefreshCw, MapPinOff, Loader2, Radar, MapPin } from 'lucide-r
 import { Images } from '../../lib/customImages'
 import FreeStreetMap, { MAP_VIEW_RADIUS_M, type MapMarker } from '../../components/map/FreeStreetMap'
 import { pg } from '../../design/tokens'
+import { notifyNearbyDpsForRequest } from '../../lib/notifyNearbyDps'
 import { CTA, IconButton, Surface, MobileFrame } from '../../design/primitives'
 
 type DpSpot = {
@@ -103,6 +104,12 @@ export default function ScanningPage() {
         scanCountRef.current += 1
         setScanCount(scanCountRef.current)
         if (count > 0) {
+          void notifyNearbyDpsForRequest({
+            requestId: requestId!,
+            lat: centerLat,
+            lng: centerLng,
+            radiusMeters,
+          })
           setWaitingForAccept(true)
           setSpots(
             dps.slice(0, 8).map((d, i) => {

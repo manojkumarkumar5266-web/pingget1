@@ -153,12 +153,15 @@ export default function CreateRequest() {
       }).select('id').single()
       if (err) throw err
       sessionStorage.removeItem(DRAFT_KEY)
-      void notifyNearbyOnlineDps({
-        requestId: inserted.id,
-        lat: deliveryLat,
-        lng: deliveryLng,
-        radiusMeters: userRadiusMeters(),
-      })
+      if (inserted?.id) {
+        void notifyNearbyOnlineDps({
+          requestId: inserted.id,
+          lat: deliveryLat,
+          lng: deliveryLng,
+          radiusMeters: userRadiusMeters(),
+          body: (description.trim() || 'Instant request').slice(0, 120),
+        })
+      }
       navigate(`/app/scanning/${inserted.id}`)
     } catch (e: any) {
       setError(e.message)

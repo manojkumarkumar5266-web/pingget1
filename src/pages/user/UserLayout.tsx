@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context'
-import { Home, ClipboardList, User, Plus, X, MessageCircle, Zap, CalendarClock } from 'lucide-react'
+import { Home, ClipboardList, User, Plus, X, MessageCircle, Zap, CalendarClock, Bell } from 'lucide-react'
 import { useEffect, useState, useRef, startTransition } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useGps } from '../../hooks/useGps'
@@ -10,6 +10,7 @@ import { BrandWordmark } from '../../components/Brand'
 import ServiceAreaNotice from '../../components/ServiceAreaNotice'
 import { Dock, DockItem } from '../../design/primitives'
 import { pg } from '../../design/tokens'
+import { adminAlertOrFilter } from '../../lib/adminAlerts'
 
 type AcceptedToast = { requestId: string; body: string }
 
@@ -18,6 +19,7 @@ export default function UserLayout() {
   const { profile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [unreadCount, setUnreadCount] = useState(0)
   const [acceptedToast, setAcceptedToast] = useState<AcceptedToast | null>(null)
   const [showBookingMenu, setShowBookingMenu] = useState(false)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -40,13 +42,21 @@ export default function UserLayout() {
 
   useEffect(() => {
     if (!profile?.id) return
+    const fetchUnread = async () => {
+      const { count } = await supabase.from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', profile.id).eq('is_read', false).is('deleted_at', null)
+        .or(adminAlertOrFilter())
+      setUnreadCount(count || 0)
+    }
+    fetchUnread()
     const channel = supabase.channel('user-notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` },
         async (payload) => {
+          fetchUnread()
           const notif = payload.new as any
           if (notif.type === 'request_accepted' && notif.related_id) {
             showToast({ requestId: notif.related_id, body: notif.body || 'A delivery partner accepted your request.' })
-            // Accept → chat (quotation). Scanning page also opens chat on its own.
             const path = window.location.pathname
             if (path.includes('/app/chat/') || path.includes('/app/scanning/')) return
             const { data: room } = await supabase
@@ -57,6 +67,8 @@ export default function UserLayout() {
             if (room?.id) navigate(`/app/chat/${room.id}`)
           }
         })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, fetchUnread)
       .subscribe()
     return () => { supabase.removeChannel(channel); if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }
   }, [profile?.id, navigate])
@@ -156,6 +168,7 @@ export default function UserLayout() {
           <DockItem label="Home" icon={<Home size={20} />} active={isActive('/app')} onClick={() => go('/app')} />
           <DockItem label="Orders" icon={<ClipboardList size={20} />} active={isActive('/app/orders')} onClick={() => go('/app/orders')} />
           <DockItem label="New" icon={<Plus size={28} strokeWidth={2.5} />} center onClick={() => setShowBookingMenu(true)} />
+          <DockItem label="Alerts" icon={<Bell size={20} />} active={isActive('/app/notifications')} badge={unreadCount} onClick={() => { setUnreadCount(0); go('/app/notifications') }} />
           <DockItem label="You" icon={<User size={20} />} active={isActive('/app/profile')} onClick={() => go('/app/profile')} />
         </Dock>
       )}
